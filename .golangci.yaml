@@ -1,0 +1,93 @@
+run:
+  go: '1.18'
+  concurrency: 4
+  timeout: 5m
+  issues-exit-code: 2
+  tests: true
+  modules-download-mode: readonly
+  allow-parallel-runners: false
+linters:
+  disable-all: true
+  enable:
+    - deadcode
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - varcheck
+    - asciicheck
+    - asciicheck
+    - bidichk
+    - decorder
+    - depguard
+    - dupl
+    - durationcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - execinquery
+    - exportloopref
+    - forbidigo
+    - forcetypeassert
+    - goimports
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goheader
+    - gosec
+    - grouper
+    - ifshort
+    - importas
+    - ireturn
+    - maintidx
+    - makezero
+    - misspell
+    - nakedret
+    - nestif
+    - nilnil
+    - nolintlint
+    - predeclared
+    - promlinter
+    - unconvert
+    - whitespace
+linters-settings:
+  gocyclo:
+    min-complexity: 16
+  gocritic:
+    disabled-checks:
+      - regexpMust
+      - commentedOutCode
+      - docStub
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+      - experimental
+      - opinionated
+    settings:
+      captLocal:
+        paramsOnly: false
+      elseif:
+        skipBalanced: false
+      nestingReduce:
+        bodyWidth: 4
+      rangeValCopy:
+        sizeThreshold: 32
+        skipTestFuncs: false
+      tooManyResultsChecker:
+        maxResults: 100
+      truncateCmp:
+        skipArchDependent: false
+      underef:
+        skipRecvDeref: false
+      unnamedResult:
+        checkExported: true
+      rangeExprCopy:
+        sizeThreshold: 512
+        skipTestFuncs: false
+      hugeParam:
+        sizeThreshold: 64
