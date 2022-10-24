@@ -55,12 +55,12 @@ type Message struct {
 }
 
 type MessagePayload struct {
-	ch.CHModel `ch:"message_payloads,partition:contract_name,operation_id"`
+	ch.CHModel `ch:"message_payloads,partition:contract_name,operation_id,operation_name"`
 
-	ContractName  ContractType `ch:",pk"`
+	ContractName  ContractType `ch:",lc"`
 	TxHash        []byte       `ch:",pk"`
 	MsgHash       []byte       `ch:",pk"`
-	OperationID   uint32       `ch:",pk"`
+	OperationID   uint32       `ch:",lc"`
 	OperationName string       `ch:",lc"`
 	DataJSON      string       //
 }
