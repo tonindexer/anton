@@ -48,7 +48,7 @@ type Message struct {
 	StateInitCode   []byte      //
 	StateInitData   []byte      //
 	Body            []byte      //
-	BodyHash        []byte      //
+	BodyHash        []byte      // TODO: msg.BodyHash = msg.Hash
 	OperationID     uint32      //
 	TransferComment string      //
 	SourceTxHash    []byte      //
@@ -60,7 +60,7 @@ type MessagePayload struct {
 	ContractName  ContractType `ch:",lc"`
 	TxHash        []byte       `ch:",pk"`
 	MsgHash       []byte       `ch:",pk"`
-	OperationID   uint32       `ch:",lc"`
+	OperationID   uint32       //
 	OperationName string       `ch:",lc"`
 	DataJSON      string       //
 }

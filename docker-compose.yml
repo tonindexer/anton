@@ -17,6 +17,8 @@ services:
       - indexer_network
     volumes:
       - idx_db_data:/var/lib/clickhouse
+    ports:
+      - "9000:9000"
     expose:
       - "9000"
     ulimits:

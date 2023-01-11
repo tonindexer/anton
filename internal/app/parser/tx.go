@@ -25,6 +25,7 @@ func (s *Service) parseTransaction(_ context.Context, b *tlb.BlockInfo, raw *tlb
 		PrevTxLT:    raw.PrevTxLT,
 		OutMsgCount: raw.OutMsgCount,
 		TotalFees:   raw.TotalFees.Coins.NanoTON().Uint64(),
+		// TODO: other fields
 	}
 
 	return tx

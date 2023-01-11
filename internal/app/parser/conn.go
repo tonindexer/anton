@@ -9,7 +9,7 @@ var mainnetArchive = []*connInfo{
 	{addr: "135.181.177.59:53312", key: "aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ="},
 	// {addr: "164.68.101.206:52995", key: "QnGFe9kihW+TKacEvvxFWqVXeRxCB6ChjjhNTrL7+/k="},
 	// {addr: "164.68.99.144:20334", key: "gyLh12v4hBRtyBygvvbbO2HqEtgl+ojpeRJKt4gkMq0="},
-	// {addr: "188.68.216.239:19925", key: "ucho5bEkufbKN1JR1BGHpkObq602whJn3Q3UwhtgSo4="},
+	{addr: "188.68.216.239:19925", key: "ucho5bEkufbKN1JR1BGHpkObq602whJn3Q3UwhtgSo4="},
 	// {addr: "54.39.158.156:51565", key: "TDg+ILLlRugRB4Kpg3wXjPcoc+d+Eeb7kuVe16CS9z8="},
 }
 

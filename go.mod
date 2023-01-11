@@ -7,7 +7,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.28.0
 	github.com/uptrace/go-clickhouse v0.2.10-0.20220903064105-60bb9889b3c1
-	github.com/xssnick/tonutils-go v1.4.0
+	github.com/xssnick/tonutils-go v1.4.1
 )
 
 require (
