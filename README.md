@@ -201,3 +201,15 @@ WHERE dst_addr IN (
     GROUP BY address
 ) AND ton > 5
 ```
+
+Show all NFT numbers and all owners:  
+
+```clickhouse
+SELECT
+    any(address),
+    any(content_uri),
+    groupArray(owner_address)
+FROM account_data
+WHERE hasAny(types, ['nft_item']) AND (collection_address = 'EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N')
+GROUP BY address
+```
