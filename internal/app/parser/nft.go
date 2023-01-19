@@ -31,6 +31,34 @@ func getContentDataNFT(ret *core.AccountData, c nft.ContentAny) {
 	}
 }
 
+func getCollectionDataNFT(ret *core.AccountData, data *nft.CollectionData) {
+	ret.Types = append(ret.Types, core.NFTCollection)
+	ret.NextItemIndex = data.NextItemIndex.Uint64()
+	ret.OwnerAddress = data.OwnerAddress.String()
+	getContentDataNFT(ret, data.Content)
+}
+
+func getRoyaltyDataNFT(ret *core.AccountData, params *nft.CollectionRoyaltyParams) {
+	ret.Types = append(ret.Types, core.NFTRoyalty)
+	ret.RoyaltyAddress = params.Address.String()
+	ret.RoyaltyBase = params.Base
+	ret.RoyaltyFactor = params.Factor
+}
+
+func getItemDataNFT(ret *core.AccountData, data *nft.ItemData) {
+	ret.Types = append(ret.Types, core.NFTItem)
+	ret.Initialized = data.Initialized
+	ret.ItemIndex = data.Index.Uint64()
+	ret.CollectionAddress = data.CollectionAddress.String()
+	ret.OwnerAddress = data.OwnerAddress.String()
+}
+
+func getEditorDataNFT(ret *core.AccountData, editor *address.Address) {
+	ret.Types = append(ret.Types, core.NFTEditable)
+	ret.EditorAddress = editor.String()
+}
+
+//nolint // TODO: simplify account data parsing logic
 func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, acc *core.Account, ret *core.AccountData) error {
 	ret.Address = acc.Address
 	ret.DataHash = acc.DataHash
@@ -63,22 +91,16 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 		if err != nil {
 			return errors.Wrap(err, "get collection data")
 		}
+		getCollectionDataNFT(ret, data)
 
-		ret.Types = append(ret.Types, core.NFTCollection)
+	case collection && royalty:
+		c := nft.NewCollectionClient(s.api, addr)
 
-		ret.NextItemIndex = data.NextItemIndex.Uint64()
-		ret.OwnerAddress = data.OwnerAddress.String()
-		getContentDataNFT(ret, data.Content)
-
-		if royalty {
-			params, err := c.RoyaltyParamsAtBlock(ctx, master)
-			if err != nil {
-				return errors.Wrap(err, "get royalty params")
-			}
-			ret.RoyaltyAddress = params.Address.String()
-			ret.RoyaltyBase = params.Base
-			ret.RoyaltyFactor = params.Factor
+		params, err := c.RoyaltyParamsAtBlock(ctx, master)
+		if err != nil {
+			return errors.Wrap(err, "get royalty params")
 		}
+		getRoyaltyDataNFT(ret, params)
 
 	case item:
 		c := nft.NewItemClient(s.api, addr)
@@ -87,13 +109,7 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 		if err != nil {
 			return errors.Wrap(err, "get nft item data")
 		}
-
-		ret.Types = append(ret.Types, core.NFTItem)
-
-		ret.Initialized = data.Initialized
-		ret.ItemIndex = data.Index.Uint64()
-		ret.CollectionAddress = data.CollectionAddress.String()
-		ret.OwnerAddress = data.OwnerAddress.String()
+		getItemDataNFT(ret, data)
 
 		if data.Content != nil {
 			collect := nft.NewCollectionClient(s.api, data.CollectionAddress)
@@ -104,18 +120,14 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 			getContentDataNFT(ret, con)
 		}
 
-		if editable {
-			c := nft.NewItemEditableClient(s.api, addr)
+	case editable:
+		c := nft.NewItemEditableClient(s.api, addr)
 
-			ret.Types = append(ret.Types, core.NFTEditable)
-
-			editor, err := c.GetEditorAtBlock(ctx, master)
-			if err != nil {
-				return errors.Wrap(err, "get editor")
-			}
-
-			ret.EditorAddress = editor.String()
+		editor, err := c.GetEditorAtBlock(ctx, master)
+		if err != nil {
+			return errors.Wrap(err, "get editor")
 		}
+		getEditorDataNFT(ret, editor)
 
 	default:
 		return errors.Wrap(core.ErrNotAvailable, "get account nft data")
