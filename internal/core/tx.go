@@ -16,8 +16,11 @@ type Transaction struct {
 	LT             uint64 `ch:",pk"`
 	PrevTxHash     []byte //
 	PrevTxLT       uint64 //
+	Now            uint32 //
 	OutMsgCount    uint16 //
 	TotalFees      uint64 // `ch:"type:UInt256"`
+	StateUpdate    []byte //
+	Description    []byte //
 }
 
 type MessageType string
@@ -60,6 +63,7 @@ type MessagePayload struct {
 	ContractName  ContractType `ch:",lc"`
 	TxHash        []byte       `ch:",pk"`
 	MsgHash       []byte       `ch:",pk"`
+	DstAddr       string       `ch:",lc"`
 	OperationID   uint32       //
 	OperationName string       `ch:",lc"`
 	DataJSON      string       //

@@ -23,9 +23,15 @@ func (s *Service) parseTransaction(_ context.Context, b *tlb.BlockInfo, raw *tlb
 		LT:          raw.LT,
 		PrevTxHash:  raw.PrevTxHash,
 		PrevTxLT:    raw.PrevTxLT,
+		Now:         raw.Now,
 		OutMsgCount: raw.OutMsgCount,
 		TotalFees:   raw.TotalFees.Coins.NanoTON().Uint64(),
-		// TODO: other fields
+	}
+	if raw.StateUpdate != nil {
+		tx.StateUpdate = raw.StateUpdate.ToBOC()
+	}
+	if raw.Description != nil {
+		tx.Description = raw.Description.ToBOC()
 	}
 
 	return tx
@@ -187,6 +193,7 @@ func (s *Service) ParseMessagePayload(ctx context.Context, toAcc *core.Account, 
 	ret := core.MessagePayload{
 		TxHash:      message.TxHash,
 		MsgHash:     message.Hash,
+		DstAddr:     message.DstAddr,
 		OperationID: message.OperationID,
 	}
 	if ret.OperationID == 0 {
