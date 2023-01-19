@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/wallet"
@@ -94,20 +93,27 @@ func (s *Service) ParseAccount(ctx context.Context, master *tlb.BlockInfo, addr 
 }
 
 func (s *Service) ParseAccountData(ctx context.Context, master *tlb.BlockInfo, acc *core.Account) (*core.AccountData, error) {
+	var unknown int
+
 	data := new(core.AccountData)
 	data.Address = acc.Address
 	data.DataHash = acc.DataHash
 
 	for _, t := range acc.Types {
 		switch t {
-		case core.NFTCollection, core.NFTItem, core.NFTItemSBT, core.NFTItemEditable, core.NFTItemEditableSBT:
+		case core.NFTCollection, core.NFTItem, core.NFTItemSBT:
 			// TODO: error "contract exit code: 11"
 			err := s.getAccountDataNFT(ctx, master, acc, data)
 			if err != nil {
-				log.Error().Err(err).Str("address", acc.Address).Str("type", t).Msg("get nft data")
+				return nil, errors.Wrap(err, "get nft data")
 			}
+		default:
+			unknown++
 		}
 	}
 
+	if unknown == len(acc.Types) {
+		return data, errors.Wrap(core.ErrNotAvailable, "unknown contract")
+	}
 	return data, nil
 }
