@@ -35,19 +35,18 @@ func (s *Service) processShardTransactions(ctx context.Context, master, shard *t
 		if err != nil {
 			return errors.Wrapf(err, "parse account (addr = %s)", tx.AccountAddr)
 		}
+		accounts = append(accounts, acc)
+		if addr.Type() == address.StdAddress {
+			accountMap[acc.Address] = acc
+		}
 		tx.AccountBalance = acc.Balance
 
 		data, err := s.parser.ParseAccountData(ctx, master, acc)
 		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
 			return errors.Wrapf(err, "parse account data (addr = %s)", tx.AccountAddr)
 		}
-
-		accounts = append(accounts, acc)
 		if err == nil {
 			accountsData = append(accountsData, data)
-		}
-		if addr.Type() == address.StdAddress {
-			accountMap[acc.Address] = acc
 		}
 	}
 
@@ -121,16 +120,16 @@ func (s *Service) getNotSeenShards(ctx context.Context, shard *tlb.BlockInfo) (r
 	return ret, nil
 }
 
-func (s *Service) processShards(ctx context.Context, master *tlb.BlockInfo) error {
+func (s *Service) processShards(ctx context.Context, master *tlb.BlockInfo) ([]*core.ShardBlockInfo, error) {
 	var dbShards []*core.ShardBlockInfo
 
 	currentShards, err := s.api.GetBlockShardsInfo(ctx, master)
 	if err != nil {
-		return errors.Wrap(err, "get masterchain shards info")
+		return nil, errors.Wrap(err, "get masterchain shards info")
 	}
 	if len(currentShards) == 0 {
 		log.Debug().Uint32("master_seq", master.SeqNo).Msg("master block without shards")
-		return nil
+		return nil, nil
 	}
 
 	// shards in master block may have holes, e.g. shard seqno 2756461, then 2756463, and no 2756462 in master chain
@@ -139,7 +138,7 @@ func (s *Service) processShards(ctx context.Context, master *tlb.BlockInfo) erro
 	for _, shard := range currentShards {
 		notSeen, err := s.getNotSeenShards(ctx, shard)
 		if err != nil {
-			return errors.Wrap(err, "get not seen shards")
+			return nil, errors.Wrap(err, "get not seen shards")
 		}
 		s.shardLastSeqno[getShardID(shard)] = shard.SeqNo
 		newShards = append(newShards, notSeen...)
@@ -153,11 +152,11 @@ func (s *Service) processShards(ctx context.Context, master *tlb.BlockInfo) erro
 
 		blockTx, err := s.parser.GetBlockTransactions(ctx, shard)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if err := s.processShardTransactions(ctx, master, shard, blockTx); err != nil {
-			return err
+			return nil, err
 		}
 
 		dbShards = append(dbShards, &core.ShardBlockInfo{
@@ -171,10 +170,10 @@ func (s *Service) processShards(ctx context.Context, master *tlb.BlockInfo) erro
 	}
 
 	if err := s.blockRepo.AddShardBlocksInfo(ctx, dbShards); err != nil {
-		return errors.Wrap(err, "add shard block")
+		return nil, errors.Wrap(err, "add shard block")
 	}
 
-	return nil
+	return dbShards, nil
 }
 
 func (s *Service) fetchBlocksLoop(workchain int32, shard int64, fromBlock uint32) {
@@ -200,7 +199,8 @@ func (s *Service) fetchBlocksLoop(workchain int32, shard int64, fromBlock uint32
 		}
 		lvl.Uint32("master_seq", seq).Msg("new masterchain block")
 
-		if err := s.processShards(ctx, master); err != nil {
+		shards, err := s.processShards(ctx, master)
+		if err != nil {
 			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot process shards")
 			continue
 		}
@@ -217,6 +217,9 @@ func (s *Service) fetchBlocksLoop(workchain int32, shard int64, fromBlock uint32
 			SeqNo:     master.SeqNo,
 			RootHash:  master.RootHash,
 			FileHash:  master.FileHash,
+		}
+		for _, shardBlock := range shards {
+			dbMaster.ShardFileHashes = append(dbMaster.ShardFileHashes, shardBlock.FileHash)
 		}
 		if err := s.blockRepo.AddMasterBlockInfo(ctx, dbMaster); err != nil {
 			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot add master block")

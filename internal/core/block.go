@@ -9,18 +9,19 @@ import (
 type MasterBlockInfo struct {
 	ch.CHModel `ch:"master_block_info"`
 
-	Workchain int32
-	Shard     int64
-	SeqNo     uint32 `ch:",pk"`
-	RootHash  []byte `ch:",pk"`
-	FileHash  []byte `ch:",pk"`
+	Workchain       int32  `ch:",pk"`
+	Shard           int64  `ch:",pk"`
+	SeqNo           uint32 `ch:",pk"`
+	RootHash        []byte `ch:",pk"`
+	FileHash        []byte `ch:",pk"`
+	ShardFileHashes [][]byte
 }
 
 type ShardBlockInfo struct {
 	ch.CHModel `ch:"shards_block_info,partition:shard"`
 
-	Workchain      int32
-	Shard          int64
+	Workchain      int32  `ch:",pk"`
+	Shard          int64  `ch:",pk"`
 	SeqNo          uint32 `ch:",pk"`
 	RootHash       []byte `ch:",pk"`
 	FileHash       []byte `ch:",pk"`
