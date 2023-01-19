@@ -40,7 +40,7 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 		return errors.Wrap(err, "parse address")
 	}
 
-	var collection, item, editable bool
+	var collection, item, editable, royalty bool
 
 	for _, t := range acc.Types {
 		switch t {
@@ -48,8 +48,10 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 			collection = true
 		case core.NFTItem, core.NFTItemSBT:
 			item = true
-		case core.NFTItemEditable, core.NFTItemEditableSBT:
-			item, editable = true, true
+		case core.NFTEditable:
+			editable = true
+		case core.NFTRoyalty:
+			royalty = true
 		}
 	}
 
@@ -68,13 +70,15 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 		ret.OwnerAddress = data.OwnerAddress.String()
 		getContentDataNFT(ret, data.Content)
 
-		params, err := c.RoyaltyParamsAtBlock(ctx, master)
-		if err != nil {
-			return errors.Wrap(err, "get royalty params")
+		if royalty {
+			params, err := c.RoyaltyParamsAtBlock(ctx, master)
+			if err != nil {
+				return errors.Wrap(err, "get royalty params")
+			}
+			ret.RoyaltyAddress = params.Address.String()
+			ret.RoyaltyBase = params.Base
+			ret.RoyaltyFactor = params.Factor
 		}
-		ret.RoyaltyAddress = params.Address.String()
-		ret.RoyaltyFactor = params.Factor
-		ret.RoyaltyBase = params.Base
 
 	case item:
 		c := nft.NewItemClient(s.api, addr)
@@ -91,17 +95,19 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 		ret.CollectionAddress = data.CollectionAddress.String()
 		ret.OwnerAddress = data.OwnerAddress.String()
 
-		collect := nft.NewCollectionClient(s.api, data.CollectionAddress)
-		con, err := collect.GetNFTContentAtBlock(ctx, data.Index, data.Content, master)
-		if err != nil {
-			return errors.Wrap(err, "get nft content")
+		if data.Content != nil {
+			collect := nft.NewCollectionClient(s.api, data.CollectionAddress)
+			con, err := collect.GetNFTContentAtBlock(ctx, data.Index, data.Content, master)
+			if err != nil {
+				return errors.Wrap(err, "get nft content")
+			}
+			getContentDataNFT(ret, con)
 		}
-		getContentDataNFT(ret, con)
 
 		if editable {
 			c := nft.NewItemEditableClient(s.api, addr)
 
-			ret.Types = append(ret.Types, core.NFTItemEditable)
+			ret.Types = append(ret.Types, core.NFTEditable)
 
 			editor, err := c.GetEditorAtBlock(ctx, master)
 			if err != nil {
