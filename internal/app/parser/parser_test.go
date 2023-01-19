@@ -22,7 +22,7 @@ func testService(t *testing.T) *Service {
 		return _testService
 	}
 
-	conn, err := db.Connect(ctx, "clickhouse://localhost:9000/idx?sslmode=disable")
+	conn, err := db.Connect(ctx, "clickhouse://localhost:9000/default?sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
