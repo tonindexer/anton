@@ -20,13 +20,13 @@ const (
 type ContractType string
 
 const (
-	NFTCollection      = "nft_collection"
-	NFTItemEditable    = "nft_item_editable"
-	NFTItem            = "nft_item"
-	NFTSale            = "nft_sale"
-	NFTSwap            = "nft_swap"
-	NFTItemSBT         = "nft_item_sbt"
-	NFTItemEditableSBT = "nft_item_editable_sbt"
+	NFTCollection = "nft_collection"
+	NFTItem       = "nft_item"
+	NFTItemSBT    = "nft_item_sbt"
+	NFTRoyalty    = "nft_royalty"
+	NFTEditable   = "nft_editable"
+	NFTSale       = "nft_sale"
+	NFTSwap       = "nft_swap"
 
 	JettonWallet = "jetton_wallet"
 	JettonMinter = "jetton_minter"
@@ -80,7 +80,7 @@ type AccountData struct {
 	ItemIndex         uint64
 	CollectionAddress string
 	EditorAddress     string
-	// OwnerAddress      string
+	// OwnerAddress
 }
 
 type Account struct {
@@ -91,9 +91,9 @@ type Account struct {
 	Status     AccountStatus `ch:",lc"` // TODO: enum
 	Types      []string      `ch:",lc"` // TODO: ContractType here, go-ch bug
 	Data       []byte        //
-	DataHash   []byte        //
+	DataHash   []byte        `ch:",pk"`
 	Code       []byte        //
-	CodeHash   []byte        //
+	CodeHash   []byte        `ch:",pk"`
 	LastTxLT   uint64        //
 	LastTxHash []byte        //
 	Balance    uint64        // TODO: uint256
