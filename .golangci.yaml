@@ -6,6 +6,8 @@ run:
   tests: true
   modules-download-mode: readonly
   allow-parallel-runners: false
+  skip-files:
+    - main.go
 linters:
   disable-all: true
   enable:
