@@ -34,6 +34,9 @@ func insertInterfacesNFT(ctx context.Context, db *ch.DB) error {
 		}, {
 			Name:       core.NFTItemSBT,
 			GetMethods: []string{"get_nft_data", "get_nonce", "get_public_key", "get_authority_address"},
+		}, {
+			Name:       core.NFTSale,
+			GetMethods: []string{"get_sale_data"},
 		},
 	}
 
@@ -99,13 +102,104 @@ func insertOperationsNFT(ctx context.Context, db *ch.DB) error {
 			//	ForwardPayload      *cell.Cell       `tlb:"either . ^"`
 		},
 	}, {
-		Name:         "nft_item_change_content",
+		Name:         "nft_item_ownership_assigned",
+		ContractName: core.NFTItem,
+		OperationID:  0x05138d91,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#05138d91"`},
+			{Name: "QueryID", Type: reflect.TypeOf(uint64(0)), Tag: `tlb:"## 64"`},
+			{Name: "OwnerAddress", Type: reflect.TypeOf((*address.Address)(nil)), Tag: `tlb:"addr"`},
+		},
+	}, {
+		Name:         "nft_item_excesses",
+		ContractName: core.NFTItem,
+		OperationID:  0xd53276db,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#d53276db"`},
+			{Name: "QueryID", Type: reflect.TypeOf(uint64(0)), Tag: `tlb:"## 64"`},
+		},
+	}, {
+		Name:         "nft_item_get_static_data",
+		ContractName: core.NFTItem,
+		OperationID:  0x2fcb26a2,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#2fcb26a2"`},
+			{Name: "QueryID", Type: reflect.TypeOf(uint64(0)), Tag: `tlb:"## 64"`},
+		},
+	}, {
+		Name:         "nft_item_report_static_data",
+		ContractName: core.NFTItem,
+		OperationID:  0x8b771735,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#8b771735"`},
+			{Name: "QueryID", Type: reflect.TypeOf(uint64(0)), Tag: `tlb:"## 64"`},
+			{Name: "Index", Type: reflect.TypeOf(big.NewInt(0)), Tag: `tlb:"## 256"`},
+			{Name: "OwnerAddress", Type: reflect.TypeOf((*address.Address)(nil)), Tag: `tlb:"addr"`},
+		},
+	}, {
+		Name:         "nft_collection_get_royalty_params",
+		ContractName: core.NFTCollection,
+		OperationID:  0x693d3950,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#693d3950"`},
+			{Name: "QueryID", Type: reflect.TypeOf(uint64(0)), Tag: `tlb:"## 64"`},
+		},
+	}, {
+		Name:         "nft_collection_report_royalty_params",
+		ContractName: core.NFTCollection,
+		OperationID:  0xa8cb00ad,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#a8cb00ad"`},
+			{Name: "QueryID", Type: reflect.TypeOf(uint64(0)), Tag: `tlb:"## 64"`},
+		},
+	}, {
+		Name:         "nft_item_edit_content",
 		ContractName: core.NFTEditable,
 		OperationID:  0x1a0b9d51,
 		StructSchema: []reflect.StructField{
 			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#1a0b9d51"`},
 			{Name: "QueryID", Type: reflect.TypeOf(uint64(0)), Tag: `tlb:"## 64"`},
 			// Content
+		},
+	}, {
+		Name:         "nft_item_transfer_editorship",
+		ContractName: core.NFTEditable,
+		OperationID:  0x1c04412a,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#1c04412a"`},
+			{Name: "QueryID", Type: reflect.TypeOf(uint64(0)), Tag: `tlb:"## 64"`},
+			{Name: "NewEditor", Type: reflect.TypeOf((*address.Address)(nil)), Tag: `tlb:"addr"`},
+			{Name: "ResponseDestination", Type: reflect.TypeOf((*address.Address)(nil)), Tag: `tlb:"addr"`},
+		},
+	}, {
+		Name:         "nft_item_editorship_assigned",
+		ContractName: core.NFTEditable,
+		OperationID:  0x511a4463,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#511a4463"`},
+			{Name: "QueryID", Type: reflect.TypeOf(uint64(0)), Tag: `tlb:"## 64"`},
+			{Name: "EditorAddress", Type: reflect.TypeOf((*address.Address)(nil)), Tag: `tlb:"addr"`},
+		},
+	}, {
+		Name:         "nft_sale_accept_coins",
+		ContractName: core.NFTSale,
+		OperationID:  1,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#00000001"`},
+		},
+	}, {
+		Name:         "nft_sale_buy",
+		ContractName: core.NFTSale,
+		OperationID:  2,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#00000002"`},
+		},
+	}, {
+		Name:         "nft_sale_cancel_sale",
+		ContractName: core.NFTSale,
+		OperationID:  3,
+		StructSchema: []reflect.StructField{
+			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#00000003"`},
 		},
 	}}
 

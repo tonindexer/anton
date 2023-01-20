@@ -50,6 +50,7 @@ const (
 	NFTItemSBT    = "nft_item_sbt"
 	NFTRoyalty    = "nft_royalty"
 	NFTEditable   = "nft_editable"
+	NFTSale       = "nft_sale"
 )
 
 type ContractInterface struct {
