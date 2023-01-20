@@ -18,6 +18,8 @@ So if arbitrary contract has these two get methods, we can try to determine oper
 messages to this contract by parsing message body cell and getting the first 32 bits. If these 32 bits are equal to 
 a known operation id, we can try to parse other message data with a schema (new owner of NFT item in this example).
 
+Go to [MODELS.md](/MODELS.md) to get more detailed description of models used in this project.
+
 ### Project structure
 
 | Folder            | Description                                                                         |
