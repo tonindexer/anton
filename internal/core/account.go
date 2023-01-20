@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -17,6 +16,32 @@ const (
 	NonExist = AccountStatus(tlb.AccountStatusNonExist)
 )
 
+type Account struct {
+	ch.CHModel `ch:"accounts,partition:status,address,types,round(balance,-9),last_tx_lt"`
+
+	Types []string `ch:",lc"` // TODO: ContractType here, go-ch bug
+
+	Address   string        `ch:",pk"`
+	IsActive  bool          //
+	Status    AccountStatus `ch:",lc"` // TODO: enum
+	Balance   uint64        // TODO: uint256
+	StateHash []byte        //
+
+	Data     []byte //
+	DataHash []byte `ch:",pk"`
+	Code     []byte //
+	CodeHash []byte `ch:",pk"`
+
+	// TODO: do we need it?
+	Depth uint64 //
+	Tick  bool   //
+	Tock  bool   //
+	Lib   []byte
+
+	LastTxLT   uint64 //
+	LastTxHash []byte //
+}
+
 type ContractType string
 
 const (
@@ -25,26 +50,7 @@ const (
 	NFTItemSBT    = "nft_item_sbt"
 	NFTRoyalty    = "nft_royalty"
 	NFTEditable   = "nft_editable"
-	NFTSale       = "nft_sale"
-	NFTSwap       = "nft_swap"
-
-	JettonWallet = "jetton_wallet"
-	JettonMinter = "jetton_minter"
-
-	DNSRoot       = "dns_root"
-	DNSCollection = "dns_collect"
-	DNSItem       = "dns_item"
 )
-
-type ContractOperation struct {
-	ch.CHModel `ch:"contract_operations"`
-
-	Name         string                //
-	ContractName ContractType          `ch:",pk"`
-	OperationID  uint32                `ch:",pk"`
-	Schema       string                //
-	StructSchema []reflect.StructField `ch:"-"`
-}
 
 type ContractInterface struct {
 	ch.CHModel `ch:"contract_interfaces"`
@@ -81,22 +87,6 @@ type AccountData struct {
 	CollectionAddress string
 	EditorAddress     string
 	// OwnerAddress
-}
-
-type Account struct {
-	ch.CHModel `ch:"accounts,partition:status,address,types,round(balance,-9),last_tx_lt"`
-
-	Address    string        `ch:",pk"`
-	IsActive   bool          //
-	Status     AccountStatus `ch:",lc"` // TODO: enum
-	Types      []string      `ch:",lc"` // TODO: ContractType here, go-ch bug
-	Data       []byte        //
-	DataHash   []byte        `ch:",pk"`
-	Code       []byte        //
-	CodeHash   []byte        `ch:",pk"`
-	LastTxLT   uint64        //
-	LastTxHash []byte        //
-	Balance    uint64        // TODO: uint256
 }
 
 type AccountRepository interface {

@@ -18,14 +18,25 @@ func (s *Service) parseTransaction(_ context.Context, b *tlb.BlockInfo, raw *tlb
 	addr := address.NewAddress(0, byte(b.Workchain), raw.AccountAddr)
 
 	tx := &core.Transaction{
-		AccountAddr: addr.String(),
 		Hash:        raw.Hash,
-		LT:          raw.LT,
-		PrevTxHash:  raw.PrevTxHash,
-		PrevTxLT:    raw.PrevTxLT,
-		Now:         raw.Now,
-		OutMsgCount: raw.OutMsgCount,
-		TotalFees:   raw.TotalFees.Coins.NanoTON().Uint64(),
+		AccountAddr: addr.String(),
+
+		PrevTxHash: raw.PrevTxHash,
+		PrevTxLT:   raw.PrevTxLT,
+
+		InMsgHash:    raw.IO.In.Msg.Payload().Hash(),
+		OutMsgHashes: nil,
+
+		TotalFees: raw.TotalFees.Coins.NanoTON().Uint64(),
+
+		OrigStatus: core.AccountStatus(raw.OrigStatus),
+		EndStatus:  core.AccountStatus(raw.EndStatus),
+
+		CreatedLT: raw.LT,
+		CreatedAT: uint64(raw.Now),
+	}
+	for _, out := range raw.IO.Out {
+		tx.OutMsgHashes = append(tx.OutMsgHashes, out.Msg.Payload().Hash())
 	}
 	if raw.StateUpdate != nil {
 		tx.StateUpdate = raw.StateUpdate.ToBOC()
@@ -54,53 +65,73 @@ func (s *Service) parseMessage(incoming bool, txHash []byte, message *tlb.Messag
 	switch raw := message.Msg.(type) {
 	case *tlb.InternalMessage:
 		msg.Type = core.Internal
+
 		msg.TxHash = txHash
+
 		msg.Incoming = incoming
-		msg.Hash = raw.Body.Hash()
 		msg.SrcAddr = raw.SrcAddr.String()
 		msg.DstAddr = raw.DstAddr.String()
+
 		msg.Bounce = raw.Bounce
 		msg.Bounced = raw.Bounced
+
 		msg.Amount = raw.Amount.NanoTON().Uint64()
+
 		msg.IHRDisabled = raw.IHRDisabled
 		msg.IHRFee = raw.IHRFee.NanoTON().Uint64()
 		msg.FwdFee = raw.FwdFee.NanoTON().Uint64()
-		msg.CreatedLT = raw.CreatedLT
-		msg.CreatedAt = raw.CreatedAt
-		if raw.StateInit != nil {
-			msg.StateInitCode = raw.StateInit.Code.ToBOC()
-			msg.StateInitData = raw.StateInit.Data.ToBOC()
-		}
+
 		msg.Body = raw.Body.ToBOC()
 		msg.BodyHash = raw.Body.Hash()
 
-	case *tlb.ExternalMessage:
-		msg.Type = core.ExternalIn
-		msg.TxHash = txHash
-		msg.Incoming = true
-		msg.Hash = raw.Body.Hash()
-		msg.DstAddr = raw.DstAddr.String()
 		if raw.StateInit != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
 			msg.StateInitData = raw.StateInit.Data.ToBOC()
 		}
+
+		msg.CreatedLT = raw.CreatedLT
+		msg.CreatedAt = uint64(raw.CreatedAt)
+
+	case *tlb.ExternalMessage:
+		msg.Type = core.ExternalIn
+
+		msg.TxHash = txHash
+
+		msg.Incoming = true
+		msg.DstAddr = raw.DstAddr.String()
+
+		if raw.StateInit != nil {
+			msg.StateInitCode = raw.StateInit.Code.ToBOC()
+			msg.StateInitData = raw.StateInit.Data.ToBOC()
+		}
+
 		msg.Body = raw.Body.ToBOC()
 		msg.BodyHash = raw.Body.Hash()
 
 	case *tlb.ExternalMessageOut:
 		msg.Type = core.ExternalOut
+
 		msg.TxHash = txHash
+
 		msg.Incoming = false
-		msg.Hash = raw.Body.Hash()
 		msg.SrcAddr = raw.SrcAddr.String()
+
 		msg.CreatedLT = raw.CreatedLT
-		msg.CreatedAt = raw.CreatedAt
+		msg.CreatedAt = uint64(raw.CreatedAt)
+
 		if raw.StateInit != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
 			msg.StateInitData = raw.StateInit.Data.ToBOC()
 		}
+
 		msg.Body = raw.Body.ToBOC()
 		msg.BodyHash = raw.Body.Hash()
+	}
+
+	if msg.Incoming {
+		msg.TxAccountAddr = msg.DstAddr
+	} else {
+		msg.TxAccountAddr = msg.SrcAddr
 	}
 
 	return msg
@@ -111,18 +142,18 @@ func (s *Service) getMsgSourceHash(ctx context.Context, in *core.Message, outMsg
 		return nil, errors.Wrap(core.ErrNotAvailable, "msg is not incoming or internal")
 	}
 
-	out, ok := outMsgMap[string(in.Hash)]
+	out, ok := outMsgMap[string(in.BodyHash)]
 	if ok {
 		return out.TxHash, nil
 	}
 
-	sourceMsg, err := s.txRepo.GetMessageByHash(ctx, in.Hash) // TODO: batch request (?)
+	sourceMsg, err := s.txRepo.GetMessageByHash(ctx, in.BodyHash) // TODO: batch request (?)
 	if err != nil {
 		// TODO: error
 		// parse incoming message (tx_hash = b1d2d32a650b3a39fea2526f5247f00bed961a98bec9befb565f68a54883336f)
 		// get source message by hash (msg_hash = dbe1c797d6d2d914c463173b1da531103d2efe747471212d1fad170fcf0c75d2)
 		// master_seq: 23516077
-		return nil, errors.Wrapf(err, "get source msg (hash = %x)", in.Hash)
+		return nil, errors.Wrapf(err, "get source msg (hash = %x)", in.BodyHash)
 	}
 
 	return sourceMsg.TxHash, nil
@@ -159,10 +190,10 @@ func (s *Service) ParseBlockMessages(ctx context.Context, _ *tlb.BlockInfo, bloc
 		for _, outMsg := range tx.IO.Out {
 			msg := s.parseMessage(false, tx.Hash, outMsg)
 			if err = s.parseOperation(msg); err != nil {
-				return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.Hash)
+				return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 			}
 			outMessages = append(outMessages, msg)
-			outMsgMap[string(msg.Hash)] = msg
+			outMsgMap[string(msg.BodyHash)] = msg
 		}
 	}
 
@@ -179,7 +210,7 @@ func (s *Service) ParseBlockMessages(ctx context.Context, _ *tlb.BlockInfo, bloc
 			log.Error().Err(err).Hex("tx_hash", tx.Hash).Msg("cannot get msg source hash")
 		}
 		if err = s.parseOperation(msg); err != nil {
-			return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.Hash)
+			return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 		}
 		inMessages = append(inMessages, msg)
 	}
@@ -192,7 +223,7 @@ func (s *Service) ParseMessagePayload(ctx context.Context, toAcc *core.Account, 
 
 	ret := core.MessagePayload{
 		TxHash:      message.TxHash,
-		MsgHash:     message.Hash,
+		PayloadHash: message.BodyHash,
 		DstAddr:     message.DstAddr,
 		OperationID: message.OperationID,
 	}

@@ -70,6 +70,14 @@ func (s *Service) ParseAccount(ctx context.Context, master *tlb.BlockInfo, addr 
 	if acc.State != nil {
 		ret.Status = core.AccountStatus(acc.State.Status)
 		ret.Balance = acc.State.Balance.NanoTON().Uint64()
+		ret.StateHash = acc.State.StateHash
+		if acc.State.StateInit != nil {
+			ret.Depth = acc.State.StateInit.Depth
+			if acc.State.StateInit.TickTock != nil {
+				ret.Tick = acc.State.StateInit.TickTock.Tick
+				ret.Tock = acc.State.StateInit.TickTock.Tock
+			}
+		}
 	}
 	if acc.Data != nil {
 		ret.Data = acc.Data.ToBOC()
@@ -77,9 +85,10 @@ func (s *Service) ParseAccount(ctx context.Context, master *tlb.BlockInfo, addr 
 	}
 	if acc.Code != nil {
 		ret.Code = acc.Code.ToBOC()
+		ret.CodeHash = acc.Data.Hash()
 	}
-	ret.LastTxHash = acc.LastTxHash
 	ret.LastTxLT = acc.LastTxLT
+	ret.LastTxHash = acc.LastTxHash
 
 	ifaces, err := s.ContractInterfaces(ctx, acc)
 	if err != nil {

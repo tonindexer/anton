@@ -61,13 +61,13 @@ func Run() {
 		log.Fatal().Err(err).Msg("")
 	}
 
-	var liteservers []app.ServerAddr
+	var liteservers []*app.ServerAddr
 	for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
 		splitted := strings.Split(addr, "|")
 		if len(splitted) != 2 {
 			log.Fatal().Err(err).Msg("wrong server address format")
 		}
-		liteservers = append(liteservers, app.ServerAddr{
+		liteservers = append(liteservers, &app.ServerAddr{
 			IPPort:    splitted[0],
 			PubKeyB64: splitted[1],
 		})

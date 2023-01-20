@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -10,17 +11,25 @@ import (
 type Transaction struct {
 	ch.CHModel `ch:"transactions,partition:account_addr"`
 
-	AccountAddr    string `ch:",pk"`
-	AccountBalance uint64 // TODO: uint256
-	Hash           []byte `ch:",pk"`
-	LT             uint64 `ch:",pk"`
-	PrevTxHash     []byte //
-	PrevTxLT       uint64 //
-	Now            uint32 //
-	OutMsgCount    uint16 //
-	TotalFees      uint64 // `ch:"type:UInt256"`
-	StateUpdate    []byte //
-	Description    []byte //
+	Hash        []byte `ch:",pk"`
+	AccountAddr string `ch:",pk"`
+
+	PrevTxHash []byte //
+	PrevTxLT   uint64 //
+
+	InMsgHash    []byte   `ch:",pk"`
+	OutMsgHashes [][]byte //
+
+	TotalFees uint64 // `ch:"type:UInt256"`
+
+	StateUpdate []byte //
+	Description []byte //
+
+	OrigStatus AccountStatus `ch:",lc"`
+	EndStatus  AccountStatus `ch:",lc"`
+
+	CreatedLT uint64 `ch:",pk"`
+	CreatedAT uint64 `ch:",pk"`
 }
 
 type MessageType string
@@ -34,27 +43,45 @@ const (
 type Message struct {
 	ch.CHModel `ch:"messages,partition:type,src_addr,dst_addr,round(amount,-9)"`
 
-	TxHash          []byte      `ch:",pk"`
-	Hash            []byte      `ch:",pk"`
-	Type            MessageType `ch:",lc"` // TODO: enum
-	Incoming        bool        //
-	SrcAddr         string      `ch:",lc"`
-	DstAddr         string      `ch:",lc"`
-	Bounce          bool        //
-	Bounced         bool        //
-	Amount          uint64      // TODO: uint256
-	IHRDisabled     bool        //
-	IHRFee          uint64      // TODO: uint256
-	FwdFee          uint64      // TODO: uint256
-	CreatedLT       uint64      `ch:",pk"`
-	CreatedAt       uint32      `ch:",pk"`
-	StateInitCode   []byte      //
-	StateInitData   []byte      //
-	Body            []byte      //
-	BodyHash        []byte      // TODO: msg.BodyHash = msg.Hash
-	OperationID     uint32      //
-	TransferComment string      //
-	SourceTxHash    []byte      //
+	Type MessageType `ch:",lc"` // TODO: enum
+
+	TxHash        []byte `ch:",pk"`
+	TxAccountAddr string `ch:",pk"` // TODO: not needed, as we have incoming flag
+	SourceTxHash  []byte `ch:",pk"` // match in_msg with out_msg by body_hash
+
+	Incoming bool   //
+	SrcAddr  string `ch:",pk"`
+	DstAddr  string `ch:",pk"`
+
+	Bounce  bool //
+	Bounced bool //
+
+	Amount uint64 // TODO: uint256
+
+	IHRDisabled bool   //
+	IHRFee      uint64 // TODO: uint256
+	FwdFee      uint64 // TODO: uint256
+
+	Body            []byte //
+	BodyHash        []byte `ch:",pk"`
+	OperationID     uint32 //
+	TransferComment string //
+
+	StateInitCode []byte //
+	StateInitData []byte //
+
+	CreatedLT uint64 `ch:",pk"`
+	CreatedAt uint64 `ch:",pk"`
+}
+
+type ContractOperation struct {
+	ch.CHModel `ch:"contract_operations"`
+
+	Name         string                //
+	ContractName ContractType          `ch:",pk"`
+	OperationID  uint32                `ch:",pk"`
+	Schema       string                //
+	StructSchema []reflect.StructField `ch:"-"`
 }
 
 type MessagePayload struct {
@@ -62,7 +89,7 @@ type MessagePayload struct {
 
 	ContractName  ContractType `ch:",lc"`
 	TxHash        []byte       `ch:",pk"`
-	MsgHash       []byte       `ch:",pk"`
+	PayloadHash   []byte       `ch:",pk"`
 	DstAddr       string       `ch:",lc"`
 	OperationID   uint32       //
 	OperationName string       `ch:",lc"`

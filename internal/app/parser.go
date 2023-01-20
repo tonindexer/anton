@@ -18,7 +18,7 @@ type ServerAddr struct {
 
 type ParserConfig struct {
 	DB      *ch.DB
-	Servers []ServerAddr
+	Servers []*ServerAddr
 }
 
 type ParserService interface {

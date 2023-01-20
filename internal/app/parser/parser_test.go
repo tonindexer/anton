@@ -27,7 +27,11 @@ func testService(t *testing.T) *Service {
 		t.Fatal(err)
 	}
 
-	s, err := NewService(context.Background(), &app.ParserConfig{DB: conn})
+	server := app.ServerAddr{
+		IPPort:    "",
+		PubKeyB64: "",
+	}
+	s, err := NewService(context.Background(), &app.ParserConfig{DB: conn, Servers: []*app.ServerAddr{&server}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,4 +64,9 @@ func getTransactionOnce(t *testing.T, addr *address.Address, lt uint64, txHash [
 		t.Fatal(fmt.Errorf("no transactions"))
 	}
 	return transactions[0]
+}
+
+func TestGetMasterchainInfo(t *testing.T) {
+	m := getCurrentMaster(t)
+	t.Logf("Latest master chain block: %d", m.SeqNo)
 }

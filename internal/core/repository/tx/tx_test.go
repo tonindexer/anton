@@ -47,7 +47,7 @@ func TestTxRepository_AddMessage(t *testing.T) {
 
 	inMsg := &core.Message{
 		TxHash:        txHash,
-		Hash:          core.RandBytes(),
+		BodyHash:      core.RandBytes(),
 		SrcAddr:       from,
 		DstAddr:       addr,
 		Amount:        big.NewInt(1).Uint64(),
@@ -62,7 +62,7 @@ func TestTxRepository_AddMessage(t *testing.T) {
 
 	outMsg1 := &core.Message{
 		TxHash:    txHash,
-		Hash:      core.RandBytes(),
+		BodyHash:  core.RandBytes(),
 		SrcAddr:   addr,
 		DstAddr:   to1,
 		Amount:    big.NewInt(1).Uint64(),
@@ -73,7 +73,7 @@ func TestTxRepository_AddMessage(t *testing.T) {
 	}
 	outMsg2 := &core.Message{
 		TxHash:    txHash,
-		Hash:      core.RandBytes(),
+		BodyHash:  core.RandBytes(),
 		SrcAddr:   addr,
 		DstAddr:   to2,
 		Amount:    big.NewInt(1).Uint64(),
@@ -86,8 +86,7 @@ func TestTxRepository_AddMessage(t *testing.T) {
 	tx := &core.Transaction{
 		AccountAddr: addr,
 		Hash:        txHash,
-		LT:          4,
-		OutMsgCount: 2,
+		CreatedLT:   4,
 		TotalFees:   big.NewInt(3).Uint64(),
 	}
 
@@ -101,9 +100,9 @@ func TestTxRepository_AddMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := txRepo(t).GetMessageByHash(ctx, outMsg1.Hash)
+	_, err := txRepo(t).GetMessageByHash(ctx, outMsg1.BodyHash)
 	if err != nil {
-		t.Fatal(errors.Wrapf(err, "cannot find message with hash %s", outMsg1.Hash))
+		t.Fatal(errors.Wrapf(err, "cannot find message with hash %s", outMsg1.BodyHash))
 	}
 
 	_, err = txRepo(t).GetInMessageByTxHash(ctx, txHash)

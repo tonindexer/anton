@@ -59,7 +59,7 @@ func (r *Repository) GetMessageByHash(ctx context.Context, msgHash []byte) (*cor
 	ret := new(core.Message)
 
 	err := r.db.NewSelect().Model(ret).
-		Where("hash = ?", msgHash).
+		Where("body_hash = ?", msgHash).
 		Scan(ctx)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, core.ErrNotFound
