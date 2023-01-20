@@ -85,7 +85,7 @@ func Run() {
 		DB:               conn,
 		Parser:           p,
 		FromBlock:        uint32(env.GetInt32("FROM_BLOCK", 22222022)),
-		FetchBlockPeriod: 10 * time.Millisecond,
+		FetchBlockPeriod: 1 * time.Millisecond,
 	})
 	if err != nil {
 		panic(err)

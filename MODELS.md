@@ -146,6 +146,7 @@ package core
 type ContractOperation struct {
     Name         string       // nft collection mint/change_owner, nft item transfer/change_content
     ContractName ContractType // match message by contract type of src/dst addr
+    Outgoing     bool         // if operation is going from contract
     OperationID  uint32       // match contract operation by operation id
     Schema       string       // json-encoded schema of message body
 }

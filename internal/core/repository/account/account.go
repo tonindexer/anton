@@ -88,15 +88,21 @@ func (r *Repository) GetContractOperations(ctx context.Context, types []core.Con
 	return ret, nil
 }
 
-func (r *Repository) GetContractOperationByID(ctx context.Context, types []core.ContractType, id uint32) (*core.ContractOperation, error) {
+func (r *Repository) GetContractOperationByID(ctx context.Context, a *core.Account, outgoing bool, id uint32) (*core.ContractOperation, error) {
 	var ret []*core.ContractOperation
 
-	if len(types) == 0 {
+	if len(a.Types) == 0 {
 		return nil, errors.Wrap(core.ErrNotFound, "no contract types")
 	}
 
+	var out uint16 // TODO: fix this, go-ch bug
+	if outgoing {
+		out = 1
+	}
+
 	err := r.db.NewSelect().Model(&ret).
-		Where("contract_name in (?)", ch.In(types)).
+		Where("contract_name in (?)", ch.In(a.Types)).
+		Where("outgoing = ?", out).
 		Where("operation_id = ?", id).
 		Scan(ctx)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/wallet"
@@ -13,6 +14,27 @@ import (
 
 	"github.com/iam047801/tonidx/internal/core"
 )
+
+func matchByAddress(acc *tlb.Account, addr string) bool {
+	if addr == "" {
+		return false
+	}
+	return acc.State != nil && addr == acc.State.Address.String()
+}
+
+func matchByCode(acc *tlb.Account, code []byte) bool {
+	if len(code) == 0 {
+		return false
+	}
+
+	codeCell, err := cell.FromBOC(code)
+	if err != nil {
+		log.Error().Err(err).Msg("parse contract interface code")
+		return false
+	}
+
+	return acc.Code != nil && bytes.Equal(acc.Code.Hash(), codeCell.Hash())
+}
 
 func (s *Service) ContractInterfaces(ctx context.Context, acc *tlb.Account) ([]core.ContractType, error) {
 	var ret []core.ContractType
@@ -29,25 +51,13 @@ func (s *Service) ContractInterfaces(ctx context.Context, acc *tlb.Account) ([]c
 	}
 
 	for _, iface := range ifaces {
-		if iface.Address != "" {
-			addr, err := address.ParseAddr(iface.Address)
-			if err != nil {
-				return nil, errors.Wrap(err, "parse contract interface address")
-			}
-			if acc.State != nil && addr.String() == acc.State.Address.String() {
-				ret = append(ret, iface.Name)
-			}
+		if matchByAddress(acc, iface.Address) {
+			ret = append(ret, iface.Name)
 			continue
 		}
 
-		if iface.Code != nil {
-			code, err := cell.FromBOC(iface.Code)
-			if err != nil {
-				return nil, errors.Wrap(err, "parse contract interface code")
-			}
-			if acc.Code != nil && bytes.Equal(acc.Code.Hash(), code.Hash()) {
-				ret = append(ret, iface.Name)
-			}
+		if matchByCode(acc, iface.Code) {
+			ret = append(ret, iface.Name)
 			continue
 		}
 

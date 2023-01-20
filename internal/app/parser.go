@@ -32,5 +32,5 @@ type ParserService interface {
 	ParseAccount(ctx context.Context, master *tlb.BlockInfo, addr *address.Address) (*core.Account, error)
 	ParseAccountData(ctx context.Context, master *tlb.BlockInfo, acc *core.Account) (*core.AccountData, error)
 
-	ParseMessagePayload(ctx context.Context, toAcc *core.Account, message *core.Message) (*core.MessagePayload, error)
+	ParseMessagePayload(ctx context.Context, src, dst *core.Account, message *core.Message) (*core.MessagePayload, error)
 }

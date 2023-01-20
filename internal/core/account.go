@@ -94,7 +94,7 @@ type AccountRepository interface {
 	GetContractInterfaces(context.Context) ([]*ContractInterface, error)
 
 	InsertContractOperations(context.Context, []*ContractOperation) error
-	GetContractOperationByID(context.Context, []ContractType, uint32) (*ContractOperation, error)
+	GetContractOperationByID(context.Context, *Account, bool, uint32) (*ContractOperation, error)
 
 	AddAccounts(context.Context, []*Account) error
 	AddAccountData(context.Context, []*AccountData) error

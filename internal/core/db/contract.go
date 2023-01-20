@@ -104,6 +104,7 @@ func insertOperationsNFT(ctx context.Context, db *ch.DB) error {
 	}, {
 		Name:         "nft_item_ownership_assigned",
 		ContractName: core.NFTItem,
+		Outgoing:     true,
 		OperationID:  0x05138d91,
 		StructSchema: []reflect.StructField{
 			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#05138d91"`},
@@ -113,6 +114,7 @@ func insertOperationsNFT(ctx context.Context, db *ch.DB) error {
 	}, {
 		Name:         "nft_item_excesses",
 		ContractName: core.NFTItem,
+		Outgoing:     true,
 		OperationID:  0xd53276db,
 		StructSchema: []reflect.StructField{
 			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#d53276db"`},
@@ -129,6 +131,7 @@ func insertOperationsNFT(ctx context.Context, db *ch.DB) error {
 	}, {
 		Name:         "nft_item_report_static_data",
 		ContractName: core.NFTItem,
+		Outgoing:     true,
 		OperationID:  0x8b771735,
 		StructSchema: []reflect.StructField{
 			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#8b771735"`},
@@ -147,6 +150,7 @@ func insertOperationsNFT(ctx context.Context, db *ch.DB) error {
 	}, {
 		Name:         "nft_collection_report_royalty_params",
 		ContractName: core.NFTCollection,
+		Outgoing:     true,
 		OperationID:  0xa8cb00ad,
 		StructSchema: []reflect.StructField{
 			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#a8cb00ad"`},
@@ -174,6 +178,7 @@ func insertOperationsNFT(ctx context.Context, db *ch.DB) error {
 	}, {
 		Name:         "nft_item_editorship_assigned",
 		ContractName: core.NFTEditable,
+		Outgoing:     true,
 		OperationID:  0x511a4463,
 		StructSchema: []reflect.StructField{
 			{Name: "OperationID", Type: reflect.TypeOf(tlb.Magic{}), Tag: `tlb:"#511a4463"`},

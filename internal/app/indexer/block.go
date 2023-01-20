@@ -55,14 +55,18 @@ func (s *Service) processShardTransactions(ctx context.Context, master, shard *t
 	}
 
 	for _, msg := range messages {
-		if !msg.Incoming {
-			continue // parse only incoming messages
-		}
-		acc, ok := accountMap[msg.DstAddr]
-		if !ok {
+		if msg.Type != core.Internal {
 			continue
 		}
-		payload, err := s.parser.ParseMessagePayload(ctx, acc, msg)
+		src, ok := accountMap[msg.SrcAddr]
+		if !ok {
+			return fmt.Errorf("cannot find src account (addr = %s)", msg.SrcAddr)
+		}
+		dst, ok := accountMap[msg.DstAddr]
+		if !ok {
+			return fmt.Errorf("cannot find dst account (addr = %s)", msg.DstAddr)
+		}
+		payload, err := s.parser.ParseMessagePayload(ctx, src, dst, msg)
 		if errors.Is(err, core.ErrNotAvailable) {
 			continue
 		}
@@ -139,7 +143,6 @@ func (s *Service) processShards(ctx context.Context, master *tlb.BlockInfo) ([]*
 		if err != nil {
 			return nil, errors.Wrap(err, "get not seen shards")
 		}
-		s.shardLastSeqno[getShardID(shard)] = shard.SeqNo
 		newShards = append(newShards, notSeen...)
 	}
 
@@ -170,6 +173,10 @@ func (s *Service) processShards(ctx context.Context, master *tlb.BlockInfo) ([]*
 
 	if err := s.blockRepo.AddShardBlocksInfo(ctx, dbShards); err != nil {
 		return nil, errors.Wrap(err, "add shard block")
+	}
+
+	for _, shard := range currentShards {
+		s.shardLastSeqno[getShardID(shard)] = shard.SeqNo
 	}
 
 	return dbShards, nil

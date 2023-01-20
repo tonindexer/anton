@@ -102,7 +102,7 @@ func TestService_ParseMessagePayload(t *testing.T) {
 		acc := &core.Account{Types: []string{string(c.contract)}}
 		msg := &core.Message{Body: payload, OperationID: c.opId}
 
-		parsed, err := testService(t).ParseMessagePayload(ctx, acc, msg)
+		parsed, err := testService(t).ParseMessagePayload(ctx, nil, acc, msg)
 		if err != nil && !errors.Is(err, c.error) {
 			t.Fatal(err)
 		}

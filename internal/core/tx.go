@@ -79,18 +79,21 @@ type ContractOperation struct {
 
 	Name         string                //
 	ContractName ContractType          `ch:",pk"`
+	Outgoing     bool                  // if operation is going from contract
 	OperationID  uint32                `ch:",pk"`
 	Schema       string                //
 	StructSchema []reflect.StructField `ch:"-"`
 }
 
 type MessagePayload struct {
-	ch.CHModel `ch:"message_payloads,partition:contract_name,operation_id,operation_name"`
+	ch.CHModel `ch:"message_payloads,partition:src_addr,src_contract,dst_addr,dst_contract,operation_id,operation_name"`
 
-	ContractName  ContractType `ch:",lc"`
-	TxHash        []byte       `ch:",pk"`
+	TxHash        []byte       //
 	PayloadHash   []byte       `ch:",pk"`
-	DstAddr       string       `ch:",lc"`
+	SrcAddr       string       `ch:",pk,lc"`
+	SrcContract   ContractType `ch:",lc"`
+	DstAddr       string       `ch:",pk,lc"`
+	DstContract   ContractType `ch:",lc"`
 	OperationID   uint32       //
 	OperationName string       `ch:",lc"`
 	DataJSON      string       //
