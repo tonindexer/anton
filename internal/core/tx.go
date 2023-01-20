@@ -9,7 +9,7 @@ import (
 )
 
 type Transaction struct {
-	ch.CHModel `ch:"transactions,partition:account_addr"`
+	ch.CHModel `ch:"transactions,partition:account_addr,round(created_at,-5)"`
 
 	Hash        []byte `ch:",pk"`
 	AccountAddr string `ch:",pk"`
@@ -41,7 +41,7 @@ const (
 )
 
 type Message struct {
-	ch.CHModel `ch:"messages,partition:type,src_addr,dst_addr,round(amount,-9)"`
+	ch.CHModel `ch:"messages,partition:type,tx_account_addr,round(amount,-9),round(created_at,-5)"`
 
 	Type MessageType `ch:",lc"` // TODO: enum
 
@@ -49,7 +49,7 @@ type Message struct {
 	TxAccountAddr string `ch:",pk"` // TODO: not needed, as we have incoming flag
 	SourceTxHash  []byte `ch:",pk"` // match in_msg with out_msg by body_hash
 
-	Incoming bool   //
+	Incoming bool   `ch:",pk"`
 	SrcAddr  string `ch:",pk"`
 	DstAddr  string `ch:",pk"`
 

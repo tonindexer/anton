@@ -18,7 +18,7 @@ type MasterBlockInfo struct {
 }
 
 type ShardBlockInfo struct {
-	ch.CHModel `ch:"shards_block_info,partition:shard"`
+	ch.CHModel `ch:"shards_block_info,partition:workchain,shard"`
 
 	Workchain      int32  `ch:",pk"`
 	Shard          int64  `ch:",pk"`

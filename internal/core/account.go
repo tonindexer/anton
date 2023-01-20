@@ -17,7 +17,7 @@ const (
 )
 
 type Account struct {
-	ch.CHModel `ch:"accounts,partition:status,address,types,round(balance,-9),last_tx_lt"`
+	ch.CHModel `ch:"accounts,partition:status,address,types,round(balance,-9)"`
 
 	Types []string `ch:",lc"` // TODO: ContractType here, go-ch bug
 
