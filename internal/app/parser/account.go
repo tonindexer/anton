@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/wallet"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/iam047801/tonidx/internal/core"
 )
@@ -33,6 +35,17 @@ func (s *Service) ContractInterfaces(ctx context.Context, acc *tlb.Account) ([]c
 				return nil, errors.Wrap(err, "parse contract interface address")
 			}
 			if acc.State != nil && addr.String() == acc.State.Address.String() {
+				ret = append(ret, iface.Name)
+			}
+			continue
+		}
+
+		if iface.Code != nil {
+			code, err := cell.FromBOC(iface.Code)
+			if err != nil {
+				return nil, errors.Wrap(err, "parse contract interface code")
+			}
+			if acc.Code != nil && bytes.Equal(acc.Code.Hash(), code.Hash()) {
 				ret = append(ret, iface.Name)
 			}
 			continue
