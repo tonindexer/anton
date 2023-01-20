@@ -34,14 +34,9 @@ func NewService(ctx context.Context, cfg *app.ParserConfig) (*Service, error) {
 	s.txRepo = tx.NewRepository(s.db)
 	s.accountRepo = account.NewRepository(s.db)
 
-	nodes := mainnetArchive
-	if cfg.Testnet {
-		nodes = testnetArchive
-	}
-
 	client := liteclient.NewConnectionPool()
-	for _, n := range nodes {
-		if err := client.AddConnection(ctx, n.addr, n.key); err != nil {
+	for _, n := range cfg.Servers {
+		if err := client.AddConnection(ctx, n.IPPort, n.PubKeyB64); err != nil {
 			return nil, errors.Wrap(err, "cannot add connection")
 		}
 	}

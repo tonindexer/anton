@@ -11,9 +11,14 @@ import (
 	"github.com/iam047801/tonidx/internal/core"
 )
 
+type ServerAddr struct {
+	IPPort    string
+	PubKeyB64 string
+}
+
 type ParserConfig struct {
 	DB      *ch.DB
-	Testnet bool
+	Servers []ServerAddr
 }
 
 type ParserService interface {

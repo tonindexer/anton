@@ -12,9 +12,10 @@ RUN go mod download
 # copy application code
 COPY internal /go/src/github.com/iam047801/tonidx/internal
 COPY cmd /go/src/github.com/iam047801/tonidx/cmd
+COPY main.go /go/src/github.com/iam047801/tonidx
 
 # compile application
-RUN go build -o /tonidx /go/src/github.com/iam047801/tonidx/cmd
+RUN go build -o /tonidx /go/src/github.com/iam047801/tonidx
 
 
 # application

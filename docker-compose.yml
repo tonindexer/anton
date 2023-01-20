@@ -11,6 +11,7 @@ services:
     environment:
       DB_URL: "clickhouse://clickhouse:9000/${DB_NAME}?sslmode=disable"
       FROM_BLOCK: ${FROM_BLOCK}
+      LITESERVERS: ${LITESERVERS}
   clickhouse:
     image: "yandex/clickhouse-server"
     networks:
