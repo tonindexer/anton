@@ -149,11 +149,8 @@ func (s *Service) getMsgSourceHash(ctx context.Context, in *core.Message, outMsg
 
 	sourceMsg, err := s.txRepo.GetMessageByHash(ctx, in.BodyHash) // TODO: batch request (?)
 	if err != nil {
-		// TODO: error
-		// parse incoming message (tx_hash = b1d2d32a650b3a39fea2526f5247f00bed961a98bec9befb565f68a54883336f)
-		// get source message by hash (msg_hash = dbe1c797d6d2d914c463173b1da531103d2efe747471212d1fad170fcf0c75d2)
-		// master_seq: 23516077
-		return nil, errors.Wrapf(err, "get source msg (hash = %x)", in.BodyHash)
+		log.Error().Err(err).Hex("tx_hash", in.TxHash).Hex("body_hash", in.BodyHash).Msg("get source msg")
+		return nil, errors.Wrap(core.ErrNotAvailable, err.Error()) // TODO: fail on this err
 	}
 
 	return sourceMsg.TxHash, nil
