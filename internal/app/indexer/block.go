@@ -42,7 +42,8 @@ func (s *Service) processShardTransactions(ctx context.Context, master, shard *t
 
 		data, err := s.parser.ParseAccountData(ctx, master, acc)
 		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
-			return errors.Wrapf(err, "parse account data (addr = %s)", tx.AccountAddr)
+			log.Error().Err(err).Str("addr", tx.AccountAddr).Msg("parse account data")
+			continue
 		}
 		if err == nil {
 			accountsData = append(accountsData, data)
@@ -71,7 +72,8 @@ func (s *Service) processShardTransactions(ctx context.Context, master, shard *t
 			continue
 		}
 		if err != nil {
-			return errors.Wrapf(err, "parse message payload (msg_hash = %x, tx_hash = %x)", msg.BodyHash, msg.TxHash)
+			log.Error().Err(err).Hex("msg_hash", msg.BodyHash).Hex("tx_hash", msg.TxHash).Msg("parse message payload")
+			continue
 		}
 		payloads = append(payloads, payload)
 	}
