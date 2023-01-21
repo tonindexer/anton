@@ -14,13 +14,43 @@ import (
 	"github.com/iam047801/tonidx/internal/core"
 )
 
+func (s *Service) parseMessagePayloads(ctx context.Context, messages []*core.Message, accountMap map[string]*core.Account) (ret []*core.MessagePayload) {
+	for _, msg := range messages {
+		if msg.Type != core.Internal {
+			continue // TODO: external message parsing (?)
+		}
+
+		src, ok := accountMap[msg.SrcAddr]
+		if !ok {
+			log.Debug().Str("src_addr", msg.SrcAddr).Msg("cannot find src account")
+			continue
+		}
+		dst, ok := accountMap[msg.DstAddr]
+		if !ok {
+			log.Debug().Str("src_addr", msg.SrcAddr).Msg("cannot find src account")
+			continue
+		}
+
+		payload, err := s.parser.ParseMessagePayload(ctx, src, dst, msg)
+		if errors.Is(err, core.ErrNotAvailable) {
+			continue
+		}
+		if err != nil {
+			log.Error().Err(err).Hex("msg_hash", msg.BodyHash).Hex("tx_hash", msg.TxHash).Msg("parse message payload")
+			continue
+		}
+		ret = append(ret, payload)
+	}
+
+	return ret
+}
+
 //nolint // TODO: simplify this
 func (s *Service) processShardTransactions(ctx context.Context, master, shard *tlb.BlockInfo, blockTransactions []*tlb.Transaction) error {
 	var (
 		accounts     []*core.Account
 		accountMap   = make(map[string]*core.Account)
 		accountsData []*core.AccountData
-		payloads     []*core.MessagePayload
 	)
 
 	transactions, err := s.parser.ParseBlockTransactions(ctx, shard, blockTransactions)
@@ -55,28 +85,7 @@ func (s *Service) processShardTransactions(ctx context.Context, master, shard *t
 		return errors.Wrap(err, "parse block messages")
 	}
 
-	for _, msg := range messages {
-		if msg.Type != core.Internal {
-			continue
-		}
-		src, ok := accountMap[msg.SrcAddr]
-		if !ok {
-			return fmt.Errorf("cannot find src account (addr = %s)", msg.SrcAddr)
-		}
-		dst, ok := accountMap[msg.DstAddr]
-		if !ok {
-			return fmt.Errorf("cannot find dst account (addr = %s)", msg.DstAddr)
-		}
-		payload, err := s.parser.ParseMessagePayload(ctx, src, dst, msg)
-		if errors.Is(err, core.ErrNotAvailable) {
-			continue
-		}
-		if err != nil {
-			log.Error().Err(err).Hex("msg_hash", msg.BodyHash).Hex("tx_hash", msg.TxHash).Msg("parse message payload")
-			continue
-		}
-		payloads = append(payloads, payload)
-	}
+	payloads := s.parseMessagePayloads(ctx, messages, accountMap)
 
 	// TODO: do not insert duplicated accounts and account data
 	if err := s.accountRepo.AddAccounts(ctx, accounts); err != nil {
