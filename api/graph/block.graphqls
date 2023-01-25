@@ -1,0 +1,33 @@
+type BlockID {
+    workchain: Int!
+    shard: Int!
+    seqNo: Int!
+}
+
+type BlockInfo {
+    id: BlockID
+
+    rootHash: String!
+    fileHash: String!
+
+    shardBlocks: [BlockID] # on master block
+    masterBlock: BlockID   # on shard block
+
+    transactions: [Transaction]
+}
+
+input BlockIDFilter {
+    workchain: Int!
+    shard: Int!
+    seqNo: Int!
+}
+
+input BlockFilter {
+    id: BlockIDFilter
+    fileHash: String
+}
+
+type BlockQuery {
+    masterChainBlocks(offset: Int, limit: Int!): BlockInfo!
+    searchBlock(filter: BlockFilter): BlockInfo
+}

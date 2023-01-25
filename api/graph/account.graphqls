@@ -1,0 +1,87 @@
+enum AccountStatus {
+    ACTIVE
+    UNINIT
+    FROZEN
+    NON_EXIST
+}
+
+type Account {
+    address: String!
+
+    isActive: Boolean!
+    status: AccountStatus!
+
+    balance: Int
+
+    lastTxLT: Int
+    lastTxHash: String
+
+    stateHash: String
+
+    code: String
+    codeHash: String
+    data: String
+    dataHash: String
+
+    contractTypes: [String]
+}
+
+input AccountFilter {
+    address: String
+
+    lastTxLT: Int
+    lastTxHash: String
+
+    # set this flag as true, if you want to filter out old account states
+    latestState: Boolean
+
+    status: AccountStatus
+
+    contractTypes: [String]
+}
+
+type AccountAggregation {
+    count: Int
+
+    addressUniqCount: Int
+
+    balanceMin: Int
+    balanceMax: Int
+    balanceSum: Int
+}
+
+interface ContractData {
+    address: String!
+    lastTxLT: Int!
+    lastTxHash: String!
+}
+
+input ContractDataFilter {
+    address: String
+
+    lastTxLT: Int
+    lastTxHash: String
+
+    latestState: Boolean
+
+    contractTypes: [String]!
+
+    # search nft items or collections by its owner
+    ownerAddress: String
+    # search nft items or collections by its editor
+    editorAddress: String
+    # search nft items by collection address
+    collectionAddress: String
+}
+
+union ContractDataAggregation =
+    NFTCollectionDataAggregate | NFTCollectionRoyaltyDataAggregate |
+    NFTItemDataAggregate | NFTEditorDataAggregate
+
+type AccountQuery {
+    searchAccountState(filter: AccountFilter, offset: Int, limit: Int): [Account]
+    aggregateAccountStates(filter: AccountFilter): AccountAggregation
+
+    searchContractData(filter: ContractDataFilter, offset: Int, limit: Int): [ContractData]
+    aggregateContractData(filter: ContractDataFilter): ContractDataAggregation
+}

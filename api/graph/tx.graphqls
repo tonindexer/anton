@@ -1,0 +1,91 @@
+type Transaction {
+    block: BlockInfo
+
+    address: String!
+
+    hash: String!
+
+    prevTxHash: String!
+    prevTxLT: String!
+
+    inMsg: Message
+    outMsg: [Message]
+
+    totalFees: Int
+
+    stateUpdate: String
+    description: String
+
+    origStatus: AccountStatus
+    endStatus: AccountStatus
+
+    createdAt: Int!
+    createdLT: Int!
+}
+
+input TransactionAddressFilter {
+    address: String!
+    beforeLT: Int
+    limit: Int!
+}
+
+input TransactionFilter {
+    block: BlockIDFilter
+
+    address: TransactionAddressFilter
+
+    hash: String
+}
+
+input TransactionAggregate {
+    count: Int
+}
+
+enum MessageType {
+    INTERNAL
+    EXTERNAL_IN
+    EXTERNAL_OUT
+}
+
+type Message {
+    msgType: MessageType
+
+    incoming: Boolean!
+    txAddress: String!
+    txHash: String!
+    sourceTxHash: String!
+
+    srcAddress: String
+    dstAddress: String
+
+    bounce: Boolean!
+    bounced: Boolean!
+
+    amount: Int!
+
+    ihrDisabled: Boolean!
+    ihrFee: Int
+    fwdFee: Int
+
+    body: String
+    bodyHash: String
+
+    payload: MessagePayload
+
+    createdAt: Int!
+    createdLT: Int!
+}
+
+type MessagePayload {
+    srcContractType: String
+    dstContractType: String
+
+    operationID: Int
+    operationName: String
+
+    dataJSON: String
+}
+
+type TransactionQuery {
+    searchTransaction(filter: TransactionFilter): [Transaction]
+}

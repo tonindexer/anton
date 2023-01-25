@@ -1,0 +1,9 @@
+schema {
+    query: Query
+}
+
+type Query {
+    block: BlockQuery
+    transaction: TransactionQuery
+    account: AccountQuery
+}

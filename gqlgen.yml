@@ -1,0 +1,32 @@
+schema:
+  - api/graph/*.graphqls
+
+exec:
+  filename: internal/transport/graphql/generated/generated.go
+  package: generated
+
+model:
+  filename: internal/transport/graphql/generated/models_gen.go
+  package: generated
+
+resolver:
+  layout: follow-schema
+  dir: internal/transport/graphql/resolver/
+  package: resolver
+  filename_template: "{name}.resolvers.go"
+
+autobind:
+  - "github.com/iam047801/tonidx/internal/core"
+
+models:
+  Int:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int
+      - github.com/99designs/gqlgen/graphql.Int64
+      - github.com/99designs/gqlgen/graphql.Int32
+  Uint64:
+    model:
+      - github.com/99designs/gqlgen/graphql.Uint64
+  Timestamp:
+    model:
+      - github.com/99designs/gqlgen/graphql.Time
