@@ -41,14 +41,14 @@ func blockRepo(t *testing.T) *Repository {
 }
 
 func TestBlockRepository_AddMasterBlock(t *testing.T) {
-	mb := &core.MasterBlockInfo{
+	mb := &core.BlockInfo{
 		Workchain: -1,
 		Shard:     1,
 		SeqNo:     12,
 		RootHash:  core.RandBytes(),
 		FileHash:  core.RandBytes(),
 	}
-	mb2 := &core.MasterBlockInfo{
+	mb2 := &core.BlockInfo{
 		Workchain: -1,
 		Shard:     1,
 		SeqNo:     13,
@@ -56,10 +56,10 @@ func TestBlockRepository_AddMasterBlock(t *testing.T) {
 		FileHash:  core.RandBytes(),
 	}
 
-	if err := blockRepo(t).AddMasterBlockInfo(ctx, mb); err != nil {
+	if err := blockRepo(t).AddBlocksInfo(ctx, []*core.BlockInfo{mb}); err != nil {
 		t.Fatal(err)
 	}
-	if err := blockRepo(t).AddMasterBlockInfo(ctx, mb2); err != nil {
+	if err := blockRepo(t).AddBlocksInfo(ctx, []*core.BlockInfo{mb2}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -79,7 +79,7 @@ func TestBlockRepository_AddMasterBlock(t *testing.T) {
 		t.Fatalf("different masterchain blocks, expected: %+v, got: %+v", mb2, got)
 	}
 
-	if err := blockRepo(t).AddMasterBlockInfo(ctx, mb); err != nil {
+	if err := blockRepo(t).AddBlocksInfo(ctx, []*core.BlockInfo{mb}); err != nil {
 		t.Fatal(err)
 	}
 }

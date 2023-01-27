@@ -23,11 +23,9 @@ input BlockIDFilter {
 }
 
 input BlockFilter {
-    id: BlockIDFilter
-    fileHash: String
-}
+    workchain: Int
 
-type BlockQuery {
-    masterChainBlocks(offset: Int, limit: Int!): BlockInfo!
-    searchBlock(filter: BlockFilter): BlockInfo
+    id: BlockIDFilter
+
+    fileHash: String
 }

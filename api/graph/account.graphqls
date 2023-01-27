@@ -11,9 +11,9 @@ type Account {
     isActive: Boolean!
     status: AccountStatus!
 
-    balance: Int
+    balance: Uint64
 
-    lastTxLT: Int
+    lastTxLT: Uint64
     lastTxHash: String
 
     stateHash: String
@@ -29,7 +29,7 @@ type Account {
 input AccountFilter {
     address: String
 
-    lastTxLT: Int
+    lastTxLT: Uint64
     lastTxHash: String
 
     # set this flag as true, if you want to filter out old account states
@@ -45,21 +45,21 @@ type AccountAggregation {
 
     addressUniqCount: Int
 
-    balanceMin: Int
-    balanceMax: Int
-    balanceSum: Int
+    balanceMin: Uint64
+    balanceMax: Uint64
+    balanceSum: Uint64
 }
 
-interface ContractData {
+interface AccountData {
     address: String!
-    lastTxLT: Int!
+    lastTxLT: Uint64!
     lastTxHash: String!
 }
 
-input ContractDataFilter {
+input AccountDataFilter {
     address: String
 
-    lastTxLT: Int
+    lastTxLT: Uint64
     lastTxHash: String
 
     latestState: Boolean
@@ -74,14 +74,5 @@ input ContractDataFilter {
     collectionAddress: String
 }
 
-union ContractDataAggregation =
-    NFTCollectionDataAggregate | NFTCollectionRoyaltyDataAggregate |
-    NFTItemDataAggregate | NFTEditorDataAggregate
-
-type AccountQuery {
-    searchAccountState(filter: AccountFilter, offset: Int, limit: Int): [Account]
-    aggregateAccountStates(filter: AccountFilter): AccountAggregation
-
-    searchContractData(filter: ContractDataFilter, offset: Int, limit: Int): [ContractData]
-    aggregateContractData(filter: ContractDataFilter): ContractDataAggregation
-}
+union AccountDataAggregation =
+    NFTCollectionDataAggregate | NFTItemDataAggregate

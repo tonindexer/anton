@@ -9,16 +9,20 @@ import (
 )
 
 type Transaction struct {
-	ch.CHModel `ch:"transactions,partition:account_addr,round(created_at,-5)"`
+	ch.CHModel `ch:"transactions,partition:block_workchain,block_shard,round(block_seq_no,-5),toYYYYMMDD(toDateTime(created_at))"`
 
-	Hash        []byte `ch:",pk"`
-	AccountAddr string `ch:",pk"`
+	Address string `ch:",pk"`
+	Hash    []byte `ch:",pk"`
+
+	BlockWorkchain int32  //
+	BlockShard     int64  //
+	BlockSeqNo     uint32 //
 
 	PrevTxHash []byte //
 	PrevTxLT   uint64 //
 
-	InMsgHash    []byte   `ch:",pk"`
-	OutMsgHashes [][]byte //
+	InMsgBodyHash    []byte   //
+	OutMsgBodyHashes [][]byte //
 
 	TotalFees uint64 // `ch:"type:UInt256"`
 
@@ -28,8 +32,8 @@ type Transaction struct {
 	OrigStatus AccountStatus `ch:",lc"`
 	EndStatus  AccountStatus `ch:",lc"`
 
-	CreatedLT uint64 `ch:",pk"`
-	CreatedAT uint64 `ch:",pk"`
+	CreatedAT uint64 //
+	CreatedLT uint64 //
 }
 
 type MessageType string
@@ -41,17 +45,18 @@ const (
 )
 
 type Message struct {
-	ch.CHModel `ch:"messages,partition:type,tx_account_addr,round(amount,-9),round(created_at,-5)"`
+	ch.CHModel `ch:"messages,partition:type,incoming,toYYYYMMDD(toDateTime(created_at))"`
 
 	Type MessageType `ch:",lc"` // TODO: enum
 
-	TxHash        []byte `ch:",pk"`
-	TxAccountAddr string `ch:",pk"` // TODO: not needed, as we have incoming flag
-	SourceTxHash  []byte `ch:",pk"` // match in_msg with out_msg by body_hash
+	Incoming     bool   `ch:",pk"`
+	TxAddress    string `ch:",pk"`
+	TxHash       []byte `ch:",pk"`
+	SourceTxHash []byte //
 
-	Incoming bool   `ch:",pk"`
-	SrcAddr  string `ch:",pk"`
-	DstAddr  string `ch:",pk"`
+	SrcAddress string //
+	DstAddress string //
+	// TODO: addr contract types
 
 	Bounce  bool //
 	Bounced bool //
@@ -70,8 +75,8 @@ type Message struct {
 	StateInitCode []byte //
 	StateInitData []byte //
 
-	CreatedLT uint64 `ch:",pk"`
-	CreatedAt uint64 `ch:",pk"`
+	CreatedAt uint64 //
+	CreatedLT uint64 //
 }
 
 type ContractOperation struct {
@@ -86,17 +91,26 @@ type ContractOperation struct {
 }
 
 type MessagePayload struct {
-	ch.CHModel `ch:"message_payloads,partition:src_addr,src_contract,dst_addr,dst_contract,operation_id,operation_name"`
+	ch.CHModel `ch:"message_payloads,partition:incoming,src_contract,dst_contract,toYYYYMMDD(toDateTime(created_at))"`
 
-	TxHash        []byte       //
-	PayloadHash   []byte       `ch:",pk"`
-	SrcAddr       string       `ch:",pk,lc"`
-	SrcContract   ContractType `ch:",lc"`
-	DstAddr       string       `ch:",pk,lc"`
-	DstContract   ContractType `ch:",lc"`
-	OperationID   uint32       //
-	OperationName string       `ch:",lc"`
-	DataJSON      string       //
+	// Type MessageType `ch:",lc"` // TODO: not only incoming messages
+
+	Incoming    bool         `ch:",pk"`
+	TxAddress   string       `ch:",pk"`
+	TxHash      []byte       `ch:",pk"`
+	SrcAddress  string       //
+	SrcContract ContractType `ch:",lc"`
+	DstAddress  string       //
+	DstContract ContractType `ch:",lc"`
+
+	BodyHash []byte `ch:",pk"`
+
+	OperationID   uint32 //
+	OperationName string `ch:",lc"`
+	DataJSON      string //
+
+	CreatedAt uint64 //
+	CreatedLT uint64 //
 }
 
 type TxRepository interface {

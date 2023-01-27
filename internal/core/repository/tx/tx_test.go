@@ -48,8 +48,8 @@ func TestTxRepository_AddMessage(t *testing.T) {
 	inMsg := &core.Message{
 		TxHash:        txHash,
 		BodyHash:      core.RandBytes(),
-		SrcAddr:       from,
-		DstAddr:       addr,
+		SrcAddress:    from,
+		DstAddress:    addr,
 		Amount:        big.NewInt(1).Uint64(),
 		FwdFee:        big.NewInt(3).Uint64(),
 		CreatedLT:     4,
@@ -61,33 +61,33 @@ func TestTxRepository_AddMessage(t *testing.T) {
 	}
 
 	outMsg1 := &core.Message{
-		TxHash:    txHash,
-		BodyHash:  core.RandBytes(),
-		SrcAddr:   addr,
-		DstAddr:   to1,
-		Amount:    big.NewInt(1).Uint64(),
-		FwdFee:    big.NewInt(3).Uint64(),
-		CreatedLT: 4,
-		CreatedAt: 5,
-		Body:      []byte("b"),
+		TxHash:     txHash,
+		BodyHash:   core.RandBytes(),
+		SrcAddress: addr,
+		DstAddress: to1,
+		Amount:     big.NewInt(1).Uint64(),
+		FwdFee:     big.NewInt(3).Uint64(),
+		CreatedLT:  4,
+		CreatedAt:  5,
+		Body:       []byte("b"),
 	}
 	outMsg2 := &core.Message{
-		TxHash:    txHash,
-		BodyHash:  core.RandBytes(),
-		SrcAddr:   addr,
-		DstAddr:   to2,
-		Amount:    big.NewInt(1).Uint64(),
-		FwdFee:    big.NewInt(3).Uint64(),
-		CreatedLT: 5,
-		CreatedAt: 6,
-		Body:      []byte("b"),
+		TxHash:     txHash,
+		BodyHash:   core.RandBytes(),
+		SrcAddress: addr,
+		DstAddress: to2,
+		Amount:     big.NewInt(1).Uint64(),
+		FwdFee:     big.NewInt(3).Uint64(),
+		CreatedLT:  5,
+		CreatedAt:  6,
+		Body:       []byte("b"),
 	}
 
 	tx := &core.Transaction{
-		AccountAddr: addr,
-		Hash:        txHash,
-		CreatedLT:   4,
-		TotalFees:   big.NewInt(3).Uint64(),
+		Address:   addr,
+		Hash:      txHash,
+		CreatedLT: 4,
+		TotalFees: big.NewInt(3).Uint64(),
 	}
 
 	if err := txRepo(t).AddMessages(ctx, []*core.Message{outMsg1, outMsg2}); err != nil {

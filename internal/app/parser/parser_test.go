@@ -28,8 +28,8 @@ func testService(t *testing.T) *Service {
 	}
 
 	server := app.ServerAddr{
-		IPPort:    "",
-		PubKeyB64: "",
+		IPPort:    "65.109.22.125:7556",
+		PubKeyB64: "uLPsI74JRZL0KLwCwVALxMXb+OcAm7rcS4dPF9T9S50=",
 	}
 	s, err := NewService(context.Background(), &app.ParserConfig{DB: conn, Servers: []*app.ServerAddr{&server}})
 	if err != nil {

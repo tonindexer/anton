@@ -1,8 +1,4 @@
 type NFTContentData {
-    address: String!
-    lastTxLT: Int!
-    lastTxHash: String!
-
     uri: String
     name: String
     description: String
@@ -10,14 +6,9 @@ type NFTContentData {
     imageData: String
 }
 
-type NFTContentDataAggregate {
-    uriUniq: [String]
-    uriUniqCount: [String]
-}
-
-type NFTCollectionData implements ContractData {
+type NFTCollectionData implements AccountData {
     address: String!
-    lastTxLT: Int!
+    lastTxLT: Uint64!
     lastTxHash: String!
 
     nextItemIndex: Int
@@ -28,13 +19,11 @@ type NFTCollectionData implements ContractData {
 type NFTCollectionDataAggregate {
     ownerAddressUniq: [String]
     ownerAddressUniqCount: Int
-
-    content: NFTContentDataAggregate
 }
 
-type NFTCollectionRoyaltyData implements ContractData {
+type NFTCollectionRoyaltyData implements AccountData {
     address: String!
-    lastTxLT: Int!
+    lastTxLT: Uint64!
     lastTxHash: String!
 
     royaltyAddress: String
@@ -42,14 +31,9 @@ type NFTCollectionRoyaltyData implements ContractData {
     factor: Int
 }
 
-type NFTCollectionRoyaltyDataAggregate {
-    royaltyAddressUniq: [String]
-    royaltyAddressUniqCount: Int
-}
-
-type NFTItemData implements ContractData {
+type NFTItemData implements AccountData {
     address: String!
-    lastTxLT: Int!
+    lastTxLT: Uint64!
     lastTxHash: String!
 
     ownerAddress: String
@@ -65,19 +49,12 @@ type NFTItemDataAggregate {
 
     collectionAddressUniq: [String]
     collectionAddressUniqCount: Int
-
-    content: NFTContentDataAggregate
 }
 
-type NFTEditorData implements ContractData {
+type NFTEditorData implements AccountData {
     address: String!
-    lastTxLT: Int!
+    lastTxLT: Uint64!
     lastTxHash: String!
 
     editorAddress: String
-}
-
-type NFTEditorDataAggregate {
-    editorAddressUniq: [String]
-    editorAddressUniqCount: Int
 }

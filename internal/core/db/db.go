@@ -30,16 +30,7 @@ func CreateTables(ctx context.Context, db *ch.DB) error {
 	_, err := db.NewCreateTable().
 		IfNotExists().
 		Engine("ReplacingMergeTree").
-		Model(&core.MasterBlockInfo{}).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.ShardBlockInfo{}).
+		Model(&core.BlockInfo{}).
 		Exec(ctx)
 	if err != nil {
 		return err

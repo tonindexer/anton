@@ -17,29 +17,29 @@ const (
 )
 
 type Account struct {
-	ch.CHModel `ch:"accounts,partition:status,address,types,round(balance,-9)"`
+	ch.CHModel `ch:"accounts,partition:types,is_active,status"`
 
 	Types []string `ch:",lc"` // TODO: ContractType here, go-ch bug
 
-	Address   string        `ch:",pk"`
-	IsActive  bool          //
-	Status    AccountStatus `ch:",lc"` // TODO: enum
-	Balance   uint64        // TODO: uint256
-	StateHash []byte        //
+	Address  string        `ch:",pk"`
+	IsActive bool          //
+	Status   AccountStatus `ch:",lc"` // TODO: enum
+	Balance  uint64        // TODO: uint256
 
-	Data     []byte //
-	DataHash []byte `ch:",pk"`
-	Code     []byte //
-	CodeHash []byte `ch:",pk"`
+	LastTxLT   uint64 `ch:",pk"`
+	LastTxHash []byte `ch:",pk"`
+
+	StateHash []byte `ch:",pk"`
+	Code      []byte //
+	CodeHash  []byte //
+	Data      []byte //
+	DataHash  []byte //
 
 	// TODO: do we need it?
 	Depth uint64 //
 	Tick  bool   //
 	Tock  bool   //
 	Lib   []byte
-
-	LastTxLT   uint64 //
-	LastTxHash []byte //
 }
 
 type ContractType string
@@ -65,10 +65,12 @@ type ContractInterface struct {
 type AccountData struct {
 	ch.CHModel `ch:"account_data,partition:types"`
 
-	Address  string   `ch:",pk"`
-	DataHash []byte   `ch:",pk"`
-	Types    []string `ch:",lc"` // TODO: ContractType here, ch bug
-	// GetMethodError string
+	Types []string `ch:",lc"` // TODO: ContractType here, ch bug
+
+	Address    string `ch:",pk"`
+	LastTxLT   uint64 `ch:",pk"`
+	LastTxHash []byte `ch:",pk"`
+	StateHash  []byte `ch:",pk"`
 
 	// nft collection
 	NextItemIndex      uint64

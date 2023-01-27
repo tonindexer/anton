@@ -129,7 +129,9 @@ func (s *Service) ParseAccountData(ctx context.Context, master *tlb.BlockInfo, a
 
 	data := new(core.AccountData)
 	data.Address = acc.Address
-	data.DataHash = acc.DataHash
+	data.LastTxLT = acc.LastTxLT
+	data.LastTxHash = acc.LastTxHash
+	data.StateHash = acc.StateHash
 
 	for _, t := range acc.Types {
 		switch t {

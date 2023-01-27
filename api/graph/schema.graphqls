@@ -1,9 +1,20 @@
+scalar Time
+
+scalar Uint32
+scalar Uint64
+
 schema {
     query: Query
 }
 
 type Query {
-    block: BlockQuery
-    transaction: TransactionQuery
-    account: AccountQuery
+    searchBlock(filter: BlockFilter, offset: Int, limit: Int!): BlockInfo
+
+    searchAccountState(filter: AccountFilter, offset: Int, limit: Int): [Account]
+    aggregateAccountStates(filter: AccountFilter): AccountAggregation
+
+    searchAccountData(filter: AccountDataFilter, offset: Int, limit: Int): [AccountData]
+    aggregateAccountData(filter: AccountDataFilter): AccountDataAggregation
+
+    searchTransaction(filter: TransactionFilter): [Transaction]
 }

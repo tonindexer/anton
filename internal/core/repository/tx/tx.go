@@ -81,7 +81,7 @@ func (r *Repository) GetInMessageByTxHash(ctx context.Context, txHash []byte) (*
 
 	err = r.db.NewSelect().Model(ret).
 		Where(fmt.Sprintf("tx_hash = '%s'", txHash)).
-		Where(fmt.Sprintf("dst_addr = '%s'", tx.AccountAddr)).
+		Where(fmt.Sprintf("dst_addr = '%s'", tx.Address)).
 		Scan(ctx)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (r *Repository) GetOutMessagesByTxHash(ctx context.Context, txHash []byte) 
 
 	err = r.db.NewSelect().Model(ret).
 		Where(fmt.Sprintf("tx_hash = '%s'", txHash)).
-		Where(fmt.Sprintf("src_addr = '%s'", tx.AccountAddr)).
+		Where(fmt.Sprintf("src_addr = '%s'", tx.Address)).
 		Order("created_lt ASC").
 		Scan(ctx)
 	if err != nil {

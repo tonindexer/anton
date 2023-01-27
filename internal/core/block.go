@@ -6,32 +6,28 @@ import (
 	"github.com/uptrace/go-clickhouse/ch"
 )
 
-type MasterBlockInfo struct {
-	ch.CHModel `ch:"master_block_info"`
-
-	Workchain       int32  `ch:",pk"`
-	Shard           int64  `ch:",pk"`
-	SeqNo           uint32 `ch:",pk"`
-	RootHash        []byte `ch:",pk"`
-	FileHash        []byte `ch:",pk"`
-	ShardFileHashes [][]byte
+type BlockID struct {
+	Workchain int32
+	Shard     int64
+	SeqNo     uint32
 }
 
-type ShardBlockInfo struct {
-	ch.CHModel `ch:"shards_block_info,partition:workchain,shard"`
+type BlockInfo struct {
+	ch.CHModel `ch:"block_info,partition:workchain,shard"`
 
-	Workchain      int32  `ch:",pk"`
-	Shard          int64  `ch:",pk"`
-	SeqNo          uint32 `ch:",pk"`
-	RootHash       []byte `ch:",pk"`
-	FileHash       []byte `ch:",pk"`
-	MasterFileHash []byte `ch:",pk"`
+	Workchain     int32  `ch:",pk"`
+	Shard         int64  `ch:",pk"`
+	SeqNo         uint32 `ch:",pk"`
+	FileHash      []byte `ch:",pk"`
+	RootHash      []byte `ch:",pk"`
+	MasterBlockID *BlockID
+	ShardBlockIDs []*BlockID
 }
 
 // TODO: block data
 
 type BlockRepository interface {
-	AddMasterBlockInfo(ctx context.Context, info *MasterBlockInfo) error
-	GetLastMasterBlockInfo(ctx context.Context) (*MasterBlockInfo, error)
-	AddShardBlocksInfo(ctx context.Context, info []*ShardBlockInfo) error
+	GetLastMasterBlockInfo(ctx context.Context) (*BlockInfo, error)
+
+	AddBlocksInfo(ctx context.Context, info []*BlockInfo) error
 }

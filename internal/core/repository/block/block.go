@@ -20,19 +20,11 @@ func NewRepository(db *ch.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) AddMasterBlockInfo(ctx context.Context, info *core.MasterBlockInfo) error {
-	_, err := r.db.NewInsert().Model(info).Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *Repository) GetLastMasterBlockInfo(ctx context.Context) (*core.MasterBlockInfo, error) {
-	ret := new(core.MasterBlockInfo)
+func (r *Repository) GetLastMasterBlockInfo(ctx context.Context) (*core.BlockInfo, error) {
+	ret := new(core.BlockInfo)
 
 	err := r.db.NewSelect().Model(ret).
+		Where("workchain = ?", -1).
 		Order("seq_no DESC").
 		Limit(1).
 		Scan(ctx)
@@ -46,7 +38,7 @@ func (r *Repository) GetLastMasterBlockInfo(ctx context.Context) (*core.MasterBl
 	return ret, nil
 }
 
-func (r *Repository) AddShardBlocksInfo(ctx context.Context, info []*core.ShardBlockInfo) error {
+func (r *Repository) AddBlocksInfo(ctx context.Context, info []*core.BlockInfo) error {
 	for _, b := range info {
 		_, err := r.db.NewInsert().Model(b).Exec(ctx)
 		if err != nil {

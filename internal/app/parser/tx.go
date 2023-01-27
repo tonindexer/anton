@@ -18,14 +18,18 @@ func (s *Service) parseTransaction(_ context.Context, b *tlb.BlockInfo, raw *tlb
 	addr := address.NewAddress(0, byte(b.Workchain), raw.AccountAddr)
 
 	tx := &core.Transaction{
-		Hash:        raw.Hash,
-		AccountAddr: addr.String(),
+		Hash:    raw.Hash,
+		Address: addr.String(),
+
+		BlockWorkchain: b.Workchain,
+		BlockShard:     b.Shard,
+		BlockSeqNo:     b.SeqNo,
 
 		PrevTxHash: raw.PrevTxHash,
 		PrevTxLT:   raw.PrevTxLT,
 
-		InMsgHash:    raw.IO.In.Msg.Payload().Hash(),
-		OutMsgHashes: nil,
+		InMsgBodyHash:    raw.IO.In.Msg.Payload().Hash(),
+		OutMsgBodyHashes: nil,
 
 		TotalFees: raw.TotalFees.Coins.NanoTON().Uint64(),
 
@@ -36,7 +40,7 @@ func (s *Service) parseTransaction(_ context.Context, b *tlb.BlockInfo, raw *tlb
 		CreatedAT: uint64(raw.Now),
 	}
 	for _, out := range raw.IO.Out {
-		tx.OutMsgHashes = append(tx.OutMsgHashes, out.Msg.Payload().Hash())
+		tx.OutMsgBodyHashes = append(tx.OutMsgBodyHashes, out.Msg.Payload().Hash())
 	}
 	if raw.StateUpdate != nil {
 		tx.StateUpdate = raw.StateUpdate.ToBOC()
@@ -59,18 +63,16 @@ func (s *Service) ParseBlockTransactions(ctx context.Context, b *tlb.BlockInfo, 
 	return transactions, nil
 }
 
-func (s *Service) parseMessage(incoming bool, txHash []byte, message *tlb.Message) *core.Message {
+func (s *Service) parseMessage(incoming bool, tx *tlb.Transaction, message *tlb.Message) *core.Message {
 	msg := new(core.Message)
 
 	switch raw := message.Msg.(type) {
 	case *tlb.InternalMessage:
 		msg.Type = core.Internal
 
-		msg.TxHash = txHash
-
 		msg.Incoming = incoming
-		msg.SrcAddr = raw.SrcAddr.String()
-		msg.DstAddr = raw.DstAddr.String()
+		msg.SrcAddress = raw.SrcAddr.String()
+		msg.DstAddress = raw.DstAddr.String()
 
 		msg.Bounce = raw.Bounce
 		msg.Bounced = raw.Bounced
@@ -95,10 +97,8 @@ func (s *Service) parseMessage(incoming bool, txHash []byte, message *tlb.Messag
 	case *tlb.ExternalMessage:
 		msg.Type = core.ExternalIn
 
-		msg.TxHash = txHash
-
 		msg.Incoming = true
-		msg.DstAddr = raw.DstAddr.String()
+		msg.DstAddress = raw.DstAddr.String()
 
 		if raw.StateInit != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
@@ -108,13 +108,14 @@ func (s *Service) parseMessage(incoming bool, txHash []byte, message *tlb.Messag
 		msg.Body = raw.Body.ToBOC()
 		msg.BodyHash = raw.Body.Hash()
 
+		msg.CreatedLT = tx.LT
+		msg.CreatedAt = uint64(tx.Now)
+
 	case *tlb.ExternalMessageOut:
 		msg.Type = core.ExternalOut
 
-		msg.TxHash = txHash
-
 		msg.Incoming = false
-		msg.SrcAddr = raw.SrcAddr.String()
+		msg.SrcAddress = raw.SrcAddr.String()
 
 		msg.CreatedLT = raw.CreatedLT
 		msg.CreatedAt = uint64(raw.CreatedAt)
@@ -129,10 +130,11 @@ func (s *Service) parseMessage(incoming bool, txHash []byte, message *tlb.Messag
 	}
 
 	if msg.Incoming {
-		msg.TxAccountAddr = msg.DstAddr
+		msg.TxAddress = msg.DstAddress
 	} else {
-		msg.TxAccountAddr = msg.SrcAddr
+		msg.TxAddress = msg.SrcAddress
 	}
+	msg.TxHash = tx.Hash
 
 	return msg
 }
@@ -147,6 +149,7 @@ func (s *Service) getMsgSourceHash(ctx context.Context, in *core.Message, outMsg
 		return out.TxHash, nil
 	}
 
+	// TODO: that's totally wrong, it's possible to match message only by source tx hash
 	sourceMsg, err := s.txRepo.GetMessageByHash(ctx, in.BodyHash) // TODO: batch request (?)
 	if err != nil {
 		log.Error().Err(err).Hex("tx_hash", in.TxHash).Hex("body_hash", in.BodyHash).Msg("get source msg")
@@ -185,7 +188,7 @@ func (s *Service) ParseBlockMessages(ctx context.Context, _ *tlb.BlockInfo, bloc
 
 	for _, tx := range blockTx {
 		for _, outMsg := range tx.IO.Out {
-			msg := s.parseMessage(false, tx.Hash, outMsg)
+			msg := s.parseMessage(false, tx, outMsg)
 			if err = s.parseOperation(msg); err != nil {
 				return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 			}
@@ -198,7 +201,7 @@ func (s *Service) ParseBlockMessages(ctx context.Context, _ *tlb.BlockInfo, bloc
 		if tx.IO.In == nil {
 			continue
 		}
-		msg := s.parseMessage(true, tx.Hash, tx.IO.In)
+		msg := s.parseMessage(true, tx, tx.IO.In)
 		msg.SourceTxHash, err = s.getMsgSourceHash(ctx, msg, outMsgMap)
 		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
 			if !errors.Is(err, core.ErrNotFound) {
@@ -220,7 +223,7 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.Account, m
 		return errors.Wrap(core.ErrNotAvailable, "no interfaces")
 	}
 
-	operation, err := s.accountRepo.GetContractOperationByID(ctx, acc, acc.Address == message.SrcAddr, message.OperationID)
+	operation, err := s.accountRepo.GetContractOperationByID(ctx, acc, acc.Address == message.SrcAddress, message.OperationID)
 	if errors.Is(err, core.ErrNotFound) {
 		return errors.Wrap(core.ErrNotAvailable, "unknown operation")
 	}
@@ -229,7 +232,7 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.Account, m
 	}
 	ret.OperationName = operation.Name
 
-	if acc.Address == message.SrcAddr {
+	if acc.Address == message.SrcAddress {
 		ret.SrcContract = operation.ContractName
 	} else {
 		ret.DstContract = operation.ContractName
@@ -261,9 +264,9 @@ func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.Accoun
 
 	ret := &core.MessagePayload{
 		TxHash:      message.TxHash,
-		PayloadHash: message.BodyHash,
-		SrcAddr:     message.SrcAddr,
-		DstAddr:     message.DstAddr,
+		BodyHash:    message.BodyHash,
+		SrcAddress:  message.SrcAddress,
+		DstAddress:  message.DstAddress,
 		OperationID: message.OperationID,
 	}
 	if len(message.Body) == 0 {

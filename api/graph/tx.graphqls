@@ -85,7 +85,3 @@ type MessagePayload {
 
     dataJSON: String
 }
-
-type TransactionQuery {
-    searchTransaction(filter: TransactionFilter): [Transaction]
-}

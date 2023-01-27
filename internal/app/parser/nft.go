@@ -60,9 +60,6 @@ func getEditorDataNFT(ret *core.AccountData, editor *address.Address) {
 
 //nolint // TODO: simplify account data parsing logic
 func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, acc *core.Account, ret *core.AccountData) error {
-	ret.Address = acc.Address
-	ret.DataHash = acc.DataHash
-
 	addr, err := address.ParseAddr(acc.Address)
 	if err != nil {
 		return errors.Wrap(err, "parse address")

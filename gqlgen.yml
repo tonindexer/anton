@@ -2,28 +2,37 @@ schema:
   - api/graph/*.graphqls
 
 exec:
-  filename: internal/transport/graphql/generated/generated.go
+  filename: internal/api/graphql/generated/generated.go
   package: generated
 
 model:
-  filename: internal/transport/graphql/generated/models_gen.go
+  filename: internal/api/graphql/generated/models_gen.go
   package: generated
 
 resolver:
   layout: follow-schema
-  dir: internal/transport/graphql/resolver/
+  dir: internal/api/graphql/resolver/
   package: resolver
   filename_template: "{name}.resolvers.go"
 
 autobind:
+  - "github.com/iam047801/tonidx/internal/api/graphql/models"
   - "github.com/iam047801/tonidx/internal/core"
 
 models:
+#  Account:
+#    model: github.com/iam047801/tonidx/internal/core.Account
+#    fields:
+#      balance:
+#        resolver: true
   Int:
     model:
       - github.com/99designs/gqlgen/graphql.Int
       - github.com/99designs/gqlgen/graphql.Int64
       - github.com/99designs/gqlgen/graphql.Int32
+  Uint32:
+    model:
+      - github.com/99designs/gqlgen/graphql.Uint32
   Uint64:
     model:
       - github.com/99designs/gqlgen/graphql.Uint64
