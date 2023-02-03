@@ -3,8 +3,9 @@ package block
 import (
 	"context"
 	"database/sql"
-	"errors"
 
+	"github.com/pkg/errors"
+	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/iam047801/tonidx/internal/core"
@@ -13,17 +14,39 @@ import (
 var _ core.BlockRepository = (*Repository)(nil)
 
 type Repository struct {
-	db *ch.DB
+	ch *ch.DB
+	pg *bun.DB
 }
 
-func NewRepository(db *ch.DB) *Repository {
-	return &Repository{db: db}
+func NewRepository(_ch *ch.DB, _pg *bun.DB) *Repository {
+	return &Repository{ch: _ch, pg: _pg}
 }
 
-func (r *Repository) GetLastMasterBlockInfo(ctx context.Context) (*core.BlockInfo, error) {
-	ret := new(core.BlockInfo)
+func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
+	_, err := chDB.NewCreateTable().
+		IfNotExists().
+		Engine("ReplacingMergeTree").
+		Model(&core.Block{}).
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "block ch create table")
+	}
 
-	err := r.db.NewSelect().Model(ret).
+	_, err = pgDB.NewCreateTable().
+		Model(&core.Block{}).
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "block pg create table")
+	}
+
+	return nil
+}
+
+func (r *Repository) GetLastMasterBlock(ctx context.Context) (*core.Block, error) {
+	ret := new(core.Block)
+
+	err := r.ch.NewSelect().Model(ret).
 		Where("workchain = ?", -1).
 		Order("seq_no DESC").
 		Limit(1).
@@ -38,12 +61,55 @@ func (r *Repository) GetLastMasterBlockInfo(ctx context.Context) (*core.BlockInf
 	return ret, nil
 }
 
-func (r *Repository) AddBlocksInfo(ctx context.Context, info []*core.BlockInfo) error {
-	for _, b := range info {
-		_, err := r.db.NewInsert().Model(b).Exec(ctx)
-		if err != nil {
-			return err
-		}
+func (r *Repository) AddBlocks(ctx context.Context, info []*core.Block) error {
+	_, err := r.ch.NewInsert().Model(&info).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = r.pg.NewInsert().Model(&info).Exec(ctx)
+	if err != nil {
+		return err
 	}
 	return nil
+}
+
+func selectBlocksFilter(q *bun.SelectQuery, f *core.BlockFilter) *bun.SelectQuery {
+	if f.ID != nil {
+		q = q.Where("workchain = ?", f.ID.Workchain).
+			Where("shard = ?", f.ID.Shard).
+			Where("seq_no = ?", f.ID.SeqNo)
+	} else if f.Workchain != nil {
+		q = q.Where("workchain = ?", *f.Workchain)
+	}
+
+	if len(f.FileHash) > 0 {
+		q = q.Where("file_hash = ?", f.FileHash)
+	}
+
+	return q
+}
+
+func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter, offset, limit int) ([]*core.Block, error) {
+	var ret []*core.Block
+
+	err := selectBlocksFilter(r.pg.NewSelect().Model(&ret), f).
+		Order("seq_no DESC").
+		Offset(offset).Limit(limit).Scan(ctx)
+
+	return ret, err
+}
+
+func (r *Repository) GetBlocksTransactions(ctx context.Context, f *core.BlockFilter, offset int, limit int) ([]*core.Block, error) {
+	var ret []*core.Block
+
+	err := selectBlocksFilter(r.pg.NewSelect().Model(&ret), f).
+		Relation("Transactions").
+		Relation("Transactions.InMsg").
+		Relation("Transactions.OutMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.Where("incoming = ?", false)
+		}).
+		Order("seq_no DESC").
+		Offset(offset).Limit(limit).Scan(ctx)
+
+	return ret, err
 }

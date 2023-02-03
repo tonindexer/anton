@@ -9,12 +9,13 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
+	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository/account"
+	"github.com/iam047801/tonidx/internal/core/repository/abi"
 )
 
 func insertInterfacesNFT(ctx context.Context, db *ch.DB) error {
@@ -48,7 +49,7 @@ func insertInterfacesNFT(ctx context.Context, db *ch.DB) error {
 	return nil
 }
 
-func insertOperationsNFT(ctx context.Context, db *ch.DB) error {
+func insertOperationsNFT(ctx context.Context, _ch *ch.DB, _ *bun.DB) error {
 	// TODO: here is only incoming message, parse outcoming too
 
 	operations := []*core.ContractOperation{{
@@ -208,7 +209,7 @@ func insertOperationsNFT(ctx context.Context, db *ch.DB) error {
 		},
 	}}
 
-	accRepo := account.NewRepository(db)
+	accRepo := abi.NewRepository(_ch)
 	if err := accRepo.InsertContractOperations(ctx, operations); err != nil {
 		return err
 	}
@@ -256,7 +257,7 @@ func InsertKnownInterfaces(ctx context.Context, db *ch.DB) error {
 		return err
 	}
 
-	if err := insertOperationsNFT(ctx, db); err != nil {
+	if err := insertOperationsNFT(ctx, db, nil); err != nil {
 		return err
 	}
 

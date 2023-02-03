@@ -2,102 +2,47 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
-	"github.com/uptrace/go-clickhouse/ch"
+	"github.com/pkg/errors"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
+	"github.com/uptrace/bun/driver/pgdriver"
 
-	"github.com/iam047801/tonidx/internal/core"
+	"github.com/uptrace/go-clickhouse/ch"
 )
 
-func Connect(ctx context.Context, dsn string, opts ...ch.Option) (*ch.DB, error) {
-	opts = append(opts, ch.WithDSN(dsn), ch.WithAutoCreateDatabase(true), ch.WithPoolSize(16))
-
-	db := ch.Connect(opts...)
-
+func Connect(ctx context.Context, dsnCH, dsnPG string, opts ...ch.Option) (*ch.DB, *bun.DB, error) {
 	var err error
+
+	opts = append(opts, ch.WithDSN(dsnCH), ch.WithAutoCreateDatabase(true), ch.WithPoolSize(16))
+	chDB := ch.Connect(opts...)
+
 	for i := 0; i < 8; i++ { // wait for ch start
-		err = db.Ping(ctx)
+		err = chDB.Ping(ctx)
 		if err == nil {
-			return db, nil
+			break
 		}
 		time.Sleep(2 * time.Second)
 	}
-
-	return db, err
-}
-
-func CreateTables(ctx context.Context, db *ch.DB) error {
-	_, err := db.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.BlockInfo{}).
-		Exec(ctx)
 	if err != nil {
-		return err
+		return nil, nil, errors.Wrap(err, "cannot ping ch")
 	}
 
-	_, err = db.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.Transaction{}).
-		Exec(ctx)
+	sqlDB := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsnPG)))
+	pgDB := bun.NewDB(sqlDB, pgdialect.New())
+
+	for i := 0; i < 8; i++ { // wait for pg start
+		err = pgDB.Ping()
+		if err == nil {
+			break
+		}
+		time.Sleep(2 * time.Second)
+	}
 	if err != nil {
-		return err
+		return nil, nil, errors.Wrap(err, "cannot ping pg")
 	}
 
-	_, err = db.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.Message{}).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.MessagePayload{}).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.Account{}).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.AccountData{}).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.ContractInterface{}).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.ContractOperation{}).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return chDB, pgDB, err
 }
