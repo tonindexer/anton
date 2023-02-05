@@ -23,13 +23,33 @@ func NewRepository(_ch *ch.DB, _pg *bun.DB) *Repository {
 	return &Repository{ch: _ch, pg: _pg}
 }
 
-func createIndexes(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
+func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 	// account data
 
 	_, err := pgDB.NewCreateIndex().
 		Model(&core.AccountData{}).
 		Unique().
 		Column("address", "state_hash").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address state pg create unique index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountData{}).
+		Using("HASH").
+		Column("owner_address").
+		Where("length(owner_address) > 0").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address state pg create unique index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountData{}).
+		Using("HASH").
+		Column("collection_address").
+		Where("length(collection_address) > 0").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "address state pg create unique index")
@@ -82,6 +102,15 @@ func createIndexes(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "account state contract types pg create index")
 	}
 
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountState{}).
+		Using("BTREE").
+		Column("last_tx_lt").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state last_tx_lt pg create index")
+	}
+
 	return nil
 }
 
@@ -128,7 +157,7 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "account state pg create table")
 	}
 
-	return createIndexes(ctx, chDB, pgDB)
+	return createIndexes(ctx, pgDB)
 }
 
 func accountAddresses(accounts []*core.AccountState) (ret []string) {

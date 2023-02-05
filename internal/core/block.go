@@ -25,7 +25,7 @@ type Block struct {
 	MasterBlockFileHash  []byte   `bun:"master_block_file_hash"`
 	ShardBlockFileHashes []string `bun:"shard_block_file_hashes,array"`
 
-	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:workchain=block_workchain,join:shard=block_shard,join:seq_no=block_seq_no"`
+	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:file_hash=block_file_hash"`
 
 	// TODO: block info data
 }

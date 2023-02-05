@@ -22,6 +22,19 @@ func NewRepository(_ch *ch.DB, _pg *bun.DB) *Repository {
 	return &Repository{ch: _ch, pg: _pg}
 }
 
+func createIndexes(ctx context.Context, pgDB *bun.DB) error {
+	_, err := pgDB.NewCreateIndex().
+		Model(&core.Block{}).
+		Using("HASH").
+		Column("workchain").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "block workchain pg create index")
+	}
+
+	return nil
+}
+
 func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	_, err := chDB.NewCreateTable().
 		IfNotExists().
@@ -40,7 +53,7 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "block pg create table")
 	}
 
-	return nil
+	return createIndexes(ctx, pgDB)
 }
 
 func (r *Repository) GetLastMasterBlock(ctx context.Context) (*core.Block, error) {
@@ -89,20 +102,15 @@ func selectBlocksFilter(q *bun.SelectQuery, f *core.BlockFilter) *bun.SelectQuer
 	return q
 }
 
-func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter, offset, limit int) ([]*core.Block, error) {
-	var ret []*core.Block
-
-	err := selectBlocksFilter(r.pg.NewSelect().Model(&ret), f).
+func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter, offset, limit int) (ret []*core.Block, err error) {
+	err = selectBlocksFilter(r.pg.NewSelect().Model(&ret), f).
 		Order("seq_no DESC").
 		Offset(offset).Limit(limit).Scan(ctx)
-
 	return ret, err
 }
 
-func (r *Repository) GetBlocksTransactions(ctx context.Context, f *core.BlockFilter, offset int, limit int) ([]*core.Block, error) {
-	var ret []*core.Block
-
-	err := selectBlocksFilter(r.pg.NewSelect().Model(&ret), f).
+func (r *Repository) GetBlocksTransactions(ctx context.Context, f *core.BlockFilter, offset int, limit int) (ret []*core.Block, err error) {
+	err = selectBlocksFilter(r.pg.NewSelect().Model(&ret), f).
 		Relation("Transactions").
 		Relation("Transactions.InMsg").
 		Relation("Transactions.OutMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
@@ -110,6 +118,5 @@ func (r *Repository) GetBlocksTransactions(ctx context.Context, f *core.BlockFil
 		}).
 		Order("seq_no DESC").
 		Offset(offset).Limit(limit).Scan(ctx)
-
 	return ret, err
 }

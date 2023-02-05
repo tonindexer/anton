@@ -220,6 +220,7 @@ var (
 		BlockWorkchain: shard.Workchain,
 		BlockShard:     shard.Shard,
 		BlockSeqNo:     shard.SeqNo,
+		BlockFileHash:  shard.FileHash,
 
 		PrevTxHash: randBytes(32),
 		PrevTxLT:   randLT(),
@@ -297,6 +298,7 @@ var (
 		BlockWorkchain: shard.Workchain,
 		BlockShard:     shard.Shard,
 		BlockSeqNo:     shard.SeqNo,
+		BlockFileHash:  shard.FileHash,
 
 		PrevTxHash: randBytes(32),
 		PrevTxLT:   randLT(),

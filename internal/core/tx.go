@@ -19,6 +19,7 @@ type Transaction struct {
 	BlockWorkchain int32  `bun:",notnull"`
 	BlockShard     int64  `bun:",notnull"`
 	BlockSeqNo     uint32 `bun:",notnull"`
+	BlockFileHash  []byte `bun:",notnull"`
 
 	PrevTxHash []byte //
 	PrevTxLT   uint64 //
@@ -119,9 +120,12 @@ type MessagePayload struct {
 }
 
 type TransactionFilter struct {
-	Hash    []byte
+	Hash []byte
+
 	Address string
-	BlockID *BlockID
+
+	BlockID       *BlockID
+	BlockFileHash []byte
 }
 
 type MessageFilter struct {
@@ -139,7 +143,7 @@ type TxRepository interface {
 	AddTransactions(ctx context.Context, transactions []*Transaction) error
 	AddMessages(ctx context.Context, messages []*Message) error
 	AddMessagePayloads(ctx context.Context, payloads []*MessagePayload) error
-	GetSourceMessageHash(ctx context.Context, from, to string, bodyHash []byte, lt uint64) (ret []byte, err error)
+	GetSourceMessageHash(ctx context.Context, from, to string, lt uint64) (ret []byte, err error)
 	GetTransactions(ctx context.Context, filter *TransactionFilter, offset, limit int) ([]*Transaction, error)
 	GetMessages(ctx context.Context, filter *MessageFilter, offset, limit int) ([]*MessageFilter, error)
 }
