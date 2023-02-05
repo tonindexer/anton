@@ -2,7 +2,6 @@ package tx
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -274,6 +273,9 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 	return q
 }
 
-func (r *Repository) GetMessages(ctx context.Context, filter *core.MessageFilter, offset, limit int) ([]*core.MessageFilter, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *Repository) GetMessages(ctx context.Context, filter *core.MessageFilter, offset, limit int) (ret []*core.Message, err error) {
+	err = selectMsgFilter(r.pg.NewSelect().Model(&ret), filter).
+		Order("created_lt DESC").
+		Offset(offset).Limit(limit).Scan(ctx)
+	return ret, err
 }

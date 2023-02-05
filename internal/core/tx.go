@@ -145,5 +145,5 @@ type TxRepository interface {
 	AddMessagePayloads(ctx context.Context, payloads []*MessagePayload) error
 	GetSourceMessageHash(ctx context.Context, from, to string, lt uint64) (ret []byte, err error)
 	GetTransactions(ctx context.Context, filter *TransactionFilter, offset, limit int) ([]*Transaction, error)
-	GetMessages(ctx context.Context, filter *MessageFilter, offset, limit int) ([]*MessageFilter, error)
+	GetMessages(ctx context.Context, filter *MessageFilter, offset, limit int) ([]*Message, error)
 }
