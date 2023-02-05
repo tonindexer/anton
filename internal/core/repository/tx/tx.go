@@ -3,6 +3,7 @@ package tx
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
@@ -23,7 +24,13 @@ func NewRepository(_ch *ch.DB, _pg *bun.DB) *Repository {
 }
 
 func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
-	_, err := chDB.NewCreateTable().
+	_, err := pgDB.ExecContext(ctx, "CREATE TYPE message_type AS ENUM (?, ?, ?)",
+		core.ExternalIn, core.ExternalOut, core.Internal)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return errors.Wrap(err, "account status pg create enum")
+	}
+
+	_, err = chDB.NewCreateTable().
 		IfNotExists().
 		Engine("ReplacingMergeTree").
 		Model(&core.MessagePayload{}).
@@ -53,7 +60,7 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	_, err = pgDB.NewCreateTable().
 		Model(&core.Message{}).
 		IfNotExists().
-		WithForeignKeys().
+		// WithForeignKeys().
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "message pg create table")

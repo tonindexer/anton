@@ -122,13 +122,20 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	_, err = pgDB.NewCreateTable().
 		Model(&core.AccountState{}).
 		IfNotExists().
-		WithForeignKeys().
+		// WithForeignKeys().
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "account state pg create table")
 	}
 
 	return createIndexes(ctx, chDB, pgDB)
+}
+
+func accountAddresses(accounts []*core.AccountState) (ret []string) {
+	for _, a := range accounts {
+		ret = append(ret, a.Address)
+	}
+	return
 }
 
 func (r *Repository) AddAccountStates(ctx context.Context, accounts []*core.AccountState) error {
@@ -144,7 +151,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, accounts []*core.Acco
 	defer tx.Rollback()
 
 	_, err = tx.NewUpdate().Model(&accounts).
-		Where("address in (?address)").
+		Where("address in (?)", bun.In(accountAddresses(accounts))).
 		Where("latest = ?", true).
 		Set("latest = ?", false).
 		Exec(ctx)
@@ -161,15 +168,16 @@ func (r *Repository) AddAccountStates(ctx context.Context, accounts []*core.Acco
 		With("late",
 			tx.NewSelect().
 				Model(&accounts).
-				Column("address", "max(last_tx_lt) AS lt").
-				Where("address in (?address)").
+				Column("address").
+				ColumnExpr("max(last_tx_lt) AS _lt").
+				Where("address in (?)", bun.In(accountAddresses(accounts))).
 				Group("address"),
 		).
-		Model((*core.AccountState)()).
-		Table("late").
-		Where("account_state.address = late.address").
-		Where("account_state.last_tx_lt = late.lt").
-		Set("account_state.latest = ?", true).
+		Model((*core.AccountState)(nil)).
+		Table("account_states", "late").
+		Where("account_states.address = late.address").
+		Where("account_states.last_tx_lt = late._lt").
+		Set("latest = ?", true).
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "cannot set latest state")

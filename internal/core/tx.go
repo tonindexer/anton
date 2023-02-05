@@ -25,7 +25,7 @@ type Transaction struct {
 
 	InMsgHash    []byte     //
 	InMsg        *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
-	OutMsgHashes [][]byte   //
+	OutMsgHashes []string   //
 	OutMsg       []*Message `ch:"-" bun:"rel:has-many,join:hash=tx_hash"`
 
 	TotalFees uint64 // `ch:"type:UInt256"`
@@ -36,7 +36,7 @@ type Transaction struct {
 	OrigStatus AccountStatus `ch:",lc" bun:"type:account_status,notnull"`
 	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull"`
 
-	CreatedAT uint64 `bun:",notnull"`
+	CreatedAt uint64 `bun:",notnull"`
 	CreatedLT uint64 `bun:",notnull"`
 }
 
