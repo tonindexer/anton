@@ -1,4 +1,4 @@
-package db
+package repository
 
 import (
 	"context"
@@ -9,11 +9,19 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
-
 	"github.com/uptrace/go-clickhouse/ch"
+
+	"github.com/iam047801/tonidx/internal/core/repository/account"
+	"github.com/iam047801/tonidx/internal/core/repository/block"
+	"github.com/iam047801/tonidx/internal/core/repository/tx"
 )
 
-func Connect(ctx context.Context, dsnCH, dsnPG string, opts ...ch.Option) (*ch.DB, *bun.DB, error) {
+type DB struct {
+	CH *ch.DB
+	PG *bun.DB
+}
+
+func ConnectDB(ctx context.Context, dsnCH, dsnPG string, opts ...ch.Option) (*DB, error) {
 	var err error
 
 	opts = append(opts, ch.WithDSN(dsnCH), ch.WithAutoCreateDatabase(true), ch.WithPoolSize(16))
@@ -27,7 +35,7 @@ func Connect(ctx context.Context, dsnCH, dsnPG string, opts ...ch.Option) (*ch.D
 		time.Sleep(2 * time.Second)
 	}
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot ping ch")
+		return nil, errors.Wrap(err, "cannot ping ch")
 	}
 
 	sqlDB := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsnPG)))
@@ -41,8 +49,24 @@ func Connect(ctx context.Context, dsnCH, dsnPG string, opts ...ch.Option) (*ch.D
 		time.Sleep(2 * time.Second)
 	}
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot ping pg")
+		return nil, errors.Wrap(err, "cannot ping pg")
 	}
 
-	return chDB, pgDB, err
+	return &DB{CH: chDB, PG: pgDB}, nil
+}
+
+func CreateTablesDB(ctx context.Context, db *DB) error {
+	err := block.CreateTables(ctx, db.CH, db.PG)
+	if err != nil {
+		return err
+	}
+	err = account.CreateTables(ctx, db.CH, db.PG)
+	if err != nil {
+		return err
+	}
+	err = tx.CreateTables(ctx, db.CH, db.PG)
+	if err != nil {
+		return err
+	}
+	return nil
 }
