@@ -13,26 +13,25 @@ type Transaction struct {
 	bun.BaseModel `bun:"table:transactions"`
 
 	Address string        `ch:",pk"`
-	Hash    []byte        `ch:",pk" bun:",pk,notnull"`
+	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull"`
 	Account *AccountState `ch:"-" bun:"rel:has-one,join:hash=last_tx_hash"`
 
 	BlockWorkchain int32  `bun:",notnull"`
 	BlockShard     int64  `bun:",notnull"`
 	BlockSeqNo     uint32 `bun:",notnull"`
-	BlockFileHash  []byte `bun:",notnull"`
+	BlockFileHash  []byte `bun:"type:bytea,notnull"`
 
-	PrevTxHash []byte //
+	PrevTxHash []byte `bun:"type:bytea"`
 	PrevTxLT   uint64 //
 
-	InMsgHash    []byte     //
-	InMsg        *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
-	OutMsgHashes []string   //
-	OutMsg       []*Message `ch:"-" bun:"rel:has-many,join:hash=tx_hash"`
+	InMsgHash []byte     `bun:"type:bytea"`
+	InMsg     *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
+	OutMsg    []*Message `ch:"-" bun:"rel:has-many,join:hash=tx_hash"`
 
 	TotalFees uint64 // `ch:"type:UInt256"`
 
-	StateUpdate []byte //
-	Description []byte // TODO: parse it (exit code, etc)
+	StateUpdate []byte `bun:"type:bytea"`
+	Description []byte `bun:"type:bytea"` // TODO: parse it (exit code, etc)
 
 	OrigStatus AccountStatus `ch:",lc" bun:"type:account_status,notnull"`
 	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull"`
@@ -55,13 +54,13 @@ type Message struct {
 
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"` // TODO: ch enum
 
-	Hash       []byte   `bun:",pk,notnull"`
-	SourceHash []byte   `bun:",unique"`
+	Hash       []byte   `bun:"type:bytea,pk,notnull"`
+	SourceHash []byte   `bun:"type:bytea,unique"`
 	Source     *Message `bun:"rel:has-one,join:source_hash=hash"`
 
-	Incoming  bool   `ch:",pk"`
-	TxAddress string `ch:",pk"`
-	TxHash    []byte `ch:",pk"`
+	Incoming  bool   `ch:",pk" bun:",notnull"`
+	TxAddress string `ch:",pk" bun:",notnull"`
+	TxHash    []byte `ch:",pk" bun:"type:bytea,notnull"`
 
 	SrcAddress string //
 	DstAddress string //
@@ -76,15 +75,14 @@ type Message struct {
 	IHRFee      uint64 // TODO: uint256
 	FwdFee      uint64 // TODO: uint256
 
-	Body            []byte //
-	BodyHash        []byte //
-	OperationID     uint32 //
-	TransferComment string //
+	Body            []byte          `bun:"type:bytea"`
+	BodyHash        []byte          `bun:"type:bytea"`
+	OperationID     uint32          //
+	TransferComment string          //
+	Payload         *MessagePayload `ch:"-" bun:"rel:belongs-to,join:hash=hash"`
 
-	Payload *MessagePayload `ch:"-" bun:"rel:belongs-to,join:hash=hash"`
-
-	StateInitCode []byte //
-	StateInitData []byte //
+	StateInitCode []byte `bun:"type:bytea"`
+	StateInitData []byte `bun:"type:bytea"`
 
 	CreatedAt uint64 `bun:",notnull"`
 	CreatedLT uint64 `bun:",notnull"`
@@ -95,11 +93,11 @@ type MessagePayload struct {
 	bun.BaseModel `bun:"table:message_payloads"`
 
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"`
-	Hash []byte      `bun:",pk,notnull"`
+	Hash []byte      `bun:"type:bytea,pk,notnull"`
 
 	Incoming  bool   `ch:",pk" bun:",notnull"`
 	TxAddress string `ch:",pk" bun:",notnull"`
-	TxHash    []byte `ch:",pk" bun:",notnull"`
+	TxHash    []byte `ch:",pk" bun:"type:bytea,notnull"`
 
 	SrcAddress  string       //
 	SrcContract ContractType `ch:",lc" bun:",notnull"`
@@ -110,7 +108,7 @@ type MessagePayload struct {
 	Bounced bool   //
 	Amount  uint64 // TODO: uint256
 
-	BodyHash      []byte `ch:",pk" bun:",notnull"`
+	BodyHash      []byte `ch:",pk" bun:"type:bytea,notnull"`
 	OperationID   uint32 `bun:",notnull"`
 	OperationName string `ch:",lc" bun:",notnull"`
 	DataJSON      string //
@@ -126,12 +124,16 @@ type TransactionFilter struct {
 
 	BlockID       *BlockID
 	BlockFileHash []byte
+
+	WithMessages bool
 }
 
 type MessageFilter struct {
 	Hash       []byte
 	SrcAddress string
 	DstAddress string
+
+	WithSource bool
 
 	WithPayload   bool
 	SrcContract   string

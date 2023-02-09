@@ -86,7 +86,33 @@ func (r *Repository) AddBlocks(ctx context.Context, info []*core.Block) error {
 	return nil
 }
 
-func selectBlocksFilter(q *bun.SelectQuery, f *core.BlockFilter) *bun.SelectQuery {
+func transactionsLoad(q *bun.SelectQuery, path string, withMessages bool) *bun.SelectQuery {
+	q = q.Relation(path + "Transactions")
+
+	if withMessages {
+		q = q.Relation(path+"Transactions.InMsg").
+			Relation(path+"Transactions.OutMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
+				return q.Where("incoming = ?", false)
+			})
+	}
+
+	return q
+}
+
+func blocksFilter(q *bun.SelectQuery, f *core.BlockFilter) *bun.SelectQuery {
+	if f.WithMaster {
+		q = q.Relation("Master")
+	}
+	if f.WithShards {
+		q = q.Relation("Shards")
+	}
+	if f.WithTransactions {
+		q = transactionsLoad(q, "", f.WithTransactionMessages)
+		if f.WithShards {
+			q = transactionsLoad(q, "Shards.", f.WithTransactionMessages)
+		}
+	}
+
 	if f.ID != nil {
 		q = q.Where("workchain = ?", f.ID.Workchain).
 			Where("shard = ?", f.ID.Shard).
@@ -99,24 +125,13 @@ func selectBlocksFilter(q *bun.SelectQuery, f *core.BlockFilter) *bun.SelectQuer
 		q = q.Where("file_hash = ?", f.FileHash)
 	}
 
+	q = q.Order("seq_no DESC")
+
 	return q
 }
 
 func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter, offset, limit int) (ret []*core.Block, err error) {
-	err = selectBlocksFilter(r.pg.NewSelect().Model(&ret), f).
-		Order("seq_no DESC").
-		Offset(offset).Limit(limit).Scan(ctx)
-	return ret, err
-}
-
-func (r *Repository) GetBlocksTransactions(ctx context.Context, f *core.BlockFilter, offset int, limit int) (ret []*core.Block, err error) {
-	err = selectBlocksFilter(r.pg.NewSelect().Model(&ret), f).
-		Relation("Transactions").
-		Relation("Transactions.InMsg").
-		Relation("Transactions.OutMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.Where("incoming = ?", false)
-		}).
-		Order("seq_no DESC").
+	err = blocksFilter(r.pg.NewSelect().Model(&ret), f).
 		Offset(offset).Limit(limit).Scan(ctx)
 	return ret, err
 }

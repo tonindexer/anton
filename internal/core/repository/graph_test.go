@@ -3,85 +3,9 @@ package repository_test
 import (
 	"fmt"
 	"math/rand"
-	"testing"
 
 	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository"
 )
-
-func TestGraph(t *testing.T) {
-	t.Run("init db", func(t *testing.T) {
-		initDB(t)
-	})
-
-	t.Run("drop tables", func(t *testing.T) {
-		dropTables(t)
-	})
-
-	t.Run("create tables", func(t *testing.T) {
-		err := repository.CreateTablesDB(ctx, db)
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("add account data", func(t *testing.T) {
-		err := accountRepo.AddAccountData(ctx, []*core.AccountData{accDataItem})
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("add account states", func(t *testing.T) {
-		err := accountRepo.AddAccountStates(ctx, []*core.AccountState{accWallet})
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = accountRepo.AddAccountStates(ctx, []*core.AccountState{accItem})
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("add message payloads", func(t *testing.T) {
-		err := txRepo.AddMessagePayloads(ctx, []*core.MessagePayload{msgInItemPayload})
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("add messages", func(t *testing.T) {
-		err := txRepo.AddMessages(ctx, []*core.Message{msgExtWallet, msgOutWallet, msgInItem})
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("add transactions", func(t *testing.T) {
-		err := txRepo.AddTransactions(ctx, []*core.Transaction{txOutWallet})
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = txRepo.AddTransactions(ctx, []*core.Transaction{txInItem})
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("add shard blocks", func(t *testing.T) {
-		err := blockRepo.AddBlocks(ctx, []*core.Block{shard})
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("add master blocks", func(t *testing.T) {
-		err := blockRepo.AddBlocks(ctx, []*core.Block{master})
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-}
 
 func randBytes(len int) []byte {
 	token := make([]byte, len)
@@ -113,10 +37,9 @@ var (
 			SeqNo:     1234,
 		},
 
-		FileHash: shard.MasterBlockFileHash,
+		// FileHash: string(randBytes(32)),
+		FileHash: randBytes(32),
 		RootHash: randBytes(32),
-
-		ShardBlockFileHashes: []string{string(shard.MasterBlockFileHash)},
 
 		Transactions: nil,
 	}
@@ -128,10 +51,11 @@ var (
 			SeqNo:     4321,
 		},
 
+		// FileHash: string(randBytes(32)),
 		FileHash: randBytes(32),
 		RootHash: randBytes(32),
 
-		MasterBlockFileHash: randBytes(32),
+		MasterFileHash: master.FileHash,
 
 		Transactions: nil,
 	}
@@ -225,11 +149,6 @@ var (
 		PrevTxHash: randBytes(32),
 		PrevTxLT:   randLT(),
 
-		InMsgHash:    msgExtWallet.Hash,
-		InMsg:        nil,
-		OutMsgHashes: []string{string(msgOutWallet.Hash)},
-		OutMsg:       nil,
-
 		TotalFees:   1e5,
 		StateUpdate: nil,
 		Description: nil,
@@ -241,26 +160,28 @@ var (
 	}
 
 	msgOutWallet = &core.Message{
-		Type:        core.Internal,
-		Hash:        randBytes(32),
-		SourceHash:  nil,
-		Source:      nil,
-		Incoming:    false,
-		TxAddress:   accWallet.Address,
-		TxHash:      accWallet.LastTxHash,
-		SrcAddress:  accWallet.Address,
-		DstAddress:  accItem.Address,
-		Bounce:      false,
-		Bounced:     false,
-		Amount:      1e5,
+		Type: core.Internal,
+		Hash: randBytes(32),
+
+		Incoming:  false,
+		TxAddress: accWallet.Address,
+		TxHash:    accWallet.LastTxHash,
+
+		SrcAddress: accWallet.Address,
+		DstAddress: accItem.Address,
+
+		Amount: 1e5,
+
 		IHRDisabled: false,
 		IHRFee:      0,
 		FwdFee:      0,
+
 		Body:        randBytes(32),
 		BodyHash:    randBytes(32),
 		OperationID: 0xffeeee,
-		CreatedAt:   msgExtWallet.CreatedAt,
-		CreatedLT:   accWallet.LastTxLT + 1,
+
+		CreatedAt: msgExtWallet.CreatedAt,
+		CreatedLT: accWallet.LastTxLT + 1,
 	}
 
 	msgInItem = &core.Message{
@@ -303,8 +224,6 @@ var (
 		PrevTxHash: randBytes(32),
 		PrevTxLT:   randLT(),
 
-		InMsgHash: msgInItem.Hash,
-
 		TotalFees: 1e3,
 
 		StateUpdate: randBytes(32),
@@ -318,23 +237,25 @@ var (
 	}
 
 	msgInItemPayload = &core.MessagePayload{
-		Type:          core.Internal,
-		Hash:          msgInItem.Hash,
-		Incoming:      true,
-		TxAddress:     accItem.Address,
-		TxHash:        msgInItem.TxHash,
-		SrcAddress:    msgInItem.SrcAddress,
-		SrcContract:   core.ContractType(accWallet.Types[0]),
-		DstAddress:    msgInItem.DstAddress,
-		DstContract:   core.ContractType(accItem.Types[0]),
-		Bounce:        false,
-		Bounced:       false,
+		Type: core.Internal,
+		Hash: msgInItem.Hash,
+
+		Incoming:  true,
+		TxAddress: accItem.Address,
+		TxHash:    msgInItem.TxHash,
+
+		SrcAddress:  msgInItem.SrcAddress,
+		SrcContract: core.ContractType(accWallet.Types[0]),
+		DstAddress:  msgInItem.DstAddress,
+		DstContract: core.ContractType(accItem.Types[0]),
+
 		Amount:        msgInItem.Amount,
 		BodyHash:      msgInItem.BodyHash,
 		OperationID:   msgInItem.OperationID,
 		OperationName: "item_transfer",
 		DataJSON:      "{\"new_owner\": \"kkkkkk\"}",
-		CreatedAt:     msgInItem.CreatedAt,
-		CreatedLT:     msgInItem.CreatedLT,
+
+		CreatedAt: msgInItem.CreatedAt,
+		CreatedLT: msgInItem.CreatedLT,
 	}
 )

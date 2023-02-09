@@ -19,11 +19,12 @@ type Block struct {
 
 	BlockID
 
-	FileHash []byte `ch:",pk" bun:",unique,notnull"`
-	RootHash []byte `ch:",pk" bun:",unique,notnull"`
+	FileHash []byte `ch:",pk" bun:"type:bytea,unique,notnull"` // TODO: []byte here, go-bun bug on has-many
+	RootHash []byte `ch:",pk" bun:"type:bytea,unique,notnull"`
 
-	MasterBlockFileHash  []byte   `bun:"master_block_file_hash"`
-	ShardBlockFileHashes []string `bun:"shard_block_file_hashes,array"`
+	MasterFileHash []byte   `bun:"type:bytea"`
+	Shards         []*Block `ch:"-" bun:"rel:has-many,join:file_hash=master_file_hash"`
+	Master         *Block   `ch:"-" bun:"rel:has-one,join:master_file_hash=file_hash"`
 
 	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:file_hash=block_file_hash"`
 
@@ -34,11 +35,15 @@ type BlockFilter struct {
 	ID        *BlockID
 	Workchain *int32
 	FileHash  []byte
+
+	WithMaster              bool
+	WithShards              bool
+	WithTransactions        bool
+	WithTransactionMessages bool
 }
 
 type BlockRepository interface {
 	AddBlocks(ctx context.Context, info []*Block) error
 	GetLastMasterBlock(ctx context.Context) (*Block, error)
 	GetBlocks(ctx context.Context, filter *BlockFilter, offset, limit int) ([]*Block, error)
-	GetBlocksTransactions(ctx context.Context, filter *BlockFilter, offset, limit int) ([]*Block, error)
 }

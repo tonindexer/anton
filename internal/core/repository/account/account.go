@@ -232,6 +232,10 @@ func (r *Repository) AddAccountData(ctx context.Context, data []*core.AccountDat
 }
 
 func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilter) *bun.SelectQuery {
+	if filter.WithData {
+		q = q.Relation("StateData")
+	}
+
 	if filter.LatestState {
 		q.Where("latest = ?", true)
 	}
@@ -241,6 +245,7 @@ func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilt
 	if len(filter.ContractTypes) > 0 {
 		q.Where("contract_types && ?", pgdialect.Array(filter.ContractTypes))
 	}
+
 	if filter.WithData {
 		if filter.OwnerAddress != "" {
 			q = q.Where("state_data.owner_address = ?", filter.OwnerAddress)
@@ -249,20 +254,13 @@ func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilt
 			q = q.Where("state_data.collection_address = ?", filter.CollectionAddress)
 		}
 	}
+
 	return q
 }
 
-func (r *Repository) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter, offset int, limit int) ([]*core.AccountState, error) {
-	var ret []*core.AccountState
-
-	q := r.pg.NewSelect().Model(&ret)
-	if filter.WithData {
-		q = q.Relation("StateData")
-	}
-
-	err := selectAccountStatesFilter(q, filter).
+func (r *Repository) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter, offset int, limit int) (ret []*core.AccountState, err error) {
+	err = selectAccountStatesFilter(r.pg.NewSelect().Model(&ret), filter).
 		Order("last_tx_lt DESC").
 		Offset(offset).Limit(limit).Scan(ctx)
-
 	return ret, err
 }

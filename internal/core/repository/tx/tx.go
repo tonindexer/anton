@@ -54,6 +54,15 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "tx block id pg create unique index")
 	}
 
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.Transaction{}).
+		Using("BTREE").
+		Column("created_lt").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "message created_lt pg create index")
+	}
+
 	// messages
 
 	_, err = pgDB.NewCreateIndex().
@@ -225,6 +234,13 @@ func (r *Repository) GetSourceMessageHash(ctx context.Context, from, to string, 
 }
 
 func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQuery {
+	if f.WithMessages {
+		q = q.Relation("InMsg").
+			Relation("OutMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
+				return q.Where("incoming = ?", false)
+			})
+	}
+
 	if len(f.Hash) > 0 {
 		q = q.Where("hash = ?", f.Hash)
 	}
@@ -239,6 +255,7 @@ func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQu
 	if f.BlockFileHash != nil {
 		q = q.Where("block_file_hash", f.BlockFileHash)
 	}
+
 	return q
 }
 
@@ -250,6 +267,13 @@ func (r *Repository) GetTransactions(ctx context.Context, filter *core.Transacti
 }
 
 func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery {
+	if f.WithSource {
+		q = q.Relation("Source")
+	}
+	if f.WithPayload {
+		q = q.Relation("Payload")
+	}
+
 	if len(f.Hash) > 0 {
 		q = q.Where("hash = ?", f.Hash)
 	}
@@ -259,6 +283,7 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 	if len(f.DstAddress) > 0 {
 		q = q.Where("dst_address = ?", f.DstAddress)
 	}
+
 	if f.WithPayload {
 		if f.SrcContract != "" {
 			q = q.Where("payload.src_contract = ?", f.SrcContract)
@@ -270,6 +295,7 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 			q = q.Where("payload.operation_name = ?", f.OperationName)
 		}
 	}
+
 	return q
 }
 

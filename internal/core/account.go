@@ -29,21 +29,21 @@ type AccountState struct {
 	Balance  uint64        // TODO: uint256
 
 	LastTxLT   uint64 `ch:",pk"`
-	LastTxHash []byte `ch:",pk" bun:",unique"`
+	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique"`
 
-	StateHash []byte       `ch:",pk" bun:",pk"`
+	StateHash []byte       `ch:",pk" bun:"type:bytea,pk"`
 	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:state_hash=state_hash"`
 
-	Code     []byte //
-	CodeHash []byte //
-	Data     []byte //
-	DataHash []byte //
+	Code     []byte `bun:"type:bytea"`
+	CodeHash []byte `bun:"type:bytea"`
+	Data     []byte `bun:"type:bytea"`
+	DataHash []byte `bun:"type:bytea"`
 
 	// TODO: do we need it?
 	Depth uint64 //
 	Tick  bool   //
 	Tock  bool   //
-	Lib   []byte
+	Lib   []byte `bun:"-"`
 
 	Types []string `ch:",lc"` // TODO: ContractType here, go-ch bug
 }
@@ -54,8 +54,8 @@ type AccountData struct {
 
 	Address    string `ch:",pk" bun:",notnull"`
 	LastTxLT   uint64 `ch:",pk" bun:",notnull"`
-	LastTxHash []byte `ch:",pk" bun:",notnull,unique"`
-	StateHash  []byte `ch:",pk" bun:",pk"`
+	LastTxHash []byte `ch:",pk" bun:"type:bytea,notnull,unique"`
+	StateHash  []byte `ch:",pk" bun:"type:bytea,pk"`
 
 	Types []string `ch:",lc"` // TODO: ContractType here, ch bug
 

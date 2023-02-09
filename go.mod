@@ -5,10 +5,10 @@ go 1.18
 require (
 	github.com/allisson/go-env v0.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.28.0
-	github.com/uptrace/bun v1.1.10
-	github.com/uptrace/bun/dialect/pgdialect v1.1.10
-	github.com/uptrace/bun/driver/pgdriver v1.1.10
+	github.com/rs/zerolog v1.29.0
+	github.com/uptrace/bun v1.1.11
+	github.com/uptrace/bun/dialect/pgdialect v1.1.11
+	github.com/uptrace/bun/driver/pgdriver v1.1.11
 	github.com/uptrace/go-clickhouse v0.3.0
 	github.com/xssnick/tonutils-go v1.5.0
 )
