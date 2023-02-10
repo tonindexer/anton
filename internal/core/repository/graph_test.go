@@ -7,9 +7,9 @@ import (
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func randBytes(len int) []byte {
-	token := make([]byte, len)
-	rand.Read(token)
+func randBytes(l int) []byte {
+	token := make([]byte, l)
+	rand.Read(token) // nolint
 	return token
 }
 
@@ -18,7 +18,7 @@ func randAddr() string {
 }
 
 func randUint() uint64 {
-	return rand.Uint64()
+	return rand.Uint64() // nolint
 }
 
 func randTs() uint64 {

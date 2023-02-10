@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
-
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 
@@ -49,9 +47,7 @@ func (s *Service) fetchBlockTransactions(ctx context.Context, b *tlb.BlockInfo) 
 
 func (s *Service) processBlockTransactions(ctx context.Context, master, shard *tlb.BlockInfo) error {
 	var (
-		accounts     []*core.AccountState
-		accountMap   = make(map[string]*core.AccountState)
-		accountsData []*core.AccountData
+		accountMap = make(map[string]*core.AccountState)
 	)
 
 	blockTx, err := s.fetchBlockTransactions(ctx, shard)
@@ -64,36 +60,16 @@ func (s *Service) processBlockTransactions(ctx context.Context, master, shard *t
 		return errors.Wrap(err, "parse block transactions")
 	}
 
-	for _, tx := range transactions {
-		addr := address.MustParseAddr(tx.Address)
+	accounts, accountData, err := s.processTxAccounts(ctx, master, transactions)
+	if err != nil {
+		return errors.Wrap(err, "process tx accounts")
+	}
 
-		raw, err := s.api.GetAccount(ctx, master, addr)
-		if err != nil {
-			return errors.Wrapf(err, "get account (%s)", addr.String())
-		}
-		acc := mapAccount(raw)
-
-		accTypes, err := s.abiRepo.DetermineContractInterfaces(ctx, raw)
-		if err != nil {
-			return errors.Wrapf(err, "determine contract interfaces")
-		}
-		for _, t := range accTypes {
-			acc.Types = append(acc.Types, string(t))
-		}
-
-		accounts = append(accounts, acc)
-		if addr.Type() == address.StdAddress {
-			accountMap[acc.Address] = acc
-		}
-
-		data, err := s.parser.ParseAccountData(ctx, master, raw)
-		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
-			log.Error().Err(err).Str("addr", tx.Address).Msg("parse account data")
+	for _, acc := range accounts {
+		if acc.Raw.State == nil || acc.Raw.State.Address.Type() != address.StdAddress {
 			continue
 		}
-		if err == nil {
-			accountsData = append(accountsData, data)
-		}
+		accountMap[acc.Address] = acc
 	}
 
 	messages, err := s.processBlockMessages(ctx, shard, blockTx)
@@ -103,11 +79,10 @@ func (s *Service) processBlockTransactions(ctx context.Context, master, shard *t
 
 	payloads := s.parseMessagePayloads(ctx, messages, accountMap)
 
-	// TODO: do not insert duplicated accounts and account data
 	if err := s.accountRepo.AddAccountStates(ctx, accounts); err != nil {
 		return errors.Wrap(err, "add accounts")
 	}
-	if err := s.accountRepo.AddAccountData(ctx, accountsData); err != nil {
+	if err := s.accountRepo.AddAccountData(ctx, accountData); err != nil {
 		return errors.Wrap(err, "add account data")
 	}
 	if err := s.txRepo.AddTransactions(ctx, transactions); err != nil {

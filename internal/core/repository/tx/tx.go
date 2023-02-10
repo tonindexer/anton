@@ -180,6 +180,10 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "transaction pg create table")
 	}
 
+	if err := createIndexes(ctx, pgDB); err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -177,7 +177,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, accounts []*core.Acco
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() // nolint
 
 	_, err = tx.NewUpdate().Model(&accounts).
 		Where("address in (?)", bun.In(accountAddresses(accounts))).
@@ -212,7 +212,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, accounts []*core.Acco
 		return errors.Wrap(err, "cannot set latest state")
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 
@@ -258,7 +258,7 @@ func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilt
 	return q
 }
 
-func (r *Repository) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter, offset int, limit int) (ret []*core.AccountState, err error) {
+func (r *Repository) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter, offset, limit int) (ret []*core.AccountState, err error) {
 	err = selectAccountStatesFilter(r.pg.NewSelect().Model(&ret), filter).
 		Order("last_tx_lt DESC").
 		Offset(offset).Limit(limit).Scan(ctx)

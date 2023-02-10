@@ -70,7 +70,7 @@ func TestService_ParseAccount(t *testing.T) {
 			t.Fatal(c.addr.String(), err)
 		}
 
-		if len(types) < 1 || core.ContractType(types[0]) != c.contract {
+		if len(types) < 1 || types[0] != c.contract {
 			t.Fatalf("[%s] expected: %s, got: %v", c.addr, c.contract, types)
 		}
 		if core.AccountStatus(acc.State.Status) != c.status {

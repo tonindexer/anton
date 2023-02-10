@@ -71,9 +71,40 @@ func (s *Service) processBlockMessages(ctx context.Context, _ *tlb.BlockInfo, bl
 		if err = abi.ParseOperationID(msg); err != nil {
 			return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 		}
-		
+
 		inMessages = append(inMessages, msg)
 	}
 
 	return append(outMessages, inMessages...), nil
+}
+
+func (s *Service) parseMessagePayloads(ctx context.Context, messages []*core.Message, accountMap map[string]*core.AccountState) (ret []*core.MessagePayload) {
+	for _, msg := range messages {
+		if msg.Type != core.Internal {
+			continue // TODO: external message parsing
+		}
+
+		src, ok := accountMap[msg.SrcAddress]
+		if !ok {
+			log.Debug().Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
+			continue
+		}
+		dst, ok := accountMap[msg.DstAddress]
+		if !ok {
+			log.Debug().Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
+			continue
+		}
+
+		payload, err := s.parser.ParseMessagePayload(ctx, src, dst, msg)
+		if errors.Is(err, core.ErrNotAvailable) {
+			continue
+		}
+		if err != nil {
+			log.Error().Err(err).Hex("msg_hash", msg.BodyHash).Hex("tx_hash", msg.TxHash).Msg("parse message payload")
+			continue
+		}
+		ret = append(ret, payload)
+	}
+
+	return ret
 }

@@ -21,6 +21,8 @@ type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:types,is_active,status"`
 	bun.BaseModel `bun:"table:account_states"`
 
+	Raw *tlb.Account `ch:"-" bun:"-"`
+
 	Latest bool
 
 	Address  string        `ch:",pk"`

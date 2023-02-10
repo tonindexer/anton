@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/iam047801/tonidx/internal/core"
@@ -11,6 +12,13 @@ import (
 
 func (s *Service) ParseAccountData(ctx context.Context, master *tlb.BlockInfo, acc *tlb.Account) (*core.AccountData, error) {
 	var unknown int
+
+	if acc.State == nil {
+		return nil, errors.Wrap(core.ErrNotAvailable, "no account state")
+	}
+	if acc.State.Address.Type() != address.StdAddress {
+		return nil, errors.Wrap(core.ErrNotAvailable, "no account address")
+	}
 
 	data := new(core.AccountData)
 	data.Address = acc.State.Address.String()

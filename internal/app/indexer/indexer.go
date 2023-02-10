@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
@@ -120,7 +119,5 @@ func (s *Service) Stop() {
 
 	s.wg.Wait()
 
-	if err := s.cfg.DB.Close(); err != nil {
-		log.Error().Err(err).Msg("cannot close connection to the database")
-	}
+	s.cfg.DB.Close()
 }

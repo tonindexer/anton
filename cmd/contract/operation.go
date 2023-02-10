@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/db"
+	"github.com/iam047801/tonidx/internal/core/repository"
 )
 
 func InsertOperation() {
@@ -42,11 +42,13 @@ func InsertOperation() {
 	op.OperationID = uint32(*opid)
 	op.Schema = *schema
 
-	conn, err := db.Connect(context.Background(), env.GetString("DB_URL", ""))
+	conn, err := repository.ConnectDB(context.Background(),
+		env.GetString("DB_CH_URL", ""),
+		env.GetString("DB_PG_URL", ""))
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot connect to a database")
 	}
-	_, err = conn.NewInsert().Model(op).Exec(context.Background())
+	_, err = conn.CH.NewInsert().Model(op).Exec(context.Background())
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot insert contract interface")
 	}
