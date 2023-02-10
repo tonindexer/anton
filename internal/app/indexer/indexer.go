@@ -7,12 +7,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/repository/abi"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
 	"github.com/iam047801/tonidx/internal/core/repository/block"
 	"github.com/iam047801/tonidx/internal/core/repository/tx"
@@ -23,7 +23,7 @@ var _ app.IndexerService = (*Service)(nil)
 type Service struct {
 	cfg *app.IndexerConfig
 
-	db          *ch.DB
+	abiRepo     core.ContractRepository
 	blockRepo   core.BlockRepository
 	txRepo      core.TxRepository
 	accountRepo core.AccountRepository
@@ -42,13 +42,13 @@ func NewService(_ context.Context, cfg *app.IndexerConfig) (*Service, error) {
 	var s = new(Service)
 
 	s.cfg = cfg
-	s.db = cfg.DB
-	s.blockRepo = block.NewRepository(s.db)
-	s.txRepo = tx.NewRepository(s.db)
-	s.accountRepo = account.NewRepository(s.db)
+	ch, pg := cfg.DB.CH, cfg.DB.PG
+	s.abiRepo = abi.NewRepository(ch)
+	s.blockRepo = block.NewRepository(ch, pg)
+	s.txRepo = tx.NewRepository(ch, pg)
+	s.accountRepo = account.NewRepository(ch, pg)
 
 	s.parser = cfg.Parser
-	s.api = s.parser.API()
 
 	s.shardLastSeqno = make(map[string]uint32)
 
@@ -75,7 +75,7 @@ func (s *Service) Start() error {
 		return errors.Wrap(err, "cannot get masterchain info")
 	}
 
-	lastMaster, err := s.blockRepo.GetLastMasterBlockInfo(context.Background())
+	lastMaster, err := s.blockRepo.GetLastMasterBlock(context.Background())
 	switch {
 	case err == nil:
 		fromBlock = lastMaster.SeqNo + 1
@@ -120,7 +120,7 @@ func (s *Service) Stop() {
 
 	s.wg.Wait()
 
-	if err := s.db.Close(); err != nil {
+	if err := s.cfg.DB.Close(); err != nil {
 		log.Error().Err(err).Msg("cannot close connection to the database")
 	}
 }

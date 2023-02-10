@@ -12,8 +12,8 @@ type Transaction struct {
 	ch.CHModel    `ch:"transactions,partition:block_workchain,block_shard,round(block_seq_no,-5),toYYYYMMDD(toDateTime(created_at))"`
 	bun.BaseModel `bun:"table:transactions"`
 
-	Address string        `ch:",pk"`
 	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull"`
+	Address string        `ch:",pk"`
 	Account *AccountState `ch:"-" bun:"rel:has-one,join:hash=last_tx_hash"`
 
 	BlockWorkchain int32  `bun:",notnull"`
@@ -59,8 +59,8 @@ type Message struct {
 	Source     *Message `bun:"rel:has-one,join:source_hash=hash"`
 
 	Incoming  bool   `ch:",pk" bun:",notnull"`
-	TxAddress string `ch:",pk" bun:",notnull"`
 	TxHash    []byte `ch:",pk" bun:"type:bytea,notnull"`
+	TxAddress string `ch:",pk" bun:",notnull"`
 
 	SrcAddress string //
 	DstAddress string //
@@ -108,10 +108,12 @@ type MessagePayload struct {
 	Bounced bool   //
 	Amount  uint64 // TODO: uint256
 
-	BodyHash      []byte `ch:",pk" bun:"type:bytea,notnull"`
-	OperationID   uint32 `bun:",notnull"`
-	OperationName string `ch:",lc" bun:",notnull"`
-	DataJSON      string //
+	Body            []byte `bun:"type:bytea"`
+	BodyHash        []byte `ch:",pk" bun:"type:bytea,notnull"`
+	OperationID     uint32 `bun:",notnull"`
+	OperationName   string `ch:",lc" bun:",notnull"`
+	TransferComment string //
+	DataJSON        string //
 
 	CreatedAt uint64 `bun:",notnull"`
 	CreatedLT uint64 `bun:",notnull"`

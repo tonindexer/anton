@@ -10,7 +10,7 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/iam047801/tonidx/internal/app"
-	"github.com/iam047801/tonidx/internal/core/db"
+	"github.com/iam047801/tonidx/internal/core/repository"
 )
 
 var _testService *Service
@@ -22,16 +22,18 @@ func testService(t *testing.T) *Service {
 		return _testService
 	}
 
-	conn, err := db.Connect(ctx, "clickhouse://localhost:9000/default?sslmode=disable")
+	db, err := repository.ConnectDB(ctx,
+		"clickhouse://localhost:9000/default?sslmode=disable",
+		"postgres://postgres:postgres@localhost:5432/default?sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	server := app.ServerAddr{
-		IPPort:    "65.109.22.125:7556",
-		PubKeyB64: "uLPsI74JRZL0KLwCwVALxMXb+OcAm7rcS4dPF9T9S50=",
+		IPPort:    "",
+		PubKeyB64: "",
 	}
-	s, err := NewService(context.Background(), &app.ParserConfig{DB: conn, Servers: []*app.ServerAddr{&server}})
+	s, err := NewService(context.Background(), &app.ParserConfig{DB: db, Servers: []*app.ServerAddr{&server}})
 	if err != nil {
 		t.Fatal(err)
 	}

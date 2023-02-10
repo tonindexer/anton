@@ -7,104 +7,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/internal/core"
 )
-
-func (s *Service) parseMessagePayloads(ctx context.Context, messages []*core.Message, accountMap map[string]*core.Account) (ret []*core.MessagePayload) {
-	for _, msg := range messages {
-		if msg.Type != core.Internal {
-			continue // TODO: external message parsing (?)
-		}
-
-		src, ok := accountMap[msg.SrcAddress]
-		if !ok {
-			log.Debug().Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
-			continue
-		}
-		dst, ok := accountMap[msg.DstAddress]
-		if !ok {
-			log.Debug().Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
-			continue
-		}
-
-		payload, err := s.parser.ParseMessagePayload(ctx, src, dst, msg)
-		if errors.Is(err, core.ErrNotAvailable) {
-			continue
-		}
-		if err != nil {
-			log.Error().Err(err).Hex("msg_hash", msg.BodyHash).Hex("tx_hash", msg.TxHash).Msg("parse message payload")
-			continue
-		}
-		ret = append(ret, payload)
-	}
-
-	return ret
-}
-
-func (s *Service) processShardTransactions(ctx context.Context, master, shard *tlb.BlockInfo, blockTransactions []*tlb.Transaction) error {
-	var (
-		accounts     []*core.Account
-		accountMap   = make(map[string]*core.Account)
-		accountsData []*core.AccountData
-	)
-
-	transactions, err := s.parser.ParseBlockTransactions(ctx, shard, blockTransactions)
-	if err != nil {
-		return errors.Wrap(err, "parse block transactions")
-	}
-
-	for _, tx := range transactions {
-		addr := address.MustParseAddr(tx.Address)
-
-		acc, err := s.parser.ParseAccount(ctx, master, addr)
-		if err != nil {
-			return errors.Wrapf(err, "parse account (addr = %s)", tx.Address)
-		}
-		accounts = append(accounts, acc)
-		if addr.Type() == address.StdAddress {
-			accountMap[acc.Address] = acc
-		}
-
-		data, err := s.parser.ParseAccountData(ctx, master, acc)
-		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
-			log.Error().Err(err).Str("addr", tx.Address).Msg("parse account data")
-			continue
-		}
-		if err == nil {
-			accountsData = append(accountsData, data)
-		}
-	}
-
-	messages, err := s.parser.ParseBlockMessages(ctx, shard, blockTransactions)
-	if err != nil {
-		return errors.Wrap(err, "parse block messages")
-	}
-
-	payloads := s.parseMessagePayloads(ctx, messages, accountMap)
-
-	// TODO: do not insert duplicated accounts and account data
-	if err := s.accountRepo.AddAccounts(ctx, accounts); err != nil {
-		return errors.Wrap(err, "add accounts")
-	}
-	if err := s.accountRepo.AddAccountData(ctx, accountsData); err != nil {
-		return errors.Wrap(err, "add account data")
-	}
-	if err := s.txRepo.AddTransactions(ctx, transactions); err != nil {
-		return errors.Wrap(err, "add transactions")
-	}
-	if err := s.txRepo.AddMessages(ctx, messages); err != nil {
-		return errors.Wrap(err, "add messages")
-	}
-	if err := s.txRepo.AddMessagePayloads(ctx, payloads); err != nil {
-		return errors.Wrap(err, "add message payloads")
-	}
-
-	return nil
-}
 
 func (s *Service) getNotSeenShards(ctx context.Context, shard *tlb.BlockInfo) (ret []*tlb.BlockInfo, err error) {
 	if no, ok := s.shardLastSeqno[getShardID(shard)]; ok && no == shard.SeqNo {
@@ -133,8 +40,8 @@ func (s *Service) getNotSeenShards(ctx context.Context, shard *tlb.BlockInfo) (r
 	return ret, nil
 }
 
-func (s *Service) processShards(ctx context.Context, master *tlb.BlockInfo) ([]*core.BlockInfo, error) {
-	var dbShards []*core.BlockInfo
+func (s *Service) processShards(ctx context.Context, master *tlb.BlockInfo) ([]*core.Block, error) {
+	var dbShards []*core.Block
 
 	currentShards, err := s.api.GetBlockShardsInfo(ctx, master)
 	if err != nil {
@@ -162,30 +69,29 @@ func (s *Service) processShards(ctx context.Context, master *tlb.BlockInfo) ([]*
 			Int32("shard_workchain", shard.Workchain).Uint32("shard_seq", shard.SeqNo).
 			Msg("new shard block")
 
-		blockTx, err := s.parser.GetBlockTransactions(ctx, shard)
-		if err != nil {
+		// // TODO: other block data
+		// blockInfo, err := s.api.GetBlockData(ctx, shard)
+		// if err != nil {
+		// 	return nil, errors.Wrap(err, "get block data")
+		// }
+
+		if err := s.processBlockTransactions(ctx, master, shard); err != nil {
 			return nil, err
 		}
 
-		if err := s.processShardTransactions(ctx, master, shard, blockTx); err != nil {
-			return nil, err
-		}
-
-		dbShards = append(dbShards, &core.BlockInfo{
-			Workchain: shard.Workchain,
-			Shard:     shard.Shard,
-			SeqNo:     shard.SeqNo,
-			RootHash:  shard.RootHash,
-			FileHash:  shard.FileHash,
-			MasterBlockID: &core.BlockID{
-				Workchain: master.Workchain,
-				Shard:     master.Shard,
-				SeqNo:     master.SeqNo,
+		dbShards = append(dbShards, &core.Block{
+			BlockID: core.BlockID{
+				Workchain: shard.Workchain,
+				Shard:     shard.Shard,
+				SeqNo:     shard.SeqNo,
 			},
+			RootHash:       shard.RootHash,
+			FileHash:       shard.FileHash,
+			MasterFileHash: master.FileHash,
 		})
 	}
 
-	if err := s.blockRepo.AddBlocksInfo(ctx, dbShards); err != nil {
+	if err := s.blockRepo.AddBlocks(ctx, dbShards); err != nil {
 		return nil, errors.Wrap(err, "add shard block")
 	}
 
@@ -219,33 +125,27 @@ func (s *Service) fetchBlocksLoop(workchain int32, shard int64, fromBlock uint32
 		}
 		lvl.Uint32("master_seq", seq).Msg("new masterchain block")
 
-		shards, err := s.processShards(ctx, master)
+		_, err = s.processShards(ctx, master)
 		if err != nil {
 			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot process shards")
 			continue
 		}
 
-		// TODO: parse transactions on master chain
-		// if err := s.processBlockTransactions(ctx, master); err != nil {
-		// 	log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot process masterchain block transactions")
-		// 	continue
-		// }
+		if err := s.processBlockTransactions(ctx, master, master); err != nil {
+			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot process masterchain block transactions")
+			continue
+		}
 
-		dbMaster := &core.BlockInfo{
-			Workchain: master.Workchain,
-			Shard:     master.Shard,
-			SeqNo:     master.SeqNo,
-			RootHash:  master.RootHash,
-			FileHash:  master.FileHash,
+		dbMaster := &core.Block{
+			BlockID: core.BlockID{
+				Workchain: master.Workchain,
+				Shard:     master.Shard,
+				SeqNo:     master.SeqNo,
+			},
+			RootHash: master.RootHash,
+			FileHash: master.FileHash,
 		}
-		for _, shardBlock := range shards {
-			dbMaster.ShardBlockIDs = append(dbMaster.ShardBlockIDs, &core.BlockID{
-				Workchain: shardBlock.Workchain,
-				Shard:     shardBlock.Shard,
-				SeqNo:     shardBlock.SeqNo,
-			})
-		}
-		if err := s.blockRepo.AddBlocksInfo(ctx, []*core.BlockInfo{dbMaster}); err != nil {
+		if err := s.blockRepo.AddBlocks(ctx, []*core.Block{dbMaster}); err != nil {
 			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot add master block")
 			continue
 		}

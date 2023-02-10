@@ -1,11 +1,17 @@
 package abi
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
+	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton/wallet"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/iam047801/tonidx/internal/core"
 )
@@ -83,6 +89,71 @@ func (r *Repository) GetContractInterfaces(ctx context.Context) ([]*core.Contrac
 	return ret, nil
 }
 
+func matchByAddress(acc *tlb.Account, addr string) bool {
+	if addr == "" {
+		return false
+	}
+	return acc.State != nil && addr == acc.State.Address.String()
+}
+
+func matchByCode(acc *tlb.Account, code []byte) bool {
+	if len(code) == 0 {
+		return false
+	}
+
+	codeCell, err := cell.FromBOC(code)
+	if err != nil {
+		log.Error().Err(err).Msg("parse contract interface code")
+		return false
+	}
+
+	return acc.Code != nil && bytes.Equal(acc.Code.Hash(), codeCell.Hash())
+}
+
+func (s *Repository) DetermineContractInterfaces(ctx context.Context, acc *tlb.Account) ([]core.ContractType, error) {
+	var ret []core.ContractType
+
+	version := wallet.GetWalletVersion(acc)
+	if version != wallet.Unknown {
+		ret = append(ret,
+			core.ContractType(fmt.Sprintf("wallet_%s", version.String())))
+	}
+
+	ifaces, err := s.GetContractInterfaces(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get contract interfaces")
+	}
+
+	for _, iface := range ifaces {
+		if matchByAddress(acc, iface.Address) {
+			ret = append(ret, iface.Name)
+			continue
+		}
+
+		if matchByCode(acc, iface.Code) {
+			ret = append(ret, iface.Name)
+			continue
+		}
+
+		if len(iface.GetMethods) == 0 {
+			continue
+		}
+
+		var hasMethods = true
+		for _, get := range iface.GetMethods {
+			if !acc.HasGetMethod(get) {
+				hasMethods = false
+				break
+			}
+		}
+		if hasMethods {
+			ret = append(ret, iface.Name)
+		}
+	}
+
+	return ret, nil
+}
+
 func (r *Repository) InsertContractOperations(ctx context.Context, operations []*core.ContractOperation) error {
 	var err error
 
@@ -127,6 +198,25 @@ func (r *Repository) GetContractOperations(ctx context.Context, types []core.Con
 	}
 
 	return ret, nil
+}
+
+func ParseOperationID(msg *core.Message) error {
+	payload, err := cell.FromBOC(msg.Body)
+	if err != nil {
+		return errors.Wrap(err, "msg body from boc")
+	}
+
+	slice := payload.BeginParse()
+
+	op, _ := slice.LoadUInt(32)
+	msg.OperationID = uint32(op)
+
+	if msg.OperationID == 0 {
+		// simple transfer with comment
+		msg.TransferComment, _ = slice.LoadStringSnake()
+	}
+
+	return nil
 }
 
 func (r *Repository) GetContractOperationByID(ctx context.Context, a *core.AccountState, outgoing bool, id uint32) (*core.ContractOperation, error) {

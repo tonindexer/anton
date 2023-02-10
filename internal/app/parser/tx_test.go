@@ -1,14 +1,13 @@
 package parser
 
 import (
-	"encoding/hex"
 	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/repository/abi"
 )
 
 type txTestCase struct {
@@ -20,7 +19,7 @@ type txTestCase struct {
 	error    error
 }
 
-func TestService_parseOperation(t *testing.T) {
+func TestService_ParseOperationID(t *testing.T) {
 	cases := []*txTestCase{
 		{
 			addr:   address.MustParseAddr("EQDd3NPNrWCvTA1pOJ9WetUdDCY_pJaNZVq0JMaara-TIp90"),
@@ -38,7 +37,7 @@ func TestService_parseOperation(t *testing.T) {
 		if tx.IO.In != nil {
 			payload := tx.IO.In.Msg.Payload().ToBOC()
 			msg := &core.Message{Body: payload}
-			if err := testService(t).parseOperation(msg); err != nil {
+			if err := abi.ParseOperationID(msg); err != nil {
 				t.Fatal(err)
 			}
 			t.Logf("in msg payload: op = %x, comment = %s, %x (%d)", msg.OperationID, msg.TransferComment, payload, len(payload))
@@ -46,35 +45,11 @@ func TestService_parseOperation(t *testing.T) {
 		for i, out := range tx.IO.Out {
 			payload := out.Msg.Payload().ToBOC()
 			msg := &core.Message{Body: payload}
-			if err := testService(t).parseOperation(msg); err != nil {
+			if err := abi.ParseOperationID(msg); err != nil {
 				t.Fatal(err)
 			}
 			t.Logf("[%d] out msg payload: op = %x, comment = %s, %x (%d)", i, msg.OperationID, msg.TransferComment, payload, len(payload))
 		}
-	}
-}
-
-func TestService_ParseBlockMessages(t *testing.T) {
-	addr := address.MustParseAddr("EQBd9yllUaY2RSxVME0OG73RzJ_OOwOfaqrqrEDceOSUuuan")
-	txHash, _ := hex.DecodeString("ac865cf93192f72709c63bbb3d5d64c3c84fc82643db9f8ed72a18453311c1ac")
-	lt := uint64(31177094000001)
-
-	tx := getTransactionOnce(t, addr, lt, txHash)
-	if tx.IO.In != nil {
-		payload := tx.IO.In.Msg.Payload().ToBOC()
-		t.Logf("in msg payload: %x (%d)", payload, len(payload))
-	}
-	for i, out := range tx.IO.Out {
-		payload := out.Msg.Payload().ToBOC()
-		t.Logf("[%d] out msg payload: %x (%d)", i, payload, len(payload))
-	}
-
-	messages, err := testService(t).ParseBlockMessages(ctx, getCurrentMaster(t), []*tlb.Transaction{tx})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, msg := range messages {
-		t.Logf("%+v", msg)
 	}
 }
 
@@ -99,7 +74,7 @@ func TestService_ParseMessagePayload(t *testing.T) {
 	for _, c := range cases {
 		tx := getTransactionOnce(t, c.addr, c.lt, c.txHash)
 		payload := tx.IO.In.Msg.Payload().ToBOC()
-		acc := &core.Account{Types: []string{string(c.contract)}}
+		acc := &core.AccountState{Types: []string{string(c.contract)}}
 		msg := &core.Message{Body: payload, OperationID: c.opId}
 
 		parsed, err := testService(t).ParseMessagePayload(ctx, nil, acc, msg)

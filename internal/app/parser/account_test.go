@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"context"
 	"testing"
 
 	"github.com/xssnick/tonutils-go/address"
@@ -61,15 +60,21 @@ func TestService_ParseAccount(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		acc, err := s.ParseAccount(context.Background(), master, c.addr)
+		acc, err := s.api.GetAccount(ctx, master, c.addr)
 		if err != nil {
 			t.Fatal(c.addr.String(), err)
 		}
-		if len(acc.Types) < 1 || core.ContractType(acc.Types[0]) != c.contract {
-			t.Fatalf("[%s] expected: %s, got: %v", c.addr, c.contract, acc.Types)
+
+		types, err := s.abiRepo.DetermineContractInterfaces(ctx, acc)
+		if err != nil {
+			t.Fatal(c.addr.String(), err)
 		}
-		if acc.Status != c.status {
-			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.status, acc.Status)
+
+		if len(types) < 1 || core.ContractType(types[0]) != c.contract {
+			t.Fatalf("[%s] expected: %s, got: %v", c.addr, c.contract, types)
+		}
+		if core.AccountStatus(acc.State.Status) != c.status {
+			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.status, acc.State.Status)
 		}
 		t.Logf("acc: %+v", acc)
 

@@ -59,15 +59,12 @@ func getEditorDataNFT(ret *core.AccountData, editor *address.Address) {
 }
 
 //nolint // TODO: simplify account data parsing logic
-func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, acc *core.Account, ret *core.AccountData) error {
-	addr, err := address.ParseAddr(acc.Address)
-	if err != nil {
-		return errors.Wrap(err, "parse address")
-	}
-
+func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, acc *tlb.Account, types []core.ContractType, ret *core.AccountData) error {
 	var collection, item, editable, royalty bool
 
-	for _, t := range acc.Types {
+	addr := acc.State.Address
+
+	for _, t := range types {
 		switch t {
 		case core.NFTCollection:
 			collection = true

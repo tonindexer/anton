@@ -43,7 +43,6 @@ type AccountState struct {
 	Depth uint64 //
 	Tick  bool   //
 	Tock  bool   //
-	Lib   []byte `bun:"-"`
 
 	Types []string `ch:",lc"` // TODO: ContractType here, go-ch bug
 }
@@ -68,12 +67,12 @@ type AccountData struct {
 }
 
 type AccountStateFilter struct {
-	Address       string
-	LatestState   bool
-	ContractTypes []ContractType
+	Address     string
+	LatestState bool
 
-	WithData bool
 	// contract data filter
+	WithData          bool
+	ContractTypes     []ContractType
 	OwnerAddress      string
 	CollectionAddress string
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
+	"github.com/xssnick/tonutils-go/tlb"
 )
 
 type ContractType string
@@ -70,6 +71,7 @@ type ContractOperation struct {
 
 type ContractRepository interface {
 	GetContractInterfaces(context.Context) ([]*ContractInterface, error)
+	DetermineContractInterfaces(context.Context, *tlb.Account) ([]ContractType, error)
 
 	InsertContractOperations(context.Context, []*ContractOperation) error
 	GetContractOperationByID(context.Context, *AccountState, bool, uint32) (*ContractOperation, error)

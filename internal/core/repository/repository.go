@@ -21,6 +21,15 @@ type DB struct {
 	PG *bun.DB
 }
 
+func (db *DB) Close() error {
+	err := db.CH.Close()
+	pgErr := db.PG.Close()
+	if err != nil {
+		return err
+	}
+	return pgErr
+}
+
 func ConnectDB(ctx context.Context, dsnCH, dsnPG string, opts ...ch.Option) (*DB, error) {
 	var err error
 
