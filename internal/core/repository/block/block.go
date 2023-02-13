@@ -74,12 +74,15 @@ func (r *Repository) GetLastMasterBlock(ctx context.Context) (*core.Block, error
 	return ret, nil
 }
 
-func (r *Repository) AddBlocks(ctx context.Context, info []*core.Block) error {
+func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Block) error {
+	if len(info) == 0 {
+		return nil
+	}
 	_, err := r.ch.NewInsert().Model(&info).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = r.pg.NewInsert().Model(&info).Exec(ctx)
+	_, err = tx.NewInsert().Model(&info).Exec(ctx)
 	if err != nil {
 		return err
 	}

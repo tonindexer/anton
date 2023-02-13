@@ -14,7 +14,7 @@ type Transaction struct {
 
 	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull"`
 	Address string        `ch:",pk"`
-	Account *AccountState `ch:"-" bun:"rel:has-one,join:hash=last_tx_hash"`
+	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,hash=last_tx_hash"`
 
 	BlockWorkchain int32  `bun:",notnull"`
 	BlockShard     int64  `bun:",notnull"`
@@ -54,11 +54,11 @@ type Message struct {
 
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"` // TODO: ch enum
 
-	Hash       []byte   `bun:"type:bytea,pk,notnull"`
-	SourceHash []byte   `bun:"type:bytea,unique"`
-	Source     *Message `bun:"rel:has-one,join:source_hash=hash"`
+	Hash         []byte       `bun:"type:bytea,pk,notnull"`
+	SourceTxHash []byte       `bun:"type:bytea,unique"`
+	SourceTx     *Transaction `bun:"rel:has-one,join:source_tx_hash=hash"`
 
-	Incoming  bool   `ch:",pk" bun:",notnull"`
+	Incoming  bool   `ch:",pk" bun:",pk,notnull"`
 	TxHash    []byte `ch:",pk" bun:"type:bytea,notnull"`
 	TxAddress string `ch:",pk" bun:",notnull"`
 
@@ -144,10 +144,10 @@ type MessageFilter struct {
 }
 
 type TxRepository interface {
-	AddTransactions(ctx context.Context, transactions []*Transaction) error
-	AddMessages(ctx context.Context, messages []*Message) error
-	AddMessagePayloads(ctx context.Context, payloads []*MessagePayload) error
-	GetSourceMessageHash(ctx context.Context, from, to string, lt uint64) (ret []byte, err error)
+	AddTransactions(ctx context.Context, tx bun.Tx, transactions []*Transaction) error
+	AddMessages(ctx context.Context, tx bun.Tx, messages []*Message) error
+	AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads []*MessagePayload) error
+	GetSourceMessageTxHash(ctx context.Context, from, to string, lt uint64) (ret []byte, err error)
 	GetTransactions(ctx context.Context, filter *TransactionFilter, offset, limit int) ([]*Transaction, error)
 	GetMessages(ctx context.Context, filter *MessageFilter, offset, limit int) ([]*Message, error)
 }

@@ -69,15 +69,6 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.AccountState{}).
 		Unique().
-		Column("address", "state_hash").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "address state pg create unique index")
-	}
-
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.AccountState{}).
-		Unique().
 		Column("latest", "address").
 		Exec(ctx)
 	if err != nil {
@@ -167,17 +158,15 @@ func accountAddresses(accounts []*core.AccountState) (ret []string) {
 	return
 }
 
-func (r *Repository) AddAccountStates(ctx context.Context, accounts []*core.AccountState) error {
+func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts []*core.AccountState) error {
+	if len(accounts) == 0 {
+		return nil
+	}
+
 	_, err := r.ch.NewInsert().Model(&accounts).Exec(ctx)
 	if err != nil {
 		return err
 	}
-
-	tx, err := r.pg.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // nolint
 
 	_, err = tx.NewUpdate().Model(&accounts).
 		Where("address in (?)", bun.In(accountAddresses(accounts))).
@@ -198,33 +187,32 @@ func (r *Repository) AddAccountStates(ctx context.Context, accounts []*core.Acco
 			tx.NewSelect().
 				Model(&accounts).
 				Column("address").
-				ColumnExpr("max(last_tx_lt) AS _lt").
+				ColumnExpr("max(last_tx_lt) AS max_tx_lt").
 				Where("address in (?)", bun.In(accountAddresses(accounts))).
 				Group("address"),
 		).
 		Model((*core.AccountState)(nil)).
 		Table("account_states", "late").
 		Where("account_states.address = late.address").
-		Where("account_states.last_tx_lt = late._lt").
+		Where("account_states.last_tx_lt = late.max_tx_lt").
 		Set("latest = ?", true).
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "cannot set latest state")
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func (r *Repository) AddAccountData(ctx context.Context, data []*core.AccountData) error {
+func (r *Repository) AddAccountData(ctx context.Context, tx bun.Tx, data []*core.AccountData) error {
+	if len(data) == 0 {
+		return nil
+	}
 	_, err := r.ch.NewInsert().Model(&data).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = r.pg.NewInsert().Model(&data).Exec(ctx)
+	_, err = tx.NewInsert().Model(&data).Exec(ctx)
 	if err != nil {
 		return err
 	}

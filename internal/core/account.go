@@ -25,15 +25,15 @@ type AccountState struct {
 
 	Latest bool
 
-	Address  string        `ch:",pk"`
+	Address  string        `ch:",pk" bun:",pk"`
 	IsActive bool          //
 	Status   AccountStatus `ch:",lc" bun:"type:account_status"` // TODO: enum
 	Balance  uint64        // TODO: uint256
 
 	LastTxLT   uint64 `ch:",pk"`
-	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique"`
+	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique,pk"`
 
-	StateHash []byte       `ch:",pk" bun:"type:bytea,pk"`
+	StateHash []byte       `ch:",pk" bun:"type:bytea"`
 	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:state_hash=state_hash"`
 
 	Code     []byte `bun:"type:bytea"`
@@ -80,7 +80,7 @@ type AccountStateFilter struct {
 }
 
 type AccountRepository interface {
-	AddAccountStates(ctx context.Context, states []*AccountState) error
-	AddAccountData(ctx context.Context, data []*AccountData) error
+	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
+	AddAccountData(ctx context.Context, tx bun.Tx, data []*AccountData) error
 	GetAccountStates(ctx context.Context, filter *AccountStateFilter, offset, limit int) ([]*AccountState, error)
 }

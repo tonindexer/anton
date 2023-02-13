@@ -11,7 +11,7 @@ import (
 	"github.com/iam047801/tonidx/internal/core/repository/abi"
 )
 
-func (s *Service) getSourceMsgHash(ctx context.Context, in *core.Message, outMsgMap map[uint64]*core.Message) ([]byte, error) {
+func (s *Service) getSourceTxHash(ctx context.Context, in *core.Message, outMsgMap map[uint64]*core.Message) ([]byte, error) {
 	if !in.Incoming || in.Type != core.Internal {
 		return nil, errors.Wrap(core.ErrNotAvailable, "msg is not incoming or internal")
 	}
@@ -21,12 +21,12 @@ func (s *Service) getSourceMsgHash(ctx context.Context, in *core.Message, outMsg
 		return out.TxHash, nil
 	}
 
-	sourceMsg, err := s.txRepo.GetSourceMessageHash(ctx, in.SrcAddress, in.DstAddress, in.CreatedLT) // TODO: batch request (?)
+	sourceTx, err := s.txRepo.GetSourceMessageTxHash(ctx, in.SrcAddress, in.DstAddress, in.CreatedLT) // TODO: batch request (?)
 	if err != nil {
 		return nil, err
 	}
 
-	return sourceMsg, nil
+	return sourceTx, nil
 }
 
 func (s *Service) processBlockMessages(ctx context.Context, _ *tlb.BlockInfo, blockTx []*tlb.Transaction) ([]*core.Message, error) {
@@ -60,7 +60,7 @@ func (s *Service) processBlockMessages(ctx context.Context, _ *tlb.BlockInfo, bl
 			return nil, errors.Wrap(err, "map incoming message")
 		}
 
-		msg.SourceHash, err = s.getSourceMsgHash(ctx, msg, outMsgMap)
+		msg.SourceTxHash, err = s.getSourceTxHash(ctx, msg, outMsgMap)
 		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
 			if !errors.Is(err, core.ErrNotFound) {
 				return nil, errors.Wrapf(err, "get source msg hash (tx_hash = %x)", tx.Hash)

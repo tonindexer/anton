@@ -2,6 +2,7 @@ package tx
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -38,7 +39,6 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Transaction{}).
-		Using("HASH").
 		Column("block_workchain", "block_shard", "block_seq_no").
 		Exec(ctx)
 	if err != nil {
@@ -51,7 +51,7 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		Column("block_file_hash").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "tx block id pg create unique index")
+		return errors.Wrap(err, "tx block file hash create unique index")
 	}
 
 	_, err = pgDB.NewCreateIndex().
@@ -174,7 +174,7 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	_, err = pgDB.NewCreateTable().
 		Model(&core.Transaction{}).
 		IfNotExists().
-		WithForeignKeys().
+		// WithForeignKeys().
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "transaction pg create table")
@@ -187,49 +187,61 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	return nil
 }
 
-func (r *Repository) AddTransactions(ctx context.Context, transactions []*core.Transaction) error {
+func (r *Repository) AddTransactions(ctx context.Context, tx bun.Tx, transactions []*core.Transaction) error {
+	if len(transactions) == 0 {
+		return nil
+	}
 	_, err := r.ch.NewInsert().Model(&transactions).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = r.pg.NewInsert().Model(&transactions).Exec(ctx)
+	_, err = tx.NewInsert().Model(&transactions).Exec(ctx)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Repository) AddMessages(ctx context.Context, messages []*core.Message) error {
+func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*core.Message) error {
+	if len(messages) == 0 {
+		return nil
+	}
 	_, err := r.ch.NewInsert().Model(&messages).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = r.pg.NewInsert().Model(&messages).Exec(ctx)
+	_, err = tx.NewInsert().Model(&messages).Exec(ctx)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Repository) AddMessagePayloads(ctx context.Context, payloads []*core.MessagePayload) error {
+func (r *Repository) AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads []*core.MessagePayload) error {
+	if len(payloads) == 0 {
+		return nil
+	}
 	_, err := r.ch.NewInsert().Model(&payloads).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = r.pg.NewInsert().Model(&payloads).Exec(ctx)
+	_, err = tx.NewInsert().Model(&payloads).Exec(ctx)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Repository) GetSourceMessageHash(ctx context.Context, from, to string, lt uint64) (ret []byte, err error) {
+func (r *Repository) GetSourceMessageTxHash(ctx context.Context, from, to string, lt uint64) (ret []byte, err error) {
 	err = r.pg.NewSelect().Model(&core.Message{}).
-		Column("hash").
+		Column("tx_hash").
 		Where("src_address = ?", from).
 		Where("dst_address = ?", to).
 		Where("created_lt = ?", lt).
-		Scan(ctx)
+		Scan(ctx, &ret)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrap(core.ErrNotFound, "source msg hash is not found")
+	}
 	if err != nil {
 		return nil, err
 	}

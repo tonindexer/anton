@@ -17,25 +17,16 @@ import (
 	"github.com/iam047801/tonidx/internal/app/indexer"
 	"github.com/iam047801/tonidx/internal/app/parser"
 	"github.com/iam047801/tonidx/internal/core/repository"
-	"github.com/iam047801/tonidx/internal/core/repository/abi"
 )
 
 func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	// add file and line number to log
-	log.Logger = log.With().Caller().Logger().Level(zerolog.InfoLevel)
+	log.Logger = log.With().Caller().Logger().Level(zerolog.DebugLevel)
 }
 
 func initDB(ctx context.Context, conn *repository.DB) error {
-	ifaces, err := abi.NewRepository(conn.CH).GetContractInterfaces(ctx)
-	if err == nil && len(ifaces) > 0 {
-		for _, iface := range ifaces {
-			log.Debug().Str("addr", iface.Address).Str("name", string(iface.Name)).Msg("found contract interface")
-		}
-		return nil
-	}
-
 	log.Info().Msg("creating tables")
 	if err := repository.CreateTablesDB(ctx, conn); err != nil {
 		return errors.Wrap(err, "cannot create tables")

@@ -19,16 +19,11 @@ func getMsgHash(msg *tlb.Message) ([]byte, error) {
 }
 
 func mapTransaction(_ context.Context, b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, error) {
-	addr := address.NewAddress(0, byte(b.Workchain), raw.AccountAddr)
-
-	inMsgHash, err := getMsgHash(raw.IO.In)
-	if err != nil {
-		return nil, err
-	}
+	var err error
 
 	tx := &core.Transaction{
 		Hash:    raw.Hash,
-		Address: addr.String(),
+		Address: address.NewAddress(0, byte(b.Workchain), raw.AccountAddr).String(),
 
 		BlockWorkchain: b.Workchain,
 		BlockShard:     b.Shard,
@@ -38,8 +33,6 @@ func mapTransaction(_ context.Context, b *tlb.BlockInfo, raw *tlb.Transaction) (
 		PrevTxHash: raw.PrevTxHash,
 		PrevTxLT:   raw.PrevTxLT,
 
-		InMsgHash: inMsgHash,
-
 		TotalFees: raw.TotalFees.Coins.NanoTON().Uint64(),
 
 		OrigStatus: core.AccountStatus(raw.OrigStatus),
@@ -47,6 +40,12 @@ func mapTransaction(_ context.Context, b *tlb.BlockInfo, raw *tlb.Transaction) (
 
 		CreatedLT: raw.LT,
 		CreatedAt: uint64(raw.Now),
+	}
+	if raw.IO.In != nil {
+		tx.InMsgHash, err = getMsgHash(raw.IO.In)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if raw.StateUpdate != nil {
 		tx.StateUpdate = raw.StateUpdate.ToBOC()

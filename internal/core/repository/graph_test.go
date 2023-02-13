@@ -59,6 +59,21 @@ var (
 
 		Transactions: nil,
 	}
+	shardPrev = &core.Block{
+		BlockID: core.BlockID{
+			Workchain: 0,
+			Shard:     8888,
+			SeqNo:     4320,
+		},
+
+		// FileHash: string(randBytes(32)),
+		FileHash: randBytes(32),
+		RootHash: randBytes(32),
+
+		MasterFileHash: master.FileHash,
+
+		Transactions: nil,
+	}
 
 	accWallet = &core.AccountState{
 		Latest:  true,
@@ -98,6 +113,16 @@ var (
 		DataHash:  randBytes(32),
 
 		Types: []string{"item"},
+	}
+
+	accNoState = &core.AccountState{
+		Latest:     true,
+		Address:    randAddr(),
+		IsActive:   false,
+		Status:     core.NonExist,
+		Balance:    100e9,
+		LastTxLT:   randLT(),
+		LastTxHash: randBytes(32),
 	}
 
 	accDataItem = &core.AccountData{
@@ -187,8 +212,8 @@ var (
 	msgInItem = &core.Message{
 		Type: core.Internal,
 
-		Hash:       randBytes(32),
-		SourceHash: msgOutWallet.Hash,
+		Hash:         msgOutWallet.Hash,
+		SourceTxHash: msgOutWallet.TxHash,
 
 		TxAddress: accItem.Address,
 		TxHash:    accItem.LastTxHash,

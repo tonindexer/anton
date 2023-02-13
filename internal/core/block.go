@@ -43,7 +43,7 @@ type BlockFilter struct {
 }
 
 type BlockRepository interface {
-	AddBlocks(ctx context.Context, info []*Block) error
+	AddBlocks(ctx context.Context, tx bun.Tx, info []*Block) error
 	GetLastMasterBlock(ctx context.Context) (*Block, error)
 	GetBlocks(ctx context.Context, filter *BlockFilter, offset, limit int) ([]*Block, error)
 }

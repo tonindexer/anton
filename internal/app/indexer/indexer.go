@@ -48,6 +48,7 @@ func NewService(_ context.Context, cfg *app.IndexerConfig) (*Service, error) {
 	s.accountRepo = account.NewRepository(ch, pg)
 
 	s.parser = cfg.Parser
+	s.api = s.parser.API()
 
 	s.shardLastSeqno = make(map[string]uint32)
 
@@ -69,12 +70,14 @@ func getShardID(shard *tlb.BlockInfo) string {
 func (s *Service) Start() error {
 	var fromBlock uint32
 
-	master, err := s.api.GetMasterchainInfo(context.Background())
+	ctx := context.Background()
+
+	master, err := s.api.GetMasterchainInfo(ctx)
 	if err != nil {
 		return errors.Wrap(err, "cannot get masterchain info")
 	}
 
-	lastMaster, err := s.blockRepo.GetLastMasterBlock(context.Background())
+	lastMaster, err := s.blockRepo.GetLastMasterBlock(ctx)
 	switch {
 	case err == nil:
 		fromBlock = lastMaster.SeqNo + 1
@@ -87,16 +90,16 @@ func (s *Service) Start() error {
 		return errors.Wrap(err, "cannot get last masterchain block")
 	}
 
-	master, err = s.api.LookupBlock(context.Background(), master.Workchain, master.Shard, fromBlock-1)
+	master, err = s.api.LookupBlock(ctx, master.Workchain, master.Shard, fromBlock-1)
 	if err != nil {
 		return errors.Wrap(err, "lookup master")
 	}
 
 	// getting information about other work-chains and shards of first master block
 	// to init storage of last seen shard seq numbers
-	firstShards, err := s.api.GetBlockShardsInfo(context.Background(), master)
+	firstShards, err := s.api.GetBlockShardsInfo(ctx, master)
 	if err != nil {
-		return errors.Wrap(err, "get block shards info")
+		return errors.Wrapf(err, "get block shards info (master seq no = %d)", master.SeqNo)
 	}
 	for _, shard := range firstShards {
 		s.shardLastSeqno[getShardID(shard)] = shard.SeqNo

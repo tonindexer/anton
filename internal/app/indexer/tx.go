@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/uptrace/bun"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 
@@ -45,7 +46,7 @@ func (s *Service) fetchBlockTransactions(ctx context.Context, b *tlb.BlockInfo) 
 	return transactions, nil
 }
 
-func (s *Service) processBlockTransactions(ctx context.Context, master, shard *tlb.BlockInfo) error {
+func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, master, shard *tlb.BlockInfo) error {
 	var (
 		accountMap = make(map[string]*core.AccountState)
 	)
@@ -79,20 +80,20 @@ func (s *Service) processBlockTransactions(ctx context.Context, master, shard *t
 
 	payloads := s.parseMessagePayloads(ctx, messages, accountMap)
 
-	if err := s.accountRepo.AddAccountStates(ctx, accounts); err != nil {
+	if err := s.accountRepo.AddAccountStates(ctx, tx, accounts); err != nil {
 		return errors.Wrap(err, "add accounts")
 	}
-	if err := s.accountRepo.AddAccountData(ctx, accountData); err != nil {
+	if err := s.accountRepo.AddAccountData(ctx, tx, accountData); err != nil {
 		return errors.Wrap(err, "add account data")
 	}
-	if err := s.txRepo.AddTransactions(ctx, transactions); err != nil {
-		return errors.Wrap(err, "add transactions")
+	if err := s.txRepo.AddMessagePayloads(ctx, tx, payloads); err != nil {
+		return errors.Wrap(err, "add message payloads")
 	}
-	if err := s.txRepo.AddMessages(ctx, messages); err != nil {
+	if err := s.txRepo.AddMessages(ctx, tx, messages); err != nil {
 		return errors.Wrap(err, "add messages")
 	}
-	if err := s.txRepo.AddMessagePayloads(ctx, payloads); err != nil {
-		return errors.Wrap(err, "add message payloads")
+	if err := s.txRepo.AddTransactions(ctx, tx, transactions); err != nil {
+		return errors.Wrap(err, "add transactions")
 	}
 
 	return nil
