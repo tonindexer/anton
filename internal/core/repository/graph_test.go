@@ -75,15 +75,37 @@ var (
 		Transactions: nil,
 	}
 
+	accWalletOlder = &core.AccountState{
+		Latest:     true,
+		Address:    randAddr(),
+		IsActive:   true,
+		Status:     core.Active,
+		Balance:    1e9,
+		LastTxLT:   randLT(),
+		LastTxHash: randBytes(32),
+		Types:      []string{"wallet"},
+	}
+
+	accWalletOld = &core.AccountState{
+		Latest:     true,
+		Address:    accWalletOlder.Address,
+		IsActive:   true,
+		Status:     core.Active,
+		Balance:    1e9,
+		LastTxLT:   accWalletOlder.LastTxLT - 1e3,
+		LastTxHash: randBytes(32),
+		Types:      []string{"wallet"},
+	}
+
 	accWallet = &core.AccountState{
 		Latest:  true,
-		Address: randAddr(),
+		Address: accWalletOld.Address,
 
 		IsActive: true,
 		Status:   core.Active,
 		Balance:  1e9,
 
-		LastTxLT:   randLT(),
+		LastTxLT:   accWalletOld.LastTxLT - 1e3,
 		LastTxHash: randBytes(32),
 
 		StateHash: randBytes(32),
@@ -129,7 +151,6 @@ var (
 		Address:      accItem.Address,
 		LastTxLT:     accItem.LastTxLT,
 		LastTxHash:   accItem.LastTxHash,
-		StateHash:    accItem.StateHash,
 		Types:        accItem.Types,
 		OwnerAddress: randAddr(),
 		NFTCollectionData: core.NFTCollectionData{
@@ -274,7 +295,6 @@ var (
 		DstAddress:  msgInItem.DstAddress,
 		DstContract: core.ContractType(accItem.Types[0]),
 
-		Amount:        msgInItem.Amount,
 		BodyHash:      msgInItem.BodyHash,
 		OperationID:   msgInItem.OperationID,
 		OperationName: "item_transfer",

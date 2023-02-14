@@ -86,12 +86,12 @@ func (s *Service) parseMessagePayloads(ctx context.Context, messages []*core.Mes
 
 		src, ok := accountMap[msg.SrcAddress]
 		if !ok {
-			log.Debug().Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
+			log.Error().Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
 			continue
 		}
 		dst, ok := accountMap[msg.DstAddress]
 		if !ok {
-			log.Debug().Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
+			log.Error().Str("dst_addr", msg.SrcAddress).Msg("cannot find dst account")
 			continue
 		}
 

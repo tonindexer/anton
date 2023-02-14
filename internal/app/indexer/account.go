@@ -14,7 +14,9 @@ import (
 func (s *Service) processTxAccounts(
 	ctx context.Context, master *tlb.BlockInfo,
 	transactions []*core.Transaction,
-) (accounts []*core.AccountState, accountsData []*core.AccountData, err error) {
+) (accounts map[string]*core.AccountState, accountsData []*core.AccountData, err error) {
+	accounts = make(map[string]*core.AccountState)
+
 	for _, tx := range transactions {
 		addr := address.MustParseAddr(tx.Address)
 
@@ -23,7 +25,6 @@ func (s *Service) processTxAccounts(
 			return nil, nil, errors.Wrapf(err, "get account (%s)", addr.String())
 		}
 		acc := mapAccount(raw)
-		acc.Raw = raw
 
 		accTypes, err := s.abiRepo.DetermineContractInterfaces(ctx, raw)
 		if err != nil {
@@ -33,7 +34,11 @@ func (s *Service) processTxAccounts(
 			acc.Types = append(acc.Types, string(t))
 		}
 
-		accounts = append(accounts, acc)
+		if st, ok := accounts[acc.Address]; !ok || st.LastTxLT <= acc.LastTxLT {
+			accounts[acc.Address] = acc
+		} else {
+			continue
+		}
 
 		data, err := s.parser.ParseAccountData(ctx, master, raw)
 		if err != nil && !errors.Is(err, core.ErrNotAvailable) {

@@ -27,6 +27,7 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 	}
 	ret.OperationName = operation.Name
 
+	// set src and dst contract types
 	if acc.Address == message.SrcAddress {
 		ret.SrcContract = operation.ContractName
 	} else {
@@ -58,10 +59,14 @@ func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.Accoun
 	// you can parse separately incoming messages to known contracts and outgoing message from them
 
 	ret := &core.MessagePayload{
+		Type:        message.Type,
+		Hash:        message.Hash,
+		Incoming:    message.Incoming,
+		TxAddress:   message.TxAddress,
 		TxHash:      message.TxHash,
-		BodyHash:    message.BodyHash,
 		SrcAddress:  message.SrcAddress,
 		DstAddress:  message.DstAddress,
+		BodyHash:    message.BodyHash,
 		OperationID: message.OperationID,
 	}
 	if len(message.Body) == 0 {

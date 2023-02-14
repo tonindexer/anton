@@ -24,7 +24,6 @@ func (s *Service) ParseAccountData(ctx context.Context, master *tlb.BlockInfo, a
 	data.Address = acc.State.Address.String()
 	data.LastTxLT = acc.LastTxLT
 	data.LastTxHash = acc.LastTxHash
-	data.StateHash = acc.State.StateHash
 
 	types, err := s.abiRepo.DetermineContractInterfaces(ctx, acc)
 	if err != nil {

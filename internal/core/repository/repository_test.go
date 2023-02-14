@@ -151,7 +151,11 @@ func TestGraph(t *testing.T) { //nolint:gocognit,gocyclo // test master block da
 	})
 
 	t.Run("add account states", func(t *testing.T) {
-		err := accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{accWallet})
+		err := accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{accWalletOlder, accWalletOld})
+		if err != nil {
+			t.Error(err)
+		}
+		err = accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{accWallet})
 		if err != nil {
 			t.Error(err)
 		}

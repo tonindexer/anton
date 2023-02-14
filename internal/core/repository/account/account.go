@@ -28,15 +28,6 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err := pgDB.NewCreateIndex().
 		Model(&core.AccountData{}).
-		Unique().
-		Column("address", "state_hash").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "address state pg create unique index")
-	}
-
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.AccountData{}).
 		Using("HASH").
 		Column("owner_address").
 		Where("length(owner_address) > 0").
@@ -70,6 +61,7 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		Model(&core.AccountState{}).
 		Unique().
 		Column("latest", "address").
+		Where("latest IS TRUE").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "address state pg create unique index")
@@ -152,8 +144,12 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 }
 
 func accountAddresses(accounts []*core.AccountState) (ret []string) {
+	m := make(map[string]struct{})
 	for _, a := range accounts {
-		ret = append(ret, a.Address)
+		m[a.Address] = struct{}{}
+	}
+	for a := range m {
+		ret = append(ret, a)
 	}
 	return
 }
@@ -177,9 +173,12 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		return errors.Wrap(err, "cannot drop latest state")
 	}
 
+	for _, a := range accounts {
+		a.Latest = false
+	}
 	_, err = tx.NewInsert().Model(&accounts).Exec(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "cannot insert new states")
 	}
 
 	_, err = tx.NewUpdate().
@@ -192,9 +191,9 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 				Group("address"),
 		).
 		Model((*core.AccountState)(nil)).
-		Table("account_states", "late").
-		Where("account_states.address = late.address").
-		Where("account_states.last_tx_lt = late.max_tx_lt").
+		Table("late").
+		Where("account_state.address = late.address").
+		Where("account_state.last_tx_lt = late.max_tx_lt").
 		Set("latest = ?", true).
 		Exec(ctx)
 	if err != nil {

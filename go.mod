@@ -10,7 +10,7 @@ require (
 	github.com/uptrace/bun/dialect/pgdialect v1.1.11
 	github.com/uptrace/bun/driver/pgdriver v1.1.11
 	github.com/uptrace/go-clickhouse v0.3.0
-	github.com/xssnick/tonutils-go v1.5.0
+	github.com/xssnick/tonutils-go v1.5.2
 )
 
 require (

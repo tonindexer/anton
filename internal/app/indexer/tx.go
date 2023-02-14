@@ -47,30 +47,21 @@ func (s *Service) fetchBlockTransactions(ctx context.Context, b *tlb.BlockInfo) 
 }
 
 func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, master, shard *tlb.BlockInfo) error {
-	var (
-		accountMap = make(map[string]*core.AccountState)
-	)
+	var accounts []*core.AccountState
 
 	blockTx, err := s.fetchBlockTransactions(ctx, shard)
 	if err != nil {
 		return errors.Wrap(err, "get block transactions")
 	}
 
-	transactions, err := mapTransactions(ctx, shard, blockTx)
+	transactions, err := mapTransactions(shard, blockTx)
 	if err != nil {
 		return errors.Wrap(err, "parse block transactions")
 	}
 
-	accounts, accountData, err := s.processTxAccounts(ctx, master, transactions)
+	accountMap, accountData, err := s.processTxAccounts(ctx, master, transactions)
 	if err != nil {
 		return errors.Wrap(err, "process tx accounts")
-	}
-
-	for _, acc := range accounts {
-		if acc.Raw.State == nil || acc.Raw.State.Address.Type() != address.StdAddress {
-			continue
-		}
-		accountMap[acc.Address] = acc
 	}
 
 	messages, err := s.processBlockMessages(ctx, shard, blockTx)
@@ -80,8 +71,12 @@ func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, maste
 
 	payloads := s.parseMessagePayloads(ctx, messages, accountMap)
 
+	for _, st := range accountMap {
+		accounts = append(accounts, st)
+	}
+
 	if err := s.accountRepo.AddAccountStates(ctx, tx, accounts); err != nil {
-		return errors.Wrap(err, "add accounts")
+		return errors.Wrap(err, "add account states")
 	}
 	if err := s.accountRepo.AddAccountData(ctx, tx, accountData); err != nil {
 		return errors.Wrap(err, "add account data")

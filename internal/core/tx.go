@@ -14,7 +14,7 @@ type Transaction struct {
 
 	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull"`
 	Address string        `ch:",pk"`
-	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,hash=last_tx_hash"`
+	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:hash=last_tx_hash"`
 
 	BlockWorkchain int32  `bun:",notnull"`
 	BlockShard     int64  `bun:",notnull"`
@@ -55,7 +55,7 @@ type Message struct {
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"` // TODO: ch enum
 
 	Hash         []byte       `bun:"type:bytea,pk,notnull"`
-	SourceTxHash []byte       `bun:"type:bytea,unique"`
+	SourceTxHash []byte       `bun:"type:bytea"`
 	SourceTx     *Transaction `bun:"rel:has-one,join:source_tx_hash=hash"`
 
 	Incoming  bool   `ch:",pk" bun:",pk,notnull"`
@@ -95,25 +95,19 @@ type MessagePayload struct {
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"`
 	Hash []byte      `bun:"type:bytea,pk,notnull"`
 
-	Incoming  bool   `ch:",pk" bun:",notnull"`
+	Incoming  bool   `ch:",pk" bun:",pk,notnull"`
 	TxAddress string `ch:",pk" bun:",notnull"`
 	TxHash    []byte `ch:",pk" bun:"type:bytea,notnull"`
 
 	SrcAddress  string       //
-	SrcContract ContractType `ch:",lc" bun:",notnull"`
+	SrcContract ContractType `ch:",lc"`
 	DstAddress  string       //
-	DstContract ContractType `ch:",lc" bun:",notnull"`
+	DstContract ContractType `ch:",lc"`
 
-	Bounce  bool   //
-	Bounced bool   //
-	Amount  uint64 // TODO: uint256
-
-	Body            []byte `bun:"type:bytea"`
-	BodyHash        []byte `ch:",pk" bun:"type:bytea,notnull"`
-	OperationID     uint32 `bun:",notnull"`
-	OperationName   string `ch:",lc" bun:",notnull"`
-	TransferComment string //
-	DataJSON        string //
+	BodyHash      []byte `ch:",pk" bun:"type:bytea,notnull"`
+	OperationID   uint32 `bun:",notnull"`
+	OperationName string `ch:",lc" bun:",notnull"`
+	DataJSON      string //
 
 	CreatedAt uint64 `bun:",notnull"`
 	CreatedLT uint64 `bun:",notnull"`

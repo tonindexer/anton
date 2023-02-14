@@ -1,8 +1,6 @@
 package indexer
 
 import (
-	"context"
-
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -11,82 +9,34 @@ import (
 )
 
 func getMsgHash(msg *tlb.Message) ([]byte, error) {
+	switch raw := msg.Msg.(type) { // TODO: fix ToCell marshal in tonutils-go
+	case *tlb.InternalMessage:
+		if raw.StateInit != nil {
+			raw.StateInit.Lib = nil
+		}
+	case *tlb.ExternalMessage:
+		if raw.StateInit != nil {
+			raw.StateInit.Lib = nil
+		}
+	case *tlb.ExternalMessageOut:
+		if raw.StateInit != nil {
+			raw.StateInit.Lib = nil
+		}
+	}
+
 	msgCell, err := tlb.ToCell(msg.Msg)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot convert message to cell")
 	}
+
 	return msgCell.Hash(), nil
 }
 
-func mapTransaction(_ context.Context, b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, error) {
-	var err error
-
-	tx := &core.Transaction{
-		Hash:    raw.Hash,
-		Address: address.NewAddress(0, byte(b.Workchain), raw.AccountAddr).String(),
-
-		BlockWorkchain: b.Workchain,
-		BlockShard:     b.Shard,
-		BlockSeqNo:     b.SeqNo,
-		BlockFileHash:  b.FileHash,
-
-		PrevTxHash: raw.PrevTxHash,
-		PrevTxLT:   raw.PrevTxLT,
-
-		TotalFees: raw.TotalFees.Coins.NanoTON().Uint64(),
-
-		OrigStatus: core.AccountStatus(raw.OrigStatus),
-		EndStatus:  core.AccountStatus(raw.EndStatus),
-
-		CreatedLT: raw.LT,
-		CreatedAt: uint64(raw.Now),
-	}
-	if raw.IO.In != nil {
-		tx.InMsgHash, err = getMsgHash(raw.IO.In)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if raw.StateUpdate != nil {
-		tx.StateUpdate = raw.StateUpdate.ToBOC()
-	}
-	if raw.Description != nil {
-		tx.Description = raw.Description.ToBOC()
-	}
-
-	return tx, nil
-}
-
-func mapTransactions(ctx context.Context, b *tlb.BlockInfo, blockTx []*tlb.Transaction) ([]*core.Transaction, error) {
-	var transactions []*core.Transaction
-
-	for _, raw := range blockTx {
-		tx, err := mapTransaction(ctx, b, raw)
-		if err != nil {
-			return nil, err
-		}
-		transactions = append(transactions, tx)
-	}
-
-	return transactions, nil
-}
-
 func mapMessage(incoming bool, tx *tlb.Transaction, message *tlb.Message) (*core.Message, error) {
-	msg := new(core.Message)
-
-	msgCell, err := tlb.ToCell(message.Msg)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot convert message to cell")
-	}
-	msg.Hash = msgCell.Hash()
-
-	msg.Incoming = incoming
-	msg.TxHash = tx.Hash
-	if msg.Incoming {
-		msg.TxAddress = msg.DstAddress
-	} else {
-		msg.TxAddress = msg.SrcAddress
-	}
+	var (
+		msg = new(core.Message)
+		err error
+	)
 
 	switch raw := message.Msg.(type) {
 	case *tlb.InternalMessage:
@@ -150,6 +100,19 @@ func mapMessage(incoming bool, tx *tlb.Transaction, message *tlb.Message) (*core
 		msg.BodyHash = raw.Body.Hash()
 	}
 
+	msg.Hash, err = getMsgHash(message)
+	if err != nil {
+		return nil, err
+	}
+
+	msg.Incoming = incoming
+	msg.TxHash = tx.Hash
+	if msg.Incoming {
+		msg.TxAddress = msg.DstAddress
+	} else {
+		msg.TxAddress = msg.SrcAddress
+	}
+
 	return msg, nil
 }
 
@@ -184,4 +147,57 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 	ret.LastTxHash = acc.LastTxHash
 
 	return ret
+}
+
+func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, error) {
+	var err error
+
+	tx := &core.Transaction{
+		Hash:    raw.Hash,
+		Address: address.NewAddress(0, byte(b.Workchain), raw.AccountAddr).String(),
+
+		BlockWorkchain: b.Workchain,
+		BlockShard:     b.Shard,
+		BlockSeqNo:     b.SeqNo,
+		BlockFileHash:  b.FileHash,
+
+		PrevTxHash: raw.PrevTxHash,
+		PrevTxLT:   raw.PrevTxLT,
+
+		TotalFees: raw.TotalFees.Coins.NanoTON().Uint64(),
+
+		OrigStatus: core.AccountStatus(raw.OrigStatus),
+		EndStatus:  core.AccountStatus(raw.EndStatus),
+
+		CreatedLT: raw.LT,
+		CreatedAt: uint64(raw.Now),
+	}
+	if raw.IO.In != nil {
+		tx.InMsgHash, err = getMsgHash(raw.IO.In)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if raw.StateUpdate != nil {
+		tx.StateUpdate = raw.StateUpdate.ToBOC()
+	}
+	if raw.Description != nil {
+		tx.Description = raw.Description.ToBOC()
+	}
+
+	return tx, nil
+}
+
+func mapTransactions(b *tlb.BlockInfo, blockTx []*tlb.Transaction) ([]*core.Transaction, error) {
+	var transactions []*core.Transaction
+
+	for _, raw := range blockTx {
+		tx, err := mapTransaction(b, raw)
+		if err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, tx)
+	}
+
+	return transactions, nil
 }

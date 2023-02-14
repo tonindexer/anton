@@ -21,8 +21,6 @@ type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:types,is_active,status"`
 	bun.BaseModel `bun:"table:account_states"`
 
-	Raw *tlb.Account `ch:"-" bun:"-"`
-
 	Latest bool
 
 	Address  string        `ch:",pk" bun:",pk"`
@@ -30,16 +28,16 @@ type AccountState struct {
 	Status   AccountStatus `ch:",lc" bun:"type:account_status"` // TODO: enum
 	Balance  uint64        // TODO: uint256
 
-	LastTxLT   uint64 `ch:",pk"`
-	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique,pk"`
+	LastTxLT   uint64 `ch:",pk" bun:",pk"`
+	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique"`
 
-	StateHash []byte       `ch:",pk" bun:"type:bytea"`
-	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:state_hash=state_hash"`
+	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:address=address,join:last_tx_lt=last_tx_lt"`
 
-	Code     []byte `bun:"type:bytea"`
-	CodeHash []byte `bun:"type:bytea"`
-	Data     []byte `bun:"type:bytea"`
-	DataHash []byte `bun:"type:bytea"`
+	StateHash []byte `bun:"type:bytea"`
+	Code      []byte `bun:"type:bytea"`
+	CodeHash  []byte `bun:"type:bytea"`
+	Data      []byte `bun:"type:bytea"`
+	DataHash  []byte `bun:"type:bytea"`
 
 	// TODO: do we need it?
 	Depth uint64 //
@@ -53,10 +51,9 @@ type AccountData struct {
 	ch.CHModel    `ch:"account_data,partition:types"`
 	bun.BaseModel `bun:"table:account_data"`
 
-	Address    string `ch:",pk" bun:",notnull"`
-	LastTxLT   uint64 `ch:",pk" bun:",notnull"`
+	Address    string `ch:",pk" bun:",pk,notnull"`
+	LastTxLT   uint64 `ch:",pk" bun:",pk,notnull"`
 	LastTxHash []byte `ch:",pk" bun:"type:bytea,notnull,unique"`
-	StateHash  []byte `ch:",pk" bun:"type:bytea,pk"`
 
 	Types []string `ch:",lc"` // TODO: ContractType here, ch bug
 
