@@ -356,6 +356,29 @@ func TestGraphFilterTransactions(t *testing.T) {
 
 	t.Run("filter tx with msg by address", func(t *testing.T) {
 		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
+			Address:          accWallet.Address,
+			WithAccountState: true,
+			WithMessages:     true,
+		}, 0, 100)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		txOut := txOutWallet
+		txOut.Account = &accWallet
+		txOut.InMsg = &msgExtWallet
+		txOut.OutMsg = []*core.Message{&msgOutWallet}
+
+		if len(ret) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
+		}
+		if !reflect.DeepEqual(&txOut, ret[0]) {
+			t.Errorf("wrong tx, expected: %+v, got: %+v", txOut, ret[0])
+		}
+	})
+
+	t.Run("filter tx with msg by address [2]", func(t *testing.T) {
+		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
 			Address:          accItem.Address,
 			WithAccountState: true,
 			WithMessages:     true,
@@ -365,13 +388,14 @@ func TestGraphFilterTransactions(t *testing.T) {
 		}
 
 		txIn := txInItem
+		txIn.Account = &accItem
 		txIn.InMsg = &msgInItem
 
 		if len(ret) != 1 {
 			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
 		}
 		if !reflect.DeepEqual(&txIn, ret[0]) {
-			t.Errorf("wrong account, expected: %+v, got: %+v", txIn, ret[0])
+			t.Errorf("wrong tx, expected: %+v, got: %+v", txIn, ret[0])
 		}
 	})
 }

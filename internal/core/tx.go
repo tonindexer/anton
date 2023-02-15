@@ -23,8 +23,9 @@ type Transaction struct {
 	PrevTxHash []byte `bun:"type:bytea"`
 	PrevTxLT   uint64 //
 
-	InMsg  *Message   `ch:"-" bun:"rel:has-one,join:address=tx_address,join:created_lt=tx_created_lt"` // `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
-	OutMsg []*Message `ch:"-" bun:"rel:has-many,join:address=tx_address,join:created_lt=tx_created_lt"`
+	InMsgLT uint64     `bun:",notnull"`
+	InMsg   *Message   `ch:"-" bun:"rel:has-one,join:address=tx_address,join:in_msg_lt=created_lt"` // `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
+	OutMsg  []*Message `ch:"-" bun:"rel:has-many,join:address=tx_address,join:created_lt=tx_created_lt"`
 
 	TotalFees uint64 // `ch:"type:UInt256"`
 

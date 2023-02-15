@@ -259,7 +259,7 @@ func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQu
 				return q.Where("in_msg.incoming = ?", true)
 			}).
 			Relation("OutMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
-				return q.Where("out_msg.incoming = ?", false)
+				return q.Where("message.incoming = ?", false)
 			})
 	}
 

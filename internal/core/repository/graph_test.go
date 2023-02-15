@@ -125,7 +125,7 @@ var (
 		Status:   core.Active,
 		Balance:  1e9,
 
-		LastTxLT:   randLT(),
+		LastTxLT:   accWallet.LastTxLT + 10,
 		LastTxHash: randBytes(32),
 
 		StateHash: randBytes(32),
@@ -201,6 +201,8 @@ var (
 		PrevTxHash: randBytes(32),
 		PrevTxLT:   randLT(),
 
+		InMsgLT: msgExtWallet.CreatedLT,
+
 		TotalFees:   1e5,
 		StateUpdate: nil,
 		Description: nil,
@@ -215,9 +217,10 @@ var (
 		Type: core.Internal,
 		Hash: randBytes(32),
 
-		Incoming:  false,
-		TxAddress: accWallet.Address,
-		TxHash:    accWallet.LastTxHash,
+		Incoming:    false,
+		TxAddress:   txOutWallet.Address,
+		TxHash:      txOutWallet.Hash,
+		TxCreatedLT: txOutWallet.CreatedLT,
 
 		SrcAddress: accWallet.Address,
 		DstAddress: accItem.Address,
@@ -276,6 +279,8 @@ var (
 		PrevTxHash: randBytes(32),
 		PrevTxLT:   randLT(),
 
+		InMsgLT: msgInItem.CreatedLT,
+
 		TotalFees: 1e3,
 
 		StateUpdate: randBytes(32),
@@ -285,7 +290,7 @@ var (
 		EndStatus:  core.Active,
 
 		CreatedAt: msgInItem.CreatedAt,
-		CreatedLT: msgInItem.CreatedLT + 1,
+		CreatedLT: accItem.LastTxLT, // msgInItem.CreatedLT + 1,
 	}
 
 	msgInItemPayload = core.MessagePayload{
