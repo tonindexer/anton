@@ -39,19 +39,19 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Transaction{}).
-		Column("block_workchain", "block_shard", "block_seq_no").
+		Unique().
+		Column("address", "created_lt").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "tx block id pg create unique index")
+		return errors.Wrap(err, "transaction account lt pg create index")
 	}
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Transaction{}).
-		Using("HASH").
-		Column("block_file_hash").
+		Column("block_workchain", "block_shard", "block_seq_no").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "tx block file hash create unique index")
+		return errors.Wrap(err, "tx block id pg create unique index")
 	}
 
 	_, err = pgDB.NewCreateIndex().
@@ -250,26 +250,29 @@ func (r *Repository) GetSourceMessageTxHash(ctx context.Context, from, to string
 }
 
 func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQuery {
+	if f.WithAccountState {
+		q = q.Relation("Account")
+	}
 	if f.WithMessages {
-		q = q.Relation("InMsg").
+		q = q.
+			Relation("InMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
+				return q.Where("in_msg.incoming = ?", true)
+			}).
 			Relation("OutMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
-				return q.Where("incoming = ?", false)
+				return q.Where("out_msg.incoming = ?", false)
 			})
 	}
 
 	if len(f.Hash) > 0 {
-		q = q.Where("hash = ?", f.Hash)
+		q = q.Where("transaction.hash = ?", f.Hash)
 	}
 	if len(f.Address) > 0 {
-		q = q.Where("address = ?", f.Address)
+		q = q.Where("transaction.address = ?", f.Address)
 	}
 	if f.BlockID != nil {
 		q = q.Where("block_workchain = ?", f.BlockID.Workchain).
 			Where("block_shard = ?", f.BlockID.Shard).
 			Where("block_seq_no = ?", f.BlockID.SeqNo)
-	}
-	if f.BlockFileHash != nil {
-		q = q.Where("block_file_hash", f.BlockFileHash)
 	}
 
 	return q

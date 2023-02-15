@@ -116,7 +116,7 @@ func dropTables(t *testing.T) { //nolint:gocyclo // clean database
 	}
 }
 
-func TestGraph(t *testing.T) { //nolint:gocognit,gocyclo // test master block data insertion
+func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master block data insertion
 	var insertTx bun.Tx
 
 	initDB(t)
@@ -128,7 +128,7 @@ func TestGraph(t *testing.T) { //nolint:gocognit,gocyclo // test master block da
 	t.Run("create tables", func(t *testing.T) {
 		err := repository.CreateTablesDB(ctx, db)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	})
 
@@ -141,113 +141,237 @@ func TestGraph(t *testing.T) { //nolint:gocognit,gocyclo // test master block da
 	})
 
 	t.Run("add account data", func(t *testing.T) {
-		err := accountRepo.AddAccountData(ctx, insertTx, []*core.AccountData{accDataItem})
+		err := accountRepo.AddAccountData(ctx, insertTx, []*core.AccountData{&accDataWallet, &accDataItem})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 		if err := accountRepo.AddAccountData(ctx, insertTx, nil); err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	})
 
 	t.Run("add account states", func(t *testing.T) {
-		err := accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{accWalletOlder, accWalletOld})
+		err := accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{&accWalletOlder, &accWalletOld})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
-		err = accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{accWallet})
+		err = accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{&accWallet})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
-		err = accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{accItem})
+		err = accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{&accItem})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
-		err = accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{accNoState})
+		err = accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{&accNoState})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 		if err := accountRepo.AddAccountStates(ctx, insertTx, nil); err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	})
 
 	t.Run("add message payloads", func(t *testing.T) {
-		err := txRepo.AddMessagePayloads(ctx, insertTx, []*core.MessagePayload{msgInItemPayload})
+		err := txRepo.AddMessagePayloads(ctx, insertTx, []*core.MessagePayload{&msgInItemPayload})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 		if err := txRepo.AddMessagePayloads(ctx, insertTx, nil); err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	})
 
 	t.Run("add messages", func(t *testing.T) {
-		err := txRepo.AddMessages(ctx, insertTx, []*core.Message{msgExtWallet, msgOutWallet, msgInItem})
+		err := txRepo.AddMessages(ctx, insertTx, []*core.Message{&msgExtWallet, &msgOutWallet, &msgInItem})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 		if err := txRepo.AddMessages(ctx, insertTx, nil); err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	})
 
 	t.Run("add transactions", func(t *testing.T) {
-		err := txRepo.AddTransactions(ctx, insertTx, []*core.Transaction{txOutWallet})
+		err := txRepo.AddTransactions(ctx, insertTx, []*core.Transaction{&txOutWallet})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
-		err = txRepo.AddTransactions(ctx, insertTx, []*core.Transaction{txInItem})
+		err = txRepo.AddTransactions(ctx, insertTx, []*core.Transaction{&txInItem})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 		if err := txRepo.AddTransactions(ctx, insertTx, nil); err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	})
 
 	t.Run("add shard blocks", func(t *testing.T) {
-		err := blockRepo.AddBlocks(ctx, insertTx, []*core.Block{shardPrev, shard})
+		err := blockRepo.AddBlocks(ctx, insertTx, []*core.Block{&shardPrev, &shard})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 		if err := blockRepo.AddBlocks(ctx, insertTx, nil); err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	})
 
 	t.Run("add master blocks", func(t *testing.T) {
-		err := blockRepo.AddBlocks(ctx, insertTx, []*core.Block{master})
+		err := blockRepo.AddBlocks(ctx, insertTx, []*core.Block{&master})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	})
 
 	t.Run("commit insert transaction", func(t *testing.T) {
 		err := insertTx.Commit()
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	})
+}
 
-	t.Run("filter blocks", func(t *testing.T) {
-		var wc int32 = -1
+func TestGraphFilterBlocks(t *testing.T) {
+	initDB(t)
 
-		f := core.BlockFilter{
-			ID:        nil,
-			Workchain: &wc,
-			FileHash:  nil,
-		}
-		blocks, err := blockRepo.GetBlocks(ctx, &f, 0, 100)
+	t.Run("filter last master", func(t *testing.T) {
+		b, err := blockRepo.GetLastMasterBlock(ctx)
 		if err != nil {
 			t.Error(err)
 		}
-		if len(blocks) != 1 || !reflect.DeepEqual(master, blocks[0]) {
+
+		if !reflect.DeepEqual(&master, b) {
+			t.Errorf("wrong master block, expected: %v, got: %v", master, b)
+		}
+	})
+
+	t.Run("filter master blocks", func(t *testing.T) {
+		var wc int32 = -1
+
+		f := &core.BlockFilter{Workchain: &wc, WithShards: true}
+
+		blocks, err := blockRepo.GetBlocks(ctx, f, 0, 100)
+		if err != nil {
+			t.Error(err)
+		}
+
+		m := master
+		m.Shards = []*core.Block{&shardPrev, &shard}
+
+		if len(blocks) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(blocks))
+		}
+		if !reflect.DeepEqual(&m, blocks[0]) {
 			t.Errorf("wrong master block, expected: %v, got: %v", master, blocks[0])
 		}
 	})
 
-	t.Run("drop tables final", func(t *testing.T) {
-		dropTables(t)
+	t.Run("filter shard blocks", func(t *testing.T) {
+		var wc int32 = 0
+
+		f := &core.BlockFilter{Workchain: &wc, WithTransactions: true}
+
+		blocks, err := blockRepo.GetBlocks(ctx, f, 0, 100)
+		if err != nil {
+			t.Error(err)
+		}
+
+		s, sv := shard, shardPrev
+		s.Transactions = []*core.Transaction{&txOutWallet, &txInItem}
+
+		if len(blocks) != 2 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 2, len(blocks))
+		}
+		if exp := []*core.Block{&s, &sv}; !reflect.DeepEqual(exp, blocks) {
+			t.Errorf("wrong shard block, expected: %v, got: %v", exp, blocks)
+		}
+	})
+}
+
+func TestGraphFilterAccounts(t *testing.T) {
+	initDB(t)
+
+	t.Run("filter latest state by address", func(t *testing.T) {
+		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+			Address:     accWallet.Address,
+			LatestState: true,
+		}, 0, 100)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(ret) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
+		}
+		if !reflect.DeepEqual(&accWallet, ret[0]) {
+			t.Errorf("wrong account, expected: %+v, got: %+v", accWallet, ret[0])
+		}
+	})
+
+	t.Run("filter latest state by address", func(t *testing.T) {
+		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+			Address:     accWallet.Address,
+			LatestState: true,
+			WithData:    true,
+		}, 0, 100)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		acc := accWallet
+		acc.StateData = &accDataWallet
+
+		if len(ret) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
+		}
+		if !reflect.DeepEqual(&acc, ret[0]) {
+			t.Errorf("wrong account, expected: %+v, got: %+v", acc, ret[0])
+		}
+	})
+
+	t.Run("filter latest item account states by owner address", func(t *testing.T) {
+		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+			LatestState:  true,
+			WithData:     true,
+			OwnerAddress: accDataItem.OwnerAddress,
+		}, 0, 100)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		acc := accItem
+		acc.StateData = &accDataItem
+
+		if len(ret) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
+		}
+		if !reflect.DeepEqual(&acc, ret[0]) {
+			t.Errorf("wrong account, expected: %+v, got: %+v", acc, ret[0])
+		}
+	})
+}
+
+func TestGraphFilterTransactions(t *testing.T) {
+	initDB(t)
+
+	t.Run("filter tx with msg by address", func(t *testing.T) {
+		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
+			Address:          accItem.Address,
+			WithAccountState: true,
+			WithMessages:     true,
+		}, 0, 100)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		txIn := txInItem
+		txIn.InMsg = &msgInItem
+
+		if len(ret) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
+		}
+		if !reflect.DeepEqual(&txIn, ret[0]) {
+			t.Errorf("wrong account, expected: %+v, got: %+v", txIn, ret[0])
+		}
 	})
 }

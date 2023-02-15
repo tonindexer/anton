@@ -22,11 +22,10 @@ type Block struct {
 	FileHash []byte `ch:",pk" bun:"type:bytea,unique,notnull"` // TODO: []byte here, go-bun bug on has-many
 	RootHash []byte `ch:",pk" bun:"type:bytea,unique,notnull"`
 
-	MasterFileHash []byte   `bun:"type:bytea"`
-	Shards         []*Block `ch:"-" bun:"rel:has-many,join:file_hash=master_file_hash"`
-	Master         *Block   `ch:"-" bun:"rel:has-one,join:master_file_hash=file_hash"`
+	MasterID BlockID  `ch:"-" bun:"embed:master_"`
+	Shards   []*Block `ch:"-" bun:"rel:has-many,join:workchain=master_workchain,join:shard=master_shard,join:seq_no=master_seq_no"`
 
-	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:file_hash=block_file_hash"`
+	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:workchain=block_workchain,join:shard=block_shard,join:seq_no=block_seq_no"`
 
 	// TODO: block info data
 }
@@ -36,10 +35,8 @@ type BlockFilter struct {
 	Workchain *int32
 	FileHash  []byte
 
-	WithMaster              bool
-	WithShards              bool
-	WithTransactions        bool
-	WithTransactionMessages bool
+	WithShards       bool
+	WithTransactions bool
 }
 
 type BlockRepository interface {

@@ -30,7 +30,7 @@ func randLT() uint64 {
 }
 
 var (
-	master = &core.Block{
+	master = core.Block{
 		BlockID: core.BlockID{
 			Workchain: -1,
 			Shard:     2222,
@@ -44,7 +44,7 @@ var (
 		Transactions: nil,
 	}
 
-	shard = &core.Block{
+	shard = core.Block{
 		BlockID: core.BlockID{
 			Workchain: 0,
 			Shard:     8888,
@@ -55,11 +55,11 @@ var (
 		FileHash: randBytes(32),
 		RootHash: randBytes(32),
 
-		MasterFileHash: master.FileHash,
+		MasterID: master.BlockID,
 
 		Transactions: nil,
 	}
-	shardPrev = &core.Block{
+	shardPrev = core.Block{
 		BlockID: core.BlockID{
 			Workchain: 0,
 			Shard:     8888,
@@ -70,12 +70,12 @@ var (
 		FileHash: randBytes(32),
 		RootHash: randBytes(32),
 
-		MasterFileHash: master.FileHash,
+		MasterID: master.BlockID,
 
 		Transactions: nil,
 	}
 
-	accWalletOlder = &core.AccountState{
+	accWalletOlder = core.AccountState{
 		Latest:     true,
 		Address:    randAddr(),
 		IsActive:   true,
@@ -86,18 +86,18 @@ var (
 		Types:      []string{"wallet"},
 	}
 
-	accWalletOld = &core.AccountState{
+	accWalletOld = core.AccountState{
 		Latest:     true,
 		Address:    accWalletOlder.Address,
 		IsActive:   true,
 		Status:     core.Active,
 		Balance:    1e9,
-		LastTxLT:   accWalletOlder.LastTxLT - 1e3,
+		LastTxLT:   accWalletOlder.LastTxLT + 1e3,
 		LastTxHash: randBytes(32),
 		Types:      []string{"wallet"},
 	}
 
-	accWallet = &core.AccountState{
+	accWallet = core.AccountState{
 		Latest:  true,
 		Address: accWalletOld.Address,
 
@@ -105,7 +105,7 @@ var (
 		Status:   core.Active,
 		Balance:  1e9,
 
-		LastTxLT:   accWalletOld.LastTxLT - 1e3,
+		LastTxLT:   accWalletOld.LastTxLT + 1e3,
 		LastTxHash: randBytes(32),
 
 		StateHash: randBytes(32),
@@ -117,7 +117,7 @@ var (
 		Types: []string{"wallet"},
 	}
 
-	accItem = &core.AccountState{
+	accItem = core.AccountState{
 		Latest:  true,
 		Address: randAddr(),
 
@@ -137,7 +137,7 @@ var (
 		Types: []string{"item"},
 	}
 
-	accNoState = &core.AccountState{
+	accNoState = core.AccountState{
 		Latest:     true,
 		Address:    randAddr(),
 		IsActive:   false,
@@ -147,7 +147,14 @@ var (
 		LastTxHash: randBytes(32),
 	}
 
-	accDataItem = &core.AccountData{
+	accDataWallet = core.AccountData{
+		Address:    accWallet.Address,
+		LastTxLT:   accWallet.LastTxLT,
+		LastTxHash: accWallet.LastTxHash,
+		Types:      accWallet.Types,
+	}
+
+	accDataItem = core.AccountData{
 		Address:      accItem.Address,
 		LastTxLT:     accItem.LastTxLT,
 		LastTxHash:   accItem.LastTxHash,
@@ -168,7 +175,7 @@ var (
 		},
 	}
 
-	msgExtWallet = &core.Message{
+	msgExtWallet = core.Message{
 		Type:          core.ExternalIn,
 		Hash:          randBytes(32),
 		Incoming:      true,
@@ -183,14 +190,13 @@ var (
 		CreatedLT:     accWallet.LastTxLT,
 	}
 
-	txOutWallet = &core.Transaction{
+	txOutWallet = core.Transaction{
 		Address: accWallet.Address,
 		Hash:    accWallet.LastTxHash,
 
 		BlockWorkchain: shard.Workchain,
 		BlockShard:     shard.Shard,
 		BlockSeqNo:     shard.SeqNo,
-		BlockFileHash:  shard.FileHash,
 
 		PrevTxHash: randBytes(32),
 		PrevTxLT:   randLT(),
@@ -205,7 +211,7 @@ var (
 		CreatedLT: accWallet.LastTxLT,
 	}
 
-	msgOutWallet = &core.Message{
+	msgOutWallet = core.Message{
 		Type: core.Internal,
 		Hash: randBytes(32),
 
@@ -230,14 +236,15 @@ var (
 		CreatedLT: accWallet.LastTxLT + 1,
 	}
 
-	msgInItem = &core.Message{
+	msgInItem = core.Message{
 		Type: core.Internal,
 
 		Hash:         msgOutWallet.Hash,
 		SourceTxHash: msgOutWallet.TxHash,
 
-		TxAddress: accItem.Address,
-		TxHash:    accItem.LastTxHash,
+		TxAddress:   accItem.Address,
+		TxHash:      accItem.LastTxHash,
+		TxCreatedLT: accItem.LastTxLT,
 
 		Incoming:   true,
 		SrcAddress: accWallet.Address,
@@ -258,14 +265,13 @@ var (
 		CreatedLT: msgOutWallet.CreatedLT,
 	}
 
-	txInItem = &core.Transaction{
+	txInItem = core.Transaction{
 		Address: accItem.Address,
 		Hash:    accItem.LastTxHash,
 
 		BlockWorkchain: shard.Workchain,
 		BlockShard:     shard.Shard,
 		BlockSeqNo:     shard.SeqNo,
-		BlockFileHash:  shard.FileHash,
 
 		PrevTxHash: randBytes(32),
 		PrevTxLT:   randLT(),
@@ -282,7 +288,7 @@ var (
 		CreatedLT: msgInItem.CreatedLT + 1,
 	}
 
-	msgInItemPayload = &core.MessagePayload{
+	msgInItemPayload = core.MessagePayload{
 		Type: core.Internal,
 		Hash: msgInItem.Hash,
 

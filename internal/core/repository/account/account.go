@@ -173,10 +173,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		return errors.Wrap(err, "cannot drop latest state")
 	}
 
-	for _, a := range accounts {
-		a.Latest = false
-	}
-	_, err = tx.NewInsert().Model(&accounts).Exec(ctx)
+	_, err = tx.NewInsert().Model(&accounts).ExcludeColumn("latest").Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "cannot insert new states")
 	}
@@ -224,13 +221,13 @@ func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilt
 	}
 
 	if filter.LatestState {
-		q.Where("latest = ?", true)
+		q.Where("account_state.latest = ?", true)
 	}
 	if filter.Address != "" {
-		q.Where("address = ?", filter.Address)
+		q.Where("account_state.address = ?", filter.Address)
 	}
 	if len(filter.ContractTypes) > 0 {
-		q.Where("contract_types && ?", pgdialect.Array(filter.ContractTypes))
+		q.Where("account_state.contract_types && ?", pgdialect.Array(filter.ContractTypes))
 	}
 
 	if filter.WithData {

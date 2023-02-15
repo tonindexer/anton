@@ -89,31 +89,12 @@ func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Bloc
 	return nil
 }
 
-func transactionsLoad(q *bun.SelectQuery, path string, withMessages bool) *bun.SelectQuery {
-	q = q.Relation(path + "Transactions")
-
-	if withMessages {
-		q = q.Relation(path+"Transactions.InMsg").
-			Relation(path+"Transactions.OutMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
-				return q.Where("incoming = ?", false)
-			})
-	}
-
-	return q
-}
-
 func blocksFilter(q *bun.SelectQuery, f *core.BlockFilter) *bun.SelectQuery {
-	if f.WithMaster {
-		q = q.Relation("Master")
-	}
 	if f.WithShards {
 		q = q.Relation("Shards")
 	}
 	if f.WithTransactions {
-		q = transactionsLoad(q, "", f.WithTransactionMessages)
-		if f.WithShards {
-			q = transactionsLoad(q, "Shards.", f.WithTransactionMessages)
-		}
+		q = q.Relation("Transactions")
 	}
 
 	if f.ID != nil {

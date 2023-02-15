@@ -14,19 +14,17 @@ type Transaction struct {
 
 	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull"`
 	Address string        `ch:",pk"`
-	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:hash=last_tx_hash"`
+	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:created_lt=last_tx_lt"`
 
 	BlockWorkchain int32  `bun:",notnull"`
 	BlockShard     int64  `bun:",notnull"`
 	BlockSeqNo     uint32 `bun:",notnull"`
-	BlockFileHash  []byte `bun:"type:bytea,notnull"`
 
 	PrevTxHash []byte `bun:"type:bytea"`
 	PrevTxLT   uint64 //
 
-	InMsgHash []byte     `bun:"type:bytea"`
-	InMsg     *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
-	OutMsg    []*Message `ch:"-" bun:"rel:has-many,join:hash=tx_hash"`
+	InMsg  *Message   `ch:"-" bun:"rel:has-one,join:address=tx_address,join:created_lt=tx_created_lt"` // `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
+	OutMsg []*Message `ch:"-" bun:"rel:has-many,join:address=tx_address,join:created_lt=tx_created_lt"`
 
 	TotalFees uint64 // `ch:"type:UInt256"`
 
@@ -58,9 +56,10 @@ type Message struct {
 	SourceTxHash []byte       `bun:"type:bytea"`
 	SourceTx     *Transaction `bun:"rel:has-one,join:source_tx_hash=hash"`
 
-	Incoming  bool   `ch:",pk" bun:",pk,notnull"`
-	TxHash    []byte `ch:",pk" bun:"type:bytea,notnull"`
-	TxAddress string `ch:",pk" bun:",notnull"`
+	Incoming    bool   `ch:",pk" bun:"type:boolean,pk,notnull"`
+	TxHash      []byte `ch:",pk" bun:"type:bytea,notnull"`
+	TxAddress   string `ch:",pk" bun:",notnull"`
+	TxCreatedLT uint64 `ch:",pk" bun:",notnull"`
 
 	SrcAddress string //
 	DstAddress string //
@@ -118,10 +117,10 @@ type TransactionFilter struct {
 
 	Address string
 
-	BlockID       *BlockID
-	BlockFileHash []byte
+	BlockID *BlockID
 
-	WithMessages bool
+	WithAccountState bool
+	WithMessages     bool
 }
 
 type MessageFilter struct {
