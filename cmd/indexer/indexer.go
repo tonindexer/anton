@@ -12,38 +12,28 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/app/indexer"
 	"github.com/iam047801/tonidx/internal/app/parser"
-	"github.com/iam047801/tonidx/internal/core/db"
-	"github.com/iam047801/tonidx/internal/core/repository/account"
+	"github.com/iam047801/tonidx/internal/core/repository"
 )
 
 func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	// add file and line number to log
-	log.Logger = log.With().Caller().Logger().Level(zerolog.InfoLevel)
+	log.Logger = log.With().Caller().Logger().Level(zerolog.DebugLevel)
 }
 
-func initDB(ctx context.Context, conn *ch.DB) error {
-	ifaces, err := account.NewRepository(conn).GetContractInterfaces(ctx)
-	if err == nil && len(ifaces) > 0 {
-		for _, iface := range ifaces {
-			log.Debug().Str("addr", iface.Address).Str("name", string(iface.Name)).Msg("found contract interface")
-		}
-		return nil
-	}
-
+func initDB(ctx context.Context, conn *repository.DB) error {
 	log.Info().Msg("creating tables")
-	if err := db.CreateTables(ctx, conn); err != nil {
+	if err := repository.CreateTablesDB(ctx, conn); err != nil {
 		return errors.Wrap(err, "cannot create tables")
 	}
 
 	log.Info().Msg("inserting known contract interfaces")
-	if err := db.InsertKnownInterfaces(ctx, conn); err != nil {
+	if err := repository.InsertKnownInterfaces(ctx, conn.CH); err != nil {
 		return errors.Wrap(err, "cannot insert interfaces")
 	}
 
@@ -51,9 +41,10 @@ func initDB(ctx context.Context, conn *ch.DB) error {
 }
 
 func Run() {
-	dbURL := env.GetString("DB_URL", "")
+	chURL := env.GetString("DB_CH_URL", "")
+	pgURL := env.GetString("DB_PG_URL", "")
 
-	conn, err := db.Connect(context.Background(), dbURL)
+	conn, err := repository.ConnectDB(context.Background(), chURL, pgURL)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot connect to a database")
 	}

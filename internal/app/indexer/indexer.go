@@ -6,13 +6,12 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
-	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/repository/abi"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
 	"github.com/iam047801/tonidx/internal/core/repository/block"
 	"github.com/iam047801/tonidx/internal/core/repository/tx"
@@ -23,7 +22,7 @@ var _ app.IndexerService = (*Service)(nil)
 type Service struct {
 	cfg *app.IndexerConfig
 
-	db          *ch.DB
+	abiRepo     core.ContractRepository
 	blockRepo   core.BlockRepository
 	txRepo      core.TxRepository
 	accountRepo core.AccountRepository
@@ -42,10 +41,11 @@ func NewService(_ context.Context, cfg *app.IndexerConfig) (*Service, error) {
 	var s = new(Service)
 
 	s.cfg = cfg
-	s.db = cfg.DB
-	s.blockRepo = block.NewRepository(s.db)
-	s.txRepo = tx.NewRepository(s.db)
-	s.accountRepo = account.NewRepository(s.db)
+	ch, pg := cfg.DB.CH, cfg.DB.PG
+	s.abiRepo = abi.NewRepository(ch)
+	s.blockRepo = block.NewRepository(ch, pg)
+	s.txRepo = tx.NewRepository(ch, pg)
+	s.accountRepo = account.NewRepository(ch, pg)
 
 	s.parser = cfg.Parser
 	s.api = s.parser.API()
@@ -70,12 +70,14 @@ func getShardID(shard *tlb.BlockInfo) string {
 func (s *Service) Start() error {
 	var fromBlock uint32
 
-	master, err := s.api.GetMasterchainInfo(context.Background())
+	ctx := context.Background()
+
+	master, err := s.api.GetMasterchainInfo(ctx)
 	if err != nil {
 		return errors.Wrap(err, "cannot get masterchain info")
 	}
 
-	lastMaster, err := s.blockRepo.GetLastMasterBlockInfo(context.Background())
+	lastMaster, err := s.blockRepo.GetLastMasterBlock(ctx)
 	switch {
 	case err == nil:
 		fromBlock = lastMaster.SeqNo + 1
@@ -88,16 +90,16 @@ func (s *Service) Start() error {
 		return errors.Wrap(err, "cannot get last masterchain block")
 	}
 
-	master, err = s.api.LookupBlock(context.Background(), master.Workchain, master.Shard, fromBlock-1)
+	master, err = s.api.LookupBlock(ctx, master.Workchain, master.Shard, fromBlock-1)
 	if err != nil {
 		return errors.Wrap(err, "lookup master")
 	}
 
 	// getting information about other work-chains and shards of first master block
 	// to init storage of last seen shard seq numbers
-	firstShards, err := s.api.GetBlockShardsInfo(context.Background(), master)
+	firstShards, err := s.api.GetBlockShardsInfo(ctx, master)
 	if err != nil {
-		return errors.Wrap(err, "get block shards info")
+		return errors.Wrapf(err, "get block shards info (master seq no = %d)", master.SeqNo)
 	}
 	for _, shard := range firstShards {
 		s.shardLastSeqno[getShardID(shard)] = shard.SeqNo
@@ -120,7 +122,5 @@ func (s *Service) Stop() {
 
 	s.wg.Wait()
 
-	if err := s.db.Close(); err != nil {
-		log.Error().Err(err).Msg("cannot close connection to the database")
-	}
+	s.cfg.DB.Close()
 }

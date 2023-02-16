@@ -3,11 +3,11 @@ package app
 import (
 	"time"
 
-	"github.com/uptrace/go-clickhouse/ch"
+	"github.com/iam047801/tonidx/internal/core/repository"
 )
 
 type IndexerConfig struct {
-	DB               *ch.DB
+	DB               *repository.DB
 	Parser           ParserService
 	FromBlock        uint32
 	FetchBlockPeriod time.Duration

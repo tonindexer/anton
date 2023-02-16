@@ -2,38 +2,41 @@ package core
 
 import (
 	"context"
-	"reflect"
 
+	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/tlb"
 )
 
 type Transaction struct {
-	ch.CHModel `ch:"transactions,partition:block_workchain,block_shard,round(block_seq_no,-5),toYYYYMMDD(toDateTime(created_at))"`
+	ch.CHModel    `ch:"transactions,partition:block_workchain,block_shard,round(block_seq_no,-5),toYYYYMMDD(toDateTime(created_at))"`
+	bun.BaseModel `bun:"table:transactions"`
 
-	Address string `ch:",pk"`
-	Hash    []byte `ch:",pk"`
+	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull"`
+	Address string        `ch:",pk"`
+	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:created_lt=last_tx_lt"`
 
-	BlockWorkchain int32  //
-	BlockShard     int64  //
-	BlockSeqNo     uint32 //
+	BlockWorkchain int32  `bun:",notnull"`
+	BlockShard     int64  `bun:",notnull"`
+	BlockSeqNo     uint32 `bun:",notnull"`
 
-	PrevTxHash []byte //
+	PrevTxHash []byte `bun:"type:bytea"`
 	PrevTxLT   uint64 //
 
-	InMsgBodyHash    []byte   //
-	OutMsgBodyHashes [][]byte //
+	InMsgHash []byte     `bun:",unique"`
+	InMsg     *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"` // `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
+	OutMsg    []*Message `ch:"-" bun:"rel:has-many,join:address=source_tx_address,join:created_lt=source_tx_lt"`
 
 	TotalFees uint64 // `ch:"type:UInt256"`
 
-	StateUpdate []byte //
-	Description []byte //
+	StateUpdate []byte `bun:"type:bytea"`
+	Description []byte `bun:"type:bytea"` // TODO: parse it (exit code, etc)
 
-	OrigStatus AccountStatus `ch:",lc"`
-	EndStatus  AccountStatus `ch:",lc"`
+	OrigStatus AccountStatus `ch:",lc" bun:"type:account_status,notnull"`
+	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull"`
 
-	CreatedAT uint64 //
-	CreatedLT uint64 //
+	CreatedAt uint64 `bun:",notnull"`
+	CreatedLT uint64 `bun:",notnull"`
 }
 
 type MessageType string
@@ -45,14 +48,17 @@ const (
 )
 
 type Message struct {
-	ch.CHModel `ch:"messages,partition:type,incoming,toYYYYMMDD(toDateTime(created_at))"`
+	ch.CHModel    `ch:"messages,partition:type,incoming,toYYYYMMDD(toDateTime(created_at))"`
+	bun.BaseModel `bun:"table:messages"`
 
-	Type MessageType `ch:",lc"` // TODO: enum
+	Type MessageType `ch:",lc" bun:"type:message_type,notnull"` // TODO: ch enum
 
-	Incoming     bool   `ch:",pk"`
-	TxAddress    string `ch:",pk"`
-	TxHash       []byte `ch:",pk"`
-	SourceTxHash []byte //
+	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"`
+	// SourceTx initiates outgoing message
+	SourceTxHash    []byte       `bun:"type:bytea"`
+	SourceTxAddress string       //
+	SourceTxLT      uint64       //
+	Source          *Transaction `ch:"-" bun:"-"`
 
 	SrcAddress string //
 	DstAddress string //
@@ -67,56 +73,68 @@ type Message struct {
 	IHRFee      uint64 // TODO: uint256
 	FwdFee      uint64 // TODO: uint256
 
-	Body            []byte //
-	BodyHash        []byte `ch:",pk"`
-	OperationID     uint32 //
-	TransferComment string //
+	Body            []byte          `bun:"type:bytea"`
+	BodyHash        []byte          `bun:"type:bytea"`
+	OperationID     uint32          //
+	TransferComment string          //
+	Payload         *MessagePayload `ch:"-" bun:"rel:belongs-to,join:hash=hash"`
 
-	StateInitCode []byte //
-	StateInitData []byte //
+	StateInitCode []byte `bun:"type:bytea"`
+	StateInitData []byte `bun:"type:bytea"`
 
-	CreatedAt uint64 //
-	CreatedLT uint64 //
-}
-
-type ContractOperation struct {
-	ch.CHModel `ch:"contract_operations"`
-
-	Name         string                //
-	ContractName ContractType          `ch:",pk"`
-	Outgoing     bool                  // if operation is going from contract
-	OperationID  uint32                `ch:",pk"`
-	Schema       string                //
-	StructSchema []reflect.StructField `ch:"-"`
+	CreatedAt uint64 `bun:",notnull"`
+	CreatedLT uint64 `bun:",notnull"`
 }
 
 type MessagePayload struct {
-	ch.CHModel `ch:"message_payloads,partition:incoming,src_contract,dst_contract,toYYYYMMDD(toDateTime(created_at))"`
+	ch.CHModel    `ch:"message_payloads,partition:src_contract,partition:dst_contract,partition:toYYYYMMDD(toDateTime(created_at))"`
+	bun.BaseModel `bun:"table:message_payloads"`
 
-	// Type MessageType `ch:",lc"` // TODO: not only incoming messages
+	Type MessageType `ch:",lc" bun:"type:message_type,notnull"`
+	Hash []byte      `ch:",pk" bun:"type:bytea,pk,notnull"`
 
-	Incoming    bool         `ch:",pk"`
-	TxAddress   string       `ch:",pk"`
-	TxHash      []byte       `ch:",pk"`
 	SrcAddress  string       //
 	SrcContract ContractType `ch:",lc"`
 	DstAddress  string       //
 	DstContract ContractType `ch:",lc"`
 
-	BodyHash []byte `ch:",pk"`
-
-	OperationID   uint32 //
-	OperationName string `ch:",lc"`
+	BodyHash      []byte `bun:"type:bytea,notnull"`
+	OperationID   uint32 `bun:",notnull"`
+	OperationName string `ch:",lc" bun:",notnull"`
 	DataJSON      string //
 
-	CreatedAt uint64 //
-	CreatedLT uint64 //
+	CreatedAt uint64 `bun:",notnull"`
+	CreatedLT uint64 `bun:",notnull"`
+}
+
+type TransactionFilter struct {
+	Hash []byte
+
+	Address string
+
+	BlockID *BlockID
+
+	WithAccountState    bool
+	WithAccountData     bool
+	WithMessages        bool
+	WithMessagePayloads bool
+}
+
+type MessageFilter struct {
+	Hash       []byte
+	SrcAddress string
+	DstAddress string
+
+	WithPayload   bool
+	SrcContract   string
+	DstContract   string
+	OperationName string
 }
 
 type TxRepository interface {
-	AddTransactions(ctx context.Context, tx []*Transaction) error
-	GetTransactionByHash(ctx context.Context, txHash []byte) (*Transaction, error)
-	AddMessages(ctx context.Context, m []*Message) error
-	GetMessageByHash(ctx context.Context, msgHash []byte) (*Message, error)
-	AddMessagePayloads(ctx context.Context, payloads []*MessagePayload) error
+	AddTransactions(ctx context.Context, tx bun.Tx, transactions []*Transaction) error
+	AddMessages(ctx context.Context, tx bun.Tx, messages []*Message) error
+	AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads []*MessagePayload) error
+	GetTransactions(ctx context.Context, filter *TransactionFilter, offset, limit int) ([]*Transaction, error)
+	GetMessages(ctx context.Context, filter *MessageFilter, offset, limit int) ([]*Message, error)
 }

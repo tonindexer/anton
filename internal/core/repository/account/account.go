@@ -2,8 +2,11 @@ package account
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/iam047801/tonidx/internal/core"
@@ -12,133 +15,236 @@ import (
 var _ core.AccountRepository = (*Repository)(nil)
 
 type Repository struct {
-	db         *ch.DB
-	interfaces []*core.ContractInterface
-	operations []*core.ContractOperation
+	ch *ch.DB
+	pg *bun.DB
 }
 
-func NewRepository(db *ch.DB) *Repository {
-	return &Repository{db: db}
+func NewRepository(_ch *ch.DB, _pg *bun.DB) *Repository {
+	return &Repository{ch: _ch, pg: _pg}
 }
 
-func (r *Repository) GetContractInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
-	var ret []*core.ContractInterface
+func createIndexes(ctx context.Context, pgDB *bun.DB) error {
+	// account data
 
-	// TODO: clear cache
-
-	if len(r.interfaces) > 0 {
-		return r.interfaces, nil
-	}
-
-	err := r.db.NewSelect().Model(&ret).Scan(ctx)
+	_, err := pgDB.NewCreateIndex().
+		Model(&core.AccountData{}).
+		Using("HASH").
+		Column("owner_address").
+		Where("length(owner_address) > 0").
+		Exec(ctx)
 	if err != nil {
-		return nil, err
+		return errors.Wrap(err, "address state pg create unique index")
 	}
 
-	if len(ret) > 0 {
-		r.interfaces = ret
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountData{}).
+		Using("HASH").
+		Column("collection_address").
+		Where("length(collection_address) > 0").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address state pg create unique index")
 	}
 
-	return ret, nil
-}
+	// account state
 
-func (r *Repository) InsertContractOperations(ctx context.Context, operations []*core.ContractOperation) error {
-	var err error
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountState{}).
+		Using("HASH").
+		Column("address").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address state pg create unique index")
+	}
 
-	for _, op := range operations {
-		op.Schema, err = marshalStructSchema(op.StructSchema)
-		if err != nil {
-			return errors.Wrap(err, "marshal struct schema")
-		}
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountState{}).
+		Unique().
+		Column("latest", "address").
+		Where("latest IS TRUE").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address state pg create unique index")
+	}
 
-		_, err = r.db.NewInsert().Model(op).Exec(ctx)
-		if err != nil {
-			return err
-		}
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountState{}).
+		Column("latest").
+		Where("latest IS TRUE").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state contract types pg create index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountState{}).
+		Using("GIN").
+		Column("types").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state contract types pg create index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountState{}).
+		Using("BTREE").
+		Column("last_tx_lt").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state last_tx_lt pg create index")
 	}
 
 	return nil
 }
 
-func (r *Repository) GetContractOperations(ctx context.Context, types []core.ContractType) ([]*core.ContractOperation, error) {
-	var ret []*core.ContractOperation
-
-	// TODO: clear cache
-
-	if len(r.operations) > 0 {
-		return r.operations, nil
+func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
+	_, err := pgDB.ExecContext(ctx, "CREATE TYPE account_status AS ENUM (?, ?, ?, ?)",
+		core.Uninit, core.Active, core.Frozen, core.NonExist)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return errors.Wrap(err, "account status pg create enum")
 	}
 
-	err := r.db.NewSelect().Model(&ret).Where("type in (?)", ch.In(types)).Scan(ctx)
+	_, err = chDB.NewCreateTable().
+		IfNotExists().
+		Engine("ReplacingMergeTree").
+		Model(&core.AccountData{}).
+		Exec(ctx)
 	if err != nil {
-		return nil, err
+		return errors.Wrap(err, "account data ch create table")
 	}
 
-	for _, op := range ret {
-		op.StructSchema, err = unmarshalStructSchema(op.Schema)
-		if err != nil {
-			return nil, errors.Wrap(err, "unmarshal struct schema")
-		}
+	_, err = pgDB.NewCreateTable().
+		Model(&core.AccountData{}).
+		IfNotExists().
+		WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account data pg create table")
 	}
 
-	if len(ret) > 0 {
-		r.operations = ret
+	_, err = chDB.NewCreateTable().
+		IfNotExists().
+		Engine("ReplacingMergeTree").
+		Model(&core.AccountState{}).
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state ch create table")
 	}
 
-	return ret, nil
+	_, err = pgDB.NewCreateTable().
+		Model(&core.AccountState{}).
+		IfNotExists().
+		// WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state pg create table")
+	}
+
+	return createIndexes(ctx, pgDB)
 }
 
-func (r *Repository) GetContractOperationByID(ctx context.Context, a *core.Account, outgoing bool, id uint32) (*core.ContractOperation, error) {
-	var ret []*core.ContractOperation
-
-	if len(a.Types) == 0 {
-		return nil, errors.Wrap(core.ErrNotFound, "no contract types")
+func accountAddresses(accounts []*core.AccountState) (ret []string) {
+	m := make(map[string]struct{})
+	for _, a := range accounts {
+		m[a.Address] = struct{}{}
 	}
-
-	var out uint16 // TODO: fix this, go-ch bug
-	if outgoing {
-		out = 1
+	for a := range m {
+		ret = append(ret, a)
 	}
-
-	err := r.db.NewSelect().Model(&ret).
-		Where("contract_name in (?)", ch.In(a.Types)).
-		Where("outgoing = ?", out).
-		Where("operation_id = ?", id).
-		Scan(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if len(ret) < 1 {
-		return nil, errors.Wrap(core.ErrNotFound, "unknown operation")
-	}
-
-	op := ret[0]
-	op.StructSchema, err = unmarshalStructSchema(op.Schema)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal struct schema")
-	}
-
-	return op, nil
+	return
 }
 
-func (r *Repository) AddAccounts(ctx context.Context, accounts []*core.Account) error {
-	for _, acc := range accounts {
-		_, err := r.db.NewInsert().Model(acc).Exec(ctx)
-		if err != nil {
-			return err
-		}
+func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts []*core.AccountState) error {
+	if len(accounts) == 0 {
+		return nil
+	}
+
+	_, err := r.ch.NewInsert().Model(&accounts).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.NewUpdate().Model(&accounts).
+		Where("address in (?)", bun.In(accountAddresses(accounts))).
+		Where("latest = ?", true).
+		Set("latest = ?", false).
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "cannot drop latest state")
+	}
+
+	_, err = tx.NewInsert().Model(&accounts).ExcludeColumn("latest").Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "cannot insert new states")
+	}
+
+	_, err = tx.NewUpdate().
+		With("late",
+			tx.NewSelect().
+				Model(&accounts).
+				Column("address").
+				ColumnExpr("max(last_tx_lt) AS max_tx_lt").
+				Where("address in (?)", bun.In(accountAddresses(accounts))).
+				Group("address"),
+		).
+		Model((*core.AccountState)(nil)).
+		Table("late").
+		Where("account_state.address = late.address").
+		Where("account_state.last_tx_lt = late.max_tx_lt").
+		Set("latest = ?", true).
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "cannot set latest state")
+	}
+
+	return nil
+}
+
+func (r *Repository) AddAccountData(ctx context.Context, tx bun.Tx, data []*core.AccountData) error {
+	if len(data) == 0 {
+		return nil
+	}
+	_, err := r.ch.NewInsert().Model(&data).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = tx.NewInsert().Model(&data).Exec(ctx)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func (r *Repository) AddAccountData(ctx context.Context, data []*core.AccountData) error {
-	for _, d := range data {
-		// TODO: cache data hashes, do not duplicate account data
+func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilter) *bun.SelectQuery {
+	if filter.WithData {
+		q = q.Relation("StateData")
+	}
 
-		_, err := r.db.NewInsert().Model(d).Exec(ctx)
-		if err != nil {
-			return err
+	if filter.LatestState {
+		q.Where("account_state.latest = ?", true)
+	}
+	if filter.Address != "" {
+		q.Where("account_state.address = ?", filter.Address)
+	}
+	if len(filter.ContractTypes) > 0 {
+		q.Where("account_state.contract_types && ?", pgdialect.Array(filter.ContractTypes))
+	}
+
+	if filter.WithData {
+		if filter.OwnerAddress != "" {
+			q = q.Where("state_data.owner_address = ?", filter.OwnerAddress)
+		}
+		if filter.CollectionAddress != "" {
+			q = q.Where("state_data.collection_address = ?", filter.CollectionAddress)
 		}
 	}
-	return nil
+
+	return q
+}
+
+func (r *Repository) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter, offset, limit int) (ret []*core.AccountState, err error) {
+	err = selectAccountStatesFilter(r.pg.NewSelect().Model(&ret), filter).
+		Order("last_tx_lt DESC").
+		Offset(offset).Limit(limit).Scan(ctx)
+	return ret, err
 }

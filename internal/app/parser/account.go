@@ -1,143 +1,40 @@
 package parser
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/ton/wallet"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func matchByAddress(acc *tlb.Account, addr string) bool {
-	if addr == "" {
-		return false
-	}
-	return acc.State != nil && addr == acc.State.Address.String()
-}
-
-func matchByCode(acc *tlb.Account, code []byte) bool {
-	if len(code) == 0 {
-		return false
-	}
-
-	codeCell, err := cell.FromBOC(code)
-	if err != nil {
-		log.Error().Err(err).Msg("parse contract interface code")
-		return false
-	}
-
-	return acc.Code != nil && bytes.Equal(acc.Code.Hash(), codeCell.Hash())
-}
-
-func (s *Service) ContractInterfaces(ctx context.Context, acc *tlb.Account) ([]core.ContractType, error) {
-	var ret []core.ContractType
-
-	version := wallet.GetWalletVersion(acc)
-	if version != wallet.Unknown {
-		ret = append(ret,
-			core.ContractType(fmt.Sprintf("wallet_%s", version.String())))
-	}
-
-	ifaces, err := s.accountRepo.GetContractInterfaces(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "get contract interfaces")
-	}
-
-	for _, iface := range ifaces {
-		if matchByAddress(acc, iface.Address) {
-			ret = append(ret, iface.Name)
-			continue
-		}
-
-		if matchByCode(acc, iface.Code) {
-			ret = append(ret, iface.Name)
-			continue
-		}
-
-		if len(iface.GetMethods) == 0 {
-			continue
-		}
-
-		var hasMethods = true
-		for _, get := range iface.GetMethods {
-			if !acc.HasGetMethod(get) {
-				hasMethods = false
-				break
-			}
-		}
-		if hasMethods {
-			ret = append(ret, iface.Name)
-		}
-	}
-
-	return ret, nil
-}
-
-func (s *Service) ParseAccount(ctx context.Context, master *tlb.BlockInfo, addr *address.Address) (*core.Account, error) {
-	ret := new(core.Account)
-
-	acc, err := s.api.GetAccount(ctx, master, addr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "get account (%s)", addr.String())
-	}
-
-	ret.Address = addr.String()
-	ret.IsActive = acc.IsActive
-	if acc.State != nil {
-		ret.Status = core.AccountStatus(acc.State.Status)
-		ret.Balance = acc.State.Balance.NanoTON().Uint64()
-		ret.StateHash = acc.State.StateHash
-		if acc.State.StateInit != nil {
-			ret.Depth = acc.State.StateInit.Depth
-			if acc.State.StateInit.TickTock != nil {
-				ret.Tick = acc.State.StateInit.TickTock.Tick
-				ret.Tock = acc.State.StateInit.TickTock.Tock
-			}
-		}
-	}
-	if acc.Data != nil {
-		ret.Data = acc.Data.ToBOC()
-		ret.DataHash = acc.Data.Hash()
-	}
-	if acc.Code != nil {
-		ret.Code = acc.Code.ToBOC()
-		ret.CodeHash = acc.Data.Hash()
-	}
-	ret.LastTxLT = acc.LastTxLT
-	ret.LastTxHash = acc.LastTxHash
-
-	ifaces, err := s.ContractInterfaces(ctx, acc)
-	if err != nil {
-		return nil, errors.Wrap(err, "get contract interfaces")
-	}
-	for _, iface := range ifaces {
-		ret.Types = append(ret.Types, string(iface))
-	}
-
-	return ret, nil
-}
-
-func (s *Service) ParseAccountData(ctx context.Context, master *tlb.BlockInfo, acc *core.Account) (*core.AccountData, error) {
+func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account) (*core.AccountData, error) {
 	var unknown int
 
+	if acc.State == nil {
+		return nil, errors.Wrap(core.ErrNotAvailable, "no account state")
+	}
+	if acc.State.Address.Type() != address.StdAddress {
+		return nil, errors.Wrap(core.ErrNotAvailable, "no account address")
+	}
+
 	data := new(core.AccountData)
-	data.Address = acc.Address
+	data.Address = acc.State.Address.String()
 	data.LastTxLT = acc.LastTxLT
 	data.LastTxHash = acc.LastTxHash
-	data.StateHash = acc.StateHash
 
-	for _, t := range acc.Types {
+	types, err := s.abiRepo.DetermineContractInterfaces(ctx, acc)
+	if err != nil {
+		return nil, errors.Wrap(err, "get contract interfaces")
+	}
+
+	for _, t := range types {
 		switch t {
 		case core.NFTCollection, core.NFTItem, core.NFTItemSBT:
 			// TODO: error "contract exit code: 11"
-			err := s.getAccountDataNFT(ctx, master, acc, data)
+			err := s.getAccountDataNFT(ctx, b, acc, types, data)
 			if err != nil {
 				return nil, errors.Wrap(err, "get nft data")
 			}
@@ -146,7 +43,7 @@ func (s *Service) ParseAccountData(ctx context.Context, master *tlb.BlockInfo, a
 		}
 	}
 
-	if unknown == len(acc.Types) {
+	if unknown == len(types) {
 		return data, errors.Wrap(core.ErrNotAvailable, "unknown contract")
 	}
 	return data, nil

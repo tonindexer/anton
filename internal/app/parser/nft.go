@@ -59,15 +59,12 @@ func getEditorDataNFT(ret *core.AccountData, editor *address.Address) {
 }
 
 //nolint // TODO: simplify account data parsing logic
-func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, acc *core.Account, ret *core.AccountData) error {
-	addr, err := address.ParseAddr(acc.Address)
-	if err != nil {
-		return errors.Wrap(err, "parse address")
-	}
-
+func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account, types []core.ContractType, ret *core.AccountData) error {
 	var collection, item, editable, royalty bool
 
-	for _, t := range acc.Types {
+	addr := acc.State.Address
+
+	for _, t := range types {
 		switch t {
 		case core.NFTCollection:
 			collection = true
@@ -84,7 +81,7 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 	case collection:
 		c := nft.NewCollectionClient(s.api, addr)
 
-		data, err := c.GetCollectionDataAtBlock(ctx, master)
+		data, err := c.GetCollectionDataAtBlock(ctx, b)
 		if err != nil {
 			return errors.Wrap(err, "get collection data")
 		}
@@ -93,7 +90,7 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 	case collection && royalty:
 		c := nft.NewCollectionClient(s.api, addr)
 
-		params, err := c.RoyaltyParamsAtBlock(ctx, master)
+		params, err := c.RoyaltyParamsAtBlock(ctx, b)
 		if err != nil {
 			return errors.Wrap(err, "get royalty params")
 		}
@@ -102,7 +99,7 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 	case item:
 		c := nft.NewItemClient(s.api, addr)
 
-		data, err := c.GetNFTDataAtBlock(ctx, master)
+		data, err := c.GetNFTDataAtBlock(ctx, b)
 		if err != nil {
 			return errors.Wrap(err, "get nft item data")
 		}
@@ -110,7 +107,7 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 
 		if data.Content != nil {
 			collect := nft.NewCollectionClient(s.api, data.CollectionAddress)
-			con, err := collect.GetNFTContentAtBlock(ctx, data.Index, data.Content, master)
+			con, err := collect.GetNFTContentAtBlock(ctx, data.Index, data.Content, b)
 			if err != nil {
 				return errors.Wrap(err, "get nft content")
 			}
@@ -120,7 +117,7 @@ func (s *Service) getAccountDataNFT(ctx context.Context, master *tlb.BlockInfo, 
 	case editable:
 		c := nft.NewItemEditableClient(s.api, addr)
 
-		editor, err := c.GetEditorAtBlock(ctx, master)
+		editor, err := c.GetEditorAtBlock(ctx, b)
 		if err != nil {
 			return errors.Wrap(err, "get editor")
 		}

@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/repository/abi"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
 	"github.com/iam047801/tonidx/internal/core/repository/tx"
 )
@@ -21,7 +21,7 @@ type Service struct {
 
 	api *ton.APIClient
 
-	db          *ch.DB
+	abiRepo     core.ContractRepository
 	txRepo      core.TxRepository
 	accountRepo core.AccountRepository
 }
@@ -30,9 +30,10 @@ func NewService(ctx context.Context, cfg *app.ParserConfig) (*Service, error) {
 	var s = new(Service)
 
 	s.cfg = cfg
-	s.db = cfg.DB
-	s.txRepo = tx.NewRepository(s.db)
-	s.accountRepo = account.NewRepository(s.db)
+	ch, pg := s.cfg.DB.CH, s.cfg.DB.PG
+	s.txRepo = tx.NewRepository(ch, pg)
+	s.accountRepo = account.NewRepository(ch, pg)
+	s.abiRepo = abi.NewRepository(ch)
 
 	client := liteclient.NewConnectionPool()
 	for _, n := range cfg.Servers {

@@ -3,31 +3,48 @@ package core
 import (
 	"context"
 
+	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 )
 
 type BlockID struct {
-	Workchain int32
-	Shard     int64
-	SeqNo     uint32
+	Workchain int32  `ch:",pk" bun:",pk,notnull" json:"workchain"`
+	Shard     int64  `ch:",pk" bun:",pk,notnull" json:"shard"`
+	SeqNo     uint32 `ch:",pk" bun:",pk,notnull" json:"seq_no"`
 }
 
-type BlockInfo struct {
-	ch.CHModel `ch:"block_info,partition:workchain,shard"`
+type Block struct {
+	ch.CHModel    `ch:"block_info,partition:workchain,shard"`
+	bun.BaseModel `bun:"table:block_info"`
 
-	Workchain     int32  `ch:",pk"`
-	Shard         int64  `ch:",pk"`
-	SeqNo         uint32 `ch:",pk"`
-	FileHash      []byte `ch:",pk"`
-	RootHash      []byte `ch:",pk"`
-	MasterBlockID *BlockID
-	ShardBlockIDs []*BlockID
+	BlockID
+
+	FileHash []byte `ch:",pk" bun:"type:bytea,unique,notnull"` // TODO: []byte here, go-bun bug on has-many
+	RootHash []byte `ch:",pk" bun:"type:bytea,unique,notnull"`
+
+	MasterID BlockID  `ch:"-" bun:"embed:master_"`
+	Shards   []*Block `ch:"-" bun:"rel:has-many,join:workchain=master_workchain,join:shard=master_shard,join:seq_no=master_seq_no"`
+
+	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:workchain=block_workchain,join:shard=block_shard,join:seq_no=block_seq_no"`
+
+	// TODO: block info data
 }
 
-// TODO: block data
+type BlockFilter struct {
+	ID        *BlockID
+	Workchain *int32
+	FileHash  []byte
+
+	WithShards                     bool
+	WithTransactionAccountState    bool
+	WithTransactionAccountData     bool
+	WithTransactions               bool
+	WithTransactionMessages        bool
+	WithTransactionMessagePayloads bool
+}
 
 type BlockRepository interface {
-	GetLastMasterBlockInfo(ctx context.Context) (*BlockInfo, error)
-
-	AddBlocksInfo(ctx context.Context, info []*BlockInfo) error
+	AddBlocks(ctx context.Context, tx bun.Tx, info []*Block) error
+	GetLastMasterBlock(ctx context.Context) (*Block, error)
+	GetBlocks(ctx context.Context, filter *BlockFilter, offset, limit int) ([]*Block, error)
 }

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 
+	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/tlb"
 )
@@ -16,88 +17,67 @@ const (
 	NonExist = AccountStatus(tlb.AccountStatusNonExist)
 )
 
-type Account struct {
-	ch.CHModel `ch:"accounts,partition:types,is_active,status"`
+type AccountState struct {
+	ch.CHModel    `ch:"account_states,partition:types,is_active,status"`
+	bun.BaseModel `bun:"table:account_states"`
 
-	Types []string `ch:",lc"` // TODO: ContractType here, go-ch bug
+	Latest bool
 
-	Address  string        `ch:",pk"`
+	Address  string        `ch:",pk" bun:",pk"`
 	IsActive bool          //
-	Status   AccountStatus `ch:",lc"` // TODO: enum
+	Status   AccountStatus `ch:",lc" bun:"type:account_status"` // TODO: enum
 	Balance  uint64        // TODO: uint256
 
-	LastTxLT   uint64 `ch:",pk"`
-	LastTxHash []byte `ch:",pk"`
+	LastTxLT   uint64 `ch:",pk" bun:",pk"`
+	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique"`
 
-	StateHash []byte `ch:",pk"`
-	Code      []byte //
-	CodeHash  []byte //
-	Data      []byte //
-	DataHash  []byte //
+	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:address=address,join:last_tx_lt=last_tx_lt"`
+
+	StateHash []byte `bun:"type:bytea"`
+	Code      []byte `bun:"type:bytea"`
+	CodeHash  []byte `bun:"type:bytea"`
+	Data      []byte `bun:"type:bytea"`
+	DataHash  []byte `bun:"type:bytea"`
 
 	// TODO: do we need it?
 	Depth uint64 //
 	Tick  bool   //
 	Tock  bool   //
-	Lib   []byte
-}
 
-type ContractType string
-
-const (
-	NFTCollection = "nft_collection"
-	NFTItem       = "nft_item"
-	NFTItemSBT    = "nft_item_sbt"
-	NFTRoyalty    = "nft_royalty"
-	NFTEditable   = "nft_editable"
-	NFTSale       = "nft_sale"
-)
-
-type ContractInterface struct {
-	ch.CHModel `ch:"contract_interfaces"`
-
-	Name       ContractType `ch:",pk"`
-	Address    string       //
-	Code       []byte       //
-	GetMethods []string     //
+	Types []string `ch:",lc"` // TODO: ContractType here, go-ch bug
 }
 
 type AccountData struct {
-	ch.CHModel `ch:"account_data,partition:types"`
+	ch.CHModel    `ch:"account_data,partition:types"`
+	bun.BaseModel `bun:"table:account_data"`
+
+	Address    string `ch:",pk" bun:",pk,notnull"`
+	LastTxLT   uint64 `ch:",pk" bun:",pk,notnull"`
+	LastTxHash []byte `ch:",pk" bun:"type:bytea,notnull,unique"`
 
 	Types []string `ch:",lc"` // TODO: ContractType here, ch bug
 
-	Address    string `ch:",pk"`
-	LastTxLT   uint64 `ch:",pk"`
-	LastTxHash []byte `ch:",pk"`
-	StateHash  []byte `ch:",pk"`
+	OwnerAddress string // universal column for many contracts
 
-	// nft collection
-	NextItemIndex      uint64
-	OwnerAddress       string
-	ContentURI         string
-	ContentName        string
-	ContentDescription string
-	ContentImage       string
-	ContentImageData   []byte
-	RoyaltyFactor      uint16
-	RoyaltyBase        uint16
-	RoyaltyAddress     string
+	NFTCollectionData
+	NFTRoyaltyData
+	NFTContentData
+	NFTItemData
+}
 
-	// nft item
-	Initialized       bool
-	ItemIndex         uint64
+type AccountStateFilter struct {
+	Address     string
+	LatestState bool
+
+	// contract data filter
+	WithData          bool
+	ContractTypes     []ContractType
+	OwnerAddress      string
 	CollectionAddress string
-	EditorAddress     string
-	// OwnerAddress
 }
 
 type AccountRepository interface {
-	GetContractInterfaces(context.Context) ([]*ContractInterface, error)
-
-	InsertContractOperations(context.Context, []*ContractOperation) error
-	GetContractOperationByID(context.Context, *Account, bool, uint32) (*ContractOperation, error)
-
-	AddAccounts(context.Context, []*Account) error
-	AddAccountData(context.Context, []*AccountData) error
+	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
+	AddAccountData(ctx context.Context, tx bun.Tx, data []*AccountData) error
+	GetAccountStates(ctx context.Context, filter *AccountStateFilter, offset, limit int) ([]*AccountState, error)
 }

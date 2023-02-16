@@ -20,11 +20,6 @@ autobind:
   - "github.com/iam047801/tonidx/internal/core"
 
 models:
-#  Account:
-#    model: github.com/iam047801/tonidx/internal/core.Account
-#    fields:
-#      balance:
-#        resolver: true
   Int:
     model:
       - github.com/99designs/gqlgen/graphql.Int
