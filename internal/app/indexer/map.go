@@ -32,11 +32,16 @@ func getMsgHash(msg *tlb.Message) ([]byte, error) {
 	return msgCell.Hash(), nil
 }
 
-func mapMessage(incoming bool, tx *tlb.Transaction, message *tlb.Message) (*core.Message, error) {
+func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error) {
 	var (
 		msg = new(core.Message)
 		err error
 	)
+
+	msg.Hash, err = getMsgHash(message)
+	if err != nil {
+		return nil, err
+	}
 
 	switch raw := message.Msg.(type) {
 	case *tlb.InternalMessage:
@@ -68,7 +73,6 @@ func mapMessage(incoming bool, tx *tlb.Transaction, message *tlb.Message) (*core
 	case *tlb.ExternalMessage:
 		msg.Type = core.ExternalIn
 
-		msg.Incoming = true
 		msg.DstAddress = raw.DstAddr.String()
 
 		if raw.StateInit != nil {
@@ -85,8 +89,11 @@ func mapMessage(incoming bool, tx *tlb.Transaction, message *tlb.Message) (*core
 	case *tlb.ExternalMessageOut:
 		msg.Type = core.ExternalOut
 
-		msg.Incoming = false
 		msg.SrcAddress = raw.SrcAddr.String()
+
+		msg.SourceTxHash = tx.Hash
+		msg.SourceTxAddress = msg.SrcAddress
+		msg.SourceTxLT = tx.LT
 
 		msg.CreatedLT = raw.CreatedLT
 		msg.CreatedAt = uint64(raw.CreatedAt)
@@ -98,19 +105,6 @@ func mapMessage(incoming bool, tx *tlb.Transaction, message *tlb.Message) (*core
 
 		msg.Body = raw.Body.ToBOC()
 		msg.BodyHash = raw.Body.Hash()
-	}
-
-	msg.Hash, err = getMsgHash(message)
-	if err != nil {
-		return nil, err
-	}
-
-	msg.Incoming = incoming
-	msg.TxHash = tx.Hash
-	if msg.Incoming {
-		msg.TxAddress = msg.DstAddress
-	} else {
-		msg.TxAddress = msg.SrcAddress
 	}
 
 	return msg, nil
@@ -159,7 +153,6 @@ func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, 
 		BlockWorkchain: b.Workchain,
 		BlockShard:     b.Shard,
 		BlockSeqNo:     b.SeqNo,
-		BlockFileHash:  b.FileHash,
 
 		PrevTxHash: raw.PrevTxHash,
 		PrevTxLT:   raw.PrevTxLT,

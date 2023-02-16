@@ -2,7 +2,6 @@ package tx
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -230,23 +229,6 @@ func (r *Repository) AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads
 		return err
 	}
 	return nil
-}
-
-func (r *Repository) GetSourceMessageTxHash(ctx context.Context, from, to string, lt uint64) (ret []byte, err error) {
-	err = r.pg.NewSelect().Model(&core.Message{}).
-		Column("tx_hash").
-		Where("src_address = ?", from).
-		Where("dst_address = ?", to).
-		Where("created_lt = ?", lt).
-		Scan(ctx, &ret)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, errors.Wrap(core.ErrNotFound, "source msg hash is not found")
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return ret, nil
 }
 
 func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQuery {

@@ -11,25 +11,27 @@ import (
 	"github.com/iam047801/tonidx/internal/core/repository/abi"
 )
 
-func (s *Service) getSourceTxHash(ctx context.Context, in *core.Message, outMsgMap map[uint64]*core.Message) ([]byte, error) {
-	if !in.Incoming || in.Type != core.Internal {
-		return nil, errors.Wrap(core.ErrNotAvailable, "msg is not incoming or internal")
+func (s *Service) messageAlreadyKnown(ctx context.Context, in *core.Message, outMsgMap map[uint64]*core.Message) (bool, error) {
+	if in.Type != core.Internal {
+		return false, nil
 	}
 
-	out, ok := outMsgMap[in.CreatedLT]
-	if ok {
-		return out.TxHash, nil
+	if _, ok := outMsgMap[in.CreatedLT]; ok {
+		return true, nil
 	}
 
-	sourceTx, err := s.txRepo.GetSourceMessageTxHash(ctx, in.SrcAddress, in.DstAddress, in.CreatedLT) // TODO: batch request (?)
+	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{Hash: in.Hash}, 0, 1)
 	if err != nil {
-		return nil, err
+		return false, errors.Wrap(err, "get messages")
+	}
+	if len(res) == 1 {
+		return true, nil
 	}
 
-	return sourceTx, nil
+	return false, nil
 }
 
-func (s *Service) processBlockMessages(ctx context.Context, _ *tlb.BlockInfo, blockTx []*tlb.Transaction) ([]*core.Message, error) {
+func (s *Service) processBlockMessages(ctx context.Context, b *tlb.BlockInfo, blockTx []*tlb.Transaction) ([]*core.Message, error) {
 	var (
 		inMessages  []*core.Message
 		outMessages []*core.Message
@@ -38,13 +40,19 @@ func (s *Service) processBlockMessages(ctx context.Context, _ *tlb.BlockInfo, bl
 
 	for _, tx := range blockTx {
 		for _, outMsg := range tx.IO.Out {
-			msg, err := mapMessage(false, tx, outMsg)
+			msg, err := mapMessage(tx, outMsg)
 			if err != nil {
 				return nil, errors.Wrap(err, "map outcoming message")
 			}
 			if err = abi.ParseOperationID(msg); err != nil {
 				return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 			}
+			if msg.Source, err = mapTransaction(b, tx); err != nil {
+				return nil, errors.Wrapf(err, "map source transaction (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
+			}
+			msg.SourceTxHash = msg.Source.Hash
+			msg.SourceTxAddress = msg.Source.Address
+			msg.SourceTxLT = msg.Source.CreatedLT
 			outMessages = append(outMessages, msg)
 			outMsgMap[msg.CreatedLT] = msg
 		}
@@ -55,17 +63,17 @@ func (s *Service) processBlockMessages(ctx context.Context, _ *tlb.BlockInfo, bl
 			continue
 		}
 
-		msg, err := mapMessage(true, tx, tx.IO.In)
+		msg, err := mapMessage(tx, tx.IO.In)
 		if err != nil {
 			return nil, errors.Wrap(err, "map incoming message")
 		}
 
-		msg.SourceTxHash, err = s.getSourceTxHash(ctx, msg, outMsgMap)
-		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
-			if !errors.Is(err, core.ErrNotFound) {
-				return nil, errors.Wrapf(err, "get source msg hash (tx_hash = %x)", tx.Hash)
-			}
-			log.Error().Err(err).Hex("tx_hash", tx.Hash).Uint64("created_lt", msg.CreatedLT).Msg("cannot get source msg hash")
+		known, err := s.messageAlreadyKnown(ctx, msg, outMsgMap)
+		if err != nil {
+			return nil, errors.Wrap(err, "is message already known")
+		}
+		if known {
+			continue
 		}
 
 		if err = abi.ParseOperationID(msg); err != nil {
@@ -100,7 +108,7 @@ func (s *Service) parseMessagePayloads(ctx context.Context, messages []*core.Mes
 			continue
 		}
 		if err != nil {
-			log.Error().Err(err).Hex("msg_hash", msg.BodyHash).Hex("tx_hash", msg.TxHash).Msg("parse message payload")
+			log.Error().Err(err).Hex("msg_hash", msg.BodyHash).Hex("tx_hash", msg.SourceTxHash).Msg("parse message payload")
 			continue
 		}
 		ret = append(ret, payload)

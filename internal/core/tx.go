@@ -23,7 +23,7 @@ type Transaction struct {
 	PrevTxHash []byte `bun:"type:bytea"`
 	PrevTxLT   uint64 //
 
-	InMsgHash []byte     `bun:",unique,notnull"`
+	InMsgHash []byte     `bun:",unique"`
 	InMsg     *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"` // `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
 	OutMsg    []*Message `ch:"-" bun:"rel:has-many,join:address=source_tx_address,join:created_lt=source_tx_lt"`
 
@@ -53,9 +53,12 @@ type Message struct {
 
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"` // TODO: ch enum
 
-	Hash            []byte `ch:",pk" bun:"type:bytea,pk,notnull"`
-	SourceTxAddress string //
-	SourceTxLT      uint64 //
+	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"`
+	// SourceTx initiates outgoing message
+	SourceTxHash    []byte       `bun:"type:bytea"`
+	SourceTxAddress string       //
+	SourceTxLT      uint64       //
+	Source          *Transaction `ch:"-" bun:"-"`
 
 	SrcAddress string //
 	DstAddress string //
@@ -132,7 +135,6 @@ type TxRepository interface {
 	AddTransactions(ctx context.Context, tx bun.Tx, transactions []*Transaction) error
 	AddMessages(ctx context.Context, tx bun.Tx, messages []*Message) error
 	AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads []*MessagePayload) error
-	GetSourceMessageTxHash(ctx context.Context, from, to string, lt uint64) (ret []byte, err error)
 	GetTransactions(ctx context.Context, filter *TransactionFilter, offset, limit int) ([]*Transaction, error)
 	GetMessages(ctx context.Context, filter *MessageFilter, offset, limit int) ([]*Message, error)
 }

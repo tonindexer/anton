@@ -61,13 +61,12 @@ func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.Accoun
 	ret := &core.MessagePayload{
 		Type:        message.Type,
 		Hash:        message.Hash,
-		Incoming:    message.Incoming,
-		TxAddress:   message.TxAddress,
-		TxHash:      message.TxHash,
 		SrcAddress:  message.SrcAddress,
 		DstAddress:  message.DstAddress,
 		BodyHash:    message.BodyHash,
 		OperationID: message.OperationID,
+		CreatedLT:   message.CreatedLT,
+		CreatedAt:   message.CreatedAt,
 	}
 	if len(message.Body) == 0 {
 		return nil, errors.Wrap(core.ErrNotAvailable, "no message body")
@@ -77,7 +76,7 @@ func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.Accoun
 	if err != nil && !errors.Is(err, core.ErrNotAvailable) {
 		log.Warn().
 			Err(err).
-			Hex("tx_hash", message.TxHash).
+			Hex("tx_hash", message.SourceTxHash).
 			Str("dst_addr", dst.Address).
 			Strs("dst_types", dst.Types).
 			Uint32("op_id", message.OperationID).Msg("parse dst message")
@@ -90,7 +89,7 @@ func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.Accoun
 	if err != nil && !errors.Is(err, core.ErrNotAvailable) {
 		log.Warn().
 			Err(err).
-			Hex("tx_hash", message.TxHash).
+			Hex("tx_hash", message.SourceTxHash).
 			Str("src_addr", src.Address).
 			Strs("src_types", src.Types).
 			Uint32("op_id", message.OperationID).Msg("parse src message")

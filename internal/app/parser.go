@@ -23,6 +23,6 @@ type ParserConfig struct {
 type ParserService interface {
 	API() *ton.APIClient
 
-	ParseAccountData(ctx context.Context, master *tlb.BlockInfo, acc *tlb.Account) (*core.AccountData, error)
+	ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account) (*core.AccountData, error)
 	ParseMessagePayload(ctx context.Context, src, dst *core.AccountState, message *core.Message) (*core.MessagePayload, error)
 }

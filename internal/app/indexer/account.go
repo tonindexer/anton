@@ -12,7 +12,7 @@ import (
 )
 
 func (s *Service) processTxAccounts(
-	ctx context.Context, master *tlb.BlockInfo,
+	ctx context.Context, b *tlb.BlockInfo,
 	transactions []*core.Transaction,
 ) (accounts map[string]*core.AccountState, accountsData []*core.AccountData, err error) {
 	accounts = make(map[string]*core.AccountState)
@@ -20,7 +20,7 @@ func (s *Service) processTxAccounts(
 	for _, tx := range transactions {
 		addr := address.MustParseAddr(tx.Address)
 
-		raw, err := s.api.GetAccount(ctx, master, addr)
+		raw, err := s.api.GetAccount(ctx, b, addr)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "get account (%s)", addr.String())
 		}
@@ -40,7 +40,7 @@ func (s *Service) processTxAccounts(
 			continue
 		}
 
-		data, err := s.parser.ParseAccountData(ctx, master, raw)
+		data, err := s.parser.ParseAccountData(ctx, b, raw)
 		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
 			log.Error().Err(err).Str("addr", tx.Address).Msg("parse account data")
 			continue

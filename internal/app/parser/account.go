@@ -10,7 +10,7 @@ import (
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func (s *Service) ParseAccountData(ctx context.Context, master *tlb.BlockInfo, acc *tlb.Account) (*core.AccountData, error) {
+func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account) (*core.AccountData, error) {
 	var unknown int
 
 	if acc.State == nil {
@@ -34,7 +34,7 @@ func (s *Service) ParseAccountData(ctx context.Context, master *tlb.BlockInfo, a
 		switch t {
 		case core.NFTCollection, core.NFTItem, core.NFTItemSBT:
 			// TODO: error "contract exit code: 11"
-			err := s.getAccountDataNFT(ctx, master, acc, types, data)
+			err := s.getAccountDataNFT(ctx, b, acc, types, data)
 			if err != nil {
 				return nil, errors.Wrap(err, "get nft data")
 			}

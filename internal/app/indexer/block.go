@@ -79,7 +79,7 @@ func (s *Service) processShards(ctx context.Context, tx bun.Tx, master *tlb.Bloc
 		// 	return errors.Wrap(err, "get block data")
 		// }
 
-		if err := s.processBlockTransactions(ctx, tx, master, shard); err != nil {
+		if err := s.processBlockTransactions(ctx, tx, shard); err != nil {
 			return err
 		}
 
@@ -89,9 +89,13 @@ func (s *Service) processShards(ctx context.Context, tx bun.Tx, master *tlb.Bloc
 				Shard:     shard.Shard,
 				SeqNo:     shard.SeqNo,
 			},
-			RootHash:       shard.RootHash,
-			FileHash:       shard.FileHash,
-			MasterFileHash: master.FileHash,
+			RootHash: shard.RootHash,
+			FileHash: shard.FileHash,
+			MasterID: core.BlockID{
+				Workchain: master.Workchain,
+				Shard:     master.Shard,
+				SeqNo:     master.SeqNo,
+			},
 		})
 	}
 
@@ -119,7 +123,7 @@ func (s *Service) processMaster(ctx context.Context, master *tlb.BlockInfo) erro
 		return errors.Wrap(err, "cannot process shards")
 	}
 
-	if err := s.processBlockTransactions(ctx, insertTx, master, master); err != nil {
+	if err := s.processBlockTransactions(ctx, insertTx, master); err != nil {
 		return errors.Wrap(err, "cannot process masterchain block transactions")
 	}
 
