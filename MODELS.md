@@ -285,3 +285,78 @@ TODO
 ## TONScan labels
 
 [Link](https://raw.githubusercontent.com/menschee/tonscanplus/main/data.json)
+
+# ClickHouse query examples
+
+Get amount of unique wallets with given versions:
+
+```clickhouse
+SELECT count() FROM (
+    SELECT any(address)
+    FROM accounts
+    WHERE hasAny(types, ['wallet_V3R1', 'wallet_V3R2', 'wallet_V4R1', 'wallet_V4R2'])
+    GROUP BY address
+)
+```
+
+Select rich wallets with balance more than 100k TON:
+
+```clickhouse
+SELECT any(address), max(balance) as b, any(types)
+FROM accounts
+WHERE hasAny(types, ['wallet_V3R1', 'wallet_V3R2', 'wallet_V4R1', 'wallet_V4R2'])
+    AND balance > 100 * 1e3 * 1e9
+GROUP BY address
+ORDER BY b DESC
+```
+
+Select TOP 25 rich accounts, theirs types and balance:
+
+```clickhouse
+SELECT any(address), any(types), max(ton) FROM (
+    SELECT address, types, balance / 1e9 AS ton
+    FROM accounts
+    ORDER BY balance DESC
+    LIMIT 100
+) GROUP BY address ORDER BY max(ton) DESC LIMIT 25
+```
+
+Select NFT items data:
+
+```clickhouse
+SELECT
+    address,
+    types,
+    owner_address,
+    content_uri,
+    item_index,
+    collection_address
+FROM account_data
+WHERE hasAny(types, ['nft_item', 'nft_item_editable'])
+LIMIT 50
+```
+
+Get all nft sales with price more than 5 TON:
+
+```clickhouse
+SELECT hex(tx_hash), src_addr, dst_addr, amount / 1e9 AS ton
+FROM messages
+WHERE dst_addr IN (
+    SELECT any(address)
+    FROM accounts
+    WHERE has(types, 'nft_sale')
+    GROUP BY address
+) AND ton > 5
+```
+
+Show all NFT numbers and all owners:
+
+```clickhouse
+SELECT
+    any(address),
+    any(content_uri),
+    groupArray(owner_address)
+FROM account_data
+WHERE hasAny(types, ['nft_item']) AND (collection_address = 'EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N')
+GROUP BY address
+```
