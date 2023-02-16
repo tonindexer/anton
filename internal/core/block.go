@@ -8,9 +8,9 @@ import (
 )
 
 type BlockID struct {
-	Workchain int32  `ch:",pk" bun:",pk,notnull" json:"w"`
-	Shard     int64  `ch:",pk" bun:",pk,notnull" json:"s"`
-	SeqNo     uint32 `ch:",pk" bun:",pk,notnull" json:"n"`
+	Workchain int32  `ch:",pk" bun:",pk,notnull" json:"workchain"`
+	Shard     int64  `ch:",pk" bun:",pk,notnull" json:"shard"`
+	SeqNo     uint32 `ch:",pk" bun:",pk,notnull" json:"seq_no"`
 }
 
 type Block struct {
@@ -35,8 +35,12 @@ type BlockFilter struct {
 	Workchain *int32
 	FileHash  []byte
 
-	WithShards       bool
-	WithTransactions bool
+	WithShards                     bool
+	WithTransactionAccountState    bool
+	WithTransactionAccountData     bool
+	WithTransactions               bool
+	WithTransactionMessages        bool
+	WithTransactionMessagePayloads bool
 }
 
 type BlockRepository interface {

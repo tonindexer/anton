@@ -23,9 +23,9 @@ type Transaction struct {
 	PrevTxHash []byte `bun:"type:bytea"`
 	PrevTxLT   uint64 //
 
-	InMsgLT uint64     `bun:",notnull"`
-	InMsg   *Message   `ch:"-" bun:"rel:has-one,join:address=tx_address,join:in_msg_lt=created_lt"` // `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
-	OutMsg  []*Message `ch:"-" bun:"rel:has-many,join:address=tx_address,join:created_lt=tx_created_lt"`
+	InMsgHash []byte     `bun:",unique,notnull"`
+	InMsg     *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"` // `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
+	OutMsg    []*Message `ch:"-" bun:"rel:has-many,join:address=source_tx_address,join:created_lt=source_tx_lt"`
 
 	TotalFees uint64 // `ch:"type:UInt256"`
 
@@ -53,14 +53,9 @@ type Message struct {
 
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"` // TODO: ch enum
 
-	Hash         []byte       `bun:"type:bytea,pk,notnull"`
-	SourceTxHash []byte       `bun:"type:bytea"`
-	SourceTx     *Transaction `bun:"rel:has-one,join:source_tx_hash=hash"`
-
-	Incoming    bool   `ch:",pk" bun:"type:boolean,pk,notnull"`
-	TxHash      []byte `ch:",pk" bun:"type:bytea,notnull"`
-	TxAddress   string `ch:",pk" bun:",notnull"`
-	TxCreatedLT uint64 `ch:",pk" bun:",notnull"`
+	Hash            []byte `ch:",pk" bun:"type:bytea,pk,notnull"`
+	SourceTxAddress string //
+	SourceTxLT      uint64 //
 
 	SrcAddress string //
 	DstAddress string //
@@ -89,22 +84,18 @@ type Message struct {
 }
 
 type MessagePayload struct {
-	ch.CHModel    `ch:"message_payloads,partition:incoming,src_contract,dst_contract,toYYYYMMDD(toDateTime(created_at))"`
+	ch.CHModel    `ch:"message_payloads,partition:src_contract,partition:dst_contract,partition:toYYYYMMDD(toDateTime(created_at))"`
 	bun.BaseModel `bun:"table:message_payloads"`
 
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"`
-	Hash []byte      `bun:"type:bytea,pk,notnull"`
-
-	Incoming  bool   `ch:",pk" bun:",pk,notnull"`
-	TxAddress string `ch:",pk" bun:",notnull"`
-	TxHash    []byte `ch:",pk" bun:"type:bytea,notnull"`
+	Hash []byte      `ch:",pk" bun:"type:bytea,pk,notnull"`
 
 	SrcAddress  string       //
 	SrcContract ContractType `ch:",lc"`
 	DstAddress  string       //
 	DstContract ContractType `ch:",lc"`
 
-	BodyHash      []byte `ch:",pk" bun:"type:bytea,notnull"`
+	BodyHash      []byte `bun:"type:bytea,notnull"`
 	OperationID   uint32 `bun:",notnull"`
 	OperationName string `ch:",lc" bun:",notnull"`
 	DataJSON      string //
@@ -120,16 +111,16 @@ type TransactionFilter struct {
 
 	BlockID *BlockID
 
-	WithAccountState bool
-	WithMessages     bool
+	WithAccountState    bool
+	WithAccountData     bool
+	WithMessages        bool
+	WithMessagePayloads bool
 }
 
 type MessageFilter struct {
 	Hash       []byte
 	SrcAddress string
 	DstAddress string
-
-	WithSource bool
 
 	WithPayload   bool
 	SrcContract   string

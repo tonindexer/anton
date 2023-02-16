@@ -178,9 +178,6 @@ var (
 	msgExtWallet = core.Message{
 		Type:          core.ExternalIn,
 		Hash:          randBytes(32),
-		Incoming:      true,
-		TxAddress:     accWallet.Address,
-		TxHash:        accWallet.LastTxHash,
 		DstAddress:    accWallet.Address,
 		Body:          randBytes(128),
 		BodyHash:      randBytes(32),
@@ -201,7 +198,7 @@ var (
 		PrevTxHash: randBytes(32),
 		PrevTxLT:   randLT(),
 
-		InMsgLT: msgExtWallet.CreatedLT,
+		InMsgHash: msgExtWallet.Hash,
 
 		TotalFees:   1e5,
 		StateUpdate: nil,
@@ -217,10 +214,8 @@ var (
 		Type: core.Internal,
 		Hash: randBytes(32),
 
-		Incoming:    false,
-		TxAddress:   txOutWallet.Address,
-		TxHash:      txOutWallet.Hash,
-		TxCreatedLT: txOutWallet.CreatedLT,
+		SourceTxAddress: txOutWallet.Address,
+		SourceTxLT:      txOutWallet.CreatedLT,
 
 		SrcAddress: accWallet.Address,
 		DstAddress: accItem.Address,
@@ -239,35 +234,6 @@ var (
 		CreatedLT: accWallet.LastTxLT + 1,
 	}
 
-	msgInItem = core.Message{
-		Type: core.Internal,
-
-		Hash:         msgOutWallet.Hash,
-		SourceTxHash: msgOutWallet.TxHash,
-
-		TxAddress:   accItem.Address,
-		TxHash:      accItem.LastTxHash,
-		TxCreatedLT: accItem.LastTxLT,
-
-		Incoming:   true,
-		SrcAddress: accWallet.Address,
-		DstAddress: accItem.Address,
-
-		Amount: msgOutWallet.Amount,
-
-		IHRDisabled: false,
-		IHRFee:      0,
-		FwdFee:      0,
-
-		Body:     msgOutWallet.Body,
-		BodyHash: msgOutWallet.BodyHash,
-
-		OperationID: msgOutWallet.OperationID,
-
-		CreatedAt: msgOutWallet.CreatedAt + 1,
-		CreatedLT: msgOutWallet.CreatedLT,
-	}
-
 	txInItem = core.Transaction{
 		Address: accItem.Address,
 		Hash:    accItem.LastTxHash,
@@ -279,7 +245,7 @@ var (
 		PrevTxHash: randBytes(32),
 		PrevTxLT:   randLT(),
 
-		InMsgLT: msgInItem.CreatedLT,
+		InMsgHash: msgOutWallet.Hash,
 
 		TotalFees: 1e3,
 
@@ -289,29 +255,25 @@ var (
 		OrigStatus: core.Active,
 		EndStatus:  core.Active,
 
-		CreatedAt: msgInItem.CreatedAt,
+		CreatedAt: msgOutWallet.CreatedAt,
 		CreatedLT: accItem.LastTxLT, // msgInItem.CreatedLT + 1,
 	}
 
 	msgInItemPayload = core.MessagePayload{
 		Type: core.Internal,
-		Hash: msgInItem.Hash,
+		Hash: msgOutWallet.Hash,
 
-		Incoming:  true,
-		TxAddress: accItem.Address,
-		TxHash:    msgInItem.TxHash,
-
-		SrcAddress:  msgInItem.SrcAddress,
+		SrcAddress:  msgOutWallet.SrcAddress,
 		SrcContract: core.ContractType(accWallet.Types[0]),
-		DstAddress:  msgInItem.DstAddress,
+		DstAddress:  msgOutWallet.DstAddress,
 		DstContract: core.ContractType(accItem.Types[0]),
 
-		BodyHash:      msgInItem.BodyHash,
-		OperationID:   msgInItem.OperationID,
+		BodyHash:      msgOutWallet.BodyHash,
+		OperationID:   msgOutWallet.OperationID,
 		OperationName: "item_transfer",
 		DataJSON:      "{\"new_owner\": \"kkkkkk\"}",
 
-		CreatedAt: msgInItem.CreatedAt,
-		CreatedLT: msgInItem.CreatedLT,
+		CreatedAt: msgOutWallet.CreatedAt,
+		CreatedLT: msgOutWallet.CreatedLT,
 	}
 )

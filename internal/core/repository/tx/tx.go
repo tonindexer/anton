@@ -252,15 +252,16 @@ func (r *Repository) GetSourceMessageTxHash(ctx context.Context, from, to string
 func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQuery {
 	if f.WithAccountState {
 		q = q.Relation("Account")
+		if f.WithAccountData {
+			q = q.Relation("Account.StateData")
+		}
 	}
 	if f.WithMessages {
 		q = q.
-			Relation("InMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
-				return q.Where("in_msg.incoming = ?", true)
-			}).
-			Relation("OutMsg", func(q *bun.SelectQuery) *bun.SelectQuery {
-				return q.Where("message.incoming = ?", false)
-			})
+			Relation("InMsg").
+			Relation("InMsg.Payload").
+			Relation("OutMsg").
+			Relation("OutMsg.Payload")
 	}
 
 	if len(f.Hash) > 0 {
@@ -286,9 +287,6 @@ func (r *Repository) GetTransactions(ctx context.Context, filter *core.Transacti
 }
 
 func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery {
-	if f.WithSource {
-		q = q.Relation("Source")
-	}
 	if f.WithPayload {
 		q = q.Relation("Payload")
 	}
