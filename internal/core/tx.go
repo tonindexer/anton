@@ -23,9 +23,9 @@ type Transaction struct {
 	PrevTxHash []byte `bun:"type:bytea"`
 	PrevTxLT   uint64 //
 
-	InMsgHash []byte     `bun:",unique"`
+	InMsgHash []byte     //
 	InMsg     *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"` // `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
-	OutMsg    []*Message `ch:"-" bun:"rel:has-many,join:address=source_tx_address,join:created_lt=source_tx_lt"`
+	OutMsg    []*Message `ch:"-" bun:"rel:has-many,join:address=src_address,join:created_lt=source_tx_lt"`
 
 	TotalFees uint64 // `ch:"type:UInt256"`
 
@@ -54,15 +54,16 @@ type Message struct {
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"` // TODO: ch enum
 
 	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"`
-	// SourceTx initiates outgoing message
-	SourceTxHash    []byte       `bun:"type:bytea"`
-	SourceTxAddress string       //
-	SourceTxLT      uint64       //
-	Source          *Transaction `ch:"-" bun:"-"`
 
 	SrcAddress string //
 	DstAddress string //
 	// TODO: addr contract types
+
+	// SourceTx initiates outgoing message
+	// or contract can accept external incoming message in SourceTx
+	SourceTxHash []byte       `bun:"type:bytea"`
+	SourceTxLT   uint64       //
+	Source       *Transaction `ch:"-" bun:"-"`
 
 	Bounce  bool //
 	Bounced bool //

@@ -48,6 +48,7 @@ func (s *Service) fetchBlockTransactions(ctx context.Context, b *tlb.BlockInfo) 
 
 func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, shard *tlb.BlockInfo) error {
 	var accounts []*core.AccountState
+	var accountData []*core.AccountData
 
 	blockTx, err := s.fetchBlockTransactions(ctx, shard)
 	if err != nil {
@@ -59,7 +60,7 @@ func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, shard
 		return errors.Wrap(err, "parse block transactions")
 	}
 
-	accountMap, accountData, err := s.processTxAccounts(ctx, shard, transactions)
+	accountMap, accountDataMap, err := s.processTxAccounts(ctx, shard, transactions)
 	if err != nil {
 		return errors.Wrap(err, "process tx accounts")
 	}
@@ -73,6 +74,9 @@ func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, shard
 
 	for _, st := range accountMap {
 		accounts = append(accounts, st)
+	}
+	for _, st := range accountDataMap {
+		accountData = append(accountData, st)
 	}
 
 	if err := s.accountRepo.AddAccountStates(ctx, tx, accounts); err != nil {

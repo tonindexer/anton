@@ -44,6 +44,7 @@ type AccountState struct {
 	Tick  bool   //
 	Tock  bool   //
 
+	// TODO: list all get method hashes
 	Types []string `ch:",lc"` // TODO: ContractType here, go-ch bug
 }
 

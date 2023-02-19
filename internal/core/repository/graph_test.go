@@ -214,8 +214,8 @@ var (
 		Type: core.Internal,
 		Hash: randBytes(32),
 
-		SourceTxAddress: txOutWallet.Address,
-		SourceTxLT:      txOutWallet.CreatedLT,
+		SourceTxHash: txOutWallet.Hash,
+		SourceTxLT:   txOutWallet.CreatedLT,
 
 		SrcAddress: accWallet.Address,
 		DstAddress: accItem.Address,

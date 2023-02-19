@@ -18,7 +18,7 @@ import (
 )
 
 type DB struct {
-	CH *ch.DB
+	CH *ch.DB // TODO: do not insert duplicates to ch
 	PG *bun.DB
 }
 

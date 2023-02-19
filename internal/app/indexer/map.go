@@ -92,7 +92,6 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 		msg.SrcAddress = raw.SrcAddr.String()
 
 		msg.SourceTxHash = tx.Hash
-		msg.SourceTxAddress = msg.SrcAddress
 		msg.SourceTxLT = tx.LT
 
 		msg.CreatedLT = raw.CreatedLT
@@ -114,6 +113,7 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 	ret := new(core.AccountState)
 
 	ret.IsActive = acc.IsActive
+	ret.Status = core.NonExist
 	if acc.State != nil {
 		if acc.State.Address != nil {
 			ret.Address = acc.State.Address.String()
@@ -147,12 +147,7 @@ func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, 
 	var err error
 
 	tx := &core.Transaction{
-		Hash:    raw.Hash,
-		Address: address.NewAddress(0, byte(b.Workchain), raw.AccountAddr).String(),
-
-		BlockWorkchain: b.Workchain,
-		BlockShard:     b.Shard,
-		BlockSeqNo:     b.SeqNo,
+		Hash: raw.Hash,
 
 		PrevTxHash: raw.PrevTxHash,
 		PrevTxLT:   raw.PrevTxLT,
@@ -164,6 +159,12 @@ func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, 
 
 		CreatedLT: raw.LT,
 		CreatedAt: uint64(raw.Now),
+	}
+	if b != nil {
+		tx.Address = address.NewAddress(0, byte(b.Workchain), raw.AccountAddr).String()
+		tx.BlockWorkchain = b.Workchain
+		tx.BlockShard = b.Shard
+		tx.BlockSeqNo = b.SeqNo
 	}
 	if raw.IO.In != nil {
 		tx.InMsgHash, err = getMsgHash(raw.IO.In)

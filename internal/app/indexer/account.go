@@ -14,8 +14,9 @@ import (
 func (s *Service) processTxAccounts(
 	ctx context.Context, b *tlb.BlockInfo,
 	transactions []*core.Transaction,
-) (accounts map[string]*core.AccountState, accountsData []*core.AccountData, err error) {
+) (accounts map[string]*core.AccountState, accountsData map[string]*core.AccountData, err error) {
 	accounts = make(map[string]*core.AccountState)
+	accountsData = make(map[string]*core.AccountData)
 
 	for _, tx := range transactions {
 		addr := address.MustParseAddr(tx.Address)
@@ -24,30 +25,29 @@ func (s *Service) processTxAccounts(
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "get account (%s)", addr.String())
 		}
+
 		acc := mapAccount(raw)
+		if acc.Status == core.NonExist {
+			continue
+		}
 
 		accTypes, err := s.abiRepo.DetermineContractInterfaces(ctx, raw)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "determine contract interfaces")
 		}
+
 		for _, t := range accTypes {
 			acc.Types = append(acc.Types, string(t))
 		}
-
-		if st, ok := accounts[acc.Address]; !ok || st.LastTxLT <= acc.LastTxLT {
-			accounts[acc.Address] = acc
-		} else {
-			continue
-		}
+		accounts[acc.Address] = acc
 
 		data, err := s.parser.ParseAccountData(ctx, b, raw)
 		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
 			log.Error().Err(err).Str("addr", tx.Address).Msg("parse account data")
 			continue
 		}
-		if err == nil {
-			accountsData = append(accountsData, data)
-		}
+
+		accountsData[data.Address] = data
 	}
 
 	return accounts, accountsData, nil

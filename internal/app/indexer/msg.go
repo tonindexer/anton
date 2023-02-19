@@ -12,11 +12,9 @@ import (
 )
 
 func (s *Service) messageAlreadyKnown(ctx context.Context, in *core.Message, outMsgMap map[uint64]*core.Message) (bool, error) {
-	if in.Type != core.Internal {
-		return false, nil
-	}
+	// do not duplicate messages in a database
 
-	if _, ok := outMsgMap[in.CreatedLT]; ok {
+	if _, ok := outMsgMap[in.CreatedLT]; in.Type == core.Internal && ok { // found outgoing internal message in the block
 		return true, nil
 	}
 
@@ -47,14 +45,17 @@ func (s *Service) processBlockMessages(ctx context.Context, b *tlb.BlockInfo, bl
 			if err = abi.ParseOperationID(msg); err != nil {
 				return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 			}
+
 			if msg.Source, err = mapTransaction(b, tx); err != nil {
 				return nil, errors.Wrapf(err, "map source transaction (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 			}
-			msg.SourceTxHash = msg.Source.Hash
-			msg.SourceTxAddress = msg.Source.Address
-			msg.SourceTxLT = msg.Source.CreatedLT
+			msg.SourceTxHash = tx.Hash
+			msg.SourceTxLT = tx.LT
+
 			outMessages = append(outMessages, msg)
-			outMsgMap[msg.CreatedLT] = msg
+			if msg.Type == core.Internal {
+				outMsgMap[msg.CreatedLT] = msg
+			}
 		}
 	}
 

@@ -76,6 +76,16 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Message{}).
+		Unique().
+		Column("src_address", "created_lt").
+		Where("length(src_address) > 0").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "message src addr lt pg create unique index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.Message{}).
 		Using("HASH").
 		Column("dst_address").
 		Where("length(dst_address) > 0").
