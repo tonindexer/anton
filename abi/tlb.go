@@ -6,16 +6,39 @@ import (
 	"math/big"
 	"reflect"
 
+	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-type fieldSchema struct {
+type structField struct {
 	Name         string         `json:"name,omitempty"`
 	Type         string         `json:"type"`
 	Tag          string         `json:"tag,omitempty"`
-	StructFields []*fieldSchema `json:"struct_fields,omitempty"` // Type = "struct"
+	StructFields []*structField `json:"struct_fields,omitempty"` // Type = "struct"
+}
+
+type TelemintText struct {
+	Len  uint8  // ## 8
+	Text []byte // bits (len * 8)
+}
+
+func (x *TelemintText) LoadFromCell(loader *cell.Slice) error {
+	l, err := loader.LoadUInt(8)
+	if err != nil {
+		return errors.Wrap(err, "load len uint8")
+	}
+
+	t, err := loader.LoadSlice(8 * uint(l))
+	if err != nil {
+		return errors.Wrap(err, "load text slice")
+	}
+
+	x.Len = uint8(l)
+	x.Text = t
+
+	return nil
 }
 
 var (
@@ -24,16 +47,18 @@ var (
 		reflect.TypeOf([]uint8{}): "bytes",
 	}
 	typeNameMap = map[string]reflect.Type{
-		"bool":    reflect.TypeOf(false),
-		"uint16":  reflect.TypeOf(uint16(0)),
-		"uint32":  reflect.TypeOf(uint32(0)),
-		"uint64":  reflect.TypeOf(uint64(0)),
-		"bytes":   reflect.TypeOf([]byte{}),
-		"bigInt":  reflect.TypeOf(big.NewInt(0)),
-		"cell":    reflect.TypeOf((*cell.Cell)(nil)),
-		"magic":   reflect.TypeOf(tlb.Magic{}),
-		"coins":   reflect.TypeOf(tlb.Coins{}),
-		"address": reflect.TypeOf((*address.Address)(nil)),
+		"bool":         reflect.TypeOf(false),
+		"uint8":        reflect.TypeOf(uint8(0)),
+		"uint16":       reflect.TypeOf(uint16(0)),
+		"uint32":       reflect.TypeOf(uint32(0)),
+		"uint64":       reflect.TypeOf(uint64(0)),
+		"bytes":        reflect.TypeOf([]byte{}),
+		"bigInt":       reflect.TypeOf(big.NewInt(0)),
+		"cell":         reflect.TypeOf((*cell.Cell)(nil)),
+		"magic":        reflect.TypeOf(tlb.Magic{}),
+		"coins":        reflect.TypeOf(tlb.Coins{}),
+		"address":      reflect.TypeOf((*address.Address)(nil)),
+		"telemintText": reflect.TypeOf((*TelemintText)(nil)),
 	}
 )
 
@@ -43,12 +68,12 @@ func init() {
 	}
 }
 
-func structToFields(t reflect.Type) (ret []*fieldSchema, err error) {
+func structToFields(t reflect.Type) (ret []*structField, err error) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		ft, ok := typeNameRMap[f.Type]
 
-		schema := &fieldSchema{
+		schema := &structField{
 			Name: f.Name,
 			Tag:  string(f.Tag),
 		}
@@ -72,7 +97,7 @@ func structToFields(t reflect.Type) (ret []*fieldSchema, err error) {
 			}
 
 		default:
-			return nil, fmt.Errorf("%s: unknown field type %s", f.Name, f.Type)
+			return nil, fmt.Errorf("%s: unknown structField type %s", f.Name, f.Type)
 		}
 
 		if schema.Name == "_" && schema.Type == "magic" {
@@ -84,7 +109,7 @@ func structToFields(t reflect.Type) (ret []*fieldSchema, err error) {
 	return ret, nil
 }
 
-func fieldsToStruct(schema []*fieldSchema) (reflect.Type, error) {
+func fieldsToStruct(schema []*structField) (reflect.Type, error) {
 	var fields []reflect.StructField
 	var err error
 
@@ -131,7 +156,7 @@ func MarshalSchema(x any) ([]byte, error) {
 }
 
 func UnmarshalSchema(raw []byte) (any, error) {
-	var schema []*fieldSchema
+	var schema []*structField
 
 	if err := json.Unmarshal(raw, &schema); err != nil {
 		return nil, err
