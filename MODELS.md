@@ -158,12 +158,15 @@ type ContractOperation struct {
 
 ### NFT collection
 
-Operations:
-1. `op::get_royalty_params()`
+Incoming messages:
+1. `op::get_royalty_params() == 0x693d3950`
 2. `(op == 1) ;; deploy new nft`
 3. `(op == 2) ;; batch deploy of new nfts`
 4. `(op == 3) ;; change owner`
 5. `(op == 4) ;; change content, if editable`
+
+Outgoing messages:
+1. `op::report_royalty_params() == 0xa8cb00ad`
 
 Get methods:
 1. `(int, cell, slice) get_collection_data()`
@@ -174,12 +177,17 @@ Get methods:
 
 ### NFT item
 
-Operations:
-1. `op::transfer()`
-2. `op::get_static_data()`
-3. `op::transfer_editorship()`
-4. `op::ownership_assigned()` -- outgoing message (msg src addr = nft item)
-5. `op::edit_content() ;; if editable`
+Incoming messages:
+1. `op::transfer() == 0x5fcc3d14`
+2. `op::get_static_data() == 0x2fcb26a2`
+3. `op::edit_content() == 0x1a0b9d51 ;; if editable`
+4. `op::transfer_editorship() == 0x1c04412a`
+
+Outgoing messages:
+1. `op::ownership_assigned() == 0x05138d91`
+2. `op::excesses() == 0xd53276db`
+3. `op::report_static_data() == 0x8b771735`
+4. `op::editorship_assigned() == 0x511a4463`
 
 Get methods:
 1. `(int, int, slice, slice, cell) get_nft_data() ;; (init?, index, collection_address, owner_address, content)`
