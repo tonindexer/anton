@@ -1,4 +1,4 @@
-package abi
+package contract
 
 import (
 	"reflect"

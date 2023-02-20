@@ -7,28 +7,36 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 
 	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository/abi"
+	"github.com/iam047801/tonidx/internal/core/repository/contract"
 )
 
 type txTestCase struct {
-	addr     *address.Address
-	txHash   []byte
-	lt       uint64
-	opId     uint32
-	contract core.ContractType
-	error    error
+	addr       *address.Address
+	txHash     []byte
+	lt         uint64
+	comment    string
+	commentOut string
+	opId       uint32
+	opIdOut    uint32
+	contract   core.ContractType
+	error      error
 }
 
 func TestService_ParseOperationID(t *testing.T) {
 	cases := []*txTestCase{
 		{
-			addr:   address.MustParseAddr("EQDd3NPNrWCvTA1pOJ9WetUdDCY_pJaNZVq0JMaara-TIp90"),
-			txHash: core.MustHexDecode("2c4e497a6bdcddfb72d92874fdcbbfc77e023fd9dec685aa70b54ae973d7c3b5"),
-			lt:     25410982000001,
+			addr:       address.MustParseAddr("EQDd3NPNrWCvTA1pOJ9WetUdDCY_pJaNZVq0JMaara-TIp90"),
+			txHash:     core.MustHexDecode("2c4e497a6bdcddfb72d92874fdcbbfc77e023fd9dec685aa70b54ae973d7c3b5"),
+			lt:         25410982000001,
+			opId:       0xeac4f808,
+			opIdOut:    0,
+			commentOut: "0246562d-15c7-490a-8104-eed384bdc4db",
 		}, {
-			addr:   address.MustParseAddr("EQBF1wmCWU2Lb_jBZalOy0mqa5MIDAzUYeav_Z0sI3CM8Okr"),
-			txHash: core.MustHexDecode("5fd05e9cfe02c09d2e248db424805a767719cd65b73c099463a35c0e252fb4f5"),
-			lt:     31199023000003,
+			addr:    address.MustParseAddr("EQBF1wmCWU2Lb_jBZalOy0mqa5MIDAzUYeav_Z0sI3CM8Okr"),
+			txHash:  core.MustHexDecode("5fd05e9cfe02c09d2e248db424805a767719cd65b73c099463a35c0e252fb4f5"),
+			opId:    1,
+			opIdOut: 1,
+			lt:      31199023000003,
 		},
 	}
 
@@ -37,18 +45,28 @@ func TestService_ParseOperationID(t *testing.T) {
 		if tx.IO.In != nil {
 			payload := tx.IO.In.Msg.Payload().ToBOC()
 			msg := &core.Message{Body: payload}
-			if err := abi.ParseOperationID(msg); err != nil {
+			if err := contract.ParseOperationID(msg); err != nil {
 				t.Fatal(err)
 			}
-			t.Logf("in msg payload: op = %x, comment = %s, %x (%d)", msg.OperationID, msg.TransferComment, payload, len(payload))
+			if msg.OperationID != c.opId {
+				t.Fatalf("expected: %d, got: %d", c.opId, msg.OperationID)
+			}
+			if msg.TransferComment != c.comment {
+				t.Fatalf("expected: %s, got: %s", c.comment, msg.TransferComment)
+			}
 		}
-		for i, out := range tx.IO.Out {
+		for _, out := range tx.IO.Out {
 			payload := out.Msg.Payload().ToBOC()
 			msg := &core.Message{Body: payload}
-			if err := abi.ParseOperationID(msg); err != nil {
+			if err := contract.ParseOperationID(msg); err != nil {
 				t.Fatal(err)
 			}
-			t.Logf("[%d] out msg payload: op = %x, comment = %s, %x (%d)", i, msg.OperationID, msg.TransferComment, payload, len(payload))
+			if msg.OperationID != c.opIdOut {
+				t.Fatalf("expected: %d, got: %d", c.opIdOut, msg.OperationID)
+			}
+			if msg.TransferComment != c.commentOut {
+				t.Fatalf("expected: %s, got: %s", c.commentOut, msg.TransferComment)
+			}
 		}
 	}
 }
@@ -70,6 +88,8 @@ func TestService_ParseMessagePayload(t *testing.T) {
 			contract: core.NFTItem,
 		},
 	}
+
+	// TODO: fix it
 
 	for _, c := range cases {
 		tx := getTransactionOnce(t, c.addr, c.lt, c.txHash)

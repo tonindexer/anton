@@ -18,7 +18,7 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 		return errors.Wrap(core.ErrNotAvailable, "no interfaces")
 	}
 
-	operation, err := s.abiRepo.GetContractOperationByID(ctx, acc, acc.Address == message.SrcAddress, message.OperationID)
+	operation, err := s.abiRepo.GetOperationByID(ctx, acc, acc.Address == message.SrcAddress, message.OperationID)
 	if errors.Is(err, core.ErrNotFound) {
 		return errors.Wrap(core.ErrNotAvailable, "unknown operation")
 	}

@@ -25,7 +25,7 @@ func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *t
 	data.LastTxLT = acc.LastTxLT
 	data.LastTxHash = acc.LastTxHash
 
-	types, err := s.abiRepo.DetermineContractInterfaces(ctx, acc)
+	types, err := s.abiRepo.DetermineInterfaces(ctx, acc)
 	if err != nil {
 		return nil, errors.Wrap(err, "get contract interfaces")
 	}

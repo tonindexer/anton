@@ -1,4 +1,4 @@
-package abi
+package contract
 
 import (
 	"bytes"
@@ -68,7 +68,7 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	return nil
 }
 
-func (r *Repository) GetContractInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
+func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
 	var ret []*core.ContractInterface
 
 	// TODO: clear cache
@@ -110,7 +110,7 @@ func matchByCode(acc *tlb.Account, code []byte) bool {
 	return acc.Code != nil && bytes.Equal(acc.Code.Hash(), codeCell.Hash())
 }
 
-func (s *Repository) DetermineContractInterfaces(ctx context.Context, acc *tlb.Account) ([]core.ContractType, error) {
+func (r *Repository) DetermineInterfaces(ctx context.Context, acc *tlb.Account) ([]core.ContractType, error) {
 	var ret []core.ContractType
 
 	version := wallet.GetWalletVersion(acc)
@@ -119,7 +119,7 @@ func (s *Repository) DetermineContractInterfaces(ctx context.Context, acc *tlb.A
 			core.ContractType(fmt.Sprintf("wallet_%s", version.String())))
 	}
 
-	ifaces, err := s.GetContractInterfaces(ctx)
+	ifaces, err := r.GetInterfaces(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get contract interfaces")
 	}
@@ -154,7 +154,7 @@ func (s *Repository) DetermineContractInterfaces(ctx context.Context, acc *tlb.A
 	return ret, nil
 }
 
-func (r *Repository) InsertContractOperations(ctx context.Context, operations []*core.ContractOperation) error {
+func (r *Repository) InsertOperations(ctx context.Context, operations []*core.ContractOperation) error {
 	var err error
 
 	for _, op := range operations {
@@ -219,7 +219,7 @@ func ParseOperationID(msg *core.Message) error {
 	return nil
 }
 
-func (r *Repository) GetContractOperationByID(ctx context.Context, a *core.AccountState, outgoing bool, id uint32) (*core.ContractOperation, error) {
+func (r *Repository) GetOperationByID(ctx context.Context, a *core.AccountState, outgoing bool, id uint32) (*core.ContractOperation, error) {
 	var ret []*core.ContractOperation
 
 	if len(a.Types) == 0 {

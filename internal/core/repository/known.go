@@ -15,7 +15,7 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository/abi"
+	"github.com/iam047801/tonidx/internal/core/repository/contract"
 )
 
 func insertInterfacesNFT(ctx context.Context, db *ch.DB) error {
@@ -209,8 +209,7 @@ func insertOperationsNFT(ctx context.Context, _ch *ch.DB, _ *bun.DB) error {
 		},
 	}}
 
-	accRepo := abi.NewRepository(_ch)
-	if err := accRepo.InsertContractOperations(ctx, operations); err != nil {
+	if err := contract.NewRepository(_ch).InsertOperations(ctx, operations); err != nil {
 		return err
 	}
 

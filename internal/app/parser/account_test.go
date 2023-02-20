@@ -65,7 +65,7 @@ func TestService_ParseAccount(t *testing.T) {
 			t.Fatal(c.addr.String(), err)
 		}
 
-		types, err := s.abiRepo.DetermineContractInterfaces(ctx, acc)
+		types, err := s.abiRepo.DetermineInterfaces(ctx, acc)
 		if err != nil {
 			t.Fatal(c.addr.String(), err)
 		}
@@ -76,7 +76,6 @@ func TestService_ParseAccount(t *testing.T) {
 		if core.AccountStatus(acc.State.Status) != c.status {
 			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.status, acc.State.Status)
 		}
-		t.Logf("acc: %+v", acc)
 
 		if c.contract != core.NFTCollection && c.contract != core.NFTItem {
 			continue
@@ -92,6 +91,5 @@ func TestService_ParseAccount(t *testing.T) {
 		if c.collectionAddr != "" && c.collectionAddr != data.CollectionAddress {
 			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.collectionAddr, data.CollectionAddress)
 		}
-		t.Logf("data: %+v", data)
 	}
 }

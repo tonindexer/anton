@@ -70,9 +70,9 @@ type ContractOperation struct {
 }
 
 type ContractRepository interface {
-	GetContractInterfaces(context.Context) ([]*ContractInterface, error)
-	DetermineContractInterfaces(context.Context, *tlb.Account) ([]ContractType, error)
+	GetInterfaces(context.Context) ([]*ContractInterface, error)
+	DetermineInterfaces(context.Context, *tlb.Account) ([]ContractType, error)
 
-	InsertContractOperations(context.Context, []*ContractOperation) error
-	GetContractOperationByID(context.Context, *AccountState, bool, uint32) (*ContractOperation, error)
+	InsertOperations(context.Context, []*ContractOperation) error
+	GetOperationByID(context.Context, *AccountState, bool, uint32) (*ContractOperation, error)
 }
