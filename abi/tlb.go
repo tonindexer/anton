@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
@@ -168,4 +169,58 @@ func UnmarshalSchema(raw []byte) (any, error) {
 	}
 
 	return reflect.New(t).Interface(), nil
+}
+
+func OperationID(x any) (uint32, error) {
+	if reflect.TypeOf(x).Kind() != reflect.Pointer {
+		return 0, fmt.Errorf("x should be a pointer")
+	}
+
+	s := reflect.TypeOf(x).Elem()
+	if s.NumField() < 1 {
+		return 0, fmt.Errorf("no struct fields")
+	}
+
+	op := s.Field(0)
+	if op.Type != reflect.TypeOf(tlb.Magic{}) {
+		return 0, fmt.Errorf("no magic type in first struct field")
+	}
+
+	opValueStr, ok := op.Tag.Lookup("tlb")
+	if !ok || len(opValueStr) != 9 || opValueStr[0] != '#' {
+		return 0, fmt.Errorf("wrong tlb tag format")
+	}
+
+	opValue, err := strconv.ParseUint(opValueStr[1:], 16, 32)
+	if err != nil {
+		return 0, errors.Wrap(err, "parse hex uint32")
+	}
+
+	return uint32(opValue), nil
+}
+
+func ParseOperationID(body []byte) (uint32, string, error) {
+	payload, err := cell.FromBOC(body)
+	if err != nil {
+		return 0, "", errors.Wrap(err, "msg body from boc")
+	}
+	slice := payload.BeginParse()
+
+	op, err := slice.LoadUInt(32)
+	if err != nil {
+		return 0, "", errors.Wrap(err, "load uint")
+	}
+
+	opID := uint32(op)
+	if opID != 0 {
+		return opID, "", nil
+	}
+
+	// simple transfer with comment
+	comment, err := slice.LoadStringSnake()
+	if err != nil {
+		return 0, "", errors.Wrap(err, "load transfer comment")
+	}
+
+	return opID, comment, nil
 }
