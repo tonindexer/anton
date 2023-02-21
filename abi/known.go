@@ -97,10 +97,11 @@ var (
 
 		JettonWallet: {
 			false: {
-				(*JettonTransfer)(nil), (*JettonInternalTransfer)(nil),
+				(*JettonTransfer)(nil),
 				(*JettonBurn)(nil),
 			},
 			true: {
+				(*JettonInternalTransfer)(nil),
 				(*JettonTransferNotification)(nil),
 			},
 		},

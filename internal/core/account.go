@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/extra/bunbig"
 	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/tlb"
 
@@ -77,6 +78,21 @@ type NFTItemData struct {
 	// OwnerAddress      string
 }
 
+type FTMasterData struct {
+	TotalSupply bunbig.Int `bun:"type:decimal" json:"total_supply,omitempty"` // TODO: pointer here, bun bug
+	Mintable    bool       `json:"mintable,omitempty"`
+	AdminAddr   string     `json:"admin_addr,omitempty"`
+	// Content     nft.ContentAny
+	// WalletCode  *cell.Cell
+}
+
+type FTWalletData struct {
+	Balance bunbig.Int `bun:"type:decimal" json:"balance"` // TODO: pointer here, bun bug
+	// OwnerAddress  *address.Address
+	MasterAddress string `json:"master_address"`
+	// WalletCode  *cell.Cell
+}
+
 type AccountData struct {
 	ch.CHModel    `ch:"account_data,partition:types"`
 	bun.BaseModel `bun:"table:account_data"`
@@ -93,6 +109,9 @@ type AccountData struct {
 	NFTRoyaltyData
 	NFTContentData
 	NFTItemData
+
+	FTMasterData
+	FTWalletData
 }
 
 type AccountStateFilter struct {

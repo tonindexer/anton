@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/uptrace/bun/extra/bunbig"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/nft"
 
@@ -61,6 +62,8 @@ func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, acc *
 	addr := acc.State.Address
 
 	for _, t := range types {
+		var skip bool
+
 		switch t {
 		case abi.NFTCollection:
 			data, err := abi.GetNFTCollectionData(ctx, s.api, b, addr)
@@ -91,10 +94,59 @@ func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, acc *
 			mapEditorDataNFT(ret, data)
 
 		default:
-			unknown++
+			skip, unknown = true, unknown+1
 		}
 
-		ret.Types = append(ret.Types, string(t))
+		if !skip {
+			ret.Types = append(ret.Types, string(t))
+		}
+	}
+	if unknown == len(types) {
+		return errors.Wrap(core.ErrNotAvailable, "unknown contract")
+	}
+
+	return nil
+}
+
+func (s *Service) getAccountDataFT(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account, types []abi.ContractName, ret *core.AccountData) error {
+	var unknown int
+
+	addr := acc.State.Address
+
+	for _, t := range types {
+		var skip bool
+
+		switch t {
+		case abi.JettonMinter:
+			data, err := abi.GetJettonData(ctx, s.api, b, addr)
+			if err != nil {
+				return errors.Wrap(err, "get jetton minter data")
+			}
+			if data.TotalSupply != nil {
+				ret.TotalSupply = *bunbig.FromMathBig(data.TotalSupply)
+			}
+			ret.Mintable = data.Mintable
+			ret.AdminAddr = data.AdminAddr.String()
+			mapContentDataNFT(ret, data.Content)
+
+		case abi.JettonWallet:
+			data, err := abi.GetJettonWalletData(ctx, s.api, b, addr)
+			if err != nil {
+				return errors.Wrap(err, "get jetton wallet data")
+			}
+			if data.Balance != nil {
+				ret.Balance = *bunbig.FromMathBig(data.Balance)
+			}
+			ret.OwnerAddress = data.OwnerAddress.String()
+			ret.MasterAddress = data.MasterAddress.String()
+
+		default:
+			skip, unknown = true, unknown+1
+		}
+
+		if !skip {
+			ret.Types = append(ret.Types, string(t))
+		}
 	}
 	if unknown == len(types) {
 		return errors.Wrap(core.ErrNotAvailable, "unknown contract")
