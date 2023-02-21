@@ -22,6 +22,10 @@ type (
 		Denominator uint16           `tlb:"## 16"`
 		Destination *address.Address `tlb:"addr"`
 	}
+	TelemintTokenInfo struct {
+		Name   *TelemintText `tlb:"."`
+		Domain *TelemintText `tlb:"."`
+	}
 
 	TelemintMsgDeploy struct {
 		_             tlb.Magic              `tlb:"#4637289b"`
@@ -38,7 +42,7 @@ type (
 		_             tlb.Magic              `tlb:"#299a3e15"`
 		SenderAddress *address.Address       `tlb:"addr"`
 		Bid           tlb.Coins              `tlb:"."`
-		Info          *cell.Cell             `tlb:"^"`
+		Info          *TelemintTokenInfo     `tlb:"^"`
 		Content       *cell.Cell             `tlb:"^"`
 		AuctionConfig *TeleitemAuctionConfig `tlb:"^"`
 		RoyaltyParams *TelemintRoyaltyParams `tlb:"^"`

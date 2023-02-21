@@ -22,7 +22,7 @@ type structField struct {
 
 type TelemintText struct {
 	Len  uint8  // ## 8
-	Text []byte // bits (len * 8)
+	Text string // bits (len * 8)
 }
 
 func (x *TelemintText) LoadFromCell(loader *cell.Slice) error {
@@ -37,7 +37,7 @@ func (x *TelemintText) LoadFromCell(loader *cell.Slice) error {
 	}
 
 	x.Len = uint8(l)
-	x.Text = t
+	x.Text = string(t)
 
 	return nil
 }
