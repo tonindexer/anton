@@ -14,18 +14,18 @@ type ContractInterface struct {
 	bun.BaseModel `bun:"table:contract_interfaces"`
 
 	Name       abi.ContractName `ch:",pk" bun:",pk"`
-	Address    string           //
-	Code       []byte           //
-	GetMethods []string         //
+	Address    string           `ch:",pk" bun:",pk"`
+	Code       []byte           `bun:",unique"`
+	GetMethods []string         `bun:",unique,array"`
 }
 
 type ContractOperation struct {
 	ch.CHModel    `ch:"contract_operations"`
 	bun.BaseModel `bun:"table:contract_operations"`
 
-	Name         string           //
+	Name         string           `bun:",unique"`
 	ContractName abi.ContractName `ch:",pk" bun:",pk"`
-	Outgoing     bool             // if operation is going from contract
+	Outgoing     bool             `ch:",pk" bun:",pk"` // if operation is going from contract
 	OperationID  uint32           `ch:",pk" bun:",pk"`
 	Schema       []byte           //
 }

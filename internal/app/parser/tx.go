@@ -41,7 +41,7 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 
 	parsed, err := abi.UnmarshalSchema(operation.Schema)
 	if err != nil {
-		return errors.Wrapf(core.ErrNotAvailable, "unmarshal %s %s schema", operation.ContractName, operation.Name)
+		return errors.Wrapf(err, "unmarshal %s %s schema", operation.ContractName, operation.Name)
 	}
 
 	payloadCell, err := cell.FromBOC(message.Body)

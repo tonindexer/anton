@@ -42,7 +42,9 @@ func (s *Service) processTxAccounts(
 		accounts[acc.Address] = acc
 
 		data, err := s.parser.ParseAccountData(ctx, b, raw)
-		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
+		if errors.Is(err, core.ErrNotAvailable) {
+			continue
+		} else if err != nil {
 			log.Error().Err(err).Str("addr", tx.Address).Msg("parse account data")
 			continue
 		}

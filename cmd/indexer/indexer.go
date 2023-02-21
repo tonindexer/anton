@@ -13,10 +13,12 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/app/indexer"
 	"github.com/iam047801/tonidx/internal/app/parser"
 	"github.com/iam047801/tonidx/internal/core/repository"
+	"github.com/iam047801/tonidx/internal/core/repository/contract"
 )
 
 func init() {
@@ -27,13 +29,20 @@ func init() {
 }
 
 func initDB(ctx context.Context, conn *repository.DB) error {
+	_, err := contract.NewRepository(conn.PG).
+		GetOperationByID(ctx,
+			[]abi.ContractName{abi.NFTItem}, false, 0x5fcc3d14)
+	if err == nil {
+		return nil // tables exist
+	}
+
 	log.Info().Msg("creating tables")
 	if err := repository.CreateTablesDB(ctx, conn); err != nil {
 		return errors.Wrap(err, "cannot create tables")
 	}
 
 	log.Info().Msg("inserting known contract interfaces")
-	if err := repository.InsertKnownInterfaces(ctx, conn.CH); err != nil {
+	if err := repository.InsertKnownInterfaces(ctx, conn.PG); err != nil {
 		return errors.Wrap(err, "cannot insert interfaces")
 	}
 

@@ -119,6 +119,28 @@ func dropTables(t *testing.T) { //nolint:gocyclo // clean database
 	}
 }
 
+func TestInsertKnownInterfaces(t *testing.T) {
+	initDB()
+
+	t.Run("drop tables", func(t *testing.T) {
+		dropTables(t)
+	})
+
+	t.Run("create tables", func(t *testing.T) {
+		err := repository.CreateTablesDB(ctx, db)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("insert known interfaces", func(t *testing.T) {
+		err := repository.InsertKnownInterfaces(ctx, db.PG)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master block data insertion
 	var insertTx bun.Tx
 
@@ -130,6 +152,17 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 
 	t.Run("create tables", func(t *testing.T) {
 		err := repository.CreateTablesDB(ctx, db)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("insert interfaces", func(t *testing.T) {
+		_, err := db.PG.NewInsert().Model(&ifaceItem).Exec(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = db.PG.NewInsert().Model(&opItemTransfer).Exec(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}

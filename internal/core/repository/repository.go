@@ -74,7 +74,7 @@ func CreateTablesDB(ctx context.Context, db *DB) error {
 	if err != nil {
 		return err
 	}
-	err = contract.CreateTables(ctx, db.CH, db.PG)
+	err = contract.CreateTables(ctx, db.PG)
 	if err != nil {
 		return err
 	}

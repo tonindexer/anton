@@ -19,13 +19,13 @@ type Block struct {
 
 	BlockID
 
-	FileHash []byte `ch:",pk" bun:"type:bytea,unique,notnull"` // TODO: []byte here, go-bun bug on has-many
-	RootHash []byte `ch:",pk" bun:"type:bytea,unique,notnull"`
+	FileHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"file_hash"` // TODO: []byte here, go-bun bug on has-many
+	RootHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"root_hash"`
 
-	MasterID BlockID  `ch:"-" bun:"embed:master_"`
-	Shards   []*Block `ch:"-" bun:"rel:has-many,join:workchain=master_workchain,join:shard=master_shard,join:seq_no=master_seq_no"`
+	MasterID BlockID  `ch:"-" bun:"embed:master_" json:"master,omitempty"`
+	Shards   []*Block `ch:"-" bun:"rel:has-many,join:workchain=master_workchain,join:shard=master_shard,join:seq_no=master_seq_no" json:"shards,omitempty"`
 
-	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:workchain=block_workchain,join:shard=block_shard,join:seq_no=block_seq_no"`
+	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:workchain=block_workchain,join:shard=block_shard,join:seq_no=block_seq_no" json:"transactions"`
 
 	// TODO: block info data
 }

@@ -40,9 +40,14 @@ var (
 
 		DNSResolver: {"dnsresolve"},
 
-		TelemintNFTCollection: {"get_collection_data", "get_nft_address_by_index", "get_nft_content"},
-		TelemintNFTItem:       {"get_nft_data", "get_telemint_token_name", "get_telemint_auction_state", "get_telemint_auction_config"},
-		TelemintNFTDNS:        {"get_full_domain"},
+		// TelemintNFTCollection: {"get_collection_data", "get_nft_address_by_index", "get_nft_content"},
+		TelemintNFTItem: {"get_telemint_token_name", "get_telemint_auction_state", "get_telemint_auction_config"},
+		TelemintNFTDNS:  {"get_full_domain"},
+	}
+
+	KnownAddresses = map[string]ContractName{
+		"EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N": TelemintNFTCollection,
+		"EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi": TelemintNFTCollection,
 	}
 
 	// KnownContractOperations is a map[contract] -> map[is outgoing message] -> message schema
@@ -51,9 +56,6 @@ var (
 			false: []any{
 				(*NFTCollectionItemMint)(nil), (*NFTCollectionItemMintBatch)(nil),
 				(*NFTCollectionChangeOwner)(nil), (*NFTCollectionChangeContent)(nil),
-			},
-			true: []any{
-				(*NFTItemOwnershipAssigned)(nil),
 			},
 		},
 
@@ -95,8 +97,11 @@ var (
 
 		JettonWallet: {
 			false: {
-				(*JettonTransfer)(nil), (*JettonInternalTransfer)(nil), (*JettonTransferNotification)(nil),
+				(*JettonTransfer)(nil), (*JettonInternalTransfer)(nil),
 				(*JettonBurn)(nil),
+			},
+			true: {
+				(*JettonTransferNotification)(nil),
 			},
 		},
 
@@ -110,7 +115,7 @@ var (
 		},
 		TelemintNFTItem: {
 			false: {
-				(*TeleitemMsgDeploy)(nil),
+				// (*TeleitemMsgDeploy)(nil),
 				(*TeleitemStartAuction)(nil), (*TeleitemCancelAuction)(nil),
 			},
 			true: {

@@ -309,7 +309,11 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 }
 
 func (r *Repository) GetMessages(ctx context.Context, filter *core.MessageFilter, offset, limit int) (ret []*core.Message, err error) {
-	err = selectMsgFilter(r.pg.NewSelect().Model(&ret), filter).
+	q := r.pg.NewSelect()
+	if filter.DBTx != nil {
+		q = filter.DBTx.NewSelect()
+	}
+	err = selectMsgFilter(q.Model(&ret), filter).
 		Order("created_lt DESC").
 		Offset(offset).Limit(limit).Scan(ctx)
 	return ret, err

@@ -33,7 +33,7 @@ func NewService(ctx context.Context, cfg *app.ParserConfig) (*Service, error) {
 	ch, pg := s.cfg.DB.CH, s.cfg.DB.PG
 	s.txRepo = tx.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)
-	s.contractRepo = contract.NewRepository(ch)
+	s.contractRepo = contract.NewRepository(pg)
 
 	client := liteclient.NewConnectionPool()
 	for _, n := range cfg.Servers {

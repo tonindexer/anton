@@ -155,6 +155,13 @@ var (
 		Types:      accWallet.Types,
 	}
 
+	ifaceItem = core.ContractInterface{
+		Name:       abi.ContractName(accDataItem.Types[0]),
+		Address:    "",
+		Code:       nil,
+		GetMethods: []string{"get_item_data"},
+	}
+
 	accDataItem = core.AccountData{
 		Address:      accItem.Address,
 		LastTxLT:     accItem.LastTxLT,
@@ -258,6 +265,14 @@ var (
 
 		CreatedAt: msgOutWallet.CreatedAt,
 		CreatedLT: accItem.LastTxLT, // msgInItem.CreatedLT + 1,
+	}
+
+	opItemTransfer = core.ContractOperation{
+		Name:         msgInItemPayload.OperationName,
+		ContractName: msgInItemPayload.DstContract,
+		Outgoing:     false,
+		OperationID:  msgInItemPayload.OperationID,
+		Schema:       []byte("todo"),
 	}
 
 	msgInItemPayload = core.MessagePayload{

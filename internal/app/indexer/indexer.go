@@ -42,7 +42,7 @@ func NewService(_ context.Context, cfg *app.IndexerConfig) (*Service, error) {
 
 	s.cfg = cfg
 	ch, pg := cfg.DB.CH, cfg.DB.PG
-	s.abiRepo = contract.NewRepository(ch)
+	s.abiRepo = contract.NewRepository(pg)
 	s.blockRepo = block.NewRepository(ch, pg)
 	s.txRepo = tx.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)

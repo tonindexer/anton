@@ -124,6 +124,8 @@ type TransactionFilter struct {
 }
 
 type MessageFilter struct {
+	DBTx *bun.Tx
+
 	Hash       []byte
 	SrcAddress string
 	DstAddress string

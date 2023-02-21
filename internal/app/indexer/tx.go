@@ -65,7 +65,7 @@ func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, shard
 		return errors.Wrap(err, "process tx accounts")
 	}
 
-	messages, err := s.processBlockMessages(ctx, shard, blockTx)
+	messages, err := s.processBlockMessages(ctx, tx, shard, blockTx)
 	if err != nil {
 		return errors.Wrap(err, "parse block messages")
 	}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
-	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
@@ -14,41 +13,23 @@ import (
 var _ core.ContractRepository = (*Repository)(nil)
 
 type Repository struct {
-	db         *ch.DB
+	pg         *bun.DB
 	interfaces []*core.ContractInterface
 	// operations []*core.ContractOperation
 }
 
-func NewRepository(db *ch.DB) *Repository {
-	return &Repository{db: db}
+func NewRepository(db *bun.DB) *Repository {
+	return &Repository{pg: db}
 }
 
-func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
-	_, err := chDB.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.ContractInterface{}).
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "contract interface ch create table")
-	}
-
-	_, err = pgDB.NewCreateTable().
+func CreateTables(ctx context.Context, pgDB *bun.DB) error {
+	_, err := pgDB.NewCreateTable().
 		Model(&core.ContractInterface{}).
 		IfNotExists().
 		WithForeignKeys().
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "contract interface pg create table")
-	}
-
-	_, err = chDB.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.ContractOperation{}).
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "contract operations ch create table")
 	}
 
 	_, err = pgDB.NewCreateTable().
@@ -72,7 +53,7 @@ func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterfa
 		return r.interfaces, nil
 	}
 
-	err := r.db.NewSelect().Model(&ret).Scan(ctx)
+	err := r.pg.NewSelect().Model(&ret).Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -91,14 +72,9 @@ func (r *Repository) GetOperationByID(ctx context.Context, types []abi.ContractN
 		return nil, errors.Wrap(core.ErrNotFound, "no contract types")
 	}
 
-	var out uint16 // TODO: remove this, go-ch bug
-	if outgoing {
-		out = 1
-	}
-
-	err := r.db.NewSelect().Model(&ret).
-		Where("contract_name in (?)", ch.In(types)).
-		Where("outgoing = ?", out).
+	err := r.pg.NewSelect().Model(&ret).
+		Where("contract_name IN (?)", bun.In(types)).
+		Where("outgoing IS ?", outgoing).
 		Where("operation_id = ?", id).
 		Scan(ctx)
 	if err != nil {

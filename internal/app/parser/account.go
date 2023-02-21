@@ -103,7 +103,7 @@ func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *t
 		return nil, errors.Wrap(err, "get contract interfaces")
 	}
 	if len(types) == 0 {
-		return nil, errors.Wrap(err, "unknown contract interfaces")
+		return nil, errors.Wrap(core.ErrNotAvailable, "unknown contract interfaces")
 	}
 
 	getters := []func(context.Context, *tlb.BlockInfo, *tlb.Account, []abi.ContractName, *core.AccountData) error{

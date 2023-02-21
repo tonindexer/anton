@@ -23,57 +23,57 @@ type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:types,is_active,status"`
 	bun.BaseModel `bun:"table:account_states"`
 
-	Latest bool
+	Latest bool `json:"latest"`
 
-	Address  string        `ch:",pk" bun:",pk"`
-	IsActive bool          //
-	Status   AccountStatus `ch:",lc" bun:"type:account_status"` // TODO: enum
-	Balance  uint64        // TODO: uint256
+	Address  string        `ch:",pk" bun:",pk" json:"address"`
+	IsActive bool          `json:"is_active"`
+	Status   AccountStatus `ch:",lc" bun:"type:account_status" json:"status"` // TODO: enum
+	Balance  uint64        `json:"balance"`
 
-	LastTxLT   uint64 `ch:",pk" bun:",pk"`
-	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique"`
+	LastTxLT   uint64 `ch:",pk" bun:",pk" json:"last_tx_lt"`
+	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique" json:"last_tx_hash"`
 
-	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:address=address,join:last_tx_lt=last_tx_lt"`
+	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:address=address,join:last_tx_lt=last_tx_lt" json:"state_data,omitempty"`
 
-	StateHash []byte `bun:"type:bytea"`
-	Code      []byte `bun:"type:bytea"`
-	CodeHash  []byte `bun:"type:bytea"`
-	Data      []byte `bun:"type:bytea"`
-	DataHash  []byte `bun:"type:bytea"`
+	StateHash []byte `bun:"type:bytea" json:"state_hash,omitempty"` // only if account is frozen
+	Code      []byte `bun:"type:bytea" json:"code,omitempty"`
+	CodeHash  []byte `bun:"type:bytea" json:"code_hash,omitempty"`
+	Data      []byte `bun:"type:bytea" json:"data,omitempty"`
+	DataHash  []byte `bun:"type:bytea" json:"data_hash,omitempty"`
 
 	// TODO: do we need it?
-	Depth uint64 //
-	Tick  bool   //
-	Tock  bool   //
+	Depth uint64 `json:"depth"`
+	Tick  bool   `json:"tick"`
+	Tock  bool   `json:"tock"`
 
 	// TODO: list all get method hashes
-	Types []string `ch:",lc"` // TODO: ContractType here, go-ch bug
+	Types []string `ch:",lc" bun:",array" json:"types,omitempty"` // TODO: ContractType here, go-ch bug
 }
 
 type NFTCollectionData struct {
-	NextItemIndex uint64
+	NextItemIndex uint64 `json:"next_item_index,omitempty"`
 	// OwnerAddress  string
 }
 
 type NFTRoyaltyData struct {
-	RoyaltyAddress string
-	RoyaltyFactor  uint16
-	RoyaltyBase    uint16
+	RoyaltyAddress string `json:"royalty_address,omitempty"`
+	RoyaltyFactor  uint16 `json:"royalty_factor,omitempty"`
+	RoyaltyBase    uint16 `json:"royalty_base,omitempty"`
 }
 
 type NFTContentData struct {
-	ContentURI         string
-	ContentName        string
-	ContentDescription string
-	ContentImage       string
-	ContentImageData   []byte
+	ContentURI         string `json:"content_uri,omitempty"`
+	ContentName        string `json:"content_name,omitempty"`
+	ContentDescription string `json:"content_description,omitempty"`
+	ContentImage       string `json:"content_image,omitempty"`
+	ContentImageData   []byte `json:"content_image_data,omitempty"`
 }
 
 type NFTItemData struct {
-	Initialized       bool
-	ItemIndex         uint64
-	CollectionAddress string
-	EditorAddress     string
+	Initialized       bool   `json:"initialized,omitempty"`
+	ItemIndex         uint64 `json:"item_index,omitempty"`
+	CollectionAddress string `json:"collection_address,omitempty"`
+	EditorAddress     string `json:"editor_address,omitempty"`
 	// OwnerAddress      string
 }
 
@@ -81,13 +81,13 @@ type AccountData struct {
 	ch.CHModel    `ch:"account_data,partition:types"`
 	bun.BaseModel `bun:"table:account_data"`
 
-	Address    string `ch:",pk" bun:",pk,notnull"`
-	LastTxLT   uint64 `ch:",pk" bun:",pk,notnull"`
-	LastTxHash []byte `ch:",pk" bun:"type:bytea,notnull,unique"`
+	Address    string `ch:",pk" bun:",pk,notnull" json:"address"`
+	LastTxLT   uint64 `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
+	LastTxHash []byte `ch:",pk" bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
 
-	Types []string `ch:",lc"` // TODO: ContractType here, ch bug
+	Types []string `ch:",lc" bun:",array" json:"types"` // TODO: ContractType here, ch bug
 
-	OwnerAddress string // universal column for many contracts
+	OwnerAddress string `json:"owner_address,omitempty"` // universal column for many contracts
 
 	NFTCollectionData
 	NFTRoyaltyData
