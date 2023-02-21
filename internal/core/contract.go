@@ -2,22 +2,11 @@ package core
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
-	"github.com/xssnick/tonutils-go/tlb"
-)
 
-type ContractType string
-
-const (
-	NFTCollection = "nft_collection"
-	NFTItem       = "nft_item"
-	NFTItemSBT    = "nft_item_sbt"
-	NFTRoyalty    = "nft_royalty"
-	NFTEditable   = "nft_editable"
-	NFTSale       = "nft_sale"
+	"github.com/iam047801/tonidx/abi"
 )
 
 type NFTCollectionData struct {
@@ -51,28 +40,24 @@ type ContractInterface struct {
 	ch.CHModel    `ch:"contract_interfaces"`
 	bun.BaseModel `bun:"table:contract_interfaces"`
 
-	Name       ContractType `ch:",pk" bun:",pk"`
-	Address    string       //
-	Code       []byte       //
-	GetMethods []string     //
+	Name       abi.ContractName `ch:",pk" bun:",pk"`
+	Address    string           //
+	Code       []byte           //
+	GetMethods []string         //
 }
 
 type ContractOperation struct {
 	ch.CHModel    `ch:"contract_operations"`
 	bun.BaseModel `bun:"table:contract_operations"`
 
-	Name         string                //
-	ContractName ContractType          `ch:",pk" bun:",pk"`
-	Outgoing     bool                  // if operation is going from contract
-	OperationID  uint32                `ch:",pk" bun:",pk"`
-	Schema       string                //
-	StructSchema []reflect.StructField `ch:"-"`
+	Name         string           //
+	ContractName abi.ContractName `ch:",pk" bun:",pk"`
+	Outgoing     bool             // if operation is going from contract
+	OperationID  uint32           `ch:",pk" bun:",pk"`
+	Schema       []byte           //
 }
 
 type ContractRepository interface {
 	GetInterfaces(context.Context) ([]*ContractInterface, error)
-	DetermineInterfaces(context.Context, *tlb.Account) ([]ContractType, error)
-
-	InsertOperations(context.Context, []*ContractOperation) error
-	GetOperationByID(context.Context, *AccountState, bool, uint32) (*ContractOperation, error)
+	GetOperationByID(context.Context, []abi.ContractName, bool, uint32) (*ContractOperation, error)
 }

@@ -6,6 +6,8 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/tlb"
+
+	"github.com/iam047801/tonidx/abi"
 )
 
 type AccountStatus string
@@ -72,7 +74,7 @@ type AccountStateFilter struct {
 
 	// contract data filter
 	WithData          bool
-	ContractTypes     []ContractType
+	ContractTypes     []abi.ContractName
 	OwnerAddress      string
 	CollectionAddress string
 }
