@@ -6,8 +6,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository/contract"
 )
 
 type txTestCase struct {
@@ -18,7 +18,7 @@ type txTestCase struct {
 	commentOut string
 	opId       uint32
 	opIdOut    uint32
-	contract   core.ContractType
+	contract   abi.ContractName
 	error      error
 }
 
@@ -44,28 +44,29 @@ func TestService_ParseOperationID(t *testing.T) {
 		tx := getTransactionOnce(t, c.addr, c.lt, c.txHash)
 		if tx.IO.In != nil {
 			payload := tx.IO.In.Msg.Payload().ToBOC()
-			msg := &core.Message{Body: payload}
-			if err := contract.ParseOperationID(msg); err != nil {
+
+			opID, comment, err := abi.ParseOperationID(payload)
+			if err != nil {
 				t.Fatal(err)
 			}
-			if msg.OperationID != c.opId {
-				t.Fatalf("expected: %d, got: %d", c.opId, msg.OperationID)
+			if opID != c.opId {
+				t.Fatalf("expected: %d, got: %d", c.opId, opID)
 			}
-			if msg.TransferComment != c.comment {
-				t.Fatalf("expected: %s, got: %s", c.comment, msg.TransferComment)
+			if comment != c.comment {
+				t.Fatalf("expected: %s, got: %s", c.comment, comment)
 			}
 		}
 		for _, out := range tx.IO.Out {
 			payload := out.Msg.Payload().ToBOC()
-			msg := &core.Message{Body: payload}
-			if err := contract.ParseOperationID(msg); err != nil {
+			opID, comment, err := abi.ParseOperationID(payload)
+			if err != nil {
 				t.Fatal(err)
 			}
-			if msg.OperationID != c.opIdOut {
-				t.Fatalf("expected: %d, got: %d", c.opIdOut, msg.OperationID)
+			if opID != c.opIdOut {
+				t.Fatalf("expected: %d, got: %d", c.opIdOut, opID)
 			}
-			if msg.TransferComment != c.commentOut {
-				t.Fatalf("expected: %s, got: %s", c.commentOut, msg.TransferComment)
+			if comment != c.commentOut {
+				t.Fatalf("expected: %s, got: %s", c.commentOut, comment)
 			}
 		}
 	}
@@ -78,14 +79,14 @@ func TestService_ParseMessagePayload(t *testing.T) {
 			txHash:   core.MustHexDecode("5fd05e9cfe02c09d2e248db424805a767719cd65b73c099463a35c0e252fb4f5"),
 			lt:       31199023000003,
 			opId:     1,
-			contract: core.NFTCollection,
+			contract: abi.NFTCollection,
 			error:    core.ErrNotAvailable,
 		}, {
 			addr:     address.MustParseAddr("EQDdjoU_zWiyHdRW8U3NHguZt_dMvUCChJ4JHCYK0PSJD2FT"),
 			txHash:   core.MustHexDecode("30688324e25f16da78e1ab1d82c384c4b75160cdfc57d620ba95c6d63ac47ea9"),
 			lt:       31177444000003,
 			opId:     0x5FCC3D14,
-			contract: core.NFTItem,
+			contract: abi.NFTItem,
 		},
 	}
 
@@ -97,7 +98,7 @@ func TestService_ParseMessagePayload(t *testing.T) {
 		acc := &core.AccountState{Types: []string{string(c.contract)}}
 		msg := &core.Message{Body: payload, OperationID: c.opId}
 
-		parsed, err := testService(t).ParseMessagePayload(ctx, nil, acc, msg)
+		parsed, err := testService(t).ParseMessagePayload(ctx, &core.AccountState{}, acc, msg)
 		if err != nil && !errors.Is(err, c.error) {
 			t.Fatal(err)
 		}

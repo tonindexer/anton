@@ -7,8 +7,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/tlb"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository/contract"
 )
 
 func (s *Service) messageAlreadyKnown(ctx context.Context, in *core.Message, outMsgMap map[uint64]*core.Message) (bool, error) {
@@ -42,7 +42,8 @@ func (s *Service) processBlockMessages(ctx context.Context, b *tlb.BlockInfo, bl
 			if err != nil {
 				return nil, errors.Wrap(err, "map outcoming message")
 			}
-			if err = contract.ParseOperationID(msg); err != nil {
+			msg.OperationID, msg.TransferComment, err = abi.ParseOperationID(msg.Body)
+			if err != nil {
 				return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 			}
 
@@ -77,7 +78,8 @@ func (s *Service) processBlockMessages(ctx context.Context, b *tlb.BlockInfo, bl
 			continue
 		}
 
-		if err = contract.ParseOperationID(msg); err != nil {
+		msg.OperationID, msg.TransferComment, err = abi.ParseOperationID(msg.Body)
+		if err != nil {
 			return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 		}
 

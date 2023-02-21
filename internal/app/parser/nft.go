@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/nft"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func getContentDataNFT(ret *core.AccountData, c nft.ContentAny) {
+func mapContentDataNFT(ret *core.AccountData, c nft.ContentAny) {
 	switch content := c.(type) {
 	case *nft.ContentSemichain: // TODO: remove this (?)
 		ret.ContentURI = content.URI
@@ -31,100 +31,73 @@ func getContentDataNFT(ret *core.AccountData, c nft.ContentAny) {
 	}
 }
 
-func getCollectionDataNFT(ret *core.AccountData, data *nft.CollectionData) {
-	ret.Types = append(ret.Types, core.NFTCollection)
+func mapCollectionDataNFT(ret *core.AccountData, data *abi.NFTCollectionData) {
 	ret.NextItemIndex = data.NextItemIndex.Uint64()
 	ret.OwnerAddress = data.OwnerAddress.String()
-	getContentDataNFT(ret, data.Content)
+	mapContentDataNFT(ret, data.Content)
 }
 
-func getRoyaltyDataNFT(ret *core.AccountData, params *nft.CollectionRoyaltyParams) {
-	ret.Types = append(ret.Types, core.NFTRoyalty)
+func mapRoyaltyDataNFT(ret *core.AccountData, params *abi.NFTRoyaltyData) {
 	ret.RoyaltyAddress = params.Address.String()
 	ret.RoyaltyBase = params.Base
 	ret.RoyaltyFactor = params.Factor
 }
 
-func getItemDataNFT(ret *core.AccountData, data *nft.ItemData) {
-	ret.Types = append(ret.Types, core.NFTItem)
+func mapItemDataNFT(ret *core.AccountData, data *abi.NFTItemData) {
 	ret.Initialized = data.Initialized
 	ret.ItemIndex = data.Index.Uint64()
 	ret.CollectionAddress = data.CollectionAddress.String()
 	ret.OwnerAddress = data.OwnerAddress.String()
+	mapContentDataNFT(ret, data.Content)
 }
 
-func getEditorDataNFT(ret *core.AccountData, editor *address.Address) {
-	ret.Types = append(ret.Types, core.NFTEditable)
-	ret.EditorAddress = editor.String()
+func mapEditorDataNFT(ret *core.AccountData, data *abi.NFTEditableData) {
+	ret.EditorAddress = data.Editor.String()
 }
 
-//nolint // TODO: simplify account data parsing logic
-func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account, types []core.ContractType, ret *core.AccountData) error {
-	var collection, item, editable, royalty bool
+func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account, types []abi.ContractName, ret *core.AccountData) error {
+	var unknown int
 
 	addr := acc.State.Address
 
 	for _, t := range types {
 		switch t {
-		case core.NFTCollection:
-			collection = true
-		case core.NFTItem, core.NFTItemSBT:
-			item = true
-		case core.NFTEditable:
-			editable = true
-		case core.NFTRoyalty:
-			royalty = true
-		}
-	}
-
-	switch {
-	case collection:
-		c := nft.NewCollectionClient(s.api, addr)
-
-		data, err := c.GetCollectionDataAtBlock(ctx, b)
-		if err != nil {
-			return errors.Wrap(err, "get collection data")
-		}
-		getCollectionDataNFT(ret, data)
-
-	case collection && royalty:
-		c := nft.NewCollectionClient(s.api, addr)
-
-		params, err := c.RoyaltyParamsAtBlock(ctx, b)
-		if err != nil {
-			return errors.Wrap(err, "get royalty params")
-		}
-		getRoyaltyDataNFT(ret, params)
-
-	case item:
-		c := nft.NewItemClient(s.api, addr)
-
-		data, err := c.GetNFTDataAtBlock(ctx, b)
-		if err != nil {
-			return errors.Wrap(err, "get nft item data")
-		}
-		getItemDataNFT(ret, data)
-
-		if data.Content != nil {
-			collect := nft.NewCollectionClient(s.api, data.CollectionAddress)
-			con, err := collect.GetNFTContentAtBlock(ctx, data.Index, data.Content, b)
+		case abi.NFTCollection:
+			data, err := abi.GetNFTCollectionData(ctx, s.api, b, addr)
 			if err != nil {
-				return errors.Wrap(err, "get nft content")
+				return errors.Wrap(err, "get nft collection data")
 			}
-			getContentDataNFT(ret, con)
+			mapCollectionDataNFT(ret, data)
+
+		case abi.NFTRoyalty:
+			data, err := abi.GetNFTRoyaltyData(ctx, s.api, b, addr)
+			if err != nil {
+				return errors.Wrap(err, "get nft royalty data")
+			}
+			mapRoyaltyDataNFT(ret, data)
+
+		case abi.NFTItem:
+			data, err := abi.GetNFTItemData(ctx, s.api, b, addr)
+			if err != nil {
+				return errors.Wrap(err, "get nft item data")
+			}
+			mapItemDataNFT(ret, data)
+
+		case abi.NFTEditable:
+			data, err := abi.GetNFTEditableData(ctx, s.api, b, addr)
+			if err != nil {
+				return errors.Wrap(err, "get nft editable data")
+			}
+			mapEditorDataNFT(ret, data)
+
+		default:
+			unknown++
 		}
 
-	case editable:
-		c := nft.NewItemEditableClient(s.api, addr)
-
-		editor, err := c.GetEditorAtBlock(ctx, b)
-		if err != nil {
-			return errors.Wrap(err, "get editor")
-		}
-		getEditorDataNFT(ret, editor)
-
-	default:
-		return errors.Wrap(core.ErrNotAvailable, "get account nft data")
+		ret.Types = append(ret.Types, string(t))
+	}
+	if unknown == len(types) {
+		return errors.Wrap(core.ErrNotAvailable, "unknown contract")
 	}
 
 	return nil

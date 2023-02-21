@@ -199,7 +199,7 @@ func OperationID(x any) (uint32, error) {
 	return uint32(opValue), nil
 }
 
-func ParseOperationID(body []byte) (uint32, string, error) {
+func ParseOperationID(body []byte) (opId uint32, comment string, err error) {
 	payload, err := cell.FromBOC(body)
 	if err != nil {
 		return 0, "", errors.Wrap(err, "msg body from boc")
@@ -211,16 +211,14 @@ func ParseOperationID(body []byte) (uint32, string, error) {
 		return 0, "", errors.Wrap(err, "load uint")
 	}
 
-	opID := uint32(op)
-	if opID != 0 {
-		return opID, "", nil
+	if opId = uint32(op); opId != 0 {
+		return opId, "", nil
 	}
 
 	// simple transfer with comment
-	comment, err := slice.LoadStringSnake()
-	if err != nil {
+	if comment, err = slice.LoadStringSnake(); err != nil {
 		return 0, "", errors.Wrap(err, "load transfer comment")
 	}
 
-	return opID, comment, nil
+	return opId, comment, nil
 }

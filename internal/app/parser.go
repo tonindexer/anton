@@ -6,6 +6,7 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/repository"
 )
@@ -23,6 +24,7 @@ type ParserConfig struct {
 type ParserService interface {
 	API() *ton.APIClient
 
+	DetermineInterfaces(ctx context.Context, acc *tlb.Account) ([]abi.ContractName, error)
 	ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account) (*core.AccountData, error)
 	ParseMessagePayload(ctx context.Context, src, dst *core.AccountState, message *core.Message) (*core.MessagePayload, error)
 }

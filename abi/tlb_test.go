@@ -37,7 +37,7 @@ func TestMarshalSchema(t *testing.T) {
 			structType: (*NFTItemTransfer)(nil),
 			expected:   `[{"name":"Op","type":"magic","tag":"tlb:\"#5fcc3d14\""},{"name":"QueryID","type":"uint64","tag":"tlb:\"## 64\""},{"name":"NewOwner","type":"address","tag":"tlb:\"addr\""},{"name":"ResponseDestination","type":"address","tag":"tlb:\"addr\""},{"name":"CustomPayload","type":"cell","tag":"tlb:\"maybe ^\""},{"name":"ForwardAmount","type":"coins","tag":"tlb:\".\""},{"name":"ForwardPayload","type":"cell","tag":"tlb:\"either . ^\""}]`,
 		}, {
-			structType: (*NFTItemEdit)(nil),
+			structType: (*NFTEdit)(nil),
 			expected:   `[{"name":"Op","type":"magic","tag":"tlb:\"#1a0b9d51\""},{"name":"QueryID","type":"uint64","tag":"tlb:\"## 64\""},{"name":"Content","type":"cell","tag":"tlb:\"^\""}]`,
 		},
 		// jetton minter

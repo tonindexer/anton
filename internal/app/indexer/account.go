@@ -31,7 +31,7 @@ func (s *Service) processTxAccounts(
 			continue
 		}
 
-		accTypes, err := s.abiRepo.DetermineInterfaces(ctx, raw)
+		accTypes, err := s.parser.DetermineInterfaces(ctx, raw)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "determine contract interfaces")
 		}

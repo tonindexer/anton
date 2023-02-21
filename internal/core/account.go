@@ -50,6 +50,33 @@ type AccountState struct {
 	Types []string `ch:",lc"` // TODO: ContractType here, go-ch bug
 }
 
+type NFTCollectionData struct {
+	NextItemIndex uint64
+	// OwnerAddress  string
+}
+
+type NFTRoyaltyData struct {
+	RoyaltyAddress string
+	RoyaltyFactor  uint16
+	RoyaltyBase    uint16
+}
+
+type NFTContentData struct {
+	ContentURI         string
+	ContentName        string
+	ContentDescription string
+	ContentImage       string
+	ContentImageData   []byte
+}
+
+type NFTItemData struct {
+	Initialized       bool
+	ItemIndex         uint64
+	CollectionAddress string
+	EditorAddress     string
+	// OwnerAddress      string
+}
+
 type AccountData struct {
 	ch.CHModel    `ch:"account_data,partition:types"`
 	bun.BaseModel `bun:"table:account_data"`

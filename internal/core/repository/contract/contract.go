@@ -16,7 +16,7 @@ var _ core.ContractRepository = (*Repository)(nil)
 type Repository struct {
 	db         *ch.DB
 	interfaces []*core.ContractInterface
-	operations []*core.ContractOperation
+	// operations []*core.ContractOperation
 }
 
 func NewRepository(db *ch.DB) *Repository {

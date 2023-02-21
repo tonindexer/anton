@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -264,9 +265,9 @@ var (
 		Hash: msgOutWallet.Hash,
 
 		SrcAddress:  msgOutWallet.SrcAddress,
-		SrcContract: core.ContractType(accWallet.Types[0]),
+		SrcContract: abi.ContractName(accWallet.Types[0]),
 		DstAddress:  msgOutWallet.DstAddress,
-		DstContract: core.ContractType(accItem.Types[0]),
+		DstContract: abi.ContractName(accItem.Types[0]),
 
 		BodyHash:      msgOutWallet.BodyHash,
 		OperationID:   msgOutWallet.OperationID,
