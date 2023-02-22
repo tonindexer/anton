@@ -4,40 +4,56 @@ Project fetches data from TON blockchain and put it in PostgreSQL and ClickHouse
 
 ## Overview
 
-Contract interfaces can be identified by some get methods.
-You can check any contract whether it has an arbitrary get method by parsing contract code.
-Also contracts have acceptable incoming messages (internal or external).
-Each acceptable message can be represented as a contract operation with operation id and message body schema. 
-Usually operation id is the first 32 bits of message body. 
-If message is a regular TON transfer, operation id is equal to zero.
-Then contract also can have formalized outgoing messages, each with specific operation id.
+Before you start, take a look at [official docs](https://ton.org/docs/learn/overviews/ton-blockchain).
 
-For example, let's look at FT and NFT standard tokens which can be found [here](https://github.com/ton-blockchain/token-contract/).
-NFT item contract has one `get_nft_data` get method and two incoming [operations](https://github.com/ton-blockchain/token-contract/blob/main/nft/op-codes.fc) 
-(`transfer` with operation id = `0x5fcc3d14`, `get_static_data` with operation id = `0x2fcb26a2`). 
-Transfer payload has the following [schema](https://github.com/xssnick/tonutils-go/blob/master/ton/nft/item.go#L14). 
-So if arbitrary contract has these two get methods, we try to determine operation id of
-messages to (or from) this contract by parsing message body cell and getting first 32 bits.
-If these 32 bits are equal to a known operation id (suppose `0x5fcc3d14`), we try to parse other message data with the known schema (new owner of NFT item).
+Consider an arbitrary contract.
+It has its own state that is updated with any transaction that occurs on the contract's account. 
+This state contains the contract data.
+The contract data can be in a complex format, 
+but developers usually provide [get-methods](https://ton.org/docs/develop/func/functions#specifiers) in the contract. 
+By executing these methods and possibly passing them arguments, you can retrieve data.
+You can check any contract for the presence of an arbitrary get-method (identified by function name) by parsing the contract code.
 
-Known contract interfaces are initialized in `core/repository/known.go` and inserted to a database table `contract_interfaces`.
+TON has some standard tokens, such as
+[TEP-62](https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md),
+[TEP-74](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md).
+Standard contracts have predefined get-method names and various types of acceptable incoming messages, 
+each with a different payload schema.
+Standards also specify [tags](https://ton.org/docs/learn/overviews/tl-b-language#constructors) (or operation ids) 
+as the first 32 bits of the parsed message payload cell.
+Therefore, you can attempt to match accounts found in the network to the standards by checking for the presence of the get-methods and 
+matching found messages to these accounts by parsing the first 32 bits of the message payload.
+
+For example, let's look at NFT standard tokens which can be found [here](https://github.com/ton-blockchain/token-contract).
+NFT item contract has one `get_nft_data` get method and two incoming [messages](https://github.com/ton-blockchain/token-contract/blob/main/nft/op-codes.fc) 
+(`transfer` with an operation id = `0x5fcc3d14`, `get_static_data` with an operation id = `0x2fcb26a2`). 
+Transfer payload has the following [schema](https://github.com/xssnick/tonutils-go/blob/master/ton/nft/item.go#L14).
+If an arbitrary contract has a `get_nft_data` method, we can parse the operation id of messages sent to and from this contract. 
+If the operation id matches a known id, such as `0x5fcc3d14`, we attempt to parse the message data using the known schema 
+(new owner of NFT in the given example).
+
+Known contract interfaces are initialized in [abi/known.go](/abi/known.go).
 
 Go to [MODELS.md](/MODELS.md) to get more detailed description of models used in this project and contracts known to this project.
 
-Go to [data_tree.json](data_tree.json) to see an example of a real parsed masterchain block.
+Go to [data_tree.json](/data_tree.json) to see an example of real parsed masterchain block.
+
+Go to [msg_schema.json](/msg_schema.json) to see an example of message payload schema defined by json.
 
 ### Project structure
 
-| Folder            | Description                                                            |
-|-------------------|------------------------------------------------------------------------|
-| `core`            | contains project domain and all common interfaces                      |
-| `core/repository` | database repositories                                                  |
-|                   |                                                                        |
-| `app`             | contains all services interfaces and theirs configs                    |
-| `app/parser`      | service to parse contract data and message payloads to known contracts |
-| `app/indexer`     | a service to scan blocks and save data from `parser` to a database     |
-|                   |                                                                        |
-| `cmd`             | command line application and env parsers                               |
+| Folder            | Description                                                                      |
+|-------------------|----------------------------------------------------------------------------------|
+| `abi`             | tlb cell parsing defined by json schema, known contract messages and get-methods |
+|                   |                                                                                  |
+| `core`            | contains project domain and all common interfaces                                |
+| `core/repository` | database repositories                                                            |
+|                   |                                                                                  |
+| `app`             | contains all services interfaces and theirs configs                              |
+| `app/parser`      | service to parse contract data and message payloads to known contracts           |
+| `app/indexer`     | a service to scan blocks and save data from `parser` to a database               |
+|                   |                                                                                  |
+| `cmd`             | command line application and env parsers                                         |
 
 ### Reading docs
 ```shell
@@ -115,30 +131,4 @@ docker-compose exec indexer tonidx addOperation   \
     -contract [contract interface name]           \
     -opid     [operation id, example: 0x5fcc3d14] \
     -schema   [message body schema]
-```
-
-### Message body schema example
-```json
-[
-    {
-        "Name": "OperationID",
-        "Type": "tlbMagic",
-        "Tag": "tlb:\"#5fcc3d14\""
-    },
-    {
-        "Name": "QueryID",
-        "Type": "uint64",
-        "Tag": "tlb:\"## 64\""
-    },
-    {
-        "Name": "NewOwner",
-        "Type": "address",
-        "Tag": "tlb:\"addr\""
-    },
-    {
-        "Name": "ResponseDestination",
-        "Type": "address",
-        "Tag": "tlb:\"addr\""
-    }
-]
 ```
