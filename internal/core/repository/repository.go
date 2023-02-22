@@ -11,9 +11,9 @@ import (
 	"github.com/uptrace/bun/driver/pgdriver"
 	"github.com/uptrace/go-clickhouse/ch"
 
-	"github.com/iam047801/tonidx/internal/core/repository/abi"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
 	"github.com/iam047801/tonidx/internal/core/repository/block"
+	"github.com/iam047801/tonidx/internal/core/repository/contract"
 	"github.com/iam047801/tonidx/internal/core/repository/tx"
 )
 
@@ -74,7 +74,7 @@ func CreateTablesDB(ctx context.Context, db *DB) error {
 	if err != nil {
 		return err
 	}
-	err = abi.CreateTables(ctx, db.CH, db.PG)
+	err = contract.CreateTables(ctx, db.PG)
 	if err != nil {
 		return err
 	}

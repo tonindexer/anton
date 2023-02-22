@@ -154,16 +154,19 @@ type ContractOperation struct {
 
 # Known contracts
 
-## [ton-blockchain/token-contract/nft](https://github.com/ton-blockchain/token-contract/tree/1ad314a98d20b41241d5329e1786fc894ad811de/nft)
+## NFTs [TEP-62](https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md) [token-contract/nft](https://github.com/ton-blockchain/token-contract/tree/main/nft)
 
 ### NFT collection
 
-Operations:
-1. `op::get_royalty_params()`
+Incoming messages:
+1. `op::get_royalty_params() == 0x693d3950`
 2. `(op == 1) ;; deploy new nft`
 3. `(op == 2) ;; batch deploy of new nfts`
 4. `(op == 3) ;; change owner`
 5. `(op == 4) ;; change content, if editable`
+
+Outgoing messages:
+1. `op::report_royalty_params() == 0xa8cb00ad`
 
 Get methods:
 1. `(int, cell, slice) get_collection_data()`
@@ -174,18 +177,23 @@ Get methods:
 
 ### NFT item
 
-Operations:
-1. `op::transfer()`
-2. `op::get_static_data()`
-3. `op::transfer_editorship()`
-4. `op::ownership_assigned()` -- outgoing message (msg src addr = nft item)
-5. `op::edit_content() ;; if editable`
+Incoming messages:
+1. `op::transfer() == 0x5fcc3d14`
+2. `op::get_static_data() == 0x2fcb26a2`
+3. `op::edit_content() == 0x1a0b9d51 ;; if editable`
+4. `op::transfer_editorship() == 0x1c04412a`
+
+Outgoing messages:
+1. `op::ownership_assigned() == 0x05138d91`
+2. `op::excesses() == 0xd53276db`
+3. `op::report_static_data() == 0x8b771735`
+4. `op::editorship_assigned() == 0x511a4463`
 
 Get methods:
 1. `(int, int, slice, slice, cell) get_nft_data() ;; (init?, index, collection_address, owner_address, content)`
 2. `slice get_editor()`
 
-### NFT sale
+## NFT sale
 
 Hard to parse it as every marketplace has its own custom NFT sale contracts.
 
@@ -198,15 +206,17 @@ Operations:
 Get methods:
 1. `(slice, slice, slice, int, int, slice, int) get_sale_data() ;; marketplace_address, nft_address, nft_owner_address, full_price, marketplace_fee, royalty_address, royalty_amount`
 
-## [ton-blockchain/token-contract/ft](https://github.com/ton-blockchain/token-contract/tree/1ad314a98d20b41241d5329e1786fc894ad811de/ft)
+## Jettons [TEP-74](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md) [token-contract/ft](https://github.com/ton-blockchain/token-contract/tree/main/ft)
 
 ### Jetton minter
 
-Operations:
+Incoming messages:
 
-1. `op::mint()`
-2. `op::burn_notification()`
-3. ICO mint on empty body (buy jetton for TON coins)
+1. `op::mint() == 21`
+2. `op::burn_notification() == 0x7bdd97de`
+3. `op == 3 ;; change admin`
+4. `op == 4 ;; change content, delete this for immutable tokens`
+5. ICO mint on empty body (buy jetton for TON coins)
 
 Get methods:
 
@@ -219,18 +229,22 @@ Data load:
 
 `(int balance, slice owner_address, slice jetton_master_address, cell jetton_wallet_code) = load_data();`
 
+Messages:
+
+1. `op::transfer() ;; outgoing transfer`
+2. `op::internal_transfer() ;; incoming transfer`
+3. `op::burn() ;; burn`
+4. `op::transfer_notification()` -- outgoing message to owner
+
 Get methods:
 
 1. `(int, slice, slice, cell) get_wallet_data() ;; balance, owner_address, jetton_master_address, jetton_wallet_code`
 
-Operations:
+## SBT Contract [TEP-85](https://github.com/ton-blockchain/TEPs/blob/master/text/0085-sbt-standard.md)
 
-1. `op::transfer()) ;; outgoing transfer`
-2. `op::internal_transfer()) ;; incoming transfer`
-3. `op::burn()) ;; burn`
-4. `op::transfer_notification()` -- outgoing message to owner
+TODO
 
-## [TelegramMessenger/telemint](https://github.com/TelegramMessenger/telemint/tree/main/func)
+## Telegram anonymous numbers and usernames [telemint](https://github.com/TelegramMessenger/telemint/tree/main/func)
 
 ### NFT collection
 
@@ -251,18 +265,14 @@ Get methods:
 
 Operations:
 
-1. `op::teleitem_msg_deploy` -- incoming message from collection
+1. `op::teleitem_msg_deploy == 0x4637289b` -- incoming message from collection
 2. `op::teleitem_start_auction`
 3. `op::teleitem_cancel_auction`
-4. `op::nft_cmd_transfer`
-5. `op::change_dns_record`
-6. `op::get_royalty_params`
-7. `op::nft_cmd_get_static_data`
-8. process new bid: `op == 0`
-9. `op::fill_up` -- outgoing message on `send_money` method
-10. `op::ownership_assigned` -- outgoing message on NFT transfer
-11. `op::outbid_notification` -- outgoing message to previous bidder on outbid
-12. `op::teleitem_ok` -- success on start/cancel auction or change of dns record
+4. `op::change_dns_record`
+5. process new bid: `op == 0`
+6. `op::fill_up` -- outgoing message on `send_money` method
+7. `op::outbid_notification` -- outgoing message to previous bidder on outbid
+8. `op::teleitem_ok` -- success on start/cancel auction or change of dns record
 
 Get methods:
 
@@ -274,89 +284,14 @@ Get methods:
 6. `(int, int, slice) royalty_params()`
 7. `(int, cell) dnsresolve(slice subdomain, int category)`
 
-## [ton-blockchain/dns-contract](https://github.com/ton-blockchain/dns-contract/tree/main/func)
+## [getgems-io/nft-contracts](https://github.com/getgems-io/nft-contracts/blob/main/packages/contracts/sources)
 
 TODO
 
-## [getgems-io/nft-contracts](https://github.com/getgems-io/nft-contracts/blob/main/packages/contracts/sources)
+## DNS [TEP-81](https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md) [ton-blockchain/dns-contract](https://github.com/ton-blockchain/dns-contract/tree/main/func)
 
 TODO
 
 ## TONScan labels
 
 [Link](https://raw.githubusercontent.com/menschee/tonscanplus/main/data.json)
-
-# ClickHouse query examples
-
-Get amount of unique wallets with given versions:
-
-```clickhouse
-SELECT count() FROM (
-    SELECT any(address)
-    FROM accounts
-    WHERE hasAny(types, ['wallet_V3R1', 'wallet_V3R2', 'wallet_V4R1', 'wallet_V4R2'])
-    GROUP BY address
-)
-```
-
-Select rich wallets with balance more than 100k TON:
-
-```clickhouse
-SELECT any(address), max(balance) as b, any(types)
-FROM accounts
-WHERE hasAny(types, ['wallet_V3R1', 'wallet_V3R2', 'wallet_V4R1', 'wallet_V4R2'])
-    AND balance > 100 * 1e3 * 1e9
-GROUP BY address
-ORDER BY b DESC
-```
-
-Select TOP 25 rich accounts, theirs types and balance:
-
-```clickhouse
-SELECT any(address), any(types), max(ton) FROM (
-    SELECT address, types, balance / 1e9 AS ton
-    FROM accounts
-    ORDER BY balance DESC
-    LIMIT 100
-) GROUP BY address ORDER BY max(ton) DESC LIMIT 25
-```
-
-Select NFT items data:
-
-```clickhouse
-SELECT
-    address,
-    types,
-    owner_address,
-    content_uri,
-    item_index,
-    collection_address
-FROM account_data
-WHERE hasAny(types, ['nft_item', 'nft_item_editable'])
-LIMIT 50
-```
-
-Get all nft sales with price more than 5 TON:
-
-```clickhouse
-SELECT hex(tx_hash), src_addr, dst_addr, amount / 1e9 AS ton
-FROM messages
-WHERE dst_addr IN (
-    SELECT any(address)
-    FROM accounts
-    WHERE has(types, 'nft_sale')
-    GROUP BY address
-) AND ton > 5
-```
-
-Show all NFT numbers and all owners:
-
-```clickhouse
-SELECT
-    any(address),
-    any(content_uri),
-    groupArray(owner_address)
-FROM account_data
-WHERE hasAny(types, ['nft_item']) AND (collection_address = 'EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N')
-GROUP BY address
-```

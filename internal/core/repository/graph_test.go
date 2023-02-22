@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -154,6 +155,13 @@ var (
 		Types:      accWallet.Types,
 	}
 
+	ifaceItem = core.ContractInterface{
+		Name:       abi.ContractName(accDataItem.Types[0]),
+		Address:    "",
+		Code:       nil,
+		GetMethods: []string{"get_item_data"},
+	}
+
 	accDataItem = core.AccountData{
 		Address:      accItem.Address,
 		LastTxLT:     accItem.LastTxLT,
@@ -259,14 +267,22 @@ var (
 		CreatedLT: accItem.LastTxLT, // msgInItem.CreatedLT + 1,
 	}
 
+	opItemTransfer = core.ContractOperation{
+		Name:         msgInItemPayload.OperationName,
+		ContractName: msgInItemPayload.DstContract,
+		Outgoing:     false,
+		OperationID:  msgInItemPayload.OperationID,
+		Schema:       []byte("todo"),
+	}
+
 	msgInItemPayload = core.MessagePayload{
 		Type: core.Internal,
 		Hash: msgOutWallet.Hash,
 
 		SrcAddress:  msgOutWallet.SrcAddress,
-		SrcContract: core.ContractType(accWallet.Types[0]),
+		SrcContract: abi.ContractName(accWallet.Types[0]),
 		DstAddress:  msgOutWallet.DstAddress,
-		DstContract: core.ContractType(accItem.Types[0]),
+		DstContract: abi.ContractName(accItem.Types[0]),
 
 		BodyHash:      msgOutWallet.BodyHash,
 		OperationID:   msgOutWallet.OperationID,

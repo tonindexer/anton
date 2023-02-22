@@ -8,6 +8,7 @@ import (
 	"github.com/allisson/go-env"
 	"github.com/rs/zerolog/log"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/repository"
 )
@@ -38,9 +39,9 @@ func InsertOperation() {
 	}
 
 	op.Name = *name
-	op.ContractName = core.ContractType(*contract)
+	op.ContractName = abi.ContractName(*contract)
 	op.OperationID = uint32(*opid)
-	op.Schema = *schema
+	op.Schema = []byte(*schema)
 
 	conn, err := repository.ConnectDB(context.Background(),
 		env.GetString("DB_CH_URL", ""),
@@ -57,6 +58,6 @@ func InsertOperation() {
 		Str("op_name", op.Name).
 		Str("contract", string(op.ContractName)).
 		Uint32("op_id", op.OperationID).
-		Str("schema", op.Schema).
+		Str("schema", string(op.Schema)).
 		Msg("inserted new contract operation")
 }

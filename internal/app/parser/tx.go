@@ -3,13 +3,13 @@ package parser
 import (
 	"context"
 	"encoding/json"
-	"reflect"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -18,7 +18,12 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 		return errors.Wrap(core.ErrNotAvailable, "no interfaces")
 	}
 
-	operation, err := s.abiRepo.GetContractOperationByID(ctx, acc, acc.Address == message.SrcAddress, message.OperationID)
+	types := make([]abi.ContractName, 0, len(acc.Types))
+	for _, t := range acc.Types {
+		types = append(types, abi.ContractName(t))
+	}
+
+	operation, err := s.contractRepo.GetOperationByID(ctx, types, acc.Address == message.SrcAddress, message.OperationID)
 	if errors.Is(err, core.ErrNotFound) {
 		return errors.Wrap(core.ErrNotAvailable, "unknown operation")
 	}
@@ -34,13 +39,17 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 		ret.DstContract = operation.ContractName
 	}
 
+	parsed, err := abi.UnmarshalSchema(operation.Schema)
+	if err != nil {
+		return errors.Wrapf(err, "unmarshal %s %s schema", operation.ContractName, operation.Name)
+	}
+
 	payloadCell, err := cell.FromBOC(message.Body)
 	if err != nil {
 		return errors.Wrap(err, "msg body from boc")
 	}
 	payloadSlice := payloadCell.BeginParse()
 
-	parsed := reflect.New(reflect.StructOf(operation.StructSchema)).Interface()
 	if err = tlb.LoadFromCell(parsed, payloadSlice); err != nil {
 		// return errors.Wrapf(core.ErrNotAvailable, "load from cell (%s)", err.Error())
 		return errors.Wrap(err, "load from cell")

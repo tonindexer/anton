@@ -6,6 +6,8 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/tlb"
+
+	"github.com/iam047801/tonidx/abi"
 )
 
 type Transaction struct {
@@ -94,10 +96,10 @@ type MessagePayload struct {
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"`
 	Hash []byte      `ch:",pk" bun:"type:bytea,pk,notnull"`
 
-	SrcAddress  string       //
-	SrcContract ContractType `ch:",lc"`
-	DstAddress  string       //
-	DstContract ContractType `ch:",lc"`
+	SrcAddress  string           //
+	SrcContract abi.ContractName `ch:",lc"`
+	DstAddress  string           //
+	DstContract abi.ContractName `ch:",lc"`
 
 	BodyHash      []byte `bun:"type:bytea,notnull"`
 	OperationID   uint32 `bun:",notnull"`
@@ -122,6 +124,8 @@ type TransactionFilter struct {
 }
 
 type MessageFilter struct {
+	DBTx *bun.Tx
+
 	Hash       []byte
 	SrcAddress string
 	DstAddress string

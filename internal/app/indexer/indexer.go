@@ -11,9 +11,9 @@ import (
 
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository/abi"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
 	"github.com/iam047801/tonidx/internal/core/repository/block"
+	"github.com/iam047801/tonidx/internal/core/repository/contract"
 	"github.com/iam047801/tonidx/internal/core/repository/tx"
 )
 
@@ -42,7 +42,7 @@ func NewService(_ context.Context, cfg *app.IndexerConfig) (*Service, error) {
 
 	s.cfg = cfg
 	ch, pg := cfg.DB.CH, cfg.DB.PG
-	s.abiRepo = abi.NewRepository(ch)
+	s.abiRepo = contract.NewRepository(pg)
 	s.blockRepo = block.NewRepository(ch, pg)
 	s.txRepo = tx.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)

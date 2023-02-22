@@ -11,6 +11,7 @@ import (
 	"github.com/allisson/go-env"
 	"github.com/rs/zerolog/log"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/repository"
 )
@@ -34,7 +35,7 @@ func InsertInterface() {
 		log.Fatal().Msg("contract address or code or get methods must be set")
 	}
 
-	contract.Name = core.ContractType(*name)
+	contract.Name = abi.ContractName(*name)
 	if *address != "" {
 		contract.Address = *address
 	}

@@ -2,23 +2,25 @@ package indexer
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	"github.com/uptrace/bun"
 	"github.com/xssnick/tonutils-go/tlb"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository/abi"
 )
 
-func (s *Service) messageAlreadyKnown(ctx context.Context, in *core.Message, outMsgMap map[uint64]*core.Message) (bool, error) {
+func (s *Service) messageAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.Message, outMsgMap map[uint64]*core.Message) (bool, error) {
 	// do not duplicate messages in a database
 
 	if _, ok := outMsgMap[in.CreatedLT]; in.Type == core.Internal && ok { // found outgoing internal message in the block
 		return true, nil
 	}
 
-	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{Hash: in.Hash}, 0, 1)
+	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash}, 0, 1)
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
 	}
@@ -29,7 +31,7 @@ func (s *Service) messageAlreadyKnown(ctx context.Context, in *core.Message, out
 	return false, nil
 }
 
-func (s *Service) processBlockMessages(ctx context.Context, b *tlb.BlockInfo, blockTx []*tlb.Transaction) ([]*core.Message, error) {
+func (s *Service) processBlockMessages(ctx context.Context, dbtx bun.Tx, b *tlb.BlockInfo, blockTx []*tlb.Transaction) ([]*core.Message, error) {
 	var (
 		inMessages  []*core.Message
 		outMessages []*core.Message
@@ -42,7 +44,8 @@ func (s *Service) processBlockMessages(ctx context.Context, b *tlb.BlockInfo, bl
 			if err != nil {
 				return nil, errors.Wrap(err, "map outcoming message")
 			}
-			if err = abi.ParseOperationID(msg); err != nil {
+			msg.OperationID, msg.TransferComment, err = abi.ParseOperationID(msg.Body)
+			if err != nil && !strings.Contains(err.Error(), "load uint: not enough data") {
 				return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 			}
 
@@ -69,7 +72,7 @@ func (s *Service) processBlockMessages(ctx context.Context, b *tlb.BlockInfo, bl
 			return nil, errors.Wrap(err, "map incoming message")
 		}
 
-		known, err := s.messageAlreadyKnown(ctx, msg, outMsgMap)
+		known, err := s.messageAlreadyKnown(ctx, dbtx, msg, outMsgMap)
 		if err != nil {
 			return nil, errors.Wrap(err, "is message already known")
 		}
@@ -77,7 +80,8 @@ func (s *Service) processBlockMessages(ctx context.Context, b *tlb.BlockInfo, bl
 			continue
 		}
 
-		if err = abi.ParseOperationID(msg); err != nil {
+		msg.OperationID, msg.TransferComment, err = abi.ParseOperationID(msg.Body)
+		if err != nil && !strings.Contains(err.Error(), "load uint: not enough data") {
 			return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 		}
 

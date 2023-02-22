@@ -31,7 +31,7 @@ func (s *Service) processTxAccounts(
 			continue
 		}
 
-		accTypes, err := s.abiRepo.DetermineContractInterfaces(ctx, raw)
+		accTypes, err := s.parser.DetermineInterfaces(ctx, raw)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "determine contract interfaces")
 		}
@@ -42,7 +42,9 @@ func (s *Service) processTxAccounts(
 		accounts[acc.Address] = acc
 
 		data, err := s.parser.ParseAccountData(ctx, b, raw)
-		if err != nil && !errors.Is(err, core.ErrNotAvailable) {
+		if errors.Is(err, core.ErrNotAvailable) {
+			continue
+		} else if err != nil {
 			log.Error().Err(err).Str("addr", tx.Address).Msg("parse account data")
 			continue
 		}

@@ -9,8 +9,8 @@ import (
 
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository/abi"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
+	"github.com/iam047801/tonidx/internal/core/repository/contract"
 	"github.com/iam047801/tonidx/internal/core/repository/tx"
 )
 
@@ -21,9 +21,9 @@ type Service struct {
 
 	api *ton.APIClient
 
-	abiRepo     core.ContractRepository
-	txRepo      core.TxRepository
-	accountRepo core.AccountRepository
+	contractRepo core.ContractRepository
+	txRepo       core.TxRepository
+	accountRepo  core.AccountRepository
 }
 
 func NewService(ctx context.Context, cfg *app.ParserConfig) (*Service, error) {
@@ -33,7 +33,7 @@ func NewService(ctx context.Context, cfg *app.ParserConfig) (*Service, error) {
 	ch, pg := s.cfg.DB.CH, s.cfg.DB.PG
 	s.txRepo = tx.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)
-	s.abiRepo = abi.NewRepository(ch)
+	s.contractRepo = contract.NewRepository(pg)
 
 	client := liteclient.NewConnectionPool()
 	for _, n := range cfg.Servers {

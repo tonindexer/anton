@@ -5,6 +5,7 @@ import (
 
 	"github.com/xssnick/tonutils-go/address"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -14,7 +15,7 @@ func TestService_ParseAccount(t *testing.T) {
 
 	type testCase struct {
 		addr           *address.Address
-		contract       core.ContractType
+		contract       abi.ContractName
 		status         core.AccountStatus
 		contentURI     string
 		collectionAddr string
@@ -28,31 +29,31 @@ func TestService_ParseAccount(t *testing.T) {
 		},
 		{
 			addr:     address.MustParseAddr("EQC6KV4zs8TJtSZapOrRFmqSkxzpq-oSCoxekQRKElf4nC1I"),
-			contract: core.NFTItem,
+			contract: abi.NFTItem,
 			status:   core.Active,
 		},
 		{
 			addr:       address.MustParseAddr("EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N"),
-			contract:   core.NFTCollection,
+			contract:   abi.NFTCollection,
 			status:     core.Active,
 			contentURI: "https://nft.fragment.com/numbers.json",
 		},
 		{
 			addr:           address.MustParseAddr("EQBu6eCK84PxTdjEKyY7z8TQGhN3dbzx-935nj-Lx4FCKPaF"),
-			contract:       core.NFTItem,
+			contract:       abi.NFTItem,
 			status:         core.Active,
 			contentURI:     "https://nft.fragment.com/number/88809696960.json",
 			collectionAddr: "EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N",
 		},
 		{
 			addr:       address.MustParseAddr("EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi"),
-			contract:   core.NFTCollection,
+			contract:   abi.NFTCollection,
 			status:     core.Active,
 			contentURI: "https://nft.fragment.com/usernames.json",
 		},
 		{
 			addr:           address.MustParseAddr("EQDOZIib-2DZPCKPir1tT5KtOYWzwoDGM404m9NxXeKVEDpC"),
-			contract:       core.NFTItem, // username
+			contract:       abi.NFTItem, // username
 			status:         core.Active,
 			contentURI:     "https://nft.fragment.com/username/datboi420.json",
 			collectionAddr: "EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi",
@@ -65,7 +66,7 @@ func TestService_ParseAccount(t *testing.T) {
 			t.Fatal(c.addr.String(), err)
 		}
 
-		types, err := s.abiRepo.DetermineContractInterfaces(ctx, acc)
+		types, err := s.DetermineInterfaces(ctx, acc)
 		if err != nil {
 			t.Fatal(c.addr.String(), err)
 		}
@@ -76,9 +77,8 @@ func TestService_ParseAccount(t *testing.T) {
 		if core.AccountStatus(acc.State.Status) != c.status {
 			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.status, acc.State.Status)
 		}
-		t.Logf("acc: %+v", acc)
 
-		if c.contract != core.NFTCollection && c.contract != core.NFTItem {
+		if c.contract != abi.NFTCollection && c.contract != abi.NFTItem {
 			continue
 		}
 
@@ -92,6 +92,5 @@ func TestService_ParseAccount(t *testing.T) {
 		if c.collectionAddr != "" && c.collectionAddr != data.CollectionAddress {
 			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.collectionAddr, data.CollectionAddress)
 		}
-		t.Logf("data: %+v", data)
 	}
 }
