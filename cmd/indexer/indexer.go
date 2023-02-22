@@ -25,7 +25,7 @@ func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	// add file and line number to log
-	log.Logger = log.With().Caller().Logger().Level(zerolog.DebugLevel)
+	log.Logger = log.With().Caller().Logger().Level(zerolog.InfoLevel)
 }
 
 func initDB(ctx context.Context, conn *repository.DB) error {

@@ -97,6 +97,10 @@ func (s *Service) parseMessagePayloads(ctx context.Context, messages []*core.Mes
 			continue // TODO: external message parsing
 		}
 
+		if msg.SrcAddress == "Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU" {
+			continue
+		}
+
 		src, ok := accountMap[msg.SrcAddress]
 		if !ok {
 			log.Error().Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
