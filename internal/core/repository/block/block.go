@@ -92,7 +92,9 @@ func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Bloc
 func transactionsLoad(q *bun.SelectQuery, prefix string, f *core.BlockFilter) *bun.SelectQuery {
 	q = q.Relation(prefix + "Transactions")
 	if f.WithTransactionAccountState {
-		q = q.Relation(prefix + "Transactions.Account")
+		q = q.Relation(prefix+"Transactions.Account", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.ExcludeColumn("code", "data") // TODO: optional
+		})
 		if f.WithTransactionAccountData {
 			q = q.Relation(prefix + "Transactions.Account.StateData")
 		}
@@ -121,12 +123,14 @@ func blocksFilter(q *bun.SelectQuery, f *core.BlockFilter) *bun.SelectQuery {
 		q = transactionsLoad(q, "", f)
 	}
 
-	if f.ID != nil {
-		q = q.Where("workchain = ?", f.ID.Workchain).
-			Where("shard = ?", f.ID.Shard).
-			Where("seq_no = ?", f.ID.SeqNo)
-	} else if f.Workchain != nil {
+	if f.Workchain != nil {
 		q = q.Where("workchain = ?", *f.Workchain)
+	}
+	if f.Shard != nil {
+		q = q.Where("shard = ?", *f.Shard)
+	}
+	if f.SeqNo != nil {
+		q = q.Where("seq_no = ?", *f.SeqNo)
 	}
 
 	if len(f.FileHash) > 0 {

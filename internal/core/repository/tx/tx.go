@@ -125,6 +125,15 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "message payload pg create dst_contract index")
 	}
 
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.MessagePayload{}).
+		Using("HASH").
+		Column("operation_name").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "message payload pg create operation name index")
+	}
+
 	return nil
 }
 
@@ -300,8 +309,8 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 		if f.DstContract != "" {
 			q = q.Where("payload.dst_contract = ?", f.DstContract)
 		}
-		if f.OperationName != "" {
-			q = q.Where("payload.operation_name = ?", f.OperationName)
+		if len(f.OperationNames) > 0 {
+			q = q.Where("payload.operation_name IN (?)", bun.In(f.OperationNames))
 		}
 	}
 

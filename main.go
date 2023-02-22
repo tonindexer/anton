@@ -3,9 +3,13 @@ package main
 import (
 	"os"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
 	"github.com/iam047801/tonidx/cmd/archive"
 	"github.com/iam047801/tonidx/cmd/contract"
 	"github.com/iam047801/tonidx/cmd/indexer"
+	"github.com/iam047801/tonidx/cmd/query"
 )
 
 var availableCommands = map[string]struct {
@@ -15,6 +19,10 @@ var availableCommands = map[string]struct {
 	"indexer": {
 		Description: "Background task to scan new blocks",
 		Run:         indexer.Run,
+	},
+	"query": {
+		Description: "HTTP API",
+		Run:         query.Run,
 	},
 	"archiveNodes": {
 		Description: "Returns archive nodes found from config",
@@ -28,6 +36,13 @@ var availableCommands = map[string]struct {
 		Description: "Inserts new contract operation to a database",
 		Run:         contract.InsertOperation,
 	},
+}
+
+func init() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	// add file and line number to log
+	log.Logger = log.With().Caller().Logger().Level(zerolog.InfoLevel)
 }
 
 func printHelp() {

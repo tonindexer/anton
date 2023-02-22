@@ -220,6 +220,8 @@ func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilt
 		q = q.Relation("StateData")
 	}
 
+	q = q.ExcludeColumn("code", "data") // TODO: optional
+
 	if filter.LatestState {
 		q.Where("account_state.latest = ?", true)
 	}
@@ -227,7 +229,7 @@ func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilt
 		q.Where("account_state.address = ?", filter.Address)
 	}
 	if len(filter.ContractTypes) > 0 {
-		q.Where("account_state.contract_types && ?", pgdialect.Array(filter.ContractTypes))
+		q.Where("account_state.types && ?", pgdialect.Array(filter.ContractTypes))
 	}
 
 	if filter.WithData {

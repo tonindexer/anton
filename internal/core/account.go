@@ -21,8 +21,8 @@ const (
 )
 
 type AccountState struct {
-	ch.CHModel    `ch:"account_states,partition:types,is_active,status"`
-	bun.BaseModel `bun:"table:account_states"`
+	ch.CHModel    `ch:"account_states,partition:types,is_active,status" json:"-"`
+	bun.BaseModel `bun:"table:account_states" json:"-"`
 
 	Latest bool `json:"latest"`
 
@@ -79,7 +79,7 @@ type NFTItemData struct {
 }
 
 type FTMasterData struct {
-	TotalSupply bunbig.Int `bun:"type:decimal" json:"total_supply,omitempty"` // TODO: pointer here, bun bug
+	TotalSupply bunbig.Int `bun:"type:decimal" json:"total_supply,omitempty,string" swaggertype:"string"` // TODO: pointer here, bun bug
 	Mintable    bool       `json:"mintable,omitempty"`
 	AdminAddr   string     `json:"admin_addr,omitempty"`
 	// Content     nft.ContentAny
@@ -87,15 +87,15 @@ type FTMasterData struct {
 }
 
 type FTWalletData struct {
-	Balance bunbig.Int `bun:"type:decimal" json:"balance"` // TODO: pointer here, bun bug
+	Balance bunbig.Int `bun:"type:decimal" json:"balance,omitempty,string" swaggertype:"string"` // TODO: pointer here, bun bug
 	// OwnerAddress  *address.Address
 	MasterAddress string `json:"master_address"`
 	// WalletCode  *cell.Cell
 }
 
 type AccountData struct {
-	ch.CHModel    `ch:"account_data,partition:types"`
-	bun.BaseModel `bun:"table:account_data"`
+	ch.CHModel    `ch:"account_data,partition:types" json:"-"`
+	bun.BaseModel `bun:"table:account_data" json:"-"`
 
 	Address    string `ch:",pk" bun:",pk,notnull" json:"address"`
 	LastTxLT   uint64 `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
@@ -115,14 +115,14 @@ type AccountData struct {
 }
 
 type AccountStateFilter struct {
-	Address     string
-	LatestState bool
+	Address     string `form:"address"`
+	LatestState bool   `form:"latest"`
 
 	// contract data filter
-	WithData          bool
-	ContractTypes     []abi.ContractName
-	OwnerAddress      string
-	CollectionAddress string
+	WithData          bool               `form:"with_data"`
+	ContractTypes     []abi.ContractName `form:"interfaces"`
+	OwnerAddress      string             `form:"owner_address"`
+	CollectionAddress string             `form:"collection_address"`
 }
 
 type AccountRepository interface {

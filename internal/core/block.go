@@ -14,8 +14,8 @@ type BlockID struct {
 }
 
 type Block struct {
-	ch.CHModel    `ch:"block_info,partition:workchain,shard"`
-	bun.BaseModel `bun:"table:block_info"`
+	ch.CHModel    `ch:"block_info,partition:workchain,shard" json:"-"`
+	bun.BaseModel `bun:"table:block_info" json:"-"`
 
 	BlockID
 
@@ -31,14 +31,15 @@ type Block struct {
 }
 
 type BlockFilter struct {
-	ID        *BlockID
-	Workchain *int32
-	FileHash  []byte
+	Workchain *int32  `form:"workchain"`
+	Shard     *int64  `form:"shard"`
+	SeqNo     *uint32 `form:"seq_no"`
+	FileHash  []byte  `form:"file_hash"`
 
 	WithShards                     bool
 	WithTransactionAccountState    bool
 	WithTransactionAccountData     bool
-	WithTransactions               bool
+	WithTransactions               bool `form:"with_transactions"`
 	WithTransactionMessages        bool
 	WithTransactionMessagePayloads bool
 }

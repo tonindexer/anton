@@ -10,7 +10,6 @@ import (
 
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/iam047801/tonidx/abi"
@@ -20,13 +19,6 @@ import (
 	"github.com/iam047801/tonidx/internal/core/repository"
 	"github.com/iam047801/tonidx/internal/core/repository/contract"
 )
-
-func init() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-
-	// add file and line number to log
-	log.Logger = log.With().Caller().Logger().Level(zerolog.InfoLevel)
-}
 
 func initDB(ctx context.Context, conn *repository.DB) error {
 	_, err := contract.NewRepository(conn.PG).

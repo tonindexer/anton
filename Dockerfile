@@ -12,6 +12,7 @@ RUN go mod download
 # copy application code
 COPY internal /go/src/github.com/iam047801/tonidx/internal
 COPY cmd /go/src/github.com/iam047801/tonidx/cmd
+COPY api /go/src/github.com/iam047801/tonidx/api
 COPY abi /go/src/github.com/iam047801/tonidx/abi
 COPY main.go /go/src/github.com/iam047801/tonidx
 
@@ -22,11 +23,14 @@ RUN go build -o /tonidx /go/src/github.com/iam047801/tonidx
 # application
 FROM alpine:3
 
+ENV LISTEN=0.0.0.0:80
+
 RUN addgroup -S tonidx && adduser -S tonidx -G tonidx
 WORKDIR /app
 RUN apk add --no-cache tzdata
 COPY --from=build /tonidx /usr/bin/tonidx
 
 USER tonidx:tonidx
+EXPOSE 80
 ENTRYPOINT ["/usr/bin/tonidx"]
 CMD ["indexer"]

@@ -6,13 +6,34 @@ services:
       - indexer_network
     links:
       - clickhouse
+      - postgres
     depends_on:
       - clickhouse
+      - postgres
     environment:
       DB_CH_URL: "clickhouse://clickhouse:9000/${DB_NAME}?sslmode=disable"
       DB_PG_URL: "postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
       FROM_BLOCK: ${FROM_BLOCK}
       LITESERVERS: ${LITESERVERS}
+  query:
+    build: .
+    networks:
+      - indexer_network
+    ports:
+      - "80:80"
+    expose:
+      - "80"
+    links:
+      - clickhouse
+      - postgres
+    depends_on:
+      - clickhouse
+      - postgres
+    command: query
+    environment:
+      DB_CH_URL: "clickhouse://clickhouse:9000/${DB_NAME}?sslmode=disable"
+      DB_PG_URL: "postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
+      GIN_MODE: "release"
   clickhouse:
     image: "yandex/clickhouse-server"
     networks:
