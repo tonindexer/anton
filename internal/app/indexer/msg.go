@@ -80,6 +80,26 @@ func (s *Service) processBlockMessages(ctx context.Context, dbtx bun.Tx, b *tlb.
 	return append(outMessages, inMessages...), nil
 }
 
+func (s *Service) getLatestAccount(ctx context.Context, addr string, accountMap map[string]*core.AccountState) (*core.AccountState, error) {
+	src, ok := accountMap[addr]
+	if ok {
+		return src, nil
+	}
+
+	state, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		Address:     addr,
+		LatestState: true,
+	}, 0, 1)
+	if err != nil {
+		return nil, errors.Wrap(err, "get account states")
+	}
+
+	if len(state) < 1 {
+		return nil, errors.Wrap(core.ErrNotFound, "no account state found")
+	}
+	return state[0], nil
+}
+
 func (s *Service) parseMessagePayloads(ctx context.Context, messages []*core.Message, accountMap map[string]*core.AccountState) (ret []*core.MessagePayload) {
 	for _, msg := range messages {
 		if msg.Type != core.Internal {
@@ -90,14 +110,14 @@ func (s *Service) parseMessagePayloads(ctx context.Context, messages []*core.Mes
 			continue
 		}
 
-		src, ok := accountMap[msg.SrcAddress]
-		if !ok {
-			log.Error().Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
+		src, err := s.getLatestAccount(ctx, msg.SrcAddress, accountMap)
+		if err != nil {
+			log.Error().Err(err).Hex("tx_hash", msg.SourceTxHash).Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
 			continue
 		}
-		dst, ok := accountMap[msg.DstAddress]
-		if !ok {
-			log.Error().Str("dst_addr", msg.SrcAddress).Msg("cannot find dst account")
+		dst, err := s.getLatestAccount(ctx, msg.DstAddress, accountMap)
+		if err != nil {
+			log.Error().Err(err).Hex("tx_hash", msg.SourceTxHash).Str("dst_addr", msg.DstAddress).Msg("cannot find dst account")
 			continue
 		}
 
