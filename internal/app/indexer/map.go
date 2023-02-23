@@ -2,7 +2,6 @@ package indexer
 
 import (
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 
@@ -112,10 +111,7 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 		return msg, nil
 	}
 
-	msg.OperationID, msg.TransferComment, err = abi.ParseOperationID(msg.Body)
-	if err != nil {
-		log.Warn().Err(err).Hex("tx_hash", msg.SourceTxHash).Hex("hash", msg.Hash).Msg("parse operation id")
-	}
+	msg.OperationID, msg.TransferComment, _ = abi.ParseOperationID(msg.Body)
 
 	return msg, nil
 }
