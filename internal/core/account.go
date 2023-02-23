@@ -79,7 +79,7 @@ type NFTItemData struct {
 }
 
 type FTMasterData struct {
-	TotalSupply bunbig.Int `bun:"type:decimal" json:"total_supply,omitempty,string" swaggertype:"string"` // TODO: pointer here, bun bug
+	TotalSupply bunbig.Int `bun:"type:decimal" json:"total_supply,omitempty" swaggertype:"string"` // TODO: pointer here, bun bug
 	Mintable    bool       `json:"mintable,omitempty"`
 	AdminAddr   string     `json:"admin_addr,omitempty"`
 	// Content     nft.ContentAny
@@ -87,7 +87,7 @@ type FTMasterData struct {
 }
 
 type FTWalletData struct {
-	Balance bunbig.Int `bun:"type:decimal" json:"balance,omitempty,string" swaggertype:"string"` // TODO: pointer here, bun bug
+	Balance bunbig.Int `bun:"type:decimal" json:"balance,omitempty" swaggertype:"string"` // TODO: pointer here, bun bug
 	// OwnerAddress  *address.Address
 	MasterAddress string `json:"master_address"`
 	// WalletCode  *cell.Cell

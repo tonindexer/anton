@@ -32,22 +32,21 @@ func NewServer(host string) *Server {
 
 func (s *Server) RegisterRoutes(t QueryController) {
 	base := s.router.Group(basePath)
-	{
-		base.GET("/contract/interface", t.GetInterfaces)
-		base.GET("/contract/operation", t.GetOperations)
 
-		base.GET("/block", t.GetBlocks)
+	base.GET("/contract/interface", t.GetInterfaces)
+	base.GET("/contract/operation", t.GetOperations)
 
-		base.GET("/account", t.GetAccountStates)
+	base.GET("/block", t.GetBlocks)
 
-		base.GET("/transaction", t.GetTransactions)
-		base.GET("/message", t.GetMessages)
+	base.GET("/account", t.GetAccountStates)
 
-		base.GET("/swagger/*any", ginSwagger.WrapHandler(
-			swaggerFiles.Handler,
-			ginSwagger.URL("/api/v1/swagger/doc.json"),
-			ginSwagger.DefaultModelsExpandDepth(-1)))
-	}
+	base.GET("/transaction", t.GetTransactions)
+	base.GET("/message", t.GetMessages)
+
+	base.GET("/swagger/*any", ginSwagger.WrapHandler(
+		swaggerFiles.Handler,
+		ginSwagger.URL("/api/v1/swagger/doc.json"),
+		ginSwagger.DefaultModelsExpandDepth(-1)))
 }
 
 func (s *Server) Run() error {

@@ -335,8 +335,8 @@ func TestGraphFilterMessages(t *testing.T) {
 
 	t.Run("filter messages by operation name with source", func(t *testing.T) {
 		ret, err := txRepo.GetMessages(ctx, &core.MessageFilter{
-			WithPayload:   true,
-			OperationName: "item_transfer",
+			WithPayload:    true,
+			OperationNames: []string{"item_transfer"},
 		}, 0, 100)
 		if err != nil {
 			t.Fatal(err)

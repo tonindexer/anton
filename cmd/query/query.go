@@ -37,7 +37,7 @@ func Run() {
 	srv.RegisterRoutes(http.NewController(qs))
 
 	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM) //nolint:govet,gocritic
 	go func() {
 		<-c
 		conn.Close()
