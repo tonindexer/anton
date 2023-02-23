@@ -2,14 +2,12 @@ package indexer
 
 import (
 	"context"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
 	"github.com/xssnick/tonutils-go/tlb"
 
-	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -44,10 +42,6 @@ func (s *Service) processBlockMessages(ctx context.Context, dbtx bun.Tx, b *tlb.
 			if err != nil {
 				return nil, errors.Wrap(err, "map outcoming message")
 			}
-			msg.OperationID, msg.TransferComment, err = abi.ParseOperationID(msg.Body)
-			if err != nil && !strings.Contains(err.Error(), "load uint: not enough data") {
-				return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
-			}
 
 			if msg.Source, err = mapTransaction(b, tx); err != nil {
 				return nil, errors.Wrapf(err, "map source transaction (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
@@ -78,11 +72,6 @@ func (s *Service) processBlockMessages(ctx context.Context, dbtx bun.Tx, b *tlb.
 		}
 		if known {
 			continue
-		}
-
-		msg.OperationID, msg.TransferComment, err = abi.ParseOperationID(msg.Body)
-		if err != nil && !strings.Contains(err.Error(), "load uint: not enough data") {
-			return nil, errors.Wrapf(err, "parse operation (tx_hash = %x, msg_hash = %x)", tx.Hash, msg.BodyHash)
 		}
 
 		inMessages = append(inMessages, msg)

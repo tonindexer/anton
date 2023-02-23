@@ -5,6 +5,7 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 
+	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -105,6 +106,12 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 		msg.Body = raw.Body.ToBOC()
 		msg.BodyHash = raw.Body.Hash()
 	}
+
+	if msg.Body == nil {
+		return msg, nil
+	}
+
+	msg.OperationID, msg.TransferComment, _ = abi.ParseOperationID(msg.Body)
 
 	return msg, nil
 }
