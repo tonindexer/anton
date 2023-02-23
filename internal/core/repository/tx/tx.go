@@ -252,7 +252,9 @@ func (r *Repository) AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads
 
 func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQuery {
 	if f.WithAccountState {
-		q = q.Relation("Account")
+		q = q.Relation("Account", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.ExcludeColumn("code", "data") // TODO: optional
+		})
 		if f.WithAccountData {
 			q = q.Relation("Account.StateData")
 		}

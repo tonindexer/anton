@@ -270,6 +270,10 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 func TestGraphFilterAccounts(t *testing.T) {
 	initDB()
 
+	// TODO: optional fields
+	accWallet.Code, accWallet.Data = nil, nil
+	accItem.Code, accItem.Data = nil, nil
+
 	t.Run("filter latest state by address", func(t *testing.T) {
 		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 			Address:     accWallet.Address,
