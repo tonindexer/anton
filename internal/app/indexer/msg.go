@@ -66,18 +66,33 @@ func (s *Service) processBlockMessages(ctx context.Context, dbtx bun.Tx, b *tlb.
 			return nil, errors.Wrap(err, "map incoming message")
 		}
 
-		known, err := s.messageAlreadyKnown(ctx, dbtx, msg, outMsgMap)
+		msg.Known, err = s.messageAlreadyKnown(ctx, dbtx, msg, outMsgMap)
 		if err != nil {
 			return nil, errors.Wrap(err, "is message already known")
-		}
-		if known {
-			continue
 		}
 
 		inMessages = append(inMessages, msg)
 	}
 
 	return append(outMessages, inMessages...), nil
+}
+
+func (s *Service) messagePayloadAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.Message, msgMap map[string]*core.MessagePayload) (bool, error) {
+	// do not duplicate message payloads in a database
+
+	if _, ok := msgMap[string(in.Hash)]; ok { // already parsed msg payload
+		return true, nil
+	}
+
+	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash}, 0, 1)
+	if err != nil {
+		return false, errors.Wrap(err, "get messages")
+	}
+	if len(res) > 0 && res[0].Payload != nil {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (s *Service) getLatestAccount(ctx context.Context, addr string, accountMap map[string]*core.AccountState) (*core.AccountState, error) {
@@ -93,31 +108,41 @@ func (s *Service) getLatestAccount(ctx context.Context, addr string, accountMap 
 	if err != nil {
 		return nil, errors.Wrap(err, "get account states")
 	}
-
-	if len(state) < 1 {
-		return nil, errors.Wrap(core.ErrNotFound, "no account state found")
+	if len(state) > 0 {
+		return state[0], nil
 	}
-	return state[0], nil
+
+	return nil, errors.Wrap(core.ErrNotFound, "no account state found")
 }
 
-func (s *Service) parseMessagePayloads(ctx context.Context, messages []*core.Message, accountMap map[string]*core.AccountState) (ret []*core.MessagePayload) {
+func (s *Service) parseMessagePayloads(ctx context.Context, tx bun.Tx, messages []*core.Message, accountMap map[string]*core.AccountState) (ret []*core.MessagePayload) {
+	msgMap := make(map[string]*core.MessagePayload)
+
 	for _, msg := range messages {
 		if msg.Type != core.Internal {
 			continue // TODO: external message parsing
 		}
-
 		if msg.SrcAddress == "Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU" {
+			continue
+		}
+
+		known, err := s.messagePayloadAlreadyKnown(ctx, tx, msg, msgMap)
+		if err != nil {
+			log.Error().Err(err).Hex("tx_hash", msg.SourceTxHash).Str("src_addr", msg.SrcAddress).Msg("message payload already known")
+			continue
+		}
+		if known {
 			continue
 		}
 
 		src, err := s.getLatestAccount(ctx, msg.SrcAddress, accountMap)
 		if err != nil {
-			log.Error().Err(err).Hex("tx_hash", msg.SourceTxHash).Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
+			log.Warn().Err(err).Hex("hash", msg.Hash).Hex("tx_hash", msg.SourceTxHash).Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
 			continue
 		}
 		dst, err := s.getLatestAccount(ctx, msg.DstAddress, accountMap)
 		if err != nil {
-			log.Error().Err(err).Hex("tx_hash", msg.SourceTxHash).Str("dst_addr", msg.DstAddress).Msg("cannot find dst account")
+			log.Warn().Err(err).Hex("hash", msg.Hash).Hex("tx_hash", msg.SourceTxHash).Str("dst_addr", msg.DstAddress).Msg("cannot find dst account")
 			continue
 		}
 
@@ -129,6 +154,8 @@ func (s *Service) parseMessagePayloads(ctx context.Context, messages []*core.Mes
 			log.Error().Err(err).Hex("msg_hash", msg.BodyHash).Hex("tx_hash", msg.SourceTxHash).Msg("parse message payload")
 			continue
 		}
+
+		msgMap[string(payload.Hash)] = payload
 		ret = append(ret, payload)
 	}
 

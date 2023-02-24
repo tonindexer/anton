@@ -65,7 +65,7 @@ type Message struct {
 	// or contract can accept external incoming message in SourceTx
 	SourceTxHash []byte       `bun:"type:bytea"`
 	SourceTxLT   uint64       //
-	Source       *Transaction `ch:"-" bun:"-"`
+	Source       *Transaction `ch:"-" bun:"-"` // TODO: join it
 
 	Bounce  bool //
 	Bounced bool //
@@ -87,6 +87,8 @@ type Message struct {
 
 	CreatedAt uint64 `bun:",notnull"`
 	CreatedLT uint64 `bun:",notnull"`
+
+	Known bool `ch:"-" bun:"-" json:"known,omitempty"`
 }
 
 type MessagePayload struct {
