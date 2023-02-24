@@ -144,7 +144,7 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 	}
 	if acc.Code != nil {
 		ret.Code = acc.Code.ToBOC()
-		ret.CodeHash = acc.Data.Hash()
+		ret.CodeHash = acc.Code.Hash()
 	}
 	ret.LastTxLT = acc.LastTxLT
 	ret.LastTxHash = acc.LastTxHash
