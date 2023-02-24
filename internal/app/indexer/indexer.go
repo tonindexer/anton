@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
@@ -65,6 +67,11 @@ func (s *Service) running() bool {
 // func to get storage map key
 func getShardID(shard *tlb.BlockInfo) string {
 	return fmt.Sprintf("%d|%d", shard.Workchain, shard.Shard)
+}
+
+func timeTrack(start time.Time, name string) {
+	elapsed := float64(time.Since(start)) / 1e9
+	log.Debug().Str("func", name).Float64("elapsed", elapsed).Msg("")
 }
 
 func (s *Service) Start() error {

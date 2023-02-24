@@ -13,6 +13,7 @@ services:
       DB_PG_URL: "postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
       FROM_BLOCK: ${FROM_BLOCK}
       LITESERVERS: ${LITESERVERS}
+      DEBUG_LOGS: ${DEBUG_LOGS}
   clickhouse:
     image: "yandex/clickhouse-server"
     networks:

@@ -3,10 +3,26 @@ package main
 import (
 	"os"
 
+	"github.com/allisson/go-env"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
 	"github.com/iam047801/tonidx/cmd/archive"
 	"github.com/iam047801/tonidx/cmd/contract"
 	"github.com/iam047801/tonidx/cmd/indexer"
 )
+
+func init() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	level := zerolog.InfoLevel
+	if env.GetBool("DEBUG_LOGS", false) {
+		level = zerolog.DebugLevel
+	}
+
+	// add file and line number to log
+	log.Logger = log.With().Caller().Logger().Level(level)
+}
 
 var availableCommands = map[string]struct {
 	Description string

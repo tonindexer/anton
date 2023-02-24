@@ -93,11 +93,6 @@ func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *t
 		return nil, errors.Wrap(core.ErrNotAvailable, "no account address")
 	}
 
-	data := new(core.AccountData)
-	data.Address = acc.State.Address.String()
-	data.LastTxLT = acc.LastTxLT
-	data.LastTxHash = acc.LastTxHash
-
 	types, err := s.DetermineInterfaces(ctx, acc)
 	if err != nil {
 		return nil, errors.Wrap(err, "get contract interfaces")
@@ -106,11 +101,18 @@ func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *t
 		return nil, errors.Wrap(core.ErrNotAvailable, "unknown contract interfaces")
 	}
 
+	data := new(core.AccountData)
+	data.Address = acc.State.Address.String()
+	data.LastTxLT = acc.LastTxLT
+	data.LastTxHash = acc.LastTxHash
+
 	getters := []func(context.Context, *tlb.BlockInfo, *tlb.Account, []abi.ContractName, *core.AccountData) error{
 		s.getAccountDataNFT,
 		s.getAccountDataFT,
 	}
 	for _, getter := range getters {
+		// TODO: do not return error in known contract getter, save error to a database
+
 		if err := getter(ctx, b, acc, types, data); err != nil && !errors.Is(err, core.ErrNotAvailable) {
 			return nil, fmt.Errorf("%s: %w", runtime.FuncForPC(reflect.ValueOf(getter).Pointer()).Name(), err)
 		} else if err != nil {

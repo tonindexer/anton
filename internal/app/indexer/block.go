@@ -15,6 +15,8 @@ import (
 )
 
 func (s *Service) getNotSeenShards(ctx context.Context, shard *tlb.BlockInfo) (ret []*tlb.BlockInfo, err error) {
+	defer timeTrack(time.Now(), fmt.Sprintf("getNotSeenShards(%d, %d)", shard.Workchain, shard.SeqNo))
+
 	if no, ok := s.shardLastSeqno[getShardID(shard)]; ok && no == shard.SeqNo {
 		return nil, nil
 	}
