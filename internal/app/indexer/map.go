@@ -63,8 +63,10 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 		msg.Body = raw.Body.ToBOC()
 		msg.BodyHash = raw.Body.Hash()
 
-		if raw.StateInit != nil {
+		if raw.StateInit != nil && raw.StateInit.Code != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
+		}
+		if raw.StateInit != nil && raw.StateInit.Data != nil {
 			msg.StateInitData = raw.StateInit.Data.ToBOC()
 		}
 
