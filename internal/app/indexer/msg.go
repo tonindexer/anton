@@ -2,6 +2,8 @@ package indexer
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -17,6 +19,8 @@ func (s *Service) messageAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.M
 	if _, ok := outMsgMap[in.CreatedLT]; in.Type == core.Internal && ok { // found outgoing internal message in the block
 		return true, nil
 	}
+
+	defer timeTrack(time.Now(), fmt.Sprintf("messageAlreadyKnown(hash = %x)", in.Hash))
 
 	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash}, 0, 1)
 	if err != nil {
@@ -83,6 +87,8 @@ func (s *Service) messagePayloadAlreadyKnown(ctx context.Context, tx bun.Tx, in 
 	if _, ok := msgMap[string(in.Hash)]; ok { // already parsed msg payload
 		return true, nil
 	}
+
+	defer timeTrack(time.Now(), fmt.Sprintf("messagePayloadAlreadyKnown(hash = %x)", in.Hash))
 
 	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash}, 0, 1)
 	if err != nil {
