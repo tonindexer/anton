@@ -13,8 +13,8 @@ import (
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func (s *Service) skipAccounts(_ *tlb.BlockInfo, addr *address.Address) bool {
-	switch addr.String() {
+func skipAccounts(addr string) bool {
+	switch addr {
 	case "Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF": // skip elector contract
 		return true
 	case "Ef80UXx731GHxVr0-LYf3DIViMerdo3uJLAG3ykQZFjXz2kW": // skip log tests contract
@@ -31,7 +31,7 @@ func (s *Service) skipAccounts(_ *tlb.BlockInfo, addr *address.Address) bool {
 }
 
 func (s *Service) processAccount(ctx context.Context, b *tlb.BlockInfo, addr *address.Address) (*core.AccountState, *core.AccountData, error) {
-	if s.skipAccounts(b, addr) {
+	if skipAccounts(addr.String()) {
 		return nil, nil, nil
 	}
 

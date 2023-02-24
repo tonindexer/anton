@@ -88,8 +88,6 @@ func (s *Service) messagePayloadAlreadyKnown(ctx context.Context, tx bun.Tx, in 
 		return true, nil
 	}
 
-	defer timeTrack(time.Now(), fmt.Sprintf("messagePayloadAlreadyKnown(hash = %x)", in.Hash))
-
 	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash}, 0, 1)
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
@@ -101,24 +99,22 @@ func (s *Service) messagePayloadAlreadyKnown(ctx context.Context, tx bun.Tx, in 
 	return false, nil
 }
 
-func (s *Service) getLatestAccount(ctx context.Context, addr string, accountMap map[string]*core.AccountState) (*core.AccountState, error) {
+func (s *Service) getLatestAccount(_ context.Context, addr string, accountMap map[string]*core.AccountState) (*core.AccountState, error) {
 	src, ok := accountMap[addr]
 	if ok {
 		return src, nil
 	}
 
-	defer timeTrack(time.Now(), fmt.Sprintf("getLatestAccount(addr = %s)", addr))
-
-	state, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
-		Address:     addr,
-		LatestState: true,
-	}, 0, 1)
-	if err != nil {
-		return nil, errors.Wrap(err, "get account states")
-	}
-	if len(state) > 0 {
-		return state[0], nil
-	}
+	// state, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+	// 	Address:     addr,
+	// 	LatestState: true,
+	// }, 0, 1)
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "get account states")
+	// }
+	// if len(state) > 0 {
+	// 	return state[0], nil
+	// }
 
 	return nil, errors.Wrap(core.ErrNotFound, "no account state found")
 }
@@ -131,6 +127,9 @@ func (s *Service) parseMessagePayloads(ctx context.Context, tx bun.Tx, messages 
 			continue // TODO: external message parsing
 		}
 		if msg.SrcAddress == "Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU" {
+			continue
+		}
+		if skipAccounts(msg.SrcAddress) || skipAccounts(msg.DstAddress) {
 			continue
 		}
 
