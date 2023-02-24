@@ -107,6 +107,8 @@ func (s *Service) getLatestAccount(ctx context.Context, addr string, accountMap 
 		return src, nil
 	}
 
+	defer timeTrack(time.Now(), fmt.Sprintf("getLatestAccount(addr = %s)", addr))
+
 	state, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 		Address:     addr,
 		LatestState: true,
