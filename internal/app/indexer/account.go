@@ -44,7 +44,7 @@ func (s *Service) processAccount(ctx context.Context, b *tlb.BlockInfo, addr *ad
 
 	acc := mapAccount(raw)
 	if acc.Status == core.NonExist {
-		return acc, nil, nil
+		return nil, nil, nil
 	}
 
 	accTypes, err := s.parser.DetermineInterfaces(ctx, raw)

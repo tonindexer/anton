@@ -26,12 +26,12 @@ type AccountState struct {
 
 	Latest bool `json:"latest"`
 
-	Address  string        `ch:",pk" bun:",pk" json:"address"`
+	Address  string        `ch:",pk" bun:",pk,notnull" json:"address"`
 	IsActive bool          `json:"is_active"`
 	Status   AccountStatus `ch:",lc" bun:"type:account_status" json:"status"` // TODO: enum
 	Balance  uint64        `json:"balance"`
 
-	LastTxLT   uint64 `ch:",pk" bun:",pk" json:"last_tx_lt"`
+	LastTxLT   uint64 `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
 	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique" json:"last_tx_hash"`
 
 	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:address=address,join:last_tx_lt=last_tx_lt" json:"state_data,omitempty"`
