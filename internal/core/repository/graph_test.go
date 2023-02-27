@@ -90,10 +90,10 @@ var (
 		Address:    addrWallet,
 		IsActive:   true,
 		Status:     core.Active,
-		Balance:    1e9,
+		Balance:    bunbig.FromInt64(1e9),
 		LastTxLT:   randLT(),
 		LastTxHash: randBytes(32),
-		Types:      []string{"wallet"},
+		Types:      []abi.ContractName{"wallet"},
 	}
 
 	accWalletOld = core.AccountState{
@@ -101,10 +101,10 @@ var (
 		Address:    accWalletOlder.Address,
 		IsActive:   true,
 		Status:     core.Active,
-		Balance:    1e9,
+		Balance:    bunbig.FromInt64(31e9),
 		LastTxLT:   accWalletOlder.LastTxLT + 1e3,
 		LastTxHash: randBytes(32),
-		Types:      []string{"wallet"},
+		Types:      []abi.ContractName{"wallet"},
 	}
 
 	accWallet = core.AccountState{
@@ -113,7 +113,7 @@ var (
 
 		IsActive: true,
 		Status:   core.Active,
-		Balance:  1e9,
+		Balance:  bunbig.FromInt64(3e9),
 
 		LastTxLT:   accWalletOld.LastTxLT + 1e3,
 		LastTxHash: randBytes(32),
@@ -124,7 +124,7 @@ var (
 		Data:      randBytes(128), // parse it
 		DataHash:  randBytes(32),
 
-		Types: []string{"wallet"},
+		Types: []abi.ContractName{"wallet"},
 	}
 
 	addrItem = *randAddr()
@@ -135,7 +135,7 @@ var (
 
 		IsActive: true,
 		Status:   core.Active,
-		Balance:  1e9,
+		Balance:  bunbig.FromInt64(54e9),
 
 		LastTxLT:   accWallet.LastTxLT + 10,
 		LastTxHash: randBytes(32),
@@ -146,7 +146,7 @@ var (
 		Data:      randBytes(128), // parse it
 		DataHash:  randBytes(32),
 
-		Types: []string{"item"},
+		Types: []abi.ContractName{"item"},
 	}
 
 	addrNoState = randAddr()
@@ -156,7 +156,7 @@ var (
 		Address:    *addrNoState,
 		IsActive:   false,
 		Status:     core.NonExist,
-		Balance:    100e9,
+		Balance:    bunbig.FromInt64(13),
 		LastTxLT:   randLT(),
 		LastTxHash: randBytes(32),
 	}
@@ -175,7 +175,9 @@ var (
 		GetMethods: []string{"get_item_data"},
 	}
 
-	idx = uint64(43)
+	idx, _ = new(bunbig.Int).FromString(fmt.Sprintf("%d", 43)) // TODO: bunbig.Int.FromUint64
+
+	accDataItemJetBalance, _ = new(bunbig.Int).FromString(fmt.Sprintf("%d", randUint())) // TODO: bunbig.Int.FromUint64
 
 	accDataItem = core.AccountData{
 		Address:      accItem.Address,
@@ -196,7 +198,7 @@ var (
 			ItemIndex:         42,
 			CollectionAddress: randAddr(),
 		},
-		FTWalletData: core.FTWalletData{Balance: bunbig.FromInt64(int64(randUint()))},
+		FTWalletData: core.FTWalletData{Balance: accDataItemJetBalance},
 	}
 
 	msgExtWallet = core.Message{

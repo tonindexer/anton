@@ -214,6 +214,7 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 		}
 		acc := accWallet
 		acc.Latest = false
+		s.GetMethodHashes = nil
 		if !reflect.DeepEqual(s, &acc) {
 			t.Fatalf("wrong account, expected: %+v, got: %+v", acc, s)
 		}

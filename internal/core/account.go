@@ -25,14 +25,13 @@ type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:types,is_active,status"`
 	bun.BaseModel `bun:"table:account_states"`
 
-	Latest bool `ch:"-" json:"latest"`
-
 	Address  addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
+	Latest   bool          `ch:"-" json:"latest"`
 	IsActive bool          `json:"is_active"`
-	Status   AccountStatus `ch:",lc" bun:"type:account_status" json:"status"` // TODO: enum
-	Balance  uint64        `json:"balance"`
+	Status   AccountStatus `ch:",lc" bun:"type:account_status" json:"status"`  // TODO: ch enum
+	Balance  *bunbig.Int   `ch:"type:UInt64" bun:"type:bigint" json:"balance"` // TODO: ch UInt256
 
-	LastTxLT   uint64 `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
+	LastTxLT   uint64 `ch:",pk" bun:"type:bigint,pk,notnull" json:"last_tx_lt"`
 	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique" json:"last_tx_hash"`
 
 	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:address=address,join:last_tx_lt=last_tx_lt" json:"state_data,omitempty"`
@@ -48,12 +47,13 @@ type AccountState struct {
 	Tick  bool   `json:"tick"`
 	Tock  bool   `json:"tock"`
 
-	// TODO: list all get method hashes
-	Types []string `ch:",lc" bun:",array" json:"types,omitempty"` // TODO: ContractType here, go-ch bug
+	GetMethodHashes []uint32 `ch:"type:Array(UInt32)" bun:",array" json:"get_method_hashes"`
+
+	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types,omitempty"`
 }
 
 type NFTCollectionData struct {
-	NextItemIndex uint64 `ch:"type:UInt64" json:"next_item_index,omitempty"`
+	NextItemIndex *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"next_item_index,omitempty"` // TODO: ch UInt256
 	// OwnerAddress  Address
 }
 
@@ -80,7 +80,7 @@ type NFTItemData struct {
 }
 
 type FTMasterData struct {
-	TotalSupply  *bunbig.Int   `ch:"type:UInt64" bun:"type:decimal" json:"total_supply,omitempty"` // TODO: pointer here, bun bug
+	TotalSupply  *bunbig.Int   `ch:"type:UInt64" bun:"type:bigint" json:"total_supply,omitempty"` // TODO: ch UInt256
 	Mintable     bool          `json:"mintable,omitempty"`
 	AdminAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"admin_addr,omitempty"`
 	// Content     nft.ContentAny
@@ -88,7 +88,7 @@ type FTMasterData struct {
 }
 
 type FTWalletData struct {
-	Balance *bunbig.Int `ch:"UInt64" bun:"type:decimal" json:"balance"`
+	Balance *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"balance"` // TODO: ch UInt256
 	// OwnerAddress  Address
 	MasterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"master_address"`
 	// WalletCode  *cell.Cell
@@ -102,7 +102,7 @@ type AccountData struct {
 	LastTxLT   uint64       `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
 	LastTxHash []byte       `ch:",pk" bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
 
-	Types []string `ch:",lc" bun:",array" json:"types"` // TODO: ContractType here, ch bug
+	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types"`
 
 	OwnerAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
 
