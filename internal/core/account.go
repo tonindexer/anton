@@ -22,7 +22,7 @@ const (
 )
 
 type AccountState struct {
-	ch.CHModel    `ch:"account_states,partition:types,is_active,status"`
+	ch.CHModel    `ch:"account_states,partition:is_active,status"`
 	bun.BaseModel `bun:"table:account_states"`
 
 	Address  addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
@@ -32,7 +32,7 @@ type AccountState struct {
 	Balance  *bunbig.Int   `ch:"type:UInt64" bun:"type:bigint" json:"balance"` // TODO: ch UInt256
 
 	LastTxLT   uint64 `ch:",pk" bun:"type:bigint,pk,notnull" json:"last_tx_lt"`
-	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique" json:"last_tx_hash"`
+	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"last_tx_hash"`
 
 	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:address=address,join:last_tx_lt=last_tx_lt" json:"state_data,omitempty"`
 
@@ -48,8 +48,6 @@ type AccountState struct {
 	Tock  bool   `json:"tock"`
 
 	GetMethodHashes []uint32 `ch:"type:Array(UInt32)" bun:",array" json:"get_method_hashes"`
-
-	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types,omitempty"`
 }
 
 type NFTCollectionData struct {
@@ -88,9 +86,9 @@ type FTMasterData struct {
 }
 
 type FTWalletData struct {
-	Balance *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"balance"` // TODO: ch UInt256
+	Balance *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"balance,omitempty"` // TODO: ch UInt256
 	// OwnerAddress  Address
-	MasterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"master_address"`
+	MasterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"master_address,omitempty"`
 	// WalletCode  *cell.Cell
 }
 

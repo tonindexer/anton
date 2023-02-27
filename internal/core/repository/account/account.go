@@ -74,11 +74,11 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		Where("latest IS TRUE").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "account state contract types pg create index")
+		return errors.Wrap(err, "latest account state pg create index")
 	}
 
 	_, err = pgDB.NewCreateIndex().
-		Model(&core.AccountState{}).
+		Model(&core.AccountData{}).
 		Using("GIN").
 		Column("types").
 		Exec(ctx)
@@ -227,11 +227,11 @@ func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilt
 	if filter.Address != nil {
 		q.Where("account_state.address = ?", filter.Address)
 	}
-	if len(filter.ContractTypes) > 0 {
-		q.Where("account_state.contract_types && ?", pgdialect.Array(filter.ContractTypes))
-	}
 
 	if filter.WithData {
+		if len(filter.ContractTypes) > 0 {
+			q.Where("state_data.types && ?", pgdialect.Array(filter.ContractTypes))
+		}
 		if filter.OwnerAddress != nil {
 			q = q.Where("state_data.owner_address = ?", filter.OwnerAddress)
 		}

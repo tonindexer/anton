@@ -93,7 +93,7 @@ var (
 		Balance:    bunbig.FromInt64(1e9),
 		LastTxLT:   randLT(),
 		LastTxHash: randBytes(32),
-		Types:      []abi.ContractName{"wallet"},
+		// Types:      []abi.ContractName{"wallet"},
 	}
 
 	accWalletOld = core.AccountState{
@@ -104,7 +104,7 @@ var (
 		Balance:    bunbig.FromInt64(31e9),
 		LastTxLT:   accWalletOlder.LastTxLT + 1e3,
 		LastTxHash: randBytes(32),
-		Types:      []abi.ContractName{"wallet"},
+		// Types:      []abi.ContractName{"wallet"},
 	}
 
 	accWallet = core.AccountState{
@@ -124,7 +124,7 @@ var (
 		Data:      randBytes(128), // parse it
 		DataHash:  randBytes(32),
 
-		Types: []abi.ContractName{"wallet"},
+		// Types: []abi.ContractName{"wallet"},
 	}
 
 	addrItem = *randAddr()
@@ -146,7 +146,7 @@ var (
 		Data:      randBytes(128), // parse it
 		DataHash:  randBytes(32),
 
-		Types: []abi.ContractName{"item"},
+		// Types: []abi.ContractName{"item"},
 	}
 
 	addrNoState = randAddr()
@@ -165,7 +165,7 @@ var (
 		Address:    accWallet.Address,
 		LastTxLT:   accWallet.LastTxLT,
 		LastTxHash: accWallet.LastTxHash,
-		Types:      accWallet.Types,
+		Types:      []abi.ContractName{"wallet"},
 	}
 
 	ifaceItem = core.ContractInterface{
@@ -183,7 +183,7 @@ var (
 		Address:      accItem.Address,
 		LastTxLT:     accItem.LastTxLT,
 		LastTxHash:   accItem.LastTxHash,
-		Types:        accItem.Types,
+		Types:        []abi.ContractName{"item"},
 		OwnerAddress: randAddr(),
 		NFTCollectionData: core.NFTCollectionData{
 			NextItemIndex: idx,
@@ -204,7 +204,7 @@ var (
 	msgExtWallet = core.Message{
 		Type:          core.ExternalIn,
 		Hash:          randBytes(32),
-		DstAddress:    &accWallet.Address,
+		DstAddress:    accWallet.Address,
 		Body:          randBytes(128),
 		BodyHash:      randBytes(32),
 		StateInitCode: nil,
@@ -226,7 +226,7 @@ var (
 
 		InMsgHash: msgExtWallet.Hash,
 
-		TotalFees:   1e5,
+		TotalFees:   bunbig.FromInt64(1e5),
 		StateUpdate: nil,
 		Description: nil,
 		OrigStatus:  core.Active,
@@ -243,14 +243,14 @@ var (
 		SourceTxHash: txOutWallet.Hash,
 		SourceTxLT:   txOutWallet.CreatedLT,
 
-		SrcAddress: &accWallet.Address,
-		DstAddress: &accItem.Address,
+		SrcAddress: accWallet.Address,
+		DstAddress: accItem.Address,
 
-		Amount: 1e5,
+		Amount: bunbig.FromInt64(1e5),
 
 		IHRDisabled: false,
-		IHRFee:      0,
-		FwdFee:      0,
+		IHRFee:      bunbig.FromInt64(0),
+		FwdFee:      bunbig.FromInt64(0),
 
 		Body:        randBytes(32),
 		BodyHash:    randBytes(32),
@@ -273,7 +273,7 @@ var (
 
 		InMsgHash: msgOutWallet.Hash,
 
-		TotalFees: 1e3,
+		TotalFees: bunbig.FromInt64(1e3),
 
 		StateUpdate: randBytes(32),
 		Description: randBytes(32),
@@ -298,14 +298,14 @@ var (
 		Hash: msgOutWallet.Hash,
 
 		SrcAddress:  msgOutWallet.SrcAddress,
-		SrcContract: abi.ContractName(accWallet.Types[0]),
+		SrcContract: accDataWallet.Types[0],
 		DstAddress:  msgOutWallet.DstAddress,
-		DstContract: abi.ContractName(accItem.Types[0]),
+		DstContract: accDataItem.Types[0],
 
 		BodyHash:      msgOutWallet.BodyHash,
 		OperationID:   msgOutWallet.OperationID,
 		OperationName: "item_transfer",
-		DataJSON:      "{\"new_owner\": \"kkkkkk\"}",
+		DataJSON:      `{"collection_address":"aaaaaa", "new_owner": "kkkkkk"}`,
 
 		CreatedAt: msgOutWallet.CreatedAt,
 		CreatedLT: msgOutWallet.CreatedLT,

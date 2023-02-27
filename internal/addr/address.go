@@ -121,6 +121,10 @@ func (x *Address) Value() (driver.Value, error) {
 func (x *Address) Scan(value interface{}) error {
 	var i sql.NullString
 
+	if value == nil {
+		return nil
+	}
+
 	if err := i.Scan(value); err != nil {
 		return err
 	}
