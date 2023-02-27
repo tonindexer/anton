@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/uptrace/bun/extra/bunbig"
+
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -14,8 +17,12 @@ func randBytes(l int) []byte {
 	return token
 }
 
-func randAddr() string {
-	return fmt.Sprintf("0:%x", randBytes(32))
+func randAddr() *addr.Address {
+	a, err := new(addr.Address).FromString(fmt.Sprintf("0:%x", randBytes(32)))
+	if err != nil {
+		panic(err)
+	}
+	return a
 }
 
 func randUint() uint64 {
@@ -76,9 +83,11 @@ var (
 		Transactions: nil,
 	}
 
+	addrWallet = *randAddr()
+
 	accWalletOlder = core.AccountState{
 		Latest:     true,
-		Address:    randAddr(),
+		Address:    addrWallet,
 		IsActive:   true,
 		Status:     core.Active,
 		Balance:    1e9,
@@ -118,9 +127,11 @@ var (
 		Types: []string{"wallet"},
 	}
 
+	addrItem = *randAddr()
+
 	accItem = core.AccountState{
 		Latest:  true,
-		Address: randAddr(),
+		Address: addrItem,
 
 		IsActive: true,
 		Status:   core.Active,
@@ -138,9 +149,11 @@ var (
 		Types: []string{"item"},
 	}
 
+	addrNoState = randAddr()
+
 	accNoState = core.AccountState{
 		Latest:     true,
-		Address:    randAddr(),
+		Address:    *addrNoState,
 		IsActive:   false,
 		Status:     core.NonExist,
 		Balance:    100e9,
@@ -157,10 +170,12 @@ var (
 
 	ifaceItem = core.ContractInterface{
 		Name:       abi.ContractName(accDataItem.Types[0]),
-		Address:    "",
+		Addresses:  nil,
 		Code:       nil,
 		GetMethods: []string{"get_item_data"},
 	}
+
+	idx = uint64(43)
 
 	accDataItem = core.AccountData{
 		Address:      accItem.Address,
@@ -169,7 +184,7 @@ var (
 		Types:        accItem.Types,
 		OwnerAddress: randAddr(),
 		NFTCollectionData: core.NFTCollectionData{
-			NextItemIndex: 43,
+			NextItemIndex: idx,
 		},
 		NFTRoyaltyData: core.NFTRoyaltyData{
 			RoyaltyAddress: randAddr(),
@@ -181,12 +196,13 @@ var (
 			ItemIndex:         42,
 			CollectionAddress: randAddr(),
 		},
+		FTWalletData: core.FTWalletData{Balance: bunbig.FromInt64(int64(randUint()))},
 	}
 
 	msgExtWallet = core.Message{
 		Type:          core.ExternalIn,
 		Hash:          randBytes(32),
-		DstAddress:    accWallet.Address,
+		DstAddress:    &accWallet.Address,
 		Body:          randBytes(128),
 		BodyHash:      randBytes(32),
 		StateInitCode: nil,
@@ -225,8 +241,8 @@ var (
 		SourceTxHash: txOutWallet.Hash,
 		SourceTxLT:   txOutWallet.CreatedLT,
 
-		SrcAddress: accWallet.Address,
-		DstAddress: accItem.Address,
+		SrcAddress: &accWallet.Address,
+		DstAddress: &accItem.Address,
 
 		Amount: 1e5,
 

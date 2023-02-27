@@ -8,6 +8,7 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 )
 
 type Transaction struct {
@@ -15,7 +16,7 @@ type Transaction struct {
 	bun.BaseModel `bun:"table:transactions"`
 
 	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull"`
-	Address string        `ch:",pk"`
+	Address addr.Address  `bun:"type:bytea" ch:"type:String,pk"`
 	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:created_lt=last_tx_lt"`
 
 	BlockWorkchain int32  `bun:",notnull"`
@@ -57,8 +58,8 @@ type Message struct {
 
 	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"`
 
-	SrcAddress string //
-	DstAddress string //
+	SrcAddress *addr.Address `ch:"type:String" bun:"type:bytea"`
+	DstAddress *addr.Address `ch:"type:String" bun:"type:bytea"`
 	// TODO: addr contract types
 
 	// SourceTx initiates outgoing message
@@ -98,9 +99,9 @@ type MessagePayload struct {
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull"`
 	Hash []byte      `ch:",pk" bun:"type:bytea,pk,notnull"`
 
-	SrcAddress  string           //
+	SrcAddress  *addr.Address    `ch:"type:String" bun:"type:bytea"`
 	SrcContract abi.ContractName `ch:",lc"`
-	DstAddress  string           //
+	DstAddress  *addr.Address    `ch:"type:String" bun:"type:bytea" `
 	DstContract abi.ContractName `ch:",lc"`
 
 	BodyHash      []byte `bun:"type:bytea,notnull"`
@@ -115,7 +116,7 @@ type MessagePayload struct {
 type TransactionFilter struct {
 	Hash []byte
 
-	Address string
+	Address *addr.Address
 
 	BlockID *BlockID
 

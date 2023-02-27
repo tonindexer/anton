@@ -9,6 +9,7 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/go-clickhouse/ch"
 
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -60,7 +61,7 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.AccountState{}).
 		Unique().
-		Column("latest", "address").
+		Column("address", "latest").
 		Where("latest IS TRUE").
 		Exec(ctx)
 	if err != nil {
@@ -143,13 +144,13 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	return createIndexes(ctx, pgDB)
 }
 
-func accountAddresses(accounts []*core.AccountState) (ret []string) {
-	m := make(map[string]struct{})
+func accountAddresses(accounts []*core.AccountState) (ret []*addr.Address) {
+	m := make(map[addr.Address]struct{})
 	for _, a := range accounts {
 		m[a.Address] = struct{}{}
 	}
 	for a := range m {
-		ret = append(ret, a)
+		ret = append(ret, &a)
 	}
 	return
 }
@@ -223,7 +224,7 @@ func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilt
 	if filter.LatestState {
 		q.Where("account_state.latest = ?", true)
 	}
-	if filter.Address != "" {
+	if filter.Address != nil {
 		q.Where("account_state.address = ?", filter.Address)
 	}
 	if len(filter.ContractTypes) > 0 {
@@ -231,10 +232,10 @@ func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilt
 	}
 
 	if filter.WithData {
-		if filter.OwnerAddress != "" {
+		if filter.OwnerAddress != nil {
 			q = q.Where("state_data.owner_address = ?", filter.OwnerAddress)
 		}
-		if filter.CollectionAddress != "" {
+		if filter.CollectionAddress != nil {
 			q = q.Where("state_data.collection_address = ?", filter.CollectionAddress)
 		}
 	}

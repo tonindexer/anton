@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/extra/bunbig"
 
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/repository"
@@ -206,6 +207,27 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 		if err := accountRepo.AddAccountStates(ctx, insertTx, nil); err != nil {
 			t.Fatal(err)
 		}
+
+		s := new(core.AccountState)
+		if err := db.CH.NewSelect().Model(s).Where("address = ?", &accWallet.Address).Where("last_tx_lt = ?", accWallet.LastTxLT).Scan(ctx); err != nil {
+			t.Fatal(err)
+		}
+		acc := accWallet
+		acc.Latest = false
+		if !reflect.DeepEqual(s, &acc) {
+			t.Fatalf("wrong account, expected: %+v, got: %+v", acc, s)
+		}
+
+		sd := new(core.AccountData)
+		if err := db.CH.NewSelect().Model(sd).Where("address = ?", &accDataItem.Address).Where("last_tx_lt = ?", accDataItem.LastTxLT).Scan(ctx); err != nil {
+			t.Fatal(err)
+		}
+		ad := accDataItem
+		ad.TotalSupply = bunbig.FromInt64(0)
+		sd.ContentImageData = nil
+		if !reflect.DeepEqual(sd, &ad) {
+			t.Fatalf("wrong account data, expected: %+v, got: %+v", ad, sd)
+		}
 	})
 
 	t.Run("add message payloads", func(t *testing.T) {
@@ -272,7 +294,7 @@ func TestGraphFilterAccounts(t *testing.T) {
 
 	t.Run("filter latest state by address", func(t *testing.T) {
 		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
-			Address:     accWallet.Address,
+			Address:     &accWallet.Address,
 			LatestState: true,
 		}, 0, 100)
 		if err != nil {
@@ -289,7 +311,7 @@ func TestGraphFilterAccounts(t *testing.T) {
 
 	t.Run("filter latest state by address", func(t *testing.T) {
 		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
-			Address:     accWallet.Address,
+			Address:     &accWallet.Address,
 			LatestState: true,
 			WithData:    true,
 		}, 0, 100)
@@ -359,7 +381,7 @@ func TestGraphFilterTransactions(t *testing.T) {
 
 	t.Run("filter tx with msg by address", func(t *testing.T) {
 		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
-			Address:             accWallet.Address,
+			Address:             &accWallet.Address,
 			WithAccountState:    true,
 			WithMessages:        true,
 			WithMessagePayloads: true,
@@ -391,7 +413,7 @@ func TestGraphFilterTransactions(t *testing.T) {
 
 	t.Run("filter tx with msg by address __item", func(t *testing.T) {
 		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
-			Address:             accItem.Address,
+			Address:             &accItem.Address,
 			WithAccountState:    true,
 			WithAccountData:     true,
 			WithMessages:        true,

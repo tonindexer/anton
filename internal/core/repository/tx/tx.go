@@ -270,7 +270,7 @@ func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQu
 	if len(f.Hash) > 0 {
 		q = q.Where("transaction.hash = ?", f.Hash)
 	}
-	if len(f.Address) > 0 {
+	if f.Address != nil {
 		q = q.Where("transaction.address = ?", f.Address)
 	}
 	if f.BlockID != nil {

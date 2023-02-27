@@ -7,6 +7,7 @@ import (
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 )
 
 type ContractInterface struct {
@@ -14,7 +15,7 @@ type ContractInterface struct {
 	bun.BaseModel `bun:"table:contract_interfaces"`
 
 	Name       abi.ContractName `ch:",pk" bun:",pk"`
-	Address    string           `ch:",pk" bun:",pk"`
+	Addresses  []*addr.Address  `ch:"type:Array(String),pk" bun:"type:bytea[]"`
 	Code       []byte           `bun:",unique"`
 	GetMethods []string         `bun:",unique,array"`
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 )
 
 type AccountStatus string
@@ -24,9 +25,9 @@ type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:types,is_active,status"`
 	bun.BaseModel `bun:"table:account_states"`
 
-	Latest bool `json:"latest"`
+	Latest bool `ch:"-" json:"latest"`
 
-	Address  string        `ch:",pk" bun:",pk,notnull" json:"address"`
+	Address  addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
 	IsActive bool          `json:"is_active"`
 	Status   AccountStatus `ch:",lc" bun:"type:account_status" json:"status"` // TODO: enum
 	Balance  uint64        `json:"balance"`
@@ -52,44 +53,44 @@ type AccountState struct {
 }
 
 type NFTCollectionData struct {
-	NextItemIndex uint64 `json:"next_item_index,omitempty"`
-	// OwnerAddress  string
+	NextItemIndex uint64 `ch:"type:UInt64" json:"next_item_index,omitempty"`
+	// OwnerAddress  Address
 }
 
 type NFTRoyaltyData struct {
-	RoyaltyAddress string `json:"royalty_address,omitempty"`
-	RoyaltyFactor  uint16 `json:"royalty_factor,omitempty"`
-	RoyaltyBase    uint16 `json:"royalty_base,omitempty"`
+	RoyaltyAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"royalty_address,omitempty"`
+	RoyaltyFactor  uint16        `ch:"type:UInt16" json:"royalty_factor,omitempty"`
+	RoyaltyBase    uint16        `ch:"type:UInt16" json:"royalty_base,omitempty"`
 }
 
 type NFTContentData struct {
-	ContentURI         string `json:"content_uri,omitempty"`
-	ContentName        string `json:"content_name,omitempty"`
-	ContentDescription string `json:"content_description,omitempty"`
-	ContentImage       string `json:"content_image,omitempty"`
-	ContentImageData   []byte `json:"content_image_data,omitempty"`
+	ContentURI         string `ch:"type:String" json:"content_uri,omitempty"`
+	ContentName        string `ch:"type:String" json:"content_name,omitempty"`
+	ContentDescription string `ch:"type:String" json:"content_description,omitempty"`
+	ContentImage       string `ch:"type:String" json:"content_image,omitempty"`
+	ContentImageData   []byte `ch:"type:String" json:"content_image_data,omitempty"`
 }
 
 type NFTItemData struct {
-	Initialized       bool   `json:"initialized,omitempty"`
-	ItemIndex         uint64 `json:"item_index,omitempty"`
-	CollectionAddress string `json:"collection_address,omitempty"`
-	EditorAddress     string `json:"editor_address,omitempty"`
-	// OwnerAddress      string
+	Initialized       bool          `ch:"type:Bool" json:"initialized,omitempty"`
+	ItemIndex         uint64        `ch:"type:UInt64" json:"item_index,omitempty"`
+	CollectionAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"collection_address,omitempty"`
+	EditorAddress     *addr.Address `ch:"type:String" bun:"type:bytea" json:"editor_address,omitempty"`
+	// OwnerAddress      Address
 }
 
 type FTMasterData struct {
-	TotalSupply bunbig.Int `bun:"type:decimal" json:"total_supply,omitempty"` // TODO: pointer here, bun bug
-	Mintable    bool       `json:"mintable,omitempty"`
-	AdminAddr   string     `json:"admin_addr,omitempty"`
+	TotalSupply  *bunbig.Int   `ch:"type:UInt64" bun:"type:decimal" json:"total_supply,omitempty"` // TODO: pointer here, bun bug
+	Mintable     bool          `json:"mintable,omitempty"`
+	AdminAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"admin_addr,omitempty"`
 	// Content     nft.ContentAny
 	// WalletCode  *cell.Cell
 }
 
 type FTWalletData struct {
-	Balance bunbig.Int `bun:"type:decimal" json:"balance"` // TODO: pointer here, bun bug
-	// OwnerAddress  *address.Address
-	MasterAddress string `json:"master_address"`
+	Balance *bunbig.Int `ch:"UInt64" bun:"type:decimal" json:"balance"`
+	// OwnerAddress  Address
+	MasterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"master_address"`
 	// WalletCode  *cell.Cell
 }
 
@@ -97,13 +98,13 @@ type AccountData struct {
 	ch.CHModel    `ch:"account_data,partition:types"`
 	bun.BaseModel `bun:"table:account_data"`
 
-	Address    string `ch:",pk" bun:",pk,notnull" json:"address"`
-	LastTxLT   uint64 `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
-	LastTxHash []byte `ch:",pk" bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
+	Address    addr.Address `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
+	LastTxLT   uint64       `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
+	LastTxHash []byte       `ch:",pk" bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
 
 	Types []string `ch:",lc" bun:",array" json:"types"` // TODO: ContractType here, ch bug
 
-	OwnerAddress string `json:"owner_address,omitempty"` // universal column for many contracts
+	OwnerAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
 
 	NFTCollectionData
 	NFTRoyaltyData
@@ -115,14 +116,14 @@ type AccountData struct {
 }
 
 type AccountStateFilter struct {
-	Address     string
+	Address     *addr.Address
 	LatestState bool
 
 	// contract data filter
 	WithData          bool
 	ContractTypes     []abi.ContractName
-	OwnerAddress      string
-	CollectionAddress string
+	OwnerAddress      *addr.Address
+	CollectionAddress *addr.Address
 }
 
 type AccountRepository interface {
