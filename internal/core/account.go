@@ -122,8 +122,8 @@ type AccountStateFilter struct {
 	// contract data filter
 	WithData          bool               `form:"with_data"`
 	ContractTypes     []abi.ContractName `form:"interfaces"`
-	OwnerAddress      *addr.Address             `form:"owner_address"`
-	CollectionAddress *addr.Address             `form:"collection_address"`
+	OwnerAddress      *addr.Address      `form:"owner_address"`
+	CollectionAddress *addr.Address      `form:"collection_address"`
 }
 
 type AccountRepository interface {
