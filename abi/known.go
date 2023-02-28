@@ -108,7 +108,7 @@ var (
 
 		TelemintNFTCollection: {
 			false: {
-				(*TelemintMsgDeploy)(nil),
+				(*TelemintMsgDeploy)(nil), (*TelemintMsgDeployV2)(nil),
 			},
 			true: {
 				(*TeleitemMsgDeploy)(nil),

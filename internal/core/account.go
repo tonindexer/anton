@@ -96,10 +96,9 @@ type AccountData struct {
 	ch.CHModel    `ch:"account_data,partition:types"`
 	bun.BaseModel `bun:"table:account_data"`
 
-	Address         addr.Address `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
-	LastTxLT        uint64       `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
-	LastTxHash      []byte       `ch:",pk" bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
-	GetMethodHashes []uint32     `ch:"type:Array(UInt32)" bun:",array" json:"get_method_hashes"`
+	Address    addr.Address `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
+	LastTxLT   uint64       `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
+	LastTxHash []byte       `ch:",pk" bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
 
 	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types"`
 

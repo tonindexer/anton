@@ -39,7 +39,7 @@ func mapCollectionDataNFT(ret *core.AccountData, data *abi.NFTCollectionData) {
 	ret.NextItemIndex = bunbig.FromMathBig(data.NextItemIndex)
 	ret.OwnerAddress, err = new(addr.Address).FromTU(data.OwnerAddress)
 	if err != nil {
-		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft collection owner address from TU").Error())
+		// ret.Errors = append(ret.Errors, errors.Wrap(err, "nft collection owner address from TU").Error())
 	}
 	mapContentDataNFT(ret, data.Content)
 }
@@ -64,7 +64,7 @@ func mapItemDataNFT(ret *core.AccountData, data *abi.NFTItemData) {
 	}
 	ret.OwnerAddress, err = new(addr.Address).FromTU(data.OwnerAddress)
 	if err != nil {
-		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft item owner_address from TU").Error())
+		// ret.Errors = append(ret.Errors, errors.Wrap(err, "nft item owner_address from TU").Error())
 	}
 	mapContentDataNFT(ret, data.Content)
 }
@@ -73,7 +73,7 @@ func mapEditorDataNFT(ret *core.AccountData, data *abi.NFTEditableData) {
 	var err error
 	ret.EditorAddress, err = new(addr.Address).FromTU(data.Editor)
 	if err != nil {
-		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft editor address from TU").Error())
+		// ret.Errors = append(ret.Errors, errors.Wrap(err, "nft editor address from TU").Error())
 	}
 }
 

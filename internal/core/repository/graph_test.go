@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 
@@ -163,11 +164,10 @@ var (
 	}
 
 	accDataWallet = core.AccountData{
-		Address:         accWallet.Address,
-		LastTxLT:        accWallet.LastTxLT,
-		LastTxHash:      accWallet.LastTxHash,
-		GetMethodHashes: accWallet.GetMethodHashes,
-		Types:           []abi.ContractName{"wallet"},
+		Address:    accWallet.Address,
+		LastTxLT:   accWallet.LastTxLT,
+		LastTxHash: accWallet.LastTxHash,
+		Types:      []abi.ContractName{"wallet"},
 	}
 
 	ifaceItem = core.ContractInterface{
@@ -183,12 +183,11 @@ var (
 	accDataItemJetBalance, _ = new(bunbig.Int).FromString(fmt.Sprintf("%d", randUint())) // TODO: bunbig.Int.FromUint64
 
 	accDataItem = core.AccountData{
-		Address:         accItem.Address,
-		LastTxLT:        accItem.LastTxLT,
-		LastTxHash:      accItem.LastTxHash,
-		GetMethodHashes: accItem.GetMethodHashes,
-		Types:           []abi.ContractName{"item"},
-		OwnerAddress:    randAddr(),
+		Address:      accItem.Address,
+		LastTxLT:     accItem.LastTxLT,
+		LastTxHash:   accItem.LastTxHash,
+		Types:        []abi.ContractName{"item"},
+		OwnerAddress: randAddr(),
 		NFTCollectionData: core.NFTCollectionData{
 			NextItemIndex: idx,
 		},
@@ -294,7 +293,7 @@ var (
 		ContractName: msgInItemPayload.DstContract,
 		Outgoing:     false,
 		OperationID:  msgInItemPayload.OperationID,
-		Schema:       []byte("todo"),
+		Schema:       []byte(`{}`),
 	}
 
 	msgInItemPayload = core.MessagePayload{
@@ -309,7 +308,7 @@ var (
 		BodyHash:      msgOutWallet.BodyHash,
 		OperationID:   msgOutWallet.OperationID,
 		OperationName: "item_transfer",
-		DataJSON:      `{"collection_address":"aaaaaa", "new_owner": "kkkkkk"}`,
+		DataJSON:      json.RawMessage(`{"new_owner": "kkkkkk", "collection_address": "aaaaaa"}`),
 
 		CreatedAt: msgOutWallet.CreatedAt,
 		CreatedLT: msgOutWallet.CreatedLT,

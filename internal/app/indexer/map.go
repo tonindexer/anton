@@ -163,6 +163,7 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 	if acc.Code != nil {
 		ret.Code = acc.Code.ToBOC()
 		ret.CodeHash = acc.Code.Hash()
+		ret.GetMethodHashes, _ = abi.GetMethodHashes(acc.Code)
 	}
 	ret.LastTxLT = acc.LastTxLT
 	ret.LastTxHash = acc.LastTxHash

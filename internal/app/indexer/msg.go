@@ -1,7 +1,10 @@
+// INSERT INTO "message_payloads" ("type", "hash", "src_address", "src_contract", "dst_address", "dst_contract", "body_hash", "operation_id", "operation_name", "data_json", "created_at", "created_lt") VALUES ('INTERNAL', '\x84ef22fdbc868311d2752721d07d56d8a6090ef68d95b993444a103bfb8c4b74', '\x110080d78a35f955a14b679faa887ff4cd5bfc0f43b4a4eea2a7e6927f3701b273c2', 'telemint_nft_collection', '\x1100590b2fa87461b9c3d8a1fea930d2df468a8600f2bb419b6a99b3b19924b516a1', '', '\x8262fa50cd03cfdb2208934eda38ec61bde7244c1d198251fe07a79adb4ce29d', 697974293, 'teleitem_msg_deploy', '{"Op":{},"SenderAddress":"EQAxHsyesi5hZ0Y57t8C4QO_nXjmMhJ9wepqdXX-zXpTKBR4","Bid":"296000000000","Info":{"Name":{"Len":6,"Text":"geoint"},"Domain":{"Len":5,"Text":"me\u0000t\u0000"}},"Content":{},"AuctionConfig":{"BeneficiaryAddress":"EQBAjaOyi2wGWlk-EDkSabqqnF-MrrwMadnwqrurKpkla9nE","InitialMinBid":"296000000000","MaxBid":"0","MinBidStep":5,"MinExtendTime":3600,"Duration":604800},"RoyaltyParams":{"Numerator":5,"Denominator":100,"Destination":"EQBAjaOyi2wGWlk-EDkSabqqnF-MrrwMadnwqrurKpkla9nE"}}', 1668333738, 32818576000004)
 package indexer
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -102,6 +105,8 @@ func (s *Service) getLatestAccount(ctx context.Context, a addr.Address, accountM
 		return src, nil
 	}
 
+	defer timeTrack(time.Now(), fmt.Sprintf("getLatestAccount(%s)", a.Base64()))
+
 	state, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 		Address:     &a,
 		LatestState: true,
@@ -110,7 +115,7 @@ func (s *Service) getLatestAccount(ctx context.Context, a addr.Address, accountM
 	if err != nil {
 		return nil, errors.Wrap(err, "get account data")
 	}
-	if len(state) > 0 && state[0].Data != nil {
+	if len(state) > 0 && state[0].StateData != nil {
 		return state[0].StateData, nil
 	}
 
@@ -138,16 +143,14 @@ func (s *Service) parseMessagePayloads(ctx context.Context, tx bun.Tx, messages 
 		}
 
 		src, err := s.getLatestAccount(ctx, msg.SrcAddress, accountMap)
-		if err != nil {
-			log.Warn().Err(err).Hex("hash", msg.Hash).Hex("tx_hash", msg.SourceTxHash).
+		if err != nil && !errors.Is(err, core.ErrNotFound) {
+			log.Error().Err(err).Hex("hash", msg.Hash).Hex("tx_hash", msg.SourceTxHash).
 				Str("src_addr", msg.SrcAddress.Base64()).Msg("cannot find src account")
-			continue
 		}
 		dst, err := s.getLatestAccount(ctx, msg.DstAddress, accountMap)
-		if err != nil {
-			log.Warn().Err(err).Hex("hash", msg.Hash).Hex("tx_hash", msg.SourceTxHash).
+		if err != nil && !errors.Is(err, core.ErrNotFound) {
+			log.Error().Err(err).Hex("hash", msg.Hash).Hex("tx_hash", msg.SourceTxHash).
 				Str("dst_addr", msg.DstAddress.Base64()).Msg("cannot find dst account")
-			continue
 		}
 
 		payload, err := s.parser.ParseMessagePayload(ctx, src, dst, msg)

@@ -107,6 +107,7 @@ func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *c
 	data.Address = acc.Address
 	data.LastTxLT = acc.LastTxLT
 	data.LastTxHash = acc.LastTxHash
+	data.Types = types
 
 	getters := []func(context.Context, *tlb.BlockInfo, *address.Address, []abi.ContractName, *core.AccountData) bool{
 		s.getAccountDataNFT,
@@ -117,9 +118,6 @@ func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *c
 			unknown++
 			continue
 		}
-	}
-	if unknown == len(getters) {
-		return nil, errors.Wrap(core.ErrNotAvailable, "no data getters got a contract")
 	}
 
 	if data.Errors != nil {

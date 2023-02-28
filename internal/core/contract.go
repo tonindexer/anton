@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
@@ -29,7 +30,7 @@ type ContractOperation struct {
 	ContractName abi.ContractName `ch:",pk" bun:",pk" json:"contract_name"`
 	Outgoing     bool             `ch:",pk" bun:",pk" json:"outgoing"` // if operation is going from contract
 	OperationID  uint32           `ch:",pk" bun:",pk" json:"operation_id"`
-	Schema       []byte           `ch:"type:String" bun:"type:bytea" json:"schema"`
+	Schema       json.RawMessage  `ch:"type:String" bun:"type:jsonb" json:"schema"`
 }
 
 type ContractRepository interface {

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bunbig"
@@ -116,10 +117,12 @@ type MessagePayload struct {
 	DstAddress  addr.Address     `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
 	DstContract abi.ContractName `ch:",lc" json:"dst_contract,omitempty"`
 
-	BodyHash      []byte `bun:"type:bytea,notnull" json:"body_hash"`
-	OperationID   uint32 `bun:",notnull" json:"operation_id"`
-	OperationName string `ch:",lc" bun:",notnull" json:"operation_name"`
-	DataJSON      string `bun:"type:bytea" json:"data_json"` // TODO: save fields from parsed data to payloads table
+	BodyHash      []byte          `bun:"type:bytea,notnull" json:"body_hash"`
+	OperationID   uint32          `bun:",notnull" json:"operation_id"`
+	OperationName string          `ch:",lc" bun:",notnull" json:"operation_name"`
+	DataJSON      json.RawMessage ` ch:"String" bun:"type:jsonb" json:"data"`
+
+	// TODO: save fields from parsed data to payloads table
 
 	CreatedAt uint64 `bun:",notnull" json:"created_at"`
 	CreatedLT uint64 `bun:",notnull" json:"created_lt"`

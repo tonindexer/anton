@@ -14,6 +14,9 @@ import (
 )
 
 func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountData, message *core.Message, ret *core.MessagePayload) error {
+	if acc == nil {
+		return errors.Wrap(core.ErrNotAvailable, "no account data")
+	}
 	if len(acc.Types) == 0 {
 		return errors.Wrap(core.ErrNotAvailable, "no interfaces")
 	}
@@ -50,11 +53,10 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountDat
 		return errors.Wrap(err, "load from cell")
 	}
 
-	parsedJSON, err := json.Marshal(parsed)
+	ret.DataJSON, err = json.Marshal(parsed)
 	if err != nil {
 		return errors.Wrap(err, "json marshal parsed payload")
 	}
-	ret.DataJSON = string(parsedJSON)
 
 	return nil
 }
