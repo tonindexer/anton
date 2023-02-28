@@ -1,6 +1,7 @@
 package addr
 
 import (
+	"bytes"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/base64"
@@ -37,6 +38,18 @@ func (x *Address) FromTU(addr *address.Address) (*Address, error) {
 	return x, nil
 }
 
+func MustFromTU(a *address.Address) *Address {
+	addr, err := new(Address).FromTU(a)
+	if err != nil {
+		panic(fmt.Sprintf("%s to address", addr))
+	}
+	return addr
+}
+
+func (x *Address) ToTU() (*address.Address, error) {
+	return address.ParseAddr(x.Base64())
+}
+
 var crcTable = crc16.MakeTable(crc16.CRC16_XMODEM)
 
 func (x *Address) Checksum() uint16 {
@@ -66,6 +79,14 @@ func (x *Address) FromString(str string) (*Address, error) {
 	copy(x[2:34], d)
 
 	return x, nil
+}
+
+func MustFromString(s string) *Address {
+	addr, err := new(Address).FromString(s)
+	if err != nil {
+		panic(fmt.Sprintf("%s to address", addr))
+	}
+	return addr
 }
 
 func (x *Address) Base64() string {
@@ -137,4 +158,11 @@ func (x *Address) Scan(value interface{}) error {
 
 	copy(x[0:34], i.String)
 	return nil
+}
+
+func Equal(x, y *Address) bool {
+	if x != nil && y != nil && bytes.Equal(x[:], y[:]) {
+		return true
+	}
+	return false
 }

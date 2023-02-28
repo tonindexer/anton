@@ -150,7 +150,9 @@ func accountAddresses(accounts []*core.AccountState) (ret []*addr.Address) {
 		m[a.Address] = struct{}{}
 	}
 	for a := range m {
-		ret = append(ret, &a)
+		r := new(addr.Address)
+		*r = a
+		ret = append(ret, r)
 	}
 	return
 }

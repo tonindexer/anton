@@ -227,6 +227,7 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 		ad := accDataItem
 		ad.TotalSupply = bunbig.FromInt64(0)
 		sd.ContentImageData = nil
+		sd.Errors = nil
 		if !reflect.DeepEqual(sd, &ad) {
 			t.Fatalf("wrong account data, expected: %+v, got: %+v", ad, sd)
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/xssnick/tonutils-go/tlb"
 
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -95,40 +96,41 @@ func (s *Service) messagePayloadAlreadyKnown(ctx context.Context, tx bun.Tx, in 
 	return false, nil
 }
 
-func (s *Service) getLatestAccount(ctx context.Context, addr string, accountMap map[string]*core.AccountState) (*core.AccountState, error) {
-	src, ok := accountMap[addr]
+func (s *Service) getLatestAccount(ctx context.Context, a addr.Address, accountMap map[addr.Address]*core.AccountData) (*core.AccountData, error) {
+	src, ok := accountMap[a]
 	if ok {
 		return src, nil
 	}
 
 	state, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
-		Address:     addr,
+		Address:     &a,
 		LatestState: true,
+		WithData:    true,
 	}, 0, 1)
 	if err != nil {
-		return nil, errors.Wrap(err, "get account states")
+		return nil, errors.Wrap(err, "get account data")
 	}
-	if len(state) > 0 {
-		return state[0], nil
+	if len(state) > 0 && state[0].Data != nil {
+		return state[0].StateData, nil
 	}
 
-	return nil, errors.Wrap(core.ErrNotFound, "no account state found")
+	return nil, errors.Wrap(core.ErrNotFound, "no account data found")
 }
 
-func (s *Service) parseMessagePayloads(ctx context.Context, tx bun.Tx, messages []*core.Message, accountMap map[string]*core.AccountState) (ret []*core.MessagePayload) {
+func (s *Service) parseMessagePayloads(ctx context.Context, tx bun.Tx, messages []*core.Message, accountMap map[addr.Address]*core.AccountData) (ret []*core.MessagePayload) {
 	msgMap := make(map[string]*core.MessagePayload)
 
 	for _, msg := range messages {
 		if msg.Type != core.Internal {
 			continue // TODO: external message parsing
 		}
-		if msg.SrcAddress == "Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU" {
+		if msg.SrcAddress.Base64() == "Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU" {
 			continue
 		}
 
 		known, err := s.messagePayloadAlreadyKnown(ctx, tx, msg, msgMap)
 		if err != nil {
-			log.Error().Err(err).Hex("tx_hash", msg.SourceTxHash).Str("src_addr", msg.SrcAddress).Msg("message payload already known")
+			log.Error().Err(err).Hex("tx_hash", msg.SourceTxHash).Str("src_addr", msg.SrcAddress.Base64()).Msg("message payload already known")
 			continue
 		}
 		if known {
@@ -137,12 +139,14 @@ func (s *Service) parseMessagePayloads(ctx context.Context, tx bun.Tx, messages 
 
 		src, err := s.getLatestAccount(ctx, msg.SrcAddress, accountMap)
 		if err != nil {
-			log.Warn().Err(err).Hex("hash", msg.Hash).Hex("tx_hash", msg.SourceTxHash).Str("src_addr", msg.SrcAddress).Msg("cannot find src account")
+			log.Warn().Err(err).Hex("hash", msg.Hash).Hex("tx_hash", msg.SourceTxHash).
+				Str("src_addr", msg.SrcAddress.Base64()).Msg("cannot find src account")
 			continue
 		}
 		dst, err := s.getLatestAccount(ctx, msg.DstAddress, accountMap)
 		if err != nil {
-			log.Warn().Err(err).Hex("hash", msg.Hash).Hex("tx_hash", msg.SourceTxHash).Str("dst_addr", msg.DstAddress).Msg("cannot find dst account")
+			log.Warn().Err(err).Hex("hash", msg.Hash).Hex("tx_hash", msg.SourceTxHash).
+				Str("dst_addr", msg.DstAddress.Base64()).Msg("cannot find dst account")
 			continue
 		}
 

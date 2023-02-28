@@ -22,9 +22,23 @@ func insertKnownInterfaces(ctx context.Context, db *bun.DB) error {
 			Name:       n,
 			GetMethods: get,
 		}
+		for _, g := range row.GetMethods {
+			row.GetMethodHashes = append(row.GetMethodHashes, abi.MethodNameHash(g))
+		}
 		_, err := db.NewInsert().Model(&row).Exec(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "%s [%v]", n, get)
+		}
+	}
+
+	for v, code := range abi.WalletCode {
+		row := core.ContractInterface{
+			Name: v.Name(),
+			Code: code.ToBOC(),
+		}
+		_, err := db.NewInsert().Model(&row).Exec(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "wallet code %s", row.Name)
 		}
 	}
 

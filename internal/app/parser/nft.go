@@ -5,10 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun/extra/bunbig"
+	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/nft"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -33,63 +35,84 @@ func mapContentDataNFT(ret *core.AccountData, c nft.ContentAny) {
 }
 
 func mapCollectionDataNFT(ret *core.AccountData, data *abi.NFTCollectionData) {
-	ret.NextItemIndex = data.NextItemIndex.Uint64()
-	ret.OwnerAddress = data.OwnerAddress.String()
+	var err error
+	ret.NextItemIndex = bunbig.FromMathBig(data.NextItemIndex)
+	ret.OwnerAddress, err = new(addr.Address).FromTU(data.OwnerAddress)
+	if err != nil {
+		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft collection owner address from TU").Error())
+	}
 	mapContentDataNFT(ret, data.Content)
 }
 
 func mapRoyaltyDataNFT(ret *core.AccountData, params *abi.NFTRoyaltyData) {
-	ret.RoyaltyAddress = params.Address.String()
+	var err error
+	ret.RoyaltyAddress, err = new(addr.Address).FromTU(params.Address)
+	if err != nil {
+		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft royalty address from TU").Error())
+	}
 	ret.RoyaltyBase = params.Base
 	ret.RoyaltyFactor = params.Factor
 }
 
 func mapItemDataNFT(ret *core.AccountData, data *abi.NFTItemData) {
+	var err error
 	ret.Initialized = data.Initialized
 	ret.ItemIndex = data.Index.Uint64()
-	ret.CollectionAddress = data.CollectionAddress.String()
-	ret.OwnerAddress = data.OwnerAddress.String()
+	ret.CollectionAddress, err = new(addr.Address).FromTU(data.CollectionAddress)
+	if err != nil {
+		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft item collection_address from TU").Error())
+	}
+	ret.OwnerAddress, err = new(addr.Address).FromTU(data.OwnerAddress)
+	if err != nil {
+		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft item owner_address from TU").Error())
+	}
 	mapContentDataNFT(ret, data.Content)
 }
 
 func mapEditorDataNFT(ret *core.AccountData, data *abi.NFTEditableData) {
-	ret.EditorAddress = data.Editor.String()
+	var err error
+	ret.EditorAddress, err = new(addr.Address).FromTU(data.Editor)
+	if err != nil {
+		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft editor address from TU").Error())
+	}
 }
 
-func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account, types []abi.ContractName, ret *core.AccountData) error {
+func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, a *address.Address, types []abi.ContractName, ret *core.AccountData) (ok bool) {
 	var unknown int
-
-	addr := acc.State.Address
 
 	for _, t := range types {
 		var skip bool
 
 		switch t {
 		case abi.NFTCollection:
-			data, err := abi.GetNFTCollectionData(ctx, s.api, b, addr)
+			data, err := abi.GetNFTCollectionData(ctx, s.api, b, a)
 			if err != nil {
-				return errors.Wrap(err, "get nft collection data")
+				ret.Errors = append(ret.Errors, errors.Wrap(err, "get nft collection data").Error())
+				continue
 			}
 			mapCollectionDataNFT(ret, data)
 
 		case abi.NFTRoyalty:
-			data, err := abi.GetNFTRoyaltyData(ctx, s.api, b, addr)
+			data, err := abi.GetNFTRoyaltyData(ctx, s.api, b, a)
 			if err != nil {
-				return errors.Wrap(err, "get nft royalty data")
+				ret.Errors = append(ret.Errors, errors.Wrap(err, "get nft royalty data").Error())
+				continue
 			}
 			mapRoyaltyDataNFT(ret, data)
 
 		case abi.NFTItem:
-			data, err := abi.GetNFTItemData(ctx, s.api, b, addr)
+			data, err := abi.GetNFTItemData(ctx, s.api, b, a)
 			if err != nil {
-				return errors.Wrap(err, "get nft item data")
+				ret.Errors = append(ret.Errors, errors.Wrap(err, "get nft item data").Error())
+				continue
 			}
 			mapItemDataNFT(ret, data)
 
 		case abi.NFTEditable:
-			data, err := abi.GetNFTEditableData(ctx, s.api, b, addr)
+			data, err := abi.GetNFTEditableData(ctx, s.api, b, a)
 			if err != nil {
-				return errors.Wrap(err, "get nft editable data")
+				ret.Errors = append(ret.Errors, errors.Wrap(err, "get nft editable data").Error())
+				continue
 			}
 			mapEditorDataNFT(ret, data)
 
@@ -98,59 +121,62 @@ func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, acc *
 		}
 
 		if !skip {
-			ret.Types = append(ret.Types, string(t))
+			ret.Types = append(ret.Types, t)
 		}
 	}
-	if unknown == len(types) {
-		return errors.Wrap(core.ErrNotAvailable, "unknown contract")
-	}
 
-	return nil
+	return unknown != len(types)
 }
 
-func (s *Service) getAccountDataFT(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account, types []abi.ContractName, ret *core.AccountData) error {
+func (s *Service) getAccountDataFT(ctx context.Context, b *tlb.BlockInfo, a *address.Address, types []abi.ContractName, ret *core.AccountData) (ok bool) {
 	var unknown int
-
-	addr := acc.State.Address
 
 	for _, t := range types {
 		var skip bool
 
 		switch t {
 		case abi.JettonMinter:
-			data, err := abi.GetJettonData(ctx, s.api, b, addr)
+			data, err := abi.GetJettonData(ctx, s.api, b, a)
 			if err != nil {
-				return errors.Wrap(err, "get jetton minter data")
+				ret.Errors = append(ret.Errors, errors.Wrap(err, "get jetton minter data").Error())
+				continue
 			}
 			if data.TotalSupply != nil {
-				ret.TotalSupply = *bunbig.FromMathBig(data.TotalSupply)
+				ret.TotalSupply = bunbig.FromMathBig(data.TotalSupply)
 			}
 			ret.Mintable = data.Mintable
-			ret.AdminAddr = data.AdminAddr.String()
+			ret.AdminAddress, err = new(addr.Address).FromTU(data.AdminAddr)
+			if err != nil {
+				ret.Errors = append(ret.Errors, errors.Wrap(err, "jetton minter admin addr from TU").Error())
+			}
 			mapContentDataNFT(ret, data.Content)
 
 		case abi.JettonWallet:
-			data, err := abi.GetJettonWalletData(ctx, s.api, b, addr)
+			data, err := abi.GetJettonWalletData(ctx, s.api, b, a)
 			if err != nil {
-				return errors.Wrap(err, "get jetton wallet data")
+				ret.Errors = append(ret.Errors, errors.Wrap(err, "get jetton wallet data").Error())
+				continue
 			}
 			if data.Balance != nil {
-				ret.Balance = *bunbig.FromMathBig(data.Balance)
+				ret.Balance = bunbig.FromMathBig(data.Balance)
 			}
-			ret.OwnerAddress = data.OwnerAddress.String()
-			ret.MasterAddress = data.MasterAddress.String()
+			ret.OwnerAddress, err = new(addr.Address).FromTU(data.OwnerAddress)
+			if err != nil {
+				ret.Errors = append(ret.Errors, errors.Wrap(err, "jetton wallet owner addr from TU").Error())
+			}
+			ret.MasterAddress, err = new(addr.Address).FromTU(data.MasterAddress)
+			if err != nil {
+				ret.Errors = append(ret.Errors, errors.Wrap(err, "jetton wallet master addr from TU").Error())
+			}
 
 		default:
 			skip, unknown = true, unknown+1
 		}
 
 		if !skip {
-			ret.Types = append(ret.Types, string(t))
+			ret.Types = append(ret.Types, t)
 		}
 	}
-	if unknown == len(types) {
-		return errors.Wrap(core.ErrNotAvailable, "unknown contract")
-	}
 
-	return nil
+	return unknown != len(types)
 }

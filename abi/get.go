@@ -66,8 +66,8 @@ func HasGetMethod(code *cell.Cell, getMethodName string) bool {
 	return false
 }
 
-func GetMethodHashes(code *cell.Cell) ([]uint64, error) {
-	var ret []uint64
+func GetMethodHashes(code *cell.Cell) ([]uint32, error) {
+	var ret []uint32
 
 	dict, err := getMethodsDict(code)
 	if err != nil {
@@ -84,7 +84,7 @@ func GetMethodHashes(code *cell.Cell) ([]uint64, error) {
 		case 0, 1, 2, 3:
 			continue
 		}
-		ret = append(ret, i)
+		ret = append(ret, uint32(i))
 	}
 
 	return ret, nil

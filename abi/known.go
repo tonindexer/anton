@@ -4,7 +4,7 @@ type ContractName string
 
 const (
 	Wallet     = "wallet"
-	WalletV4R2 = "wallet_v4r2"
+	WalletV4R2 = "wallet_v4r2_interface"
 
 	NFTCollection = "nft_collection"
 	NFTItem       = "nft_item"

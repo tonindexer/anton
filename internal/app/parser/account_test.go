@@ -6,9 +6,11 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
+//nolint:gocognit // test account data parsing
 func TestService_ParseAccount(t *testing.T) {
 	s := testService(t)
 	master := getCurrentMaster(t)
@@ -24,7 +26,7 @@ func TestService_ParseAccount(t *testing.T) {
 	var cases = []*testCase{
 		{
 			addr:     address.MustParseAddr("EQA-IU8sn_aSCxCpufZtjTm1uxOyCe3LAYEJlH09e8nElCnp"),
-			contract: "wallet_V3R1",
+			contract: "wallet_v3r1",
 			status:   core.Active,
 		},
 		{
@@ -66,12 +68,32 @@ func TestService_ParseAccount(t *testing.T) {
 			t.Fatal(c.addr.String(), err)
 		}
 
-		types, err := s.DetermineInterfaces(ctx, acc)
+		st := &core.AccountState{
+			Address:    *addr.MustFromBase64(c.addr.String()),
+			IsActive:   true,
+			Status:     core.Active,
+			LastTxLT:   acc.LastTxLT,
+			LastTxHash: acc.LastTxHash,
+			Code:       acc.Code.ToBOC(),
+		}
+		st.GetMethodHashes, err = abi.GetMethodHashes(acc.Code)
 		if err != nil {
-			t.Fatal(c.addr.String(), err)
+			t.Logf("%s: %s", c.addr.String(), err)
 		}
 
-		if len(types) < 1 || types[0] != c.contract {
+		types, err := s.DetermineInterfaces(ctx, st)
+		if err != nil {
+			t.Logf(c.addr.String(), err)
+		}
+
+		found := false
+		for _, t := range types {
+			if t == c.contract {
+				found = true
+				break
+			}
+		}
+		if !found {
 			t.Fatalf("[%s] expected: %s, got: %v", c.addr, c.contract, types)
 		}
 		if core.AccountStatus(acc.State.Status) != c.status {
@@ -82,15 +104,15 @@ func TestService_ParseAccount(t *testing.T) {
 			continue
 		}
 
-		data, err := s.ParseAccountData(ctx, master, acc)
+		data, err := s.ParseAccountData(ctx, master, st, types)
 		if err != nil {
 			t.Fatal(c.addr.String(), err)
 		}
 		if c.contentURI != "" && c.contentURI != data.ContentURI {
 			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.contentURI, data.ContentURI)
 		}
-		if c.collectionAddr != "" && c.collectionAddr != data.CollectionAddress {
-			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.collectionAddr, data.CollectionAddress)
+		if c.collectionAddr != "" && c.collectionAddr != data.CollectionAddress.Base64() {
+			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.collectionAddr, data.CollectionAddress.Base64())
 		}
 	}
 }

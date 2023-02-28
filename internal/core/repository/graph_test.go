@@ -147,6 +147,7 @@ var (
 		DataHash:  randBytes(32),
 
 		// Types: []abi.ContractName{"item"},
+		GetMethodHashes: []uint32{abi.MethodNameHash("get_item_data")},
 	}
 
 	addrNoState = randAddr()
@@ -162,17 +163,19 @@ var (
 	}
 
 	accDataWallet = core.AccountData{
-		Address:    accWallet.Address,
-		LastTxLT:   accWallet.LastTxLT,
-		LastTxHash: accWallet.LastTxHash,
-		Types:      []abi.ContractName{"wallet"},
+		Address:         accWallet.Address,
+		LastTxLT:        accWallet.LastTxLT,
+		LastTxHash:      accWallet.LastTxHash,
+		GetMethodHashes: accWallet.GetMethodHashes,
+		Types:           []abi.ContractName{"wallet"},
 	}
 
 	ifaceItem = core.ContractInterface{
-		Name:       abi.ContractName(accDataItem.Types[0]),
-		Addresses:  nil,
-		Code:       nil,
-		GetMethods: []string{"get_item_data"},
+		Name:            accDataItem.Types[0],
+		Addresses:       nil,
+		Code:            nil,
+		GetMethods:      []string{"get_item_data"},
+		GetMethodHashes: []uint32{abi.MethodNameHash("get_item_data")},
 	}
 
 	idx, _ = new(bunbig.Int).FromString(fmt.Sprintf("%d", 43)) // TODO: bunbig.Int.FromUint64
@@ -180,11 +183,12 @@ var (
 	accDataItemJetBalance, _ = new(bunbig.Int).FromString(fmt.Sprintf("%d", randUint())) // TODO: bunbig.Int.FromUint64
 
 	accDataItem = core.AccountData{
-		Address:      accItem.Address,
-		LastTxLT:     accItem.LastTxLT,
-		LastTxHash:   accItem.LastTxHash,
-		Types:        []abi.ContractName{"item"},
-		OwnerAddress: randAddr(),
+		Address:         accItem.Address,
+		LastTxLT:        accItem.LastTxLT,
+		LastTxHash:      accItem.LastTxHash,
+		GetMethodHashes: accItem.GetMethodHashes,
+		Types:           []abi.ContractName{"item"},
+		OwnerAddress:    randAddr(),
 		NFTCollectionData: core.NFTCollectionData{
 			NextItemIndex: idx,
 		},

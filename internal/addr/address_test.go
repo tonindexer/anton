@@ -2,7 +2,6 @@ package addr
 
 import (
 	"database/sql/driver"
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -35,11 +34,11 @@ func TestAddress_TypeKind(t *testing.T) {
 		t.Fatal()
 	}
 
-	fmt.Printf("%+v\n", rb)
+	t.Logf("%+v\n", rb)
 }
 
 func TestAddress_FromBase64(t *testing.T) {
-	var testCases = []struct {
+	var testCases = []*struct {
 		b64 string
 		uf  string
 	}{
