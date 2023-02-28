@@ -221,17 +221,28 @@ func (r *Repository) AddTransactions(ctx context.Context, tx bun.Tx, transaction
 }
 
 func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*core.Message) error {
-	if len(messages) == 0 {
+	var unknown []*core.Message
+
+	for _, msg := range messages {
+		if msg.Known {
+			continue
+		}
+		unknown = append(unknown, msg)
+	}
+
+	if len(unknown) == 0 {
 		return nil
 	}
-	_, err := r.ch.NewInsert().Model(&messages).Exec(ctx)
+
+	_, err := r.ch.NewInsert().Model(&unknown).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = tx.NewInsert().Model(&messages).Exec(ctx)
+	_, err = tx.NewInsert().Model(&unknown).Exec(ctx)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -270,7 +281,7 @@ func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQu
 	if len(f.Hash) > 0 {
 		q = q.Where("transaction.hash = ?", f.Hash)
 	}
-	if len(f.Address) > 0 {
+	if f.Address != nil {
 		q = q.Where("transaction.address = ?", f.Address)
 	}
 	if f.BlockID != nil {

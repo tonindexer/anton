@@ -97,6 +97,7 @@ nano .env
 | `DB_PASSWORD` | Database password                 |          | pass                                                              |
 | `FROM_BLOCK`  | Master chain seq_no to start from | 22222022 | 23532000                                                          |
 | `LITESERVERS` | Lite servers to connect to        |          | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ= |
+| `DEBUG_LOGS`  | Debug logs enabled                | false    | true                                                              |
 
 ## Starting
 

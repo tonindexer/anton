@@ -13,17 +13,15 @@ import (
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountState, message *core.Message, ret *core.MessagePayload) error {
+func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountData, message *core.Message, ret *core.MessagePayload) error {
+	if acc == nil {
+		return errors.Wrap(core.ErrNotAvailable, "no account data")
+	}
 	if len(acc.Types) == 0 {
 		return errors.Wrap(core.ErrNotAvailable, "no interfaces")
 	}
 
-	types := make([]abi.ContractName, 0, len(acc.Types))
-	for _, t := range acc.Types {
-		types = append(types, abi.ContractName(t))
-	}
-
-	operation, err := s.contractRepo.GetOperationByID(ctx, types, acc.Address == message.SrcAddress, message.OperationID)
+	operation, err := s.contractRepo.GetOperationByID(ctx, acc.Types, acc.Address == message.SrcAddress, message.OperationID)
 	if errors.Is(err, core.ErrNotFound) {
 		return errors.Wrap(core.ErrNotAvailable, "unknown operation")
 	}
@@ -55,16 +53,15 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 		return errors.Wrap(err, "load from cell")
 	}
 
-	parsedJSON, err := json.Marshal(parsed)
+	ret.DataJSON, err = json.Marshal(parsed)
 	if err != nil {
 		return errors.Wrap(err, "json marshal parsed payload")
 	}
-	ret.DataJSON = string(parsedJSON)
 
 	return nil
 }
 
-func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.AccountState, message *core.Message) (*core.MessagePayload, error) {
+func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.AccountData, message *core.Message) (*core.MessagePayload, error) {
 	// you can parse separately incoming messages to known contracts and outgoing message from them
 
 	ret := &core.MessagePayload{
@@ -86,9 +83,8 @@ func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.Accoun
 		log.Warn().
 			Err(err).
 			Hex("tx_hash", message.SourceTxHash).
-			Str("dst_addr", dst.Address).
-			Strs("dst_types", dst.Types).
-			Uint32("op_id", message.OperationID).Msg("parse dst message")
+			Str("dst_addr", dst.Address.Base64()).
+			Uint32("op_id", message.OperationID).Msgf("parse dst %v message", dst.Types)
 	}
 	if err == nil {
 		return ret, nil
@@ -99,9 +95,8 @@ func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.Accoun
 		log.Warn().
 			Err(err).
 			Hex("tx_hash", message.SourceTxHash).
-			Str("src_addr", src.Address).
-			Strs("src_types", src.Types).
-			Uint32("op_id", message.OperationID).Msg("parse src message")
+			Str("src_addr", src.Address.Base64()).
+			Uint32("op_id", message.OperationID).Msgf("parse src %v message", src.Types)
 	}
 	if err == nil {
 		return ret, nil

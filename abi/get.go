@@ -11,9 +11,9 @@ import (
 
 const getMethodsDictKeySz = 19
 
-func MethodNameHash(name string) uint64 {
+func MethodNameHash(name string) uint32 {
 	// https://github.com/ton-blockchain/ton/blob/24dc184a2ea67f9c47042b4104bbb4d82289fac1/crypto/smc-envelope/SmartContract.h#L75
-	return uint64(crc16.Checksum([]byte(name), crc16.MakeTable(crc16.CRC16_XMODEM))) | 0x10000
+	return uint32(crc16.Checksum([]byte(name), crc16.MakeTable(crc16.CRC16_XMODEM))) | 0x10000
 }
 
 func getMethodsDict(code *cell.Cell) (*cell.Dictionary, error) {
@@ -66,8 +66,8 @@ func HasGetMethod(code *cell.Cell, getMethodName string) bool {
 	return false
 }
 
-func GetMethodHashes(code *cell.Cell) ([]uint64, error) {
-	var ret []uint64
+func GetMethodHashes(code *cell.Cell) ([]uint32, error) {
+	var ret []uint32
 
 	dict, err := getMethodsDict(code)
 	if err != nil {
@@ -84,7 +84,7 @@ func GetMethodHashes(code *cell.Cell) ([]uint64, error) {
 		case 0, 1, 2, 3:
 			continue
 		}
-		ret = append(ret, i)
+		ret = append(ret, uint32(i))
 	}
 
 	return ret, nil

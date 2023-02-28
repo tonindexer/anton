@@ -1,10 +1,14 @@
 package repository_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 
+	"github.com/uptrace/bun/extra/bunbig"
+
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -14,8 +18,12 @@ func randBytes(l int) []byte {
 	return token
 }
 
-func randAddr() string {
-	return fmt.Sprintf("0:%x", randBytes(32))
+func randAddr() *addr.Address {
+	a, err := new(addr.Address).FromString(fmt.Sprintf("0:%x", randBytes(32)))
+	if err != nil {
+		panic(err)
+	}
+	return a
 }
 
 func randUint() uint64 {
@@ -76,15 +84,17 @@ var (
 		Transactions: nil,
 	}
 
+	addrWallet = *randAddr()
+
 	accWalletOlder = core.AccountState{
 		Latest:     true,
-		Address:    randAddr(),
+		Address:    addrWallet,
 		IsActive:   true,
 		Status:     core.Active,
-		Balance:    1e9,
+		Balance:    bunbig.FromInt64(1e9),
 		LastTxLT:   randLT(),
 		LastTxHash: randBytes(32),
-		Types:      []string{"wallet"},
+		// Types:      []abi.ContractName{"wallet"},
 	}
 
 	accWalletOld = core.AccountState{
@@ -92,10 +102,10 @@ var (
 		Address:    accWalletOlder.Address,
 		IsActive:   true,
 		Status:     core.Active,
-		Balance:    1e9,
+		Balance:    bunbig.FromInt64(31e9),
 		LastTxLT:   accWalletOlder.LastTxLT + 1e3,
 		LastTxHash: randBytes(32),
-		Types:      []string{"wallet"},
+		// Types:      []abi.ContractName{"wallet"},
 	}
 
 	accWallet = core.AccountState{
@@ -104,7 +114,7 @@ var (
 
 		IsActive: true,
 		Status:   core.Active,
-		Balance:  1e9,
+		Balance:  bunbig.FromInt64(3e9),
 
 		LastTxLT:   accWalletOld.LastTxLT + 1e3,
 		LastTxHash: randBytes(32),
@@ -115,16 +125,18 @@ var (
 		Data:      randBytes(128), // parse it
 		DataHash:  randBytes(32),
 
-		Types: []string{"wallet"},
+		// Types: []abi.ContractName{"wallet"},
 	}
+
+	addrItem = *randAddr()
 
 	accItem = core.AccountState{
 		Latest:  true,
-		Address: randAddr(),
+		Address: addrItem,
 
 		IsActive: true,
 		Status:   core.Active,
-		Balance:  1e9,
+		Balance:  bunbig.FromInt64(54e9),
 
 		LastTxLT:   accWallet.LastTxLT + 10,
 		LastTxHash: randBytes(32),
@@ -135,15 +147,18 @@ var (
 		Data:      randBytes(128), // parse it
 		DataHash:  randBytes(32),
 
-		Types: []string{"item"},
+		// Types: []abi.ContractName{"item"},
+		GetMethodHashes: []uint32{abi.MethodNameHash("get_item_data")},
 	}
+
+	addrNoState = randAddr()
 
 	accNoState = core.AccountState{
 		Latest:     true,
-		Address:    randAddr(),
+		Address:    *addrNoState,
 		IsActive:   false,
 		Status:     core.NonExist,
-		Balance:    100e9,
+		Balance:    bunbig.FromInt64(13),
 		LastTxLT:   randLT(),
 		LastTxHash: randBytes(32),
 	}
@@ -152,24 +167,29 @@ var (
 		Address:    accWallet.Address,
 		LastTxLT:   accWallet.LastTxLT,
 		LastTxHash: accWallet.LastTxHash,
-		Types:      accWallet.Types,
+		Types:      []abi.ContractName{"wallet"},
 	}
 
 	ifaceItem = core.ContractInterface{
-		Name:       abi.ContractName(accDataItem.Types[0]),
-		Address:    "",
-		Code:       nil,
-		GetMethods: []string{"get_item_data"},
+		Name:            accDataItem.Types[0],
+		Addresses:       nil,
+		Code:            nil,
+		GetMethods:      []string{"get_item_data"},
+		GetMethodHashes: []uint32{abi.MethodNameHash("get_item_data")},
 	}
+
+	idx, _ = new(bunbig.Int).FromString(fmt.Sprintf("%d", 43)) // TODO: bunbig.Int.FromUint64
+
+	accDataItemJetBalance, _ = new(bunbig.Int).FromString(fmt.Sprintf("%d", randUint())) // TODO: bunbig.Int.FromUint64
 
 	accDataItem = core.AccountData{
 		Address:      accItem.Address,
 		LastTxLT:     accItem.LastTxLT,
 		LastTxHash:   accItem.LastTxHash,
-		Types:        accItem.Types,
+		Types:        []abi.ContractName{"item"},
 		OwnerAddress: randAddr(),
 		NFTCollectionData: core.NFTCollectionData{
-			NextItemIndex: 43,
+			NextItemIndex: idx,
 		},
 		NFTRoyaltyData: core.NFTRoyaltyData{
 			RoyaltyAddress: randAddr(),
@@ -181,6 +201,7 @@ var (
 			ItemIndex:         42,
 			CollectionAddress: randAddr(),
 		},
+		FTWalletData: core.FTWalletData{Balance: accDataItemJetBalance},
 	}
 
 	msgExtWallet = core.Message{
@@ -208,7 +229,7 @@ var (
 
 		InMsgHash: msgExtWallet.Hash,
 
-		TotalFees:   1e5,
+		TotalFees:   bunbig.FromInt64(1e5),
 		StateUpdate: nil,
 		Description: nil,
 		OrigStatus:  core.Active,
@@ -228,11 +249,11 @@ var (
 		SrcAddress: accWallet.Address,
 		DstAddress: accItem.Address,
 
-		Amount: 1e5,
+		Amount: bunbig.FromInt64(1e5),
 
 		IHRDisabled: false,
-		IHRFee:      0,
-		FwdFee:      0,
+		IHRFee:      bunbig.FromInt64(0),
+		FwdFee:      bunbig.FromInt64(0),
 
 		Body:        randBytes(32),
 		BodyHash:    randBytes(32),
@@ -255,7 +276,7 @@ var (
 
 		InMsgHash: msgOutWallet.Hash,
 
-		TotalFees: 1e3,
+		TotalFees: bunbig.FromInt64(1e3),
 
 		StateUpdate: randBytes(32),
 		Description: randBytes(32),
@@ -272,7 +293,7 @@ var (
 		ContractName: msgInItemPayload.DstContract,
 		Outgoing:     false,
 		OperationID:  msgInItemPayload.OperationID,
-		Schema:       []byte("todo"),
+		Schema:       []byte(`{}`),
 	}
 
 	msgInItemPayload = core.MessagePayload{
@@ -280,14 +301,14 @@ var (
 		Hash: msgOutWallet.Hash,
 
 		SrcAddress:  msgOutWallet.SrcAddress,
-		SrcContract: abi.ContractName(accWallet.Types[0]),
+		SrcContract: accDataWallet.Types[0],
 		DstAddress:  msgOutWallet.DstAddress,
-		DstContract: abi.ContractName(accItem.Types[0]),
+		DstContract: accDataItem.Types[0],
 
 		BodyHash:      msgOutWallet.BodyHash,
 		OperationID:   msgOutWallet.OperationID,
 		OperationName: "item_transfer",
-		DataJSON:      "{\"new_owner\": \"kkkkkk\"}",
+		DataJSON:      json.RawMessage(`{"new_owner": "kkkkkk", "collection_address": "aaaaaa"}`),
 
 		CreatedAt: msgOutWallet.CreatedAt,
 		CreatedLT: msgOutWallet.CreatedLT,

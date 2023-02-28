@@ -2,10 +2,12 @@ package indexer
 
 import (
 	"github.com/pkg/errors"
+	"github.com/uptrace/bun/extra/bunbig"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -48,23 +50,33 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 	case *tlb.InternalMessage:
 		msg.Type = core.Internal
 
-		msg.SrcAddress = raw.SrcAddr.String()
-		msg.DstAddress = raw.DstAddr.String()
+		src, err := new(addr.Address).FromTU(raw.SrcAddr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "src addr from tu %s", raw.SrcAddr)
+		}
+		dst, err := new(addr.Address).FromTU(raw.DstAddr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "dst addr from tu %s", raw.DstAddr)
+		}
+		msg.SrcAddress = *src
+		msg.DstAddress = *dst
 
 		msg.Bounce = raw.Bounce
 		msg.Bounced = raw.Bounced
 
-		msg.Amount = raw.Amount.NanoTON().Uint64()
+		msg.Amount = bunbig.FromMathBig(raw.Amount.NanoTON())
 
 		msg.IHRDisabled = raw.IHRDisabled
-		msg.IHRFee = raw.IHRFee.NanoTON().Uint64()
-		msg.FwdFee = raw.FwdFee.NanoTON().Uint64()
+		msg.IHRFee = bunbig.FromMathBig(raw.IHRFee.NanoTON())
+		msg.FwdFee = bunbig.FromMathBig(raw.FwdFee.NanoTON())
 
 		msg.Body = raw.Body.ToBOC()
 		msg.BodyHash = raw.Body.Hash()
 
-		if raw.StateInit != nil {
+		if raw.StateInit != nil && raw.StateInit.Code != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
+		}
+		if raw.StateInit != nil && raw.StateInit.Data != nil {
 			msg.StateInitData = raw.StateInit.Data.ToBOC()
 		}
 
@@ -74,7 +86,11 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 	case *tlb.ExternalMessage:
 		msg.Type = core.ExternalIn
 
-		msg.DstAddress = raw.DstAddr.String()
+		dst, err := new(addr.Address).FromTU(raw.DstAddr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "dst addr from tu %s", raw.DstAddr)
+		}
+		msg.DstAddress = *dst
 
 		if raw.StateInit != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
@@ -90,7 +106,11 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 	case *tlb.ExternalMessageOut:
 		msg.Type = core.ExternalOut
 
-		msg.SrcAddress = raw.SrcAddr.String()
+		src, err := new(addr.Address).FromTU(raw.SrcAddr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "src addr from tu %s", raw.SrcAddr)
+		}
+		msg.SrcAddress = *src
 
 		msg.SourceTxHash = tx.Hash
 		msg.SourceTxLT = tx.LT
@@ -123,10 +143,10 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 	ret.Status = core.NonExist
 	if acc.State != nil {
 		if acc.State.Address != nil {
-			ret.Address = acc.State.Address.String()
+			ret.Address = *addr.MustFromTU(acc.State.Address)
 		}
 		ret.Status = core.AccountStatus(acc.State.Status)
-		ret.Balance = acc.State.Balance.NanoTON().Uint64()
+		ret.Balance = bunbig.FromMathBig(acc.State.Balance.NanoTON())
 		ret.StateHash = acc.State.StateHash
 		if acc.State.StateInit != nil {
 			ret.Depth = acc.State.StateInit.Depth
@@ -142,7 +162,8 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 	}
 	if acc.Code != nil {
 		ret.Code = acc.Code.ToBOC()
-		ret.CodeHash = acc.Data.Hash()
+		ret.CodeHash = acc.Code.Hash()
+		ret.GetMethodHashes, _ = abi.GetMethodHashes(acc.Code)
 	}
 	ret.LastTxLT = acc.LastTxLT
 	ret.LastTxHash = acc.LastTxHash
@@ -159,7 +180,7 @@ func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, 
 		PrevTxHash: raw.PrevTxHash,
 		PrevTxLT:   raw.PrevTxLT,
 
-		TotalFees: raw.TotalFees.Coins.NanoTON().Uint64(),
+		TotalFees: bunbig.FromMathBig(raw.TotalFees.Coins.NanoTON()),
 
 		OrigStatus: core.AccountStatus(raw.OrigStatus),
 		EndStatus:  core.AccountStatus(raw.EndStatus),
@@ -168,7 +189,7 @@ func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, 
 		CreatedAt: uint64(raw.Now),
 	}
 	if b != nil {
-		tx.Address = address.NewAddress(0, byte(b.Workchain), raw.AccountAddr).String()
+		tx.Address = *addr.MustFromTU(address.NewAddress(0, byte(b.Workchain), raw.AccountAddr))
 		tx.BlockWorkchain = b.Workchain
 		tx.BlockShard = b.Shard
 		tx.BlockSeqNo = b.SeqNo

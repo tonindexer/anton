@@ -2,12 +2,15 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/extra/bunbig"
 	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 )
 
 type Transaction struct {
@@ -15,7 +18,7 @@ type Transaction struct {
 	bun.BaseModel `bun:"table:transactions" json:"-"`
 
 	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull" json:"hash"`
-	Address string        `ch:",pk" json:"address"`
+	Address addr.Address  `ch:"type:String,pk" bun:"type:bytea,notnull" json:"address"`
 	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:created_lt=last_tx_lt" json:"account"`
 
 	BlockWorkchain int32  `bun:",notnull" json:"block_workchain"`
@@ -26,13 +29,25 @@ type Transaction struct {
 	PrevTxLT   uint64 `json:"prev_tx_lt,omitempty"`
 
 	InMsgHash []byte     `json:"in_msg_hash"`
-	InMsg     *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash" json:"in_msg"` // `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash"`
+	InMsg     *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash" json:"in_msg"`
 	OutMsg    []*Message `ch:"-" bun:"rel:has-many,join:address=src_address,join:created_lt=source_tx_lt" json:"out_msg,omitempty"`
 
-	TotalFees uint64 `json:"total_fees"` // `ch:"type:UInt256"`
+	TotalFees *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"total_fees"` // TODO: ch UInt256
 
-	StateUpdate []byte `bun:"type:bytea" json:"state_update"`
-	Description []byte `bun:"type:bytea" json:"description"` // TODO: parse it (exit code, etc)
+	StateUpdate []byte `bun:"type:bytea" json:"state_update,omitempty"`
+	Description []byte `bun:"type:bytea" json:"description,omitempty"`
+
+	ComputeSuccess   bool        `bun:",notnull" json:"compute_success"`
+	MsgStateUsed     bool        `bun:",notnull" json:"msg_state_used"`
+	AccountActivated bool        `bun:",notnull" json:"account_activated"`
+	GasFees          *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"gas_fees"`      // TODO: ch UInt256
+	VmGasUsed        *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"vm_gas_used"`   // TODO: ch UInt256
+	VmGasLimit       *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"vm_gas_limit"`  // TODO: ch UInt256
+	VmGasCredit      *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"vm_gas_credit"` // TODO: ch UInt256
+	VmMode           int8        `json:"vm_mode"`
+	VmExitCode       int32       `json:"vm_exit_code"`
+	VmExitArg        int32       `json:"vm_exit_arg"`
+	VmSteps          uint32      `json:"vm_steps"`
 
 	OrigStatus AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"orig_status"`
 	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"end_status"`
@@ -53,28 +68,27 @@ type Message struct {
 	ch.CHModel    `ch:"messages,partition:type,incoming,toYYYYMMDD(toDateTime(created_at))" json:"-"`
 	bun.BaseModel `bun:"table:messages" json:"-"`
 
-	Type MessageType `ch:",lc" bun:"type:message_type,notnull" json:"msg_type"` // TODO: ch enum
+	Type MessageType `ch:",lc" bun:"type:message_type,notnull" json:"type"` // TODO: ch enum
 
-	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull" json:"hash"`
+	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"  json:"hash"`
 
-	SrcAddress string `json:"src_address"`
-	DstAddress string `json:"dst_address"`
-	// TODO: addr contract types
+	SrcAddress addr.Address `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
+	DstAddress addr.Address `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
 
-	// SourceTx initiates outgoing message
-	// or contract can accept external incoming message in SourceTx
+	// SourceTx initiates outgoing message.
+	// For external incoming messages SourceTx == nil.
 	SourceTxHash []byte       `bun:"type:bytea" json:"source_tx_hash,omitempty"`
 	SourceTxLT   uint64       `json:"source_tx_lt,omitempty"`
-	Source       *Transaction `ch:"-" bun:"-" json:"source,omitempty"`
+	Source       *Transaction `ch:"-" bun:"-" json:"source,omitempty"` // TODO: join it
 
-	Bounce  bool `json:"bounce"`
-	Bounced bool `json:"bounced"`
+	Bounce  bool `bun:",notnull" json:"bounce"`
+	Bounced bool `bun:",notnull" json:"bounced"`
 
-	Amount uint64 `json:"amount,omitempty"` // TODO: uint256
+	Amount *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"amount,omitempty"` // TODO: ch uint256
 
-	IHRDisabled bool   `json:"ihr_disabled"`
-	IHRFee      uint64 `json:"ihr_fee"` // TODO: uint256
-	FwdFee      uint64 `json:"fwd_fee"` // TODO: uint256
+	IHRDisabled bool        `bun:",notnull" json:"ihr_disabled"`
+	IHRFee      *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"ihr_fee"` // TODO: ch uint256
+	FwdFee      *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"fwd_fee"` // TODO: ch uint256
 
 	Body            []byte          `bun:"type:bytea" json:"body"`
 	BodyHash        []byte          `bun:"type:bytea" json:"body_hash"`
@@ -87,24 +101,28 @@ type Message struct {
 
 	CreatedAt uint64 `bun:",notnull" json:"created_at"`
 	CreatedLT uint64 `bun:",notnull" json:"created_lt"`
+
+	Known bool `ch:"-" bun:"-" json:"-"`
 }
 
 type MessagePayload struct {
 	ch.CHModel    `ch:"message_payloads,partition:src_contract,partition:dst_contract,partition:toYYYYMMDD(toDateTime(created_at))" json:"-"`
 	bun.BaseModel `bun:"table:message_payloads" json:"-"`
 
-	Type MessageType `ch:",lc" bun:"type:message_type,notnull" json:"msg_type"`
+	Type MessageType `ch:",lc" bun:"type:message_type,notnull" json:"type"`
 	Hash []byte      `ch:",pk" bun:"type:bytea,pk,notnull" json:"hash"`
 
-	SrcAddress  string           `json:"src_address,omitempty"`
+	SrcAddress  addr.Address     `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
 	SrcContract abi.ContractName `ch:",lc" json:"src_contract,omitempty"`
-	DstAddress  string           `json:"dst_address,omitempty"`
+	DstAddress  addr.Address     `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
 	DstContract abi.ContractName `ch:",lc" json:"dst_contract,omitempty"`
 
-	BodyHash      []byte `bun:"type:bytea,notnull" json:"body_hash"`
-	OperationID   uint32 `bun:",notnull" json:"operation_id"`
-	OperationName string `ch:",lc" bun:",notnull" json:"operation_name"`
-	DataJSON      string `json:"data_json"`
+	BodyHash      []byte          `bun:"type:bytea,notnull" json:"body_hash"`
+	OperationID   uint32          `bun:",notnull" json:"operation_id"`
+	OperationName string          `ch:",lc" bun:",notnull" json:"operation_name"`
+	DataJSON      json.RawMessage ` ch:"String" bun:"type:jsonb" json:"data"`
+
+	// TODO: save fields from parsed data to payloads table
 
 	CreatedAt uint64 `bun:",notnull" json:"created_at"`
 	CreatedLT uint64 `bun:",notnull" json:"created_lt"`
@@ -113,7 +131,7 @@ type MessagePayload struct {
 type TransactionFilter struct {
 	Hash []byte `form:"hash"`
 
-	Address string `form:"address"`
+	Address *addr.Address `form:"address"`
 
 	BlockID *BlockID
 

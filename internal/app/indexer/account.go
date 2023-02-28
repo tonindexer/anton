@@ -2,54 +2,85 @@ package indexer
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
+
+func (s *Service) skipAccounts(_ *tlb.BlockInfo, a *address.Address) bool {
+	switch a.String() {
+	case "Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF": // skip elector contract
+		return true
+	case "Ef80UXx731GHxVr0-LYf3DIViMerdo3uJLAG3ykQZFjXz2kW": // skip log tests contract
+		return true
+	case "Ef9VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVbxn": // skip config contract
+		return true
+	case "EQAHI1vGuw7d4WG-CtfDrWqEPNtmUuKjKFEFeJmZaqqfWTvW": // skip BSC Bridge Collector
+		return true
+	case "EQCuzvIOXLjH2tv35gY4tzhIvXCqZWDuK9kUhFGXKLImgxT5": // skip ETH Bridge Collector
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *Service) processAccount(ctx context.Context, b *tlb.BlockInfo, a *address.Address) (*core.AccountState, *core.AccountData, error) {
+	if s.skipAccounts(b, a) {
+		return nil, nil, nil
+	}
+
+	defer timeTrack(time.Now(), fmt.Sprintf("processAccount(%d, %d, %s)", b.Workchain, b.SeqNo, a.String()))
+
+	raw, err := s.api.GetAccount(ctx, b, a)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "get account")
+	}
+
+	acc := mapAccount(raw)
+	if acc.Status == core.NonExist {
+		return nil, nil, nil
+	}
+
+	types, err := s.parser.DetermineInterfaces(ctx, acc)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "determine contract interfaces")
+	}
+
+	data, err := s.parser.ParseAccountData(ctx, b, acc, types)
+	if err != nil && !errors.Is(err, core.ErrNotAvailable) {
+		return nil, nil, errors.Wrapf(err, "get account (%s)", a.String())
+	}
+
+	return acc, data, nil
+}
 
 func (s *Service) processTxAccounts(
 	ctx context.Context, b *tlb.BlockInfo,
 	transactions []*core.Transaction,
-) (accounts map[string]*core.AccountState, accountsData map[string]*core.AccountData, err error) {
-	accounts = make(map[string]*core.AccountState)
-	accountsData = make(map[string]*core.AccountData)
+) (accounts map[addr.Address]*core.AccountState, accountsData map[addr.Address]*core.AccountData, err error) {
+	accounts = make(map[addr.Address]*core.AccountState)
+	accountsData = make(map[addr.Address]*core.AccountData)
 
 	for _, tx := range transactions {
-		addr := address.MustParseAddr(tx.Address)
+		a := address.MustParseAddr(tx.Address.Base64())
 
-		raw, err := s.api.GetAccount(ctx, b, addr)
+		acc, data, err := s.processAccount(ctx, b, a)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "get account (%s)", addr.String())
+			return nil, nil, errors.Wrapf(err, "process account (%s)", a.String())
 		}
 
-		acc := mapAccount(raw)
-		if acc.Status == core.NonExist {
-			continue
+		if acc != nil {
+			accounts[acc.Address] = acc
 		}
-
-		accTypes, err := s.parser.DetermineInterfaces(ctx, raw)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "determine contract interfaces")
+		if data != nil {
+			accountsData[data.Address] = data
 		}
-
-		for _, t := range accTypes {
-			acc.Types = append(acc.Types, string(t))
-		}
-		accounts[acc.Address] = acc
-
-		data, err := s.parser.ParseAccountData(ctx, b, raw)
-		if errors.Is(err, core.ErrNotAvailable) {
-			continue
-		} else if err != nil {
-			log.Error().Err(err).Str("addr", tx.Address).Msg("parse account data")
-			continue
-		}
-
-		accountsData[data.Address] = data
 	}
 
 	return accounts, accountsData, nil

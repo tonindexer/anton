@@ -8,9 +8,9 @@ import (
 )
 
 type BlockID struct {
-	Workchain int32  `ch:",pk" bun:",pk,notnull" json:"workchain"`
-	Shard     int64  `ch:",pk" bun:",pk,notnull" json:"shard"`
-	SeqNo     uint32 `ch:",pk" bun:",pk,notnull" json:"seq_no"`
+	Workchain int32  `ch:",pk" bun:",pk,notnull" json:"workchain,omitempty"`
+	Shard     int64  `ch:",pk" bun:",pk,notnull" json:"shard,omitempty"`
+	SeqNo     uint32 `ch:",pk" bun:",pk,notnull" json:"seq_no,omitempty"`
 }
 
 type Block struct {
@@ -19,7 +19,7 @@ type Block struct {
 
 	BlockID
 
-	FileHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"file_hash"` // TODO: []byte here, go-bun bug on has-many
+	FileHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"file_hash"`
 	RootHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"root_hash"`
 
 	MasterID BlockID  `ch:"-" bun:"embed:master_" json:"master,omitempty"`

@@ -2,6 +2,8 @@ package indexer
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
@@ -19,6 +21,8 @@ func (s *Service) fetchBlockTransactions(ctx context.Context, b *tlb.BlockInfo) 
 		more         = true
 		err          error
 	)
+
+	defer timeTrack(time.Now(), fmt.Sprintf("fetchBlockTransactions(%d, %d)", b.Workchain, b.SeqNo))
 
 	for more {
 		fetchedIDs, more, err = s.api.GetBlockTransactions(ctx, b, 100, after)
@@ -70,7 +74,7 @@ func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, shard
 		return errors.Wrap(err, "parse block messages")
 	}
 
-	payloads := s.parseMessagePayloads(ctx, messages, accountMap)
+	payloads := s.parseMessagePayloads(ctx, tx, messages, accountDataMap)
 
 	for _, st := range accountMap {
 		accounts = append(accounts, st)

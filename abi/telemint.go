@@ -28,6 +28,17 @@ type (
 	}
 
 	TelemintMsgDeploy struct {
+		_             tlb.Magic              `tlb:"#4637289a"`
+		Sig           []byte                 `tlb:"bits 512"`
+		SubwalletID   uint32                 `tlb:"## 32"`
+		ValidSince    uint32                 `tlb:"## 32"`
+		ValidTill     uint32                 `tlb:"## 32"`
+		TokenName     *TelemintText          `tlb:"."`
+		Content       *cell.Cell             `tlb:"^"`
+		AuctionConfig *TeleitemAuctionConfig `tlb:"^"`
+		RoyaltyParams *TelemintRoyaltyParams `tlb:"maybe ^"`
+	}
+	TelemintMsgDeployV2 struct {
 		_             tlb.Magic              `tlb:"#4637289b"`
 		Sig           []byte                 `tlb:"bits 512"`
 		SubwalletID   uint32                 `tlb:"## 32"`
@@ -37,6 +48,7 @@ type (
 		Content       *cell.Cell             `tlb:"^"`
 		AuctionConfig *TeleitemAuctionConfig `tlb:"^"`
 		RoyaltyParams *TelemintRoyaltyParams `tlb:"maybe ^"`
+		// Restrictions
 	}
 	TeleitemMsgDeploy struct {
 		_             tlb.Magic              `tlb:"#299a3e15"`

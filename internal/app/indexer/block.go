@@ -15,11 +15,13 @@ import (
 )
 
 func (s *Service) getNotSeenShards(ctx context.Context, shard *tlb.BlockInfo) (ret []*tlb.BlockInfo, err error) {
+	defer timeTrack(time.Now(), fmt.Sprintf("getNotSeenShards(%d, %d)", shard.Workchain, shard.SeqNo))
+
 	if no, ok := s.shardLastSeqno[getShardID(shard)]; ok && no == shard.SeqNo {
 		return nil, nil
 	}
 
-	b, err := s.api.GetBlockData(ctx, shard)
+	b, err := s.api.GetBlockData(ctx, shard) // TODO: save this block data to a database
 	if err != nil {
 		return nil, fmt.Errorf("get block data: %w", err)
 	}
@@ -72,12 +74,6 @@ func (s *Service) processShards(ctx context.Context, tx bun.Tx, master *tlb.Bloc
 			Uint32("master_seq", master.SeqNo).
 			Int32("shard_workchain", shard.Workchain).Uint32("shard_seq", shard.SeqNo).
 			Msg("new shard block")
-
-		// // TODO: other block data
-		// blockInfo, err := s.api.GetBlockData(ctx, shard)
-		// if err != nil {
-		// 	return errors.Wrap(err, "get block data")
-		// }
 
 		if err := s.processBlockTransactions(ctx, tx, shard); err != nil {
 			return err
