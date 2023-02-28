@@ -70,8 +70,6 @@ func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, a *ad
 	var unknown int
 
 	for _, t := range types {
-		var skip bool
-
 		switch t {
 		case abi.NFTCollection:
 			data, err := abi.GetNFTCollectionData(ctx, s.api, b, a)
@@ -106,11 +104,7 @@ func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, a *ad
 			mapEditorDataNFT(ret, data)
 
 		default:
-			skip, unknown = true, unknown+1
-		}
-
-		if !skip {
-			ret.Types = append(ret.Types, t)
+			unknown++
 		}
 	}
 
@@ -121,8 +115,6 @@ func (s *Service) getAccountDataFT(ctx context.Context, b *tlb.BlockInfo, a *add
 	var unknown int
 
 	for _, t := range types {
-		var skip bool
-
 		switch t {
 		case abi.JettonMinter:
 			data, err := abi.GetJettonData(ctx, s.api, b, a)
@@ -159,11 +151,7 @@ func (s *Service) getAccountDataFT(ctx context.Context, b *tlb.BlockInfo, a *add
 			}
 
 		default:
-			skip, unknown = true, unknown+1
-		}
-
-		if !skip {
-			ret.Types = append(ret.Types, t)
+			unknown++
 		}
 	}
 
