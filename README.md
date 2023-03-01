@@ -36,8 +36,6 @@ Known contract interfaces are initialized in [abi/known.go](/abi/known.go).
 
 Go to [MODELS.md](/MODELS.md) to get more detailed description of models used in this project and contracts known to this project.
 
-Go to [data_tree.json](/data_tree.json) to see an example of real parsed masterchain block.
-
 Go to [msg_schema.json](/msg_schema.json) to see an example of message payload schema defined by json.
 
 ### Project structure
