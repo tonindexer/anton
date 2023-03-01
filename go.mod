@@ -4,6 +4,8 @@ go 1.18
 
 replace github.com/uptrace/go-clickhouse v0.3.0 => github.com/iam047801/go-clickhouse v0.0.0-20230227133911-77a45625ed0b // branch with go-clickhouse dirty fixes
 
+replace github.com/uptrace/bun/extra/bunbig v1.1.12 => github.com/iam047801/bun/extra/bunbig v0.0.0-20230301151223-7ddabb8c667f // branch with json marshaller for big.Int
+
 require (
 	github.com/allisson/go-env v0.3.0
 	github.com/gin-gonic/gin v1.9.0
