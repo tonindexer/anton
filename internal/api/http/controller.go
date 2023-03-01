@@ -25,10 +25,10 @@ import (
 // @license.url   	http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @host      		localhost
-// @BasePath  		/api/v1
+// @BasePath  		/api/v0
 // @schemes 		http
 
-var basePath = "/api/v1"
+var basePath = "/api/v0"
 
 var _ QueryController = (*Controller)(nil)
 
@@ -50,6 +50,10 @@ func internalErr(ctx *gin.Context, err error) {
 }
 
 func unmarshalAddress(a string) (*addr.Address, error) {
+	if len(a) == 0 {
+		return nil, nil
+	}
+
 	var x = new(addr.Address)
 
 	if err := x.UnmarshalJSON([]byte(a)); err != nil {
@@ -178,10 +182,10 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 //	@Produce		json
 //  @Param   		addresses     		query   []string 	false   "only given addresses"
 //  @Param   		latest				query	bool  		false	"only latest account states"
-//  @Param   		with_data			query	bool  		false	"include parsed data"
 //  @Param   		interfaces			query	[]string  	false	"filter by interfaces"
 //  @Param   		owner_address		query	string  	false	"filter FTs or NFTs by owner address"
 //  @Param   		collection_address	query	string  	false	"filter NFT items by collection address"
+//  @Param   		master_address		query	string  	false	"filter FT wallets by minter address"
 //  @Param			order				query	string		false	"order by last_tx_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this last_tx_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3)
@@ -196,9 +200,26 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 		return
 	}
 
+	filter.WithData = true
+
 	filter.Addresses, err = getAddresses(ctx)
 	if err != nil {
 		paramErr(ctx, "addresses", err)
+		return
+	}
+	filter.OwnerAddress, err = unmarshalAddress(ctx.Query("owner_address"))
+	if err != nil {
+		paramErr(ctx, "owner_address", err)
+		return
+	}
+	filter.CollectionAddress, err = unmarshalAddress(ctx.Query("collection_address"))
+	if err != nil {
+		paramErr(ctx, "collection_address", err)
+		return
+	}
+	filter.MasterAddress, err = unmarshalAddress(ctx.Query("master_address"))
+	if err != nil {
+		paramErr(ctx, "master_address", err)
 		return
 	}
 

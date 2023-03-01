@@ -47,6 +47,16 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "address state pg create unique index")
 	}
 
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountData{}).
+		Using("HASH").
+		Column("master_address").
+		Where("length(master_address) > 0").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address state pg create unique index")
+	}
+
 	// account state
 
 	_, err = pgDB.NewCreateIndex().
@@ -243,6 +253,9 @@ func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateF
 		}
 		if f.CollectionAddress != nil {
 			q = q.Where("state_data.collection_address = ?", f.CollectionAddress)
+		}
+		if f.MasterAddress != nil {
+			q = q.Where("state_data.master_address = ?", f.MasterAddress)
 		}
 	}
 

@@ -1,6 +1,8 @@
 package http
 
 import (
+	"net/http"
+
 	_ "github.com/iam047801/tonidx/api/http"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -43,10 +45,14 @@ func (s *Server) RegisterRoutes(t QueryController) {
 	base.GET("/transactions", t.GetTransactions)
 	base.GET("/messages", t.GetMessages)
 
-	base.GET("/swagger/*any", ginSwagger.WrapHandler(
+	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerFiles.Handler,
-		ginSwagger.URL("/api/v1/swagger/doc.json"),
+		ginSwagger.URL("/swagger/doc.json"),
 		ginSwagger.DefaultModelsExpandDepth(-1)))
+
+	s.router.GET("/swagger", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+	})
 }
 
 func (s *Server) Run() error {

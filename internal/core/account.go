@@ -115,14 +115,15 @@ type AccountData struct {
 }
 
 type AccountStateFilter struct {
-	Addresses   []*addr.Address //
+	Addresses   []*addr.Address // `form:"addresses"`
 	LatestState bool            `form:"latest"`
 
 	// contract data filter
-	WithData          bool               `form:"with_data"`
+	WithData          bool
 	ContractTypes     []abi.ContractName `form:"interfaces"`
-	OwnerAddress      *addr.Address      `form:"owner_address"`
-	CollectionAddress *addr.Address      `form:"collection_address"`
+	OwnerAddress      *addr.Address      // `form:"owner_address"`
+	CollectionAddress *addr.Address      // `form:"collection_address"`
+	MasterAddress     *addr.Address      // `form:"master_address"`
 
 	Order string `form:"order"` // ASC, DESC
 
