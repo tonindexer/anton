@@ -21,9 +21,9 @@ services:
     networks:
       - indexer_network
     ports:
-      - "80:80"
+      - "8080:8080"
     expose:
-      - "80"
+      - "8080"
     links:
       - clickhouse
       - postgres
