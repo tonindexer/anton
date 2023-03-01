@@ -1,6 +1,8 @@
 package http
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strings"
@@ -50,8 +52,8 @@ func internalErr(ctx *gin.Context, err error) {
 }
 
 func unmarshalAddress(a string) (*addr.Address, error) {
-	if len(a) == 0 {
-		return nil, nil
+	if a == "" {
+		return nil, nil //nolint:nilnil // lazy ...
 	}
 
 	var x = new(addr.Address)
@@ -74,10 +76,25 @@ func unmarshalSorting(sort string) (string, error) {
 	}
 }
 
-func getAddresses(ctx *gin.Context) ([]*addr.Address, error) {
+func unmarshalBytes(x string) ([]byte, error) {
+	if x == "" {
+		return nil, nil
+	}
+	ret, err := base64.StdEncoding.DecodeString(x)
+	if err == nil {
+		return ret, nil
+	}
+	ret, err = hex.DecodeString(x)
+	if err != nil {
+		return ret, nil
+	}
+	return nil, fmt.Errorf("cannot decode bytes %s", x)
+}
+
+func getAddresses(ctx *gin.Context, name string) ([]*addr.Address, error) {
 	var ret []*addr.Address
 
-	for _, a := range ctx.Request.URL.Query()["addresses"] {
+	for _, a := range ctx.Request.URL.Query()[name] {
 		x, err := unmarshalAddress(a)
 		if err != nil {
 			return nil, err
@@ -180,9 +197,9 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 //	@Tags			account
 //	@Accept			json
 //	@Produce		json
-//  @Param   		addresses     		query   []string 	false   "only given addresses"
+//  @Param   		address     		query   []string 	false   "only given addresses"
 //  @Param   		latest				query	bool  		false	"only latest account states"
-//  @Param   		interfaces			query	[]string  	false	"filter by interfaces"
+//  @Param   		interface			query	[]string  	false	"filter by interfaces"
 //  @Param   		owner_address		query	string  	false	"filter FTs or NFTs by owner address"
 //  @Param   		collection_address	query	string  	false	"filter NFT items by collection address"
 //  @Param   		master_address		query	string  	false	"filter FT wallets by minter address"
@@ -202,9 +219,9 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 
 	filter.WithData = true
 
-	filter.Addresses, err = getAddresses(ctx)
+	filter.Addresses, err = getAddresses(ctx, "address")
 	if err != nil {
-		paramErr(ctx, "addresses", err)
+		paramErr(ctx, "address", err)
 		return
 	}
 	filter.OwnerAddress, err = unmarshalAddress(ctx.Query("owner_address"))
@@ -244,10 +261,9 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 //	@Tags			transaction
 //	@Accept			json
 //	@Produce		json
-//  @Param   		addresses     		query   []string 	false   "only given addresses"
+//  @Param   		address     		query   []string 	false   "only given addresses"
 //  @Param   		hash				query	string  	false	"search by tx hash"
-//  @Param   		with_accounts		query	bool  		false	"return account states"
-//  @Param   		interfaces			query	[]string  	false	"filter by interfaces"
+//  @Param   		workchain			query	int32  		false	"filter by workchain"
 //  @Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
 //  @Param   		limit	     		query   int 		false	"limit"							default(3)
@@ -262,9 +278,20 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 		return
 	}
 
-	filter.Addresses, err = getAddresses(ctx)
+	filter.Hash, err = unmarshalBytes(ctx.Query("hash"))
 	if err != nil {
-		paramErr(ctx, "addresses", err)
+		paramErr(ctx, "hash", err)
+		return
+	}
+
+	filter.WithAccountState = true
+	filter.WithAccountData = true
+	filter.WithMessages = true
+	filter.WithMessagePayloads = true
+
+	filter.Addresses, err = getAddresses(ctx, "address")
+	if err != nil {
+		paramErr(ctx, "address", err)
 		return
 	}
 
@@ -289,11 +316,11 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //  @Param   		hash				query	string  	false	"msg hash"
-//  @Param   		src_address     	query   string 		false   "source address"
-//  @Param   		dst_address     	query   string 		false   "destination address"
-//  @Param   		src_contract		query	string  	false	"source contract interface"
-//  @Param   		dst_contract		query	string  	false	"destination contract interface"
-//  @Param   		operation_names		query	[]string  	false	"filter by contract operation names"
+//  @Param   		src_address     	query   []string 		false   "source address"
+//  @Param   		dst_address     	query   []string 		false   "destination address"
+//  @Param   		src_contract		query	[]string  	false	"source contract interface"
+//  @Param   		dst_contract		query	[]string  	false	"destination contract interface"
+//  @Param   		operation_name		query	[]string  	false	"filter by contract operation names"
 //  @Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3)
@@ -305,6 +332,22 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 	err := ctx.ShouldBindQuery(&filter)
 	if err != nil {
 		paramErr(ctx, "msg_filter", err)
+		return
+	}
+
+	filter.Hash, err = unmarshalBytes(ctx.Query("hash"))
+	if err != nil {
+		paramErr(ctx, "hash", err)
+		return
+	}
+	filter.SrcAddresses, err = getAddresses(ctx, "src_address")
+	if err != nil {
+		paramErr(ctx, "src_address", err)
+		return
+	}
+	filter.DstAddresses, err = getAddresses(ctx, "dst_address")
+	if err != nil {
+		paramErr(ctx, "dst_address", err)
 		return
 	}
 

@@ -136,13 +136,15 @@ type MessagePayload struct {
 }
 
 type TransactionFilter struct {
-	Hash []byte `form:"hash"`
+	Hash []byte // `form:"hash"`
 
 	Addresses []*addr.Address //
 
+	Workchain *int32 `form:"workchain"`
+
 	BlockID *BlockID
 
-	WithAccountState    bool `form:"with_accounts"`
+	WithAccountState    bool
 	WithAccountData     bool
 	WithMessages        bool
 	WithMessagePayloads bool
@@ -156,14 +158,14 @@ type TransactionFilter struct {
 type MessageFilter struct {
 	DBTx *bun.Tx
 
-	Hash       []byte `form:"hash"`
-	SrcAddress string `form:"src_address"`
-	DstAddress string `form:"dst_address"`
+	Hash         []byte          // `form:"hash"`
+	SrcAddresses []*addr.Address // `form:"src_address"`
+	DstAddresses []*addr.Address // `form:"dst_address"`
 
 	WithPayload    bool
-	SrcContract    string   `form:"src_contract"`
-	DstContract    string   `form:"dst_contract"`
-	OperationNames []string `form:"operation_names"`
+	SrcContracts   []string `form:"src_contract"`
+	DstContracts   []string `form:"dst_contract"`
+	OperationNames []string `form:"operation_name"`
 
 	Order string `form:"order"` // ASC, DESC
 

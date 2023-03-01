@@ -120,7 +120,7 @@ type AccountStateFilter struct {
 
 	// contract data filter
 	WithData          bool
-	ContractTypes     []abi.ContractName `form:"interfaces"`
+	ContractTypes     []abi.ContractName `form:"interface"`
 	OwnerAddress      *addr.Address      // `form:"owner_address"`
 	CollectionAddress *addr.Address      // `form:"collection_address"`
 	MasterAddress     *addr.Address      // `form:"master_address"`

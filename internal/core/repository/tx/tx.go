@@ -284,22 +284,25 @@ func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQu
 	if len(f.Addresses) > 0 {
 		q = q.Where("transaction.address in (?)", bun.In(f.Addresses))
 	}
+	if f.Workchain != nil {
+		q = q.Where("transaction.block_workchain = ?", f.Workchain)
+	}
 	if f.BlockID != nil {
-		q = q.Where("block_workchain = ?", f.BlockID.Workchain).
-			Where("block_shard = ?", f.BlockID.Shard).
-			Where("block_seq_no = ?", f.BlockID.SeqNo)
+		q = q.Where("transaction.block_workchain = ?", f.BlockID.Workchain).
+			Where("transaction.block_shard = ?", f.BlockID.Shard).
+			Where("transaction.block_seq_no = ?", f.BlockID.SeqNo)
 	}
 
 	if f.AfterTxLT != nil {
 		if f.Order == "ASC" {
-			q = q.Where("created_lt > ?", f.AfterTxLT)
+			q = q.Where("transaction.created_lt > ?", f.AfterTxLT)
 		} else {
-			q = q.Where("created_lt < ?", f.AfterTxLT)
+			q = q.Where("transaction.created_lt < ?", f.AfterTxLT)
 		}
 	}
 
 	if f.Order != "" {
-		q = q.Order("created_lt " + strings.ToUpper(f.Order))
+		q = q.Order("transaction.created_lt " + strings.ToUpper(f.Order))
 	}
 
 	if f.Limit == 0 {
@@ -321,21 +324,21 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 	}
 
 	if len(f.Hash) > 0 {
-		q = q.Where("hash = ?", f.Hash)
+		q = q.Where("message.hash = ?", f.Hash)
 	}
-	if len(f.SrcAddress) > 0 {
-		q = q.Where("src_address = ?", f.SrcAddress)
+	if len(f.SrcAddresses) > 0 {
+		q = q.Where("message.src_address in (?)", bun.In(f.SrcAddresses))
 	}
-	if len(f.DstAddress) > 0 {
-		q = q.Where("dst_address = ?", f.DstAddress)
+	if len(f.DstAddresses) > 0 {
+		q = q.Where("message.dst_address in (?)", bun.In(f.DstAddresses))
 	}
 
 	if f.WithPayload {
-		if f.SrcContract != "" {
-			q = q.Where("payload.src_contract = ?", f.SrcContract)
+		if len(f.SrcContracts) > 0 {
+			q = q.Where("payload.src_contract in (?)", bun.In(f.SrcContracts))
 		}
-		if f.DstContract != "" {
-			q = q.Where("payload.dst_contract = ?", f.DstContract)
+		if len(f.DstContracts) > 0 {
+			q = q.Where("payload.dst_contract in (?)", bun.In(f.DstContracts))
 		}
 		if len(f.OperationNames) > 0 {
 			q = q.Where("payload.operation_name IN (?)", bun.In(f.OperationNames))
@@ -344,14 +347,14 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 
 	if f.AfterTxLT != nil {
 		if f.Order == "ASC" {
-			q = q.Where("created_lt > ?", f.AfterTxLT)
+			q = q.Where("message.created_lt > ?", f.AfterTxLT)
 		} else {
-			q = q.Where("created_lt < ?", f.AfterTxLT)
+			q = q.Where("message.created_lt < ?", f.AfterTxLT)
 		}
 	}
 
 	if f.Order != "" {
-		q = q.Order("created_lt " + strings.ToUpper(f.Order))
+		q = q.Order("message.created_lt " + strings.ToUpper(f.Order))
 	}
 
 	if f.Limit == 0 {
