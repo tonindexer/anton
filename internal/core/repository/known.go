@@ -2,9 +2,6 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"net/http"
 	"reflect"
 
 	"github.com/iancoleman/strcase"
@@ -78,19 +75,19 @@ func insertKnownOperations(ctx context.Context, db *bun.DB) error {
 }
 
 func insertKnownAddresses(ctx context.Context, db *bun.DB) error {
-	res, err := http.Get("https://raw.githubusercontent.com/menschee/tonscanplus/main/data.json")
-	if err != nil {
-		return err
-	}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
 	var addrMap = make(map[string]abi.ContractName)
-	if err := json.Unmarshal(body, &addrMap); err != nil {
-		return errors.Wrap(err, "tonscanplus data unmarshal")
-	}
+
+	// res, err := http.Get("https://raw.githubusercontent.com/menschee/tonscanplus/main/data.json")
+	// if err != nil {
+	// 	return err
+	// }
+	// body, err := io.ReadAll(res.Body)
+	// if err != nil {
+	// 	return err
+	// }
+	// if err := json.Unmarshal(body, &addrMap); err != nil {
+	// 	return errors.Wrap(err, "tonscanplus data unmarshal")
+	// }
 
 	for a, n := range abi.KnownAddresses {
 		addrMap[a] = n

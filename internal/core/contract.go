@@ -11,6 +11,8 @@ import (
 	"github.com/iam047801/tonidx/internal/addr"
 )
 
+// TODO: contract addresses labels
+
 type ContractInterface struct {
 	ch.CHModel    `ch:"contract_interfaces" json:"-"`
 	bun.BaseModel `bun:"table:contract_interfaces" json:"-"`
