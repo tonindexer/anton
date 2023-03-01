@@ -22,7 +22,7 @@ func (s *Service) messageAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.M
 		return true, nil
 	}
 
-	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash}, 0, 1)
+	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash})
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
 	}
@@ -88,7 +88,7 @@ func (s *Service) messagePayloadAlreadyKnown(ctx context.Context, tx bun.Tx, in 
 		return true, nil
 	}
 
-	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash}, 0, 1)
+	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash})
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
 	}
@@ -108,10 +108,12 @@ func (s *Service) getLatestAccount(ctx context.Context, a addr.Address, accountM
 	defer timeTrack(time.Now(), fmt.Sprintf("getLatestAccount(%s)", a.Base64()))
 
 	state, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
-		Address:     &a,
+		Addresses:   []*addr.Address{&a},
 		LatestState: true,
 		WithData:    true,
-	}, 0, 1)
+		Order:       "DESC",
+		Limit:       1,
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "get account data")
 	}

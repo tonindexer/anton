@@ -40,11 +40,9 @@ func randLT() uint64 {
 
 var (
 	master = core.Block{
-		BlockID: core.BlockID{
-			Workchain: -1,
-			Shard:     2222,
-			SeqNo:     1234,
-		},
+		Workchain: -1,
+		Shard:     -9223372036854775808,
+		SeqNo:     1234,
 
 		// FileHash: string(randBytes(32)),
 		FileHash: randBytes(32),
@@ -54,32 +52,36 @@ var (
 	}
 
 	shard = core.Block{
-		BlockID: core.BlockID{
-			Workchain: 0,
-			Shard:     8888,
-			SeqNo:     4321,
-		},
+		Workchain: 0,
+		Shard:     -9223372036854775808,
+		SeqNo:     4321,
 
 		// FileHash: string(randBytes(32)),
 		FileHash: randBytes(32),
 		RootHash: randBytes(32),
 
-		MasterID: master.BlockID,
+		MasterID: &core.BlockID{
+			Workchain: master.Workchain,
+			Shard:     master.Shard,
+			SeqNo:     master.SeqNo,
+		},
 
 		Transactions: nil,
 	}
 	shardPrev = core.Block{
-		BlockID: core.BlockID{
-			Workchain: 0,
-			Shard:     8888,
-			SeqNo:     4320,
-		},
+		Workchain: 0,
+		Shard:     -9223372036854775808,
+		SeqNo:     4320,
 
 		// FileHash: string(randBytes(32)),
 		FileHash: randBytes(32),
 		RootHash: randBytes(32),
 
-		MasterID: master.BlockID,
+		MasterID: &core.BlockID{
+			Workchain: master.Workchain,
+			Shard:     master.Shard,
+			SeqNo:     master.SeqNo,
+		},
 
 		Transactions: nil,
 	}

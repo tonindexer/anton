@@ -28,6 +28,7 @@ type Transaction struct {
 	PrevTxHash []byte `bun:"type:bytea" json:"prev_tx_hash,omitempty"`
 	PrevTxLT   uint64 `json:"prev_tx_lt,omitempty"`
 
+	// TODO: in_amount, out_total_amount, balance_change
 	InMsgHash []byte     `json:"in_msg_hash"`
 	InMsg     *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash" json:"in_msg"`
 	OutMsg    []*Message `ch:"-" bun:"rel:has-many,join:address=src_address,join:created_lt=source_tx_lt" json:"out_msg,omitempty"`
@@ -37,6 +38,7 @@ type Transaction struct {
 	StateUpdate []byte `bun:"type:bytea" json:"state_update,omitempty"`
 	Description []byte `bun:"type:bytea" json:"description,omitempty"`
 
+	// TODO: parse tx description
 	ComputeSuccess   bool        `bun:",notnull" json:"compute_success"`
 	MsgStateUsed     bool        `bun:",notnull" json:"msg_state_used"`
 	AccountActivated bool        `bun:",notnull" json:"account_activated"`
@@ -131,7 +133,7 @@ type MessagePayload struct {
 type TransactionFilter struct {
 	Hash []byte `form:"hash"`
 
-	Address *addr.Address `form:"address"`
+	Addresses []*addr.Address //
 
 	BlockID *BlockID
 
@@ -139,6 +141,11 @@ type TransactionFilter struct {
 	WithAccountData     bool
 	WithMessages        bool
 	WithMessagePayloads bool
+
+	Order string `form:"order"` // ASC, DESC
+
+	AfterTxLT *uint64 `form:"after"`
+	Limit     int     `form:"limit"`
 }
 
 type MessageFilter struct {
@@ -152,12 +159,17 @@ type MessageFilter struct {
 	SrcContract    string   `form:"src_contract"`
 	DstContract    string   `form:"dst_contract"`
 	OperationNames []string `form:"operation_names"`
+
+	Order string `form:"order"` // ASC, DESC
+
+	AfterTxLT *uint64 `form:"after"`
+	Limit     int     `form:"limit"`
 }
 
 type TxRepository interface {
 	AddTransactions(ctx context.Context, tx bun.Tx, transactions []*Transaction) error
 	AddMessages(ctx context.Context, tx bun.Tx, messages []*Message) error
 	AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads []*MessagePayload) error
-	GetTransactions(ctx context.Context, filter *TransactionFilter, offset, limit int) ([]*Transaction, error)
-	GetMessages(ctx context.Context, filter *MessageFilter, offset, limit int) ([]*Message, error)
+	GetTransactions(ctx context.Context, filter *TransactionFilter) ([]*Transaction, error)
+	GetMessages(ctx context.Context, filter *MessageFilter) ([]*Message, error)
 }

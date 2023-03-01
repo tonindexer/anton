@@ -47,18 +47,18 @@ func (s *Service) GetLastMasterBlock(ctx context.Context) (*core.Block, error) {
 	return s.blockRepo.GetLastMasterBlock(ctx)
 }
 
-func (s *Service) GetBlocks(ctx context.Context, filter *core.BlockFilter, offset, limit int) ([]*core.Block, error) {
-	return s.blockRepo.GetBlocks(ctx, filter, offset, limit)
+func (s *Service) GetBlocks(ctx context.Context, filter *core.BlockFilter) ([]*core.Block, error) {
+	return s.blockRepo.GetBlocks(ctx, filter)
 }
 
-func (s *Service) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter, offset, limit int) ([]*core.AccountState, error) {
-	return s.accountRepo.GetAccountStates(ctx, filter, offset, limit)
+func (s *Service) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) ([]*core.AccountState, error) {
+	return s.accountRepo.GetAccountStates(ctx, filter)
 }
 
-func (s *Service) GetTransactions(ctx context.Context, filter *core.TransactionFilter, offset, limit int) ([]*core.Transaction, error) {
-	return s.txRepo.GetTransactions(ctx, filter, offset, limit)
+func (s *Service) GetTransactions(ctx context.Context, filter *core.TransactionFilter) ([]*core.Transaction, error) {
+	return s.txRepo.GetTransactions(ctx, filter)
 }
 
-func (s *Service) GetMessages(ctx context.Context, filter *core.MessageFilter, offset, limit int) ([]*core.Message, error) {
-	return s.txRepo.GetMessages(ctx, filter, offset, limit)
+func (s *Service) GetMessages(ctx context.Context, filter *core.MessageFilter) ([]*core.Message, error) {
+	return s.txRepo.GetMessages(ctx, filter)
 }

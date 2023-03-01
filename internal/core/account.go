@@ -116,18 +116,23 @@ type AccountData struct {
 }
 
 type AccountStateFilter struct {
-	Address     *addr.Address `form:"address"`
-	LatestState bool          `form:"latest"`
+	Addresses   []*addr.Address //
+	LatestState bool            `form:"latest"`
 
 	// contract data filter
 	WithData          bool               `form:"with_data"`
 	ContractTypes     []abi.ContractName `form:"interfaces"`
 	OwnerAddress      *addr.Address      `form:"owner_address"`
 	CollectionAddress *addr.Address      `form:"collection_address"`
+
+	Order string `form:"order"` // ASC, DESC
+
+	AfterTxLT *uint64 `form:"after"`
+	Limit     int     `form:"limit"`
 }
 
 type AccountRepository interface {
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
 	AddAccountData(ctx context.Context, tx bun.Tx, data []*AccountData) error
-	GetAccountStates(ctx context.Context, filter *AccountStateFilter, offset, limit int) ([]*AccountState, error)
+	GetAccountStates(ctx context.Context, filter *AccountStateFilter) ([]*AccountState, error)
 }

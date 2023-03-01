@@ -218,38 +218,52 @@ func (r *Repository) AddAccountData(ctx context.Context, tx bun.Tx, data []*core
 	return nil
 }
 
-func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilter) *bun.SelectQuery {
-	if filter.WithData {
+func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (ret []*core.AccountState, err error) {
+	q := r.pg.NewSelect().Model(&ret)
+
+	if f.WithData {
 		q = q.Relation("StateData")
 	}
 
 	q = q.ExcludeColumn("code", "data") // TODO: optional
 
-	if filter.LatestState {
+	if f.LatestState {
 		q.Where("account_state.latest = ?", true)
 	}
-	if filter.Address != nil {
-		q.Where("account_state.address = ?", filter.Address)
+	if len(f.Addresses) > 0 {
+		q.Where("account_state.address in (?)", bun.In(f.Addresses))
 	}
 
-	if filter.WithData {
-		if len(filter.ContractTypes) > 0 {
-			q.Where("state_data.types && ?", pgdialect.Array(filter.ContractTypes))
+	if f.WithData {
+		if len(f.ContractTypes) > 0 {
+			q.Where("state_data.types && ?", pgdialect.Array(f.ContractTypes))
 		}
-		if filter.OwnerAddress != nil {
-			q = q.Where("state_data.owner_address = ?", filter.OwnerAddress)
+		if f.OwnerAddress != nil {
+			q = q.Where("state_data.owner_address = ?", f.OwnerAddress)
 		}
-		if filter.CollectionAddress != nil {
-			q = q.Where("state_data.collection_address = ?", filter.CollectionAddress)
+		if f.CollectionAddress != nil {
+			q = q.Where("state_data.collection_address = ?", f.CollectionAddress)
 		}
 	}
 
-	return q
-}
+	if f.AfterTxLT != nil {
+		if f.Order == "ASC" {
+			q = q.Where("account_state.last_tx_lt > ?", f.AfterTxLT)
+		} else {
+			q = q.Where("account_state.last_tx_lt < ?", f.AfterTxLT)
+		}
+	}
 
-func (r *Repository) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter, offset, limit int) (ret []*core.AccountState, err error) {
-	err = selectAccountStatesFilter(r.pg.NewSelect().Model(&ret), filter).
-		Order("last_tx_lt DESC").
-		Offset(offset).Limit(limit).Scan(ctx)
+	if f.Order != "" {
+		q = q.Order("account_state.last_tx_lt " + strings.ToUpper(f.Order))
+	}
+
+	if f.Limit == 0 {
+		f.Limit = 3
+	}
+	q = q.Limit(f.Limit)
+
+	err = q.Scan(ctx)
+
 	return ret, err
 }

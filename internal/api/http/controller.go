@@ -1,12 +1,15 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
-	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
 )
@@ -46,6 +49,41 @@ func internalErr(ctx *gin.Context, err error) {
 	ctx.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 }
 
+func unmarshalAddress(a string) (*addr.Address, error) {
+	var x = new(addr.Address)
+
+	if err := x.UnmarshalJSON([]byte(a)); err != nil {
+		return nil, errors.Wrapf(err, "unmarshal %s address", a)
+	}
+
+	return x, nil
+}
+
+func unmarshalSorting(sort string) (string, error) {
+	switch sort = strings.ToUpper(sort); sort {
+	case "", "DESC":
+		return "DESC", nil
+	case "ASC":
+		return sort, nil
+	default:
+		return "", fmt.Errorf("only DESC and ASC sorting available")
+	}
+}
+
+func getAddresses(ctx *gin.Context) ([]*addr.Address, error) {
+	var ret []*addr.Address
+
+	for _, a := range ctx.Request.URL.Query()["addresses"] {
+		x, err := unmarshalAddress(a)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, x)
+	}
+
+	return ret, nil
+}
+
 // GetInterfaces godoc
 //	@Summary		contract interfaces
 //	@Description	Returns known contract interfaces
@@ -53,7 +91,7 @@ func internalErr(ctx *gin.Context, err error) {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200		{array}		core.ContractInterface
-//	@Router			/contract/interface [get]
+//	@Router			/contract/interfaces [get]
 func (c *Controller) GetInterfaces(ctx *gin.Context) {
 	ret, err := c.svc.GetInterfaces(ctx)
 	if err != nil {
@@ -70,7 +108,7 @@ func (c *Controller) GetInterfaces(ctx *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200		{array}		core.ContractOperation
-//	@Router			/contract/operation [get]
+//	@Router			/contract/operations [get]
 func (c *Controller) GetOperations(ctx *gin.Context) {
 	ret, err := c.svc.GetOperations(ctx)
 	if err != nil {
@@ -80,38 +118,32 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
-func getOffsetLimit(ctx *gin.Context) (int, int, error) {
-	o, err := strconv.ParseInt(ctx.Query("offset"), 10, 64)
-	if err != nil {
-		return 0, 0, err
-	}
-	l, err := strconv.ParseInt(ctx.Query("limit"), 10, 64)
-	if err != nil {
-		return 0, 0, err
-	}
-	return int(o), int(l), nil
-}
-
 // GetBlocks godoc
 //	@Summary		block info
 //	@Description	Returns filtered blocks
 //	@Tags			block
 //	@Accept			json
 //	@Produce		json
-//  @Param   		workchain     		query   int 	false   "workchain"
-//  @Param   		shard	     		query   int 	false   "shard"
+//  @Param   		workchain     		query   int 	false   "workchain"					default(-1)
+//  @Param   		shard	     		query   int64 	false   "shard"
 //  @Param   		seq_no	     		query   int 	false   "seq_no"
-//  @Param   		with_transactions	query	bool  	false	"include transactions"
-//  @Param   		offset	     		query   int 	true	"offset"
-//  @Param   		limit	     		query   int 	true	"limit"
+//  @Param   		with_transactions	query	bool  	false	"include transactions"		default(false)
+//  @Param			order				query	string	false	"order by seq_no"			Enums(ASC, DESC) default(DESC)
+//  @Param   		after	     		query   int 	false	"start from this seq_no"
+//  @Param   		limit	     		query   int 	false	"limit"						default(3)
 //	@Success		200		{array}		core.Block
-//	@Router			/block [get]
+//	@Router			/blocks [get]
 func (c *Controller) GetBlocks(ctx *gin.Context) {
 	var filter core.BlockFilter
 
-	if err := ctx.ShouldBindQuery(&filter); err != nil {
+	err := ctx.ShouldBindQuery(&filter)
+	if err != nil {
 		paramErr(ctx, "block_filter", err)
 		return
+	}
+
+	if mw := int32(-1); ctx.Query("workchain") == "" {
+		filter.Workchain = &mw
 	}
 
 	filter.WithShards = true
@@ -123,17 +155,18 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 		filter.WithTransactionMessagePayloads = true
 	}
 
-	offset, limit, err := getOffsetLimit(ctx)
+	filter.Order, err = unmarshalSorting(filter.Order)
 	if err != nil {
-		paramErr(ctx, "offset_limit", err)
+		paramErr(ctx, "order", err)
 		return
 	}
 
-	ret, err := c.svc.GetBlocks(ctx, &filter, offset, limit)
+	ret, err := c.svc.GetBlocks(ctx, &filter)
 	if err != nil {
 		internalErr(ctx, err)
 		return
 	}
+
 	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
@@ -143,35 +176,44 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 //	@Tags			account
 //	@Accept			json
 //	@Produce		json
-//  @Param   		address     		query   string 		false   "account address"
+//  @Param   		addresses     		query   []string 	false   "only given addresses"
 //  @Param   		latest				query	bool  		false	"only latest account states"
 //  @Param   		with_data			query	bool  		false	"include parsed data"
 //  @Param   		interfaces			query	[]string  	false	"filter by interfaces"
 //  @Param   		owner_address		query	string  	false	"filter FTs or NFTs by owner address"
 //  @Param   		collection_address	query	string  	false	"filter NFT items by collection address"
-//  @Param   		offset	     		query   int 		true	"offset"
-//  @Param   		limit	     		query   int 		true	"limit"
+//  @Param			order				query	string		false	"order by last_tx_lt"						Enums(ASC, DESC) default(DESC)
+//  @Param   		after	     		query   int 		false	"start from this last_tx_lt"
+//  @Param   		limit	     		query   int 		false	"limit"										default(3)
 //	@Success		200		{array}		core.AccountState
-//	@Router			/account [get]
+//	@Router			/accounts [get]
 func (c *Controller) GetAccountStates(ctx *gin.Context) {
 	var filter core.AccountStateFilter
 
-	if err := ctx.ShouldBindQuery(&filter); err != nil {
+	err := ctx.ShouldBindQuery(&filter)
+	if err != nil {
 		paramErr(ctx, "account_filter", err)
 		return
 	}
 
-	offset, limit, err := getOffsetLimit(ctx)
+	filter.Addresses, err = getAddresses(ctx)
 	if err != nil {
-		paramErr(ctx, "offset_limit", err)
+		paramErr(ctx, "addresses", err)
 		return
 	}
 
-	ret, err := c.svc.GetAccountStates(ctx, &filter, offset, limit)
+	filter.Order, err = unmarshalSorting(filter.Order)
+	if err != nil {
+		paramErr(ctx, "order", err)
+		return
+	}
+
+	ret, err := c.svc.GetAccountStates(ctx, &filter)
 	if err != nil {
 		internalErr(ctx, err)
 		return
 	}
+
 	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
@@ -181,29 +223,37 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 //	@Tags			transaction
 //	@Accept			json
 //	@Produce		json
-//  @Param   		address     		query   string 		false   "account address"
-//  @Param   		hash				query	string  	false	"tx hash"
-//  @Param   		with_accounts		query	bool  		false	"with accounts"
+//  @Param   		addresses     		query   []string 	false   "only given addresses"
+//  @Param   		hash				query	string  	false	"search by tx hash"
+//  @Param   		with_accounts		query	bool  		false	"return account states"
 //  @Param   		interfaces			query	[]string  	false	"filter by interfaces"
-//  @Param   		offset	     		query   int 		true	"offset"
-//  @Param   		limit	     		query   int 		true	"limit"
-//	@Success		200		{array}		core.AccountState
-//	@Router			/transaction [get]
+//  @Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
+//  @Param   		after	     		query   int 		false	"start from this created_lt"
+//  @Param   		limit	     		query   int 		false	"limit"							default(3)
+//	@Success		200		{array}		core.Transaction
+//	@Router			/transactions [get]
 func (c *Controller) GetTransactions(ctx *gin.Context) {
 	var filter core.TransactionFilter
 
-	if err := ctx.ShouldBindQuery(&filter); err != nil {
+	err := ctx.ShouldBindQuery(&filter)
+	if err != nil {
 		paramErr(ctx, "tx_filter", err)
 		return
 	}
 
-	offset, limit, err := getOffsetLimit(ctx)
+	filter.Addresses, err = getAddresses(ctx)
 	if err != nil {
-		paramErr(ctx, "offset_limit", err)
+		paramErr(ctx, "addresses", err)
 		return
 	}
 
-	ret, err := c.svc.GetTransactions(ctx, &filter, offset, limit)
+	filter.Order, err = unmarshalSorting(filter.Order)
+	if err != nil {
+		paramErr(ctx, "order", err)
+		return
+	}
+
+	ret, err := c.svc.GetTransactions(ctx, &filter)
 	if err != nil {
 		internalErr(ctx, err)
 		return
@@ -223,26 +273,29 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 //  @Param   		src_contract		query	string  	false	"source contract interface"
 //  @Param   		dst_contract		query	string  	false	"destination contract interface"
 //  @Param   		operation_names		query	[]string  	false	"filter by contract operation names"
-//  @Param   		offset	     		query   int 		true	"offset"
-//  @Param   		limit	     		query   int 		true	"limit"
-//	@Success		200		{array}		core.AccountState
-//	@Router			/message [get]
+//  @Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
+//  @Param   		after	     		query   int 		false	"start from this created_lt"
+//  @Param   		limit	     		query   int 		false	"limit"										default(3)
+//	@Success		200		{array}		core.Message
+//	@Router			/messages [get]
 func (c *Controller) GetMessages(ctx *gin.Context) {
 	var filter core.MessageFilter
 
-	if err := ctx.ShouldBindQuery(&filter); err != nil {
+	err := ctx.ShouldBindQuery(&filter)
+	if err != nil {
 		paramErr(ctx, "msg_filter", err)
 		return
 	}
+
 	filter.WithPayload = true
 
-	offset, limit, err := getOffsetLimit(ctx)
+	filter.Order, err = unmarshalSorting(filter.Order)
 	if err != nil {
-		paramErr(ctx, "offset_limit", err)
+		paramErr(ctx, "order", err)
 		return
 	}
 
-	ret, err := c.svc.GetMessages(ctx, &filter, offset, limit)
+	ret, err := c.svc.GetMessages(ctx, &filter)
 	if err != nil {
 		internalErr(ctx, err)
 		return

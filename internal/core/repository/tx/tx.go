@@ -281,8 +281,8 @@ func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQu
 	if len(f.Hash) > 0 {
 		q = q.Where("transaction.hash = ?", f.Hash)
 	}
-	if f.Address != nil {
-		q = q.Where("transaction.address = ?", f.Address)
+	if len(f.Addresses) > 0 {
+		q = q.Where("transaction.address in (?)", bun.In(f.Addresses))
 	}
 	if f.BlockID != nil {
 		q = q.Where("block_workchain = ?", f.BlockID.Workchain).
@@ -290,13 +290,28 @@ func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQu
 			Where("block_seq_no = ?", f.BlockID.SeqNo)
 	}
 
+	if f.AfterTxLT != nil {
+		if f.Order == "ASC" {
+			q = q.Where("created_lt > ?", f.AfterTxLT)
+		} else {
+			q = q.Where("created_lt < ?", f.AfterTxLT)
+		}
+	}
+
+	if f.Order != "" {
+		q = q.Order("created_lt " + strings.ToUpper(f.Order))
+	}
+
+	if f.Limit == 0 {
+		f.Limit = 3
+	}
+	q = q.Limit(f.Limit)
+
 	return q
 }
 
-func (r *Repository) GetTransactions(ctx context.Context, filter *core.TransactionFilter, offset, limit int) (ret []*core.Transaction, err error) {
-	err = selectTxFilter(r.pg.NewSelect().Model(&ret), filter).
-		Order("created_lt DESC").
-		Offset(offset).Limit(limit).Scan(ctx)
+func (r *Repository) GetTransactions(ctx context.Context, filter *core.TransactionFilter) (ret []*core.Transaction, err error) {
+	err = selectTxFilter(r.pg.NewSelect().Model(&ret), filter).Scan(ctx)
 	return ret, err
 }
 
@@ -327,16 +342,31 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 		}
 	}
 
+	if f.AfterTxLT != nil {
+		if f.Order == "ASC" {
+			q = q.Where("created_lt > ?", f.AfterTxLT)
+		} else {
+			q = q.Where("created_lt < ?", f.AfterTxLT)
+		}
+	}
+
+	if f.Order != "" {
+		q = q.Order("created_lt " + strings.ToUpper(f.Order))
+	}
+
+	if f.Limit == 0 {
+		f.Limit = 3
+	}
+	q = q.Limit(f.Limit)
+
 	return q
 }
 
-func (r *Repository) GetMessages(ctx context.Context, filter *core.MessageFilter, offset, limit int) (ret []*core.Message, err error) {
+func (r *Repository) GetMessages(ctx context.Context, filter *core.MessageFilter) (ret []*core.Message, err error) {
 	q := r.pg.NewSelect()
 	if filter.DBTx != nil {
 		q = filter.DBTx.NewSelect()
 	}
-	err = selectMsgFilter(q.Model(&ret), filter).
-		Order("created_lt DESC").
-		Offset(offset).Limit(limit).Scan(ctx)
+	err = selectMsgFilter(q.Model(&ret), filter).Scan(ctx)
 	return ret, err
 }

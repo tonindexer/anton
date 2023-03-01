@@ -80,14 +80,12 @@ func (s *Service) processShards(ctx context.Context, tx bun.Tx, master *tlb.Bloc
 		}
 
 		dbShards = append(dbShards, &core.Block{
-			BlockID: core.BlockID{
-				Workchain: shard.Workchain,
-				Shard:     shard.Shard,
-				SeqNo:     shard.SeqNo,
-			},
-			RootHash: shard.RootHash,
-			FileHash: shard.FileHash,
-			MasterID: core.BlockID{
+			Workchain: shard.Workchain,
+			Shard:     shard.Shard,
+			SeqNo:     shard.SeqNo,
+			RootHash:  shard.RootHash,
+			FileHash:  shard.FileHash,
+			MasterID: &core.BlockID{
 				Workchain: master.Workchain,
 				Shard:     master.Shard,
 				SeqNo:     master.SeqNo,
@@ -124,13 +122,11 @@ func (s *Service) processMaster(ctx context.Context, master *tlb.BlockInfo) erro
 	}
 
 	dbMaster := &core.Block{
-		BlockID: core.BlockID{
-			Workchain: master.Workchain,
-			Shard:     master.Shard,
-			SeqNo:     master.SeqNo,
-		},
-		RootHash: master.RootHash,
-		FileHash: master.FileHash,
+		Workchain: master.Workchain,
+		Shard:     master.Shard,
+		SeqNo:     master.SeqNo,
+		RootHash:  master.RootHash,
+		FileHash:  master.FileHash,
 	}
 	if err := s.blockRepo.AddBlocks(ctx, insertTx, []*core.Block{dbMaster}); err != nil {
 		return errors.Wrap(err, "cannot add master block")

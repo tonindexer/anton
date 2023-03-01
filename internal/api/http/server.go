@@ -33,15 +33,15 @@ func NewServer(host string) *Server {
 func (s *Server) RegisterRoutes(t QueryController) {
 	base := s.router.Group(basePath)
 
-	base.GET("/contract/interface", t.GetInterfaces)
-	base.GET("/contract/operation", t.GetOperations)
+	base.GET("/contract/interfaces", t.GetInterfaces)
+	base.GET("/contract/operations", t.GetOperations)
 
-	base.GET("/block", t.GetBlocks)
+	base.GET("/blocks", t.GetBlocks)
 
-	base.GET("/account", t.GetAccountStates)
+	base.GET("/accounts", t.GetAccountStates)
 
-	base.GET("/transaction", t.GetTransactions)
-	base.GET("/message", t.GetMessages)
+	base.GET("/transactions", t.GetTransactions)
+	base.GET("/messages", t.GetMessages)
 
 	base.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerFiles.Handler,

@@ -12,6 +12,7 @@ import (
 	"github.com/uptrace/bun/extra/bunbig"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/repository"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
@@ -315,9 +316,11 @@ func TestGraphFilterAccounts(t *testing.T) {
 
 	t.Run("filter latest state by address", func(t *testing.T) {
 		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
-			Address:     &accWallet.Address,
+			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: true,
-		}, 0, 100)
+			Order:       "DESC",
+			Limit:       1,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -332,10 +335,12 @@ func TestGraphFilterAccounts(t *testing.T) {
 
 	t.Run("filter latest state by address", func(t *testing.T) {
 		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
-			Address:     &accWallet.Address,
+			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: true,
 			WithData:    true,
-		}, 0, 100)
+			Order:       "DESC",
+			Limit:       1,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -356,7 +361,9 @@ func TestGraphFilterAccounts(t *testing.T) {
 			LatestState:   true,
 			WithData:      true,
 			ContractTypes: []abi.ContractName{"item"},
-		}, 0, 100)
+			Order:         "DESC",
+			Limit:         1,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -377,7 +384,9 @@ func TestGraphFilterAccounts(t *testing.T) {
 			LatestState:  true,
 			WithData:     true,
 			OwnerAddress: accDataItem.OwnerAddress,
-		}, 0, 100)
+			Order:        "DESC",
+			Limit:        1,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -401,7 +410,9 @@ func TestGraphFilterMessages(t *testing.T) {
 		ret, err := txRepo.GetMessages(ctx, &core.MessageFilter{
 			WithPayload:    true,
 			OperationNames: []string{"item_transfer"},
-		}, 0, 100)
+			Order:          "DESC",
+			Limit:          10,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -429,11 +440,13 @@ func TestGraphFilterTransactions(t *testing.T) {
 
 	t.Run("filter tx with msg by address", func(t *testing.T) {
 		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
-			Address:             &accWallet.Address,
+			Addresses:           []*addr.Address{&accWallet.Address},
 			WithAccountState:    true,
 			WithMessages:        true,
 			WithMessagePayloads: true,
-		}, 0, 100)
+			Order:               "DESC",
+			Limit:               10,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -461,12 +474,14 @@ func TestGraphFilterTransactions(t *testing.T) {
 
 	t.Run("filter tx with msg by address __item", func(t *testing.T) {
 		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
-			Address:             &accItem.Address,
+			Addresses:           []*addr.Address{&accItem.Address},
 			WithAccountState:    true,
 			WithAccountData:     true,
 			WithMessages:        true,
 			WithMessagePayloads: true,
-		}, 0, 100)
+			Order:               "DESC",
+			Limit:               8,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -506,9 +521,11 @@ func TestGraphFilterBlocks(t *testing.T) {
 		f := &core.BlockFilter{
 			Workchain:  &wc,
 			WithShards: true,
+			Order:      "DESC",
+			Limit:      100,
 		}
 
-		blocks, err := blockRepo.GetBlocks(ctx, f, 0, 100)
+		blocks, err := blockRepo.GetBlocks(ctx, f)
 		if err != nil {
 			t.Error(err)
 		}
@@ -529,9 +546,12 @@ func TestGraphFilterBlocks(t *testing.T) {
 
 		f := &core.BlockFilter{
 			Workchain: &wc,
+
+			Order: "DESC",
+			Limit: 100,
 		}
 
-		blocks, err := blockRepo.GetBlocks(ctx, f, 0, 100)
+		blocks, err := blockRepo.GetBlocks(ctx, f)
 		if err != nil {
 			t.Error(err)
 		}
@@ -558,9 +578,12 @@ func Example_blockRepo_GetBlocks() {
 		WithTransactions:               true,
 		WithTransactionMessages:        true,
 		WithTransactionMessagePayloads: true,
+
+		Order: "DESC",
+		Limit: 100,
 	}
 
-	blocks, err := blockRepo.GetBlocks(ctx, f, 0, 100)
+	blocks, err := blockRepo.GetBlocks(ctx, f)
 	if err != nil {
 		panic(err)
 	}
@@ -597,7 +620,6 @@ func Example_blockRepo_GetBlocks() {
 	}
 
 	fmt.Printf("%s", graph)
-	// Output: {"workchain":-1,"shard":2222,"seq_no":1234,"file_hash":"Uv38ByGCZU8WP18PmmIdcpVmx00QA3xNe7sEB9Hixkk=","root_hash":"gYVa2GgdDYbR6R4AFnk5y2aU0sQirNIIoAcpOUh/aZk=","master":{},"shards":[{"shard":8888,"seq_no":4320,"file_hash":"YyUlP+xzjdep4ov5IRGcFg8HAkSGFbvaCDE/ao62aNI=","root_hash":"C/UFmHWSHmaKW98sf8SERZLSVyvNBmjS1sUvUFTi0IM=","master":{"workchain":-1,"shard":2222,"seq_no":1234},"transactions":null},{"shard":8888,"seq_no":4321,"file_hash":"650YpEeEBF2H88Z88idG6ZWvWiU2eVG6ov9s1HHEg/E=","root_hash":"X7kLrbN8WCG22VUmpBqVBGgLTnyLdjobHUnUlVyEhiE=","master":{"workchain":-1,"shard":2222,"seq_no":1234},"transactions":[{"hash":"4sr8yuOmH7WGsUMjpryPnn3x2SkzP/mTkzvqb1s69t4=","address":{"hex":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","base64":"AABr-ExxdMt0djZMw9vZaLD3Fy7YV5S7NYsMO1JdoXhvn0mu"},"account":{"address":{"hex":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","base64":"AABr-ExxdMt0djZMw9vZaLD3Fy7YV5S7NYsMO1JdoXhvn0mu"},"latest":true,"is_active":true,"status":"ACTIVE","balance":{},"last_tx_lt":10683692646452564431,"last_tx_hash":"4sr8yuOmH7WGsUMjpryPnn3x2SkzP/mTkzvqb1s69t4=","state_data":{"address":{"hex":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","base64":"AABr-ExxdMt0djZMw9vZaLD3Fy7YV5S7NYsMO1JdoXhvn0mu"},"last_tx_lt":10683692646452564431,"last_tx_hash":"4sr8yuOmH7WGsUMjpryPnn3x2SkzP/mTkzvqb1s69t4=","types":["wallet"]},"state_hash":"A3Q2bEcZ5DobBn2JvH8B8fVzmBZZpE/xekxyFaO1Oes=","code":"HlhJxgd9u1ci9XF6KJomb5dkeYGZjr6onAtLNzlwEV6C7W9BJcj6cxHk1976ki2q53hmZ/fpNs1PJKv334ZrqlYDg2etYUXeHuj0qLCZPr34iDoK2L6cOXiwSIPlahVqjeVjr6Rn1J3sakDpodAH8DPCgjBhvdDqpZ+OTaZDAQU=","code_hash":"Ig0LKWiLc0uOoPPKmTboRh8Q13yW6oCnpmX2BvamO38=","data":"Pf0lZ8GJeeTWDyZobZvy+ybJAf81TN4WB+4pSznzK3x4Irpk+Eq0PKDG5rkcH9O+iZBDQXnTr0SRo2kBLbktGE/DnRc0/1cWQolTu2hl/PkrDDoXyQKL6ZFOt2ScbJNHgAl50YMDVvKlTD3qsqS0R11jr76PtWmHx39YGFJvGBQ=","data_hash":"voIzUOqxOTXzHYRIRRfpJK73iuFRwAdVklg2twdYhWU=","depth":0,"tick":false,"tock":false,"get_method_hashes":null},"block_workchain":0,"block_shard":8888,"block_seq_no":4321,"prev_tx_hash":"nsHgtyewMHLmQVp2HwOrqkCryUSP3eshkdlFwEdnr4Q=","prev_tx_lt":760740741943613320,"in_msg_hash":"1LzpZO1H90qllEaM7TI8t28NP6xHbJ+wP8kij7roj9U=","in_msg":{"type":"EXTERNAL_IN","hash":"1LzpZO1H90qllEaM7TI8t28NP6xHbJ+wP8kij7roj9U=","src_address":{"hex":"0:0000000000000000000000000000000000000000000000000000000000000000","base64":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},"dst_address":{"hex":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","base64":"AABr-ExxdMt0djZMw9vZaLD3Fy7YV5S7NYsMO1JdoXhvn0mu"},"bounce":false,"bounced":false,"amount":null,"ihr_disabled":false,"ihr_fee":null,"fwd_fee":null,"body":"gGY6BFS2gxIgfwo7WExiMWSStJdTtdUCfOFaTwpYJQ2PtQ538r9PAVLl1JQ1gH+dS5e+b7d5cEZqVib+M0CM+eiOLHl0CKMtKUFrryBqMpz//Up15JgyCYLIWq1wOEhZwFpLE6HVsvW/71pu2S2kgsqpVo5bb+nYqd3Z6wkne5I=","body_hash":"zvkEbvoYUAlEy+gAoLFSfqZHKahh0vZJejI1w39Bknc=","created_at":17941254959206722521,"created_lt":10683692646452564431},"out_msg":[{"type":"INTERNAL","hash":"ev0O211K/6vjA3/+f6aKqK9eOcxBbnNNNzxevryc3MU=","src_address":{"hex":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","base64":"AABr-ExxdMt0djZMw9vZaLD3Fy7YV5S7NYsMO1JdoXhvn0mu"},"dst_address":{"hex":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","base64":"AAAMMOwpo3A5NL9Qoo2hApdd7ad-dYV56j3-QTar91KzuH4N"},"source_tx_hash":"4sr8yuOmH7WGsUMjpryPnn3x2SkzP/mTkzvqb1s69t4=","source_tx_lt":10683692646452564431,"bounce":false,"bounced":false,"amount":{},"ihr_disabled":false,"ihr_fee":{},"fwd_fee":{},"body":"lbzOPHvT2N+T+rfhJd3rr+ZaMb1dQeLSzpwrF4kvD+o=","body_hash":"GTGikCIHd6kxQ9/cv6aEBuh3Bz/wiDThl6QDSqSK+j8=","operation_id":16772846,"payload":{"type":"INTERNAL","hash":"ev0O211K/6vjA3/+f6aKqK9eOcxBbnNNNzxevryc3MU=","src_address":{"hex":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","base64":"AABr-ExxdMt0djZMw9vZaLD3Fy7YV5S7NYsMO1JdoXhvn0mu"},"src_contract":"wallet","dst_address":{"hex":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","base64":"AAAMMOwpo3A5NL9Qoo2hApdd7ad-dYV56j3-QTar91KzuH4N"},"dst_contract":"item","body_hash":"GTGikCIHd6kxQ9/cv6aEBuh3Bz/wiDThl6QDSqSK+j8=","operation_id":16772846,"operation_name":"item_transfer","data":{"new_owner":"kkkkkk","collection_address":"aaaaaa"},"created_at":17941254959206722521,"created_lt":10683692646452564432},"created_at":17941254959206722521,"created_lt":10683692646452564432}],"total_fees":{},"compute_success":false,"msg_state_used":false,"account_activated":false,"gas_fees":null,"vm_gas_used":null,"vm_gas_limit":null,"vm_gas_credit":null,"vm_mode":0,"vm_exit_code":0,"vm_exit_arg":0,"vm_steps":0,"orig_status":"ACTIVE","end_status":"ACTIVE","created_at":17941254959206722521,"created_lt":10683692646452564431},{"hash":"Jx0D6USzyds2a3UEX479adIq5UEZR8tVPXaUJnrvTrw=","address":{"hex":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","base64":"AAAMMOwpo3A5NL9Qoo2hApdd7ad-dYV56j3-QTar91KzuH4N"},"account":{"address":{"hex":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","base64":"AAAMMOwpo3A5NL9Qoo2hApdd7ad-dYV56j3-QTar91KzuH4N"},"latest":true,"is_active":true,"status":"ACTIVE","balance":{},"last_tx_lt":10683692646452564441,"last_tx_hash":"Jx0D6USzyds2a3UEX479adIq5UEZR8tVPXaUJnrvTrw=","state_data":{"address":{"hex":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","base64":"AAAMMOwpo3A5NL9Qoo2hApdd7ad-dYV56j3-QTar91KzuH4N"},"last_tx_lt":10683692646452564441,"last_tx_hash":"Jx0D6USzyds2a3UEX479adIq5UEZR8tVPXaUJnrvTrw=","types":["item"],"owner_address":{"hex":"0:3e9ac0b00ce73bff706f7ff4b6f44090a32711f3208e4e4b89cb5165ce64002c","base64":"AAA-msCwDOc7_3Bvf_S29ECQoycR8yCOTkuJy1FlzmQALNwa"},"next_item_index":{},"royalty_address":{"hex":"0:bd9c2887aa113df2468928d5a23b9ca740f80c9382d9c6034ad2960c796503e1","base64":"AAC9nCiHqhE98kaJKNWiO5ynQPgMk4LZxgNK0pYMeWUD4SF5"},"content_uri":"git://asdf.t","item_index":42,"collection_address":{"hex":"0:ce221725f50caf1fbfe831b10b7bf5b15c47a53dbf8e7dcafc9e138647a4b44e","base64":"AADOIhcl9QyvH7_oMbELe_WxXEelPb-Ofcr8nhOGR6S0TgpV"},"balance":{}},"state_hash":"6kBrMtYQi9aFhPV+N8qsbjP+qjJjo5lDcCS6nJsUZ4o=","code":"J08BqRCuKV9u+/5fWr9EzN4mO1YGYz4r8ABvKCldfTkGnwGiOcQ2WFTDr39rQdYx+SuajRL0ElcyX/8zL3V2sGIFVjBKPj6uFMKNDOo50pAaUnINqFyh5LOOrz9Exsbvg2Ly9U/ADgnW/CVkCFTBXfysqoos7M5aOrpTq3BbGNs=","code_hash":"lLTTOKUUPmNAjYcksM8/rhej95vhBy+2PDXWBCxBYPM=","data":"juniqfP7T/sAGbRU1SK1/6F2BBk/uJZnEKeWBzLKUs9Tw/UgyIm3m/UEz7V8dgEjLVibrM6p1uJj4lwndB0/bGLLuxXZr7y/f32kGrBAjjlpwuLNzyM0OL8XdKzncJpPCR6ag/3q4OxV6yM6m1OUyzx4VrVG0xPIo7TBwOBUR/Q=","data_hash":"ujcOs228/eyQswLc3Due9SLipvHtCv7B+OIPqr7faxY=","depth":0,"tick":false,"tock":false,"get_method_hashes":[127950]},"block_workchain":0,"block_shard":8888,"block_seq_no":4321,"prev_tx_hash":"hbimJwjK67rIgLW4m5PaU4EBZEAhBOZItiJqG3gCGFE=","prev_tx_lt":9891590185009426703,"in_msg_hash":"ev0O211K/6vjA3/+f6aKqK9eOcxBbnNNNzxevryc3MU=","in_msg":{"type":"INTERNAL","hash":"ev0O211K/6vjA3/+f6aKqK9eOcxBbnNNNzxevryc3MU=","src_address":{"hex":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","base64":"AABr-ExxdMt0djZMw9vZaLD3Fy7YV5S7NYsMO1JdoXhvn0mu"},"dst_address":{"hex":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","base64":"AAAMMOwpo3A5NL9Qoo2hApdd7ad-dYV56j3-QTar91KzuH4N"},"source_tx_hash":"4sr8yuOmH7WGsUMjpryPnn3x2SkzP/mTkzvqb1s69t4=","source_tx_lt":10683692646452564431,"bounce":false,"bounced":false,"amount":{},"ihr_disabled":false,"ihr_fee":{},"fwd_fee":{},"body":"lbzOPHvT2N+T+rfhJd3rr+ZaMb1dQeLSzpwrF4kvD+o=","body_hash":"GTGikCIHd6kxQ9/cv6aEBuh3Bz/wiDThl6QDSqSK+j8=","operation_id":16772846,"payload":{"type":"INTERNAL","hash":"ev0O211K/6vjA3/+f6aKqK9eOcxBbnNNNzxevryc3MU=","src_address":{"hex":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","base64":"AABr-ExxdMt0djZMw9vZaLD3Fy7YV5S7NYsMO1JdoXhvn0mu"},"src_contract":"wallet","dst_address":{"hex":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","base64":"AAAMMOwpo3A5NL9Qoo2hApdd7ad-dYV56j3-QTar91KzuH4N"},"dst_contract":"item","body_hash":"GTGikCIHd6kxQ9/cv6aEBuh3Bz/wiDThl6QDSqSK+j8=","operation_id":16772846,"operation_name":"item_transfer","data":{"new_owner":"kkkkkk","collection_address":"aaaaaa"},"created_at":17941254959206722521,"created_lt":10683692646452564432},"created_at":17941254959206722521,"created_lt":10683692646452564432},"total_fees":{},"state_update":"9dmsTF+PcqyJs4sZ9TeEwZ6b6sA8h1on2wKd43rjekI=","description":"MYgTSHaFkpNZyoxeuU4VLcGvQuo9FnbBvdGauOKSXG0=","compute_success":false,"msg_state_used":false,"account_activated":false,"gas_fees":null,"vm_gas_used":null,"vm_gas_limit":null,"vm_gas_credit":null,"vm_mode":0,"vm_exit_code":0,"vm_exit_arg":0,"vm_steps":0,"orig_status":"ACTIVE","end_status":"ACTIVE","created_at":17941254959206722521,"created_lt":10683692646452564441}]}],"transactions":null}
 }
 
 func Example_blockRepo_GetBlocks_writeFile() {
@@ -613,9 +635,12 @@ func Example_blockRepo_GetBlocks_writeFile() {
 		WithTransactions:               true,
 		WithTransactionMessages:        true,
 		WithTransactionMessagePayloads: true,
+
+		Order: "DESC",
+		Limit: 12,
 	}
 
-	blocks, err := blockRepo.GetBlocks(ctx, f, 0, 42)
+	blocks, err := blockRepo.GetBlocks(ctx, f)
 	if err != nil {
 		panic(err)
 	}
@@ -630,7 +655,7 @@ func Example_blockRepo_GetBlocks_writeFile() {
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	_, err = file.Write(graph)
 	if err != nil {

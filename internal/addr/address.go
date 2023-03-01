@@ -21,12 +21,16 @@ import (
 type Address [34]byte
 
 var (
-	_ json.Marshaler = (*Address)(nil)
-	// _ json.Unmarshaler = (*Address)(nil)
-	_ sql.Scanner   = (*Address)(nil)
-	_ driver.Valuer = (*Address)(nil)
-	_ fmt.Stringer  = (*Address)(nil)
+	_ json.Marshaler   = (*Address)(nil)
+	_ json.Unmarshaler = (*Address)(nil)
+	_ sql.Scanner      = (*Address)(nil)
+	_ driver.Valuer    = (*Address)(nil)
+	_ fmt.Stringer     = (*Address)(nil)
 )
+
+func (x *Address) ToTU() (*address.Address, error) {
+	return address.ParseAddr(x.Base64())
+}
 
 func (x *Address) FromTU(addr *address.Address) (*Address, error) {
 	if len(addr.Data()) != 32 {
@@ -44,10 +48,6 @@ func MustFromTU(a *address.Address) *Address {
 		panic(fmt.Sprintf("%s to address", addr))
 	}
 	return addr
-}
-
-func (x *Address) ToTU() (*address.Address, error) {
-	return address.ParseAddr(x.Base64())
 }
 
 var crcTable = crc16.MakeTable(crc16.CRC16_XMODEM)
@@ -79,14 +79,6 @@ func (x *Address) FromString(str string) (*Address, error) {
 	copy(x[2:34], d)
 
 	return x, nil
-}
-
-func MustFromString(s string) *Address {
-	addr, err := new(Address).FromString(s)
-	if err != nil {
-		panic(fmt.Sprintf("%s to address", addr))
-	}
-	return addr
 }
 
 func (x *Address) Base64() string {
@@ -130,6 +122,16 @@ func (x *Address) MarshalJSON() ([]byte, error) {
 		Hex:    x.String(),
 		Base64: x.Base64(),
 	})
+}
+
+func (x *Address) UnmarshalJSON(raw []byte) error {
+	if _, err := x.FromBase64(string(raw)); err == nil {
+		return nil
+	}
+	if _, err := x.FromString(string(raw)); err == nil {
+		return nil
+	}
+	return fmt.Errorf("cannot unmarshal %s to address", string(raw))
 }
 
 func (x *Address) Value() (driver.Value, error) {
