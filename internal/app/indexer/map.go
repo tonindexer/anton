@@ -180,6 +180,11 @@ func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, 
 		PrevTxHash: raw.PrevTxHash,
 		PrevTxLT:   raw.PrevTxLT,
 
+		OutMsgCount: raw.OutMsgCount,
+
+		InAmount:  bunbig.NewInt(),
+		OutAmount: bunbig.NewInt(),
+
 		TotalFees: bunbig.FromMathBig(raw.TotalFees.Coins.NanoTON()),
 
 		OrigStatus: core.AccountStatus(raw.OrigStatus),
@@ -194,12 +199,21 @@ func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, 
 		tx.BlockShard = b.Shard
 		tx.BlockSeqNo = b.SeqNo
 	}
-	if raw.IO.In != nil {
+	if raw.IO.In != nil && raw.IO.In.Msg != nil {
 		tx.InMsgHash, err = getMsgHash(raw.IO.In)
 		if err != nil {
 			return nil, err
 		}
+		if in, ok := raw.IO.In.Msg.(*tlb.InternalMessage); ok {
+			tx.InAmount = bunbig.FromMathBig(in.Amount.NanoTON())
+		}
 	}
+	for _, m := range raw.IO.Out {
+		if out, ok := m.Msg.(*tlb.InternalMessage); ok {
+			tx.OutAmount = tx.OutAmount.Add(bunbig.FromMathBig(out.Amount.NanoTON()))
+		}
+	}
+	tx.BalanceChange = tx.InAmount.Sub(tx.OutAmount)
 	if raw.StateUpdate != nil {
 		tx.StateUpdate = raw.StateUpdate.ToBOC()
 	}

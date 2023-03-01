@@ -42,7 +42,6 @@ type AccountState struct {
 	Data      []byte `bun:"type:bytea" json:"data,omitempty"`
 	DataHash  []byte `bun:"type:bytea" json:"data_hash,omitempty"`
 
-	// TODO: do we need it?
 	Depth uint64 `json:"depth"`
 	Tick  bool   `json:"tick"`
 	Tock  bool   `json:"tock"`

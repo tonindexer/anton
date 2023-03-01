@@ -28,10 +28,15 @@ type Transaction struct {
 	PrevTxHash []byte `bun:"type:bytea" json:"prev_tx_hash,omitempty"`
 	PrevTxLT   uint64 `json:"prev_tx_lt,omitempty"`
 
-	// TODO: in_amount, out_total_amount, balance_change
-	InMsgHash []byte     `json:"in_msg_hash"`
-	InMsg     *Message   `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash" json:"in_msg"`
-	OutMsg    []*Message `ch:"-" bun:"rel:has-many,join:address=src_address,join:created_lt=source_tx_lt" json:"out_msg,omitempty"`
+	InMsgHash []byte      `json:"in_msg_hash"`
+	InMsg     *Message    `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash" json:"in_msg"`
+	InAmount  *bunbig.Int `ch:"type:UInt64" bun:"type:bigint,notnull" json:"in_amount"` // TODO: ch UInt256
+
+	OutMsg      []*Message  `ch:"-" bun:"rel:has-many,join:address=src_address,join:created_lt=source_tx_lt" json:"out_msg,omitempty"`
+	OutMsgCount uint16      `bun:",notnull" json:"out_msg_count"`
+	OutAmount   *bunbig.Int `ch:"type:UInt64" bun:"type:bigint,notnull" json:"out_amount"` // TODO: ch UInt256
+
+	BalanceChange *bunbig.Int `ch:"type:UInt64" bun:"type:bigint,notnull" json:"balance_change"` // TODO: ch UInt256
 
 	TotalFees *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"total_fees"` // TODO: ch UInt256
 
