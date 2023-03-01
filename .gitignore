@@ -16,3 +16,5 @@
 
 # GoLand
 .idea
+
+./api/http
