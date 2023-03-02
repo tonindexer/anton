@@ -213,7 +213,6 @@ func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, 
 			tx.OutAmount = tx.OutAmount.Add(bunbig.FromMathBig(out.Amount.NanoTON()))
 		}
 	}
-	tx.BalanceChange = tx.InAmount.Sub(tx.OutAmount)
 	if raw.StateUpdate != nil {
 		tx.StateUpdate = raw.StateUpdate.ToBOC()
 	}

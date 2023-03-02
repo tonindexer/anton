@@ -107,6 +107,7 @@ func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *c
 	data.Address = acc.Address
 	data.LastTxLT = acc.LastTxLT
 	data.LastTxHash = acc.LastTxHash
+	data.Balance = acc.Balance
 	data.Types = types
 
 	getters := []func(context.Context, *tlb.BlockInfo, *address.Address, []abi.ContractName, *core.AccountData) bool{

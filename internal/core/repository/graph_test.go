@@ -38,6 +38,14 @@ func randLT() uint64 {
 	return randUint()
 }
 
+func intFromStr(str string) *bunbig.Int {
+	i, err := new(bunbig.Int).FromString(str)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
 var (
 	master = core.Block{
 		Workchain: -1,
@@ -169,6 +177,7 @@ var (
 		Address:    accWallet.Address,
 		LastTxLT:   accWallet.LastTxLT,
 		LastTxHash: accWallet.LastTxHash,
+		Balance:    accWallet.Balance,
 		Types:      []abi.ContractName{"wallet"},
 	}
 
@@ -188,6 +197,7 @@ var (
 		Address:      accItem.Address,
 		LastTxLT:     accItem.LastTxLT,
 		LastTxHash:   accItem.LastTxHash,
+		Balance:      accItem.Balance,
 		Types:        []abi.ContractName{"item"},
 		OwnerAddress: randAddr(),
 		NFTCollectionData: core.NFTCollectionData{
@@ -200,10 +210,10 @@ var (
 			ContentURI: "git://asdf.t",
 		},
 		NFTItemData: core.NFTItemData{
-			ItemIndex:         42,
+			ItemIndex:         bunbig.FromInt64(42),
 			CollectionAddress: randAddr(),
 		},
-		FTWalletData: core.FTWalletData{Balance: accDataItemJetBalance},
+		FTWalletData: core.FTWalletData{JettonBalance: accDataItemJetBalance},
 	}
 
 	msgExtWallet = core.Message{
@@ -230,6 +240,8 @@ var (
 		PrevTxLT:   randLT(),
 
 		InMsgHash: msgExtWallet.Hash,
+		InAmount:  bunbig.FromInt64(0),
+		OutAmount: intFromStr("999999999800000000000"),
 
 		TotalFees:   bunbig.FromInt64(1e5),
 		StateUpdate: nil,
@@ -251,7 +263,7 @@ var (
 		SrcAddress: accWallet.Address,
 		DstAddress: accItem.Address,
 
-		Amount: bunbig.FromInt64(1e5),
+		Amount: txOutWallet.OutAmount,
 
 		IHRDisabled: false,
 		IHRFee:      bunbig.FromInt64(0),
@@ -277,6 +289,8 @@ var (
 		PrevTxLT:   randLT(),
 
 		InMsgHash: msgOutWallet.Hash,
+		InAmount:  msgOutWallet.Amount,
+		OutAmount: bunbig.FromInt64(0),
 
 		TotalFees: bunbig.FromInt64(1e3),
 

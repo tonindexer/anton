@@ -30,15 +30,13 @@ type Transaction struct {
 
 	InMsgHash []byte      `json:"in_msg_hash"`
 	InMsg     *Message    `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash" json:"in_msg"`
-	InAmount  *bunbig.Int `ch:"type:UInt64" bun:"type:bigint,notnull" json:"in_amount"` // TODO: ch UInt256
+	InAmount  *bunbig.Int `ch:"type:UInt256" bun:"type:numeric,notnull" json:"in_amount"`
 
 	OutMsg      []*Message  `ch:"-" bun:"rel:has-many,join:address=src_address,join:created_lt=source_tx_lt" json:"out_msg,omitempty"`
 	OutMsgCount uint16      `bun:",notnull" json:"out_msg_count"`
-	OutAmount   *bunbig.Int `ch:"type:UInt64" bun:"type:bigint,notnull" json:"out_amount"` // TODO: ch UInt256
+	OutAmount   *bunbig.Int `ch:"type:UInt256" bun:"type:numeric,notnull" json:"out_amount"`
 
-	BalanceChange *bunbig.Int `ch:"type:UInt64" bun:"type:bigint,notnull" json:"balance_change"` // TODO: ch UInt256
-
-	TotalFees *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"total_fees"` // TODO: ch UInt256
+	TotalFees *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"total_fees"`
 
 	StateUpdate []byte `bun:"type:bytea" json:"state_update,omitempty"`
 	Description []byte `bun:"type:bytea" json:"description,omitempty"`
@@ -47,10 +45,10 @@ type Transaction struct {
 	ComputeSuccess   bool        `bun:",notnull" json:"compute_success"`
 	MsgStateUsed     bool        `bun:",notnull" json:"msg_state_used"`
 	AccountActivated bool        `bun:",notnull" json:"account_activated"`
-	GasFees          *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"gas_fees"`      // TODO: ch UInt256
-	VmGasUsed        *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"vm_gas_used"`   // TODO: ch UInt256
-	VmGasLimit       *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"vm_gas_limit"`  // TODO: ch UInt256
-	VmGasCredit      *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"vm_gas_credit"` // TODO: ch UInt256
+	GasFees          *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"gas_fees"`
+	VmGasUsed        *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"vm_gas_used"`
+	VmGasLimit       *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"vm_gas_limit"`
+	VmGasCredit      *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"vm_gas_credit"`
 	VmMode           int8        `json:"vm_mode"`
 	VmExitCode       int32       `json:"vm_exit_code"`
 	VmExitArg        int32       `json:"vm_exit_arg"`
@@ -91,11 +89,11 @@ type Message struct {
 	Bounce  bool `bun:",notnull" json:"bounce"`
 	Bounced bool `bun:",notnull" json:"bounced"`
 
-	Amount *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"amount,omitempty"` // TODO: ch uint256
+	Amount *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"amount,omitempty"`
 
 	IHRDisabled bool        `bun:",notnull" json:"ihr_disabled"`
-	IHRFee      *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"ihr_fee"` // TODO: ch uint256
-	FwdFee      *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"fwd_fee"` // TODO: ch uint256
+	IHRFee      *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"ihr_fee"`
+	FwdFee      *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"fwd_fee"`
 
 	Body            []byte          `bun:"type:bytea" json:"body"`
 	BodyHash        []byte          `bun:"type:bytea" json:"body_hash"`

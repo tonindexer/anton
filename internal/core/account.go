@@ -28,8 +28,8 @@ type AccountState struct {
 	Address  addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
 	Latest   bool          `ch:"-" json:"latest"`
 	IsActive bool          `json:"is_active"`
-	Status   AccountStatus `ch:",lc" bun:"type:account_status" json:"status"`  // TODO: ch enum
-	Balance  *bunbig.Int   `ch:"type:UInt64" bun:"type:bigint" json:"balance"` // TODO: ch UInt256
+	Status   AccountStatus `ch:",lc" bun:"type:account_status" json:"status"` // TODO: ch enum
+	Balance  *bunbig.Int   `ch:"type:UInt256" bun:"type:numeric" json:"balance"`
 
 	LastTxLT   uint64 `ch:",pk" bun:"type:bigint,pk,notnull" json:"last_tx_lt"`
 	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"last_tx_hash"`
@@ -50,7 +50,7 @@ type AccountState struct {
 }
 
 type NFTCollectionData struct {
-	NextItemIndex *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"next_item_index,omitempty"` // TODO: ch UInt256
+	NextItemIndex *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"next_item_index,omitempty"`
 	// OwnerAddress Address
 }
 
@@ -70,14 +70,14 @@ type NFTContentData struct {
 
 type NFTItemData struct {
 	Initialized       bool          `ch:"type:Bool" json:"initialized,omitempty"`
-	ItemIndex         uint64        `ch:"type:UInt64" json:"item_index,omitempty"`
+	ItemIndex         *bunbig.Int   `ch:"type:UInt64" json:"item_index,omitempty"`
 	CollectionAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"collection_address,omitempty"`
 	EditorAddress     *addr.Address `ch:"type:String" bun:"type:bytea" json:"editor_address,omitempty"`
 	// OwnerAddress      Address
 }
 
 type FTMasterData struct {
-	TotalSupply  *bunbig.Int   `ch:"type:UInt64" bun:"type:bigint" json:"total_supply,omitempty" swaggertype:"string"` // TODO: ch UInt256
+	TotalSupply  *bunbig.Int   `ch:"type:UInt256" bun:"type:numeric" json:"total_supply,omitempty" swaggertype:"string"`
 	Mintable     bool          `json:"mintable,omitempty"`
 	AdminAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"admin_addr,omitempty"`
 	// Content     nft.ContentAny
@@ -85,7 +85,7 @@ type FTMasterData struct {
 }
 
 type FTWalletData struct {
-	Balance *bunbig.Int `ch:"type:UInt64" bun:"type:bigint" json:"balance,omitempty" swaggertype:"string"` // TODO: ch UInt256
+	JettonBalance *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"balance,omitempty" swaggertype:"string"`
 	// OwnerAddress  Address
 	MasterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"master_address,omitempty"`
 	// WalletCode  *cell.Cell
@@ -98,6 +98,7 @@ type AccountData struct {
 	Address    addr.Address `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
 	LastTxLT   uint64       `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
 	LastTxHash []byte       `ch:",pk" bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
+	Balance    *bunbig.Int  `ch:"type:UInt256" bun:"type:numeric" json:"balance"`
 
 	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types"`
 

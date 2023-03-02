@@ -53,7 +53,7 @@ func mapRoyaltyDataNFT(ret *core.AccountData, params *abi.NFTRoyaltyData) {
 func mapItemDataNFT(ret *core.AccountData, data *abi.NFTItemData) {
 	var err error
 	ret.Initialized = data.Initialized
-	ret.ItemIndex = data.Index.Uint64()
+	ret.ItemIndex = bunbig.FromMathBig(data.Index)
 	ret.CollectionAddress, err = new(addr.Address).FromTU(data.CollectionAddress)
 	if err != nil {
 		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft item collection_address from TU").Error())
@@ -139,7 +139,7 @@ func (s *Service) getAccountDataFT(ctx context.Context, b *tlb.BlockInfo, a *add
 				continue
 			}
 			if data.Balance != nil {
-				ret.Balance = bunbig.FromMathBig(data.Balance)
+				ret.JettonBalance = bunbig.FromMathBig(data.Balance)
 			}
 			ret.OwnerAddress, err = new(addr.Address).FromTU(data.OwnerAddress)
 			if err != nil {

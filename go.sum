@@ -64,8 +64,8 @@ github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/iam047801/bun/extra/bunbig v0.0.0-20230301151223-7ddabb8c667f h1:zVuXbF7reN1h0qBqA0yzHf5RpmgsEVb2VxpGSO15V/o=
 github.com/iam047801/bun/extra/bunbig v0.0.0-20230301151223-7ddabb8c667f/go.mod h1:EU3WwCvNYFpJjCUI0EKTPVRlYW8kAXy6nUbhOlQl5NE=
-github.com/iam047801/go-clickhouse v0.0.0-20230227133911-77a45625ed0b h1:buC0aZ3zTKCqHNYOQvUG3Iuj7elAzB1cuma/RPYcne0=
-github.com/iam047801/go-clickhouse v0.0.0-20230227133911-77a45625ed0b/go.mod h1:ZkFYp+b3tn7YiHR6yMnHqGetPfFZhbVYVTsTGBIbdCY=
+github.com/iam047801/go-clickhouse v0.0.0-20230302135744-fc217d428c55 h1:OiiTtoLh7Bg5qfKnAB3JBw8pZ1Cs8OnLJXfRp1XDOeM=
+github.com/iam047801/go-clickhouse v0.0.0-20230302135744-fc217d428c55/go.mod h1:ZkFYp+b3tn7YiHR6yMnHqGetPfFZhbVYVTsTGBIbdCY=
 github.com/iancoleman/strcase v0.2.0 h1:05I4QRnGpI0m37iZQRuskXh+w77mr6Z41lwQzuHLwW0=
 github.com/iancoleman/strcase v0.2.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
 github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD/E=

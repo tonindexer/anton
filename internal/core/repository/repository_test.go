@@ -201,6 +201,17 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 		if err := accountRepo.AddAccountData(ctx, insertTx, nil); err != nil {
 			t.Fatal(err)
 		}
+
+		sd := new(core.AccountData)
+		if err := db.CH.NewSelect().Model(sd).Where("address = ?", &accDataItem.Address).Where("last_tx_lt = ?", accDataItem.LastTxLT).Scan(ctx); err != nil {
+			t.Fatal(err)
+		}
+		ad := accDataItem
+		ad.TotalSupply, ad.TotalSupply, sd.ContentImageData, sd.Errors =
+			bunbig.FromInt64(0), bunbig.FromInt64(0), nil, nil
+		if !reflect.DeepEqual(sd, &ad) {
+			t.Fatalf("wrong account data, expected: %+v, got: %+v", ad, sd)
+		}
 	})
 
 	t.Run("add account states", func(t *testing.T) {
@@ -233,18 +244,6 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 		s.GetMethodHashes = nil
 		if !reflect.DeepEqual(s, &acc) {
 			t.Fatalf("wrong account, expected: %+v, got: %+v", acc, s)
-		}
-
-		sd := new(core.AccountData)
-		if err := db.CH.NewSelect().Model(sd).Where("address = ?", &accDataItem.Address).Where("last_tx_lt = ?", accDataItem.LastTxLT).Scan(ctx); err != nil {
-			t.Fatal(err)
-		}
-		ad := accDataItem
-		ad.TotalSupply = bunbig.FromInt64(0)
-		sd.ContentImageData = nil
-		sd.Errors = nil
-		if !reflect.DeepEqual(sd, &ad) {
-			t.Fatalf("wrong account data, expected: %+v, got: %+v", ad, sd)
 		}
 	})
 
