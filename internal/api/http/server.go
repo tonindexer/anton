@@ -45,12 +45,12 @@ func (s *Server) RegisterRoutes(t QueryController) {
 	base.GET("/transactions", t.GetTransactions)
 	base.GET("/messages", t.GetMessages)
 
-	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(
+	base.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerFiles.Handler,
 		ginSwagger.URL("/swagger/doc.json"),
 		ginSwagger.DefaultModelsExpandDepth(-1)))
 
-	s.router.GET("/swagger", func(c *gin.Context) {
+	base.GET("/swagger", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
 	})
 }

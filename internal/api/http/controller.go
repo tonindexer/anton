@@ -26,9 +26,9 @@ import (
 // @license.name  	Apache 2.0
 // @license.url   	http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host      		localhost
+// @host      		anton.tools
 // @BasePath  		/api/v0
-// @schemes 		http
+// @schemes 		https
 
 var basePath = "/api/v0"
 
