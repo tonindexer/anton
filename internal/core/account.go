@@ -70,7 +70,7 @@ type NFTContentData struct {
 
 type NFTItemData struct {
 	Initialized       bool          `ch:"type:Bool" json:"initialized,omitempty"`
-	ItemIndex         *bunbig.Int   `ch:"type:UInt64" json:"item_index,omitempty"`
+	ItemIndex         *bunbig.Int   `ch:"type:UInt256" json:"item_index,omitempty"`
 	CollectionAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"collection_address,omitempty"`
 	EditorAddress     *addr.Address `ch:"type:String" bun:"type:bytea" json:"editor_address,omitempty"`
 	// OwnerAddress      Address
