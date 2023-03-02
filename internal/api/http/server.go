@@ -47,7 +47,7 @@ func (s *Server) RegisterRoutes(t QueryController) {
 
 	base.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerFiles.Handler,
-		ginSwagger.URL("/swagger/doc.json"),
+		ginSwagger.URL(basePath+"/swagger/doc.json"),
 		ginSwagger.DefaultModelsExpandDepth(-1)))
 
 	base.GET("/swagger", func(c *gin.Context) {
