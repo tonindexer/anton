@@ -51,7 +51,7 @@ func (s *Server) RegisterRoutes(t QueryController) {
 		ginSwagger.DefaultModelsExpandDepth(-1)))
 
 	base.GET("/swagger", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+		c.Redirect(http.StatusMovedPermanently, "/api/v0/swagger/index.html")
 	})
 }
 
