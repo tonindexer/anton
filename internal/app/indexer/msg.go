@@ -88,7 +88,7 @@ func (s *Service) messagePayloadAlreadyKnown(ctx context.Context, tx bun.Tx, in 
 		return true, nil
 	}
 
-	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash})
+	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash, WithPayload: true})
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
 	}
