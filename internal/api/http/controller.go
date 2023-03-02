@@ -119,7 +119,7 @@ func (c *Controller) GetInterfaces(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, ret)
+	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
 }
 
 // GetOperations godoc
@@ -136,7 +136,7 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, ret)
+	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
 }
 
 // GetBlocks godoc
@@ -188,7 +188,7 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, ret)
+	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
 }
 
 // GetAccountStates godoc
@@ -252,7 +252,7 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, ret)
+	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
 }
 
 // GetTransactions godoc
@@ -306,7 +306,7 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, ret)
+	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
 }
 
 // GetMessages godoc
@@ -364,5 +364,5 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, ret)
+	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
 }
