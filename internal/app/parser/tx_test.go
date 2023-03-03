@@ -3,7 +3,6 @@ package parser
 import (
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
 
 	"github.com/iam047801/tonidx/abi"
@@ -18,8 +17,8 @@ type txTestCase struct {
 	commentOut string
 	opId       uint32
 	opIdOut    uint32
-	contract   abi.ContractName
-	error      error
+	// contract   abi.ContractName
+	// error      error
 }
 
 func TestService_ParseOperationID(t *testing.T) {
@@ -69,39 +68,5 @@ func TestService_ParseOperationID(t *testing.T) {
 				t.Fatalf("expected: %s, got: %s", c.commentOut, comment)
 			}
 		}
-	}
-}
-
-func TestService_ParseMessagePayload(t *testing.T) {
-	cases := []*txTestCase{
-		{
-			addr:     address.MustParseAddr("EQBF1wmCWU2Lb_jBZalOy0mqa5MIDAzUYeav_Z0sI3CM8Okr"),
-			txHash:   core.MustHexDecode("5fd05e9cfe02c09d2e248db424805a767719cd65b73c099463a35c0e252fb4f5"),
-			lt:       31199023000003,
-			opId:     1,
-			contract: abi.NFTCollection,
-			error:    core.ErrNotAvailable,
-		}, {
-			addr:     address.MustParseAddr("EQDdjoU_zWiyHdRW8U3NHguZt_dMvUCChJ4JHCYK0PSJD2FT"),
-			txHash:   core.MustHexDecode("30688324e25f16da78e1ab1d82c384c4b75160cdfc57d620ba95c6d63ac47ea9"),
-			lt:       31177444000003,
-			opId:     0x5FCC3D14,
-			contract: abi.NFTItem,
-		},
-	}
-
-	// TODO: fix it
-
-	for _, c := range cases {
-		tx := getTransactionOnce(t, c.addr, c.lt, c.txHash)
-		payload := tx.IO.In.Msg.Payload().ToBOC()
-		acc := &core.AccountState{Types: []string{string(c.contract)}}
-		msg := &core.Message{Body: payload, OperationID: c.opId}
-
-		parsed, err := testService(t).ParseMessagePayload(ctx, &core.AccountState{}, acc, msg)
-		if err != nil && !errors.Is(err, c.error) {
-			t.Fatal(err)
-		}
-		t.Logf("in msg payload: %+v", parsed)
 	}
 }

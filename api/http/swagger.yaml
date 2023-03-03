@@ -1,0 +1,680 @@
+basePath: /api/v0
+definitions:
+  bunbig.Int:
+    type: object
+  core.AccountData:
+    properties:
+      address:
+        items:
+          type: integer
+        type: array
+      admin_addr:
+        items:
+          type: integer
+        type: array
+      balance:
+        type: string
+      collection_address:
+        items:
+          type: integer
+        type: array
+      content_description:
+        type: string
+      content_image:
+        type: string
+      content_image_data:
+        items:
+          type: integer
+        type: array
+      content_name:
+        type: string
+      content_uri:
+        type: string
+      editor_address:
+        items:
+          type: integer
+        type: array
+      error:
+        items:
+          type: string
+        type: array
+      initialized:
+        type: boolean
+      item_index:
+        $ref: '#/definitions/bunbig.Int'
+      last_tx_hash:
+        items:
+          type: integer
+        type: array
+      last_tx_lt:
+        type: integer
+      master_address:
+        description: OwnerAddress  Address
+        items:
+          type: integer
+        type: array
+      mintable:
+        type: boolean
+      next_item_index:
+        $ref: '#/definitions/bunbig.Int'
+      owner_address:
+        description: universal column for many contracts
+        items:
+          type: integer
+        type: array
+      royalty_address:
+        items:
+          type: integer
+        type: array
+      royalty_base:
+        type: integer
+      royalty_factor:
+        type: integer
+      total_supply:
+        type: string
+      types:
+        items:
+          type: string
+        type: array
+    type: object
+  core.AccountState:
+    properties:
+      address:
+        items:
+          type: integer
+        type: array
+      balance:
+        $ref: '#/definitions/bunbig.Int'
+      code:
+        items:
+          type: integer
+        type: array
+      code_hash:
+        items:
+          type: integer
+        type: array
+      data:
+        items:
+          type: integer
+        type: array
+      data_hash:
+        items:
+          type: integer
+        type: array
+      depth:
+        type: integer
+      get_method_hashes:
+        items:
+          type: integer
+        type: array
+      is_active:
+        type: boolean
+      last_tx_hash:
+        items:
+          type: integer
+        type: array
+      last_tx_lt:
+        type: integer
+      latest:
+        type: boolean
+      state_data:
+        $ref: '#/definitions/core.AccountData'
+      state_hash:
+        description: only if account is frozen
+        items:
+          type: integer
+        type: array
+      status:
+        description: 'TODO: ch enum'
+        type: string
+      tick:
+        type: boolean
+      tock:
+        type: boolean
+    type: object
+  core.Block:
+    properties:
+      file_hash:
+        items:
+          type: integer
+        type: array
+      master:
+        $ref: '#/definitions/core.BlockID'
+      root_hash:
+        items:
+          type: integer
+        type: array
+      seq_no:
+        type: integer
+      shard:
+        type: integer
+      shards:
+        items:
+          $ref: '#/definitions/core.Block'
+        type: array
+      transactions:
+        items:
+          $ref: '#/definitions/core.Transaction'
+        type: array
+      workchain:
+        type: integer
+    type: object
+  core.BlockID:
+    properties:
+      seq_no:
+        type: integer
+      shard:
+        type: integer
+      workchain:
+        type: integer
+    type: object
+  core.ContractInterface:
+    properties:
+      addresses:
+        items:
+          items:
+            type: integer
+          type: array
+        type: array
+      code:
+        items:
+          type: integer
+        type: array
+      get_method_hashes:
+        items:
+          type: integer
+        type: array
+      get_methods:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
+    type: object
+  core.ContractOperation:
+    properties:
+      contract_name:
+        type: string
+      name:
+        type: string
+      operation_id:
+        type: integer
+      outgoing:
+        description: if operation is going from contract
+        type: boolean
+      schema:
+        items:
+          type: integer
+        type: array
+    type: object
+  core.Message:
+    properties:
+      amount:
+        $ref: '#/definitions/bunbig.Int'
+      body:
+        items:
+          type: integer
+        type: array
+      body_hash:
+        items:
+          type: integer
+        type: array
+      bounce:
+        type: boolean
+      bounced:
+        type: boolean
+      created_at:
+        type: integer
+      created_lt:
+        type: integer
+      dst_address:
+        items:
+          type: integer
+        type: array
+      fwd_fee:
+        $ref: '#/definitions/bunbig.Int'
+      hash:
+        items:
+          type: integer
+        type: array
+      ihr_disabled:
+        type: boolean
+      ihr_fee:
+        $ref: '#/definitions/bunbig.Int'
+      operation_id:
+        type: integer
+      payload:
+        $ref: '#/definitions/core.MessagePayload'
+      source:
+        allOf:
+        - $ref: '#/definitions/core.Transaction'
+        description: 'TODO: join it'
+      source_tx_hash:
+        description: |-
+          SourceTx initiates outgoing message.
+          For external incoming messages SourceTx == nil.
+        items:
+          type: integer
+        type: array
+      source_tx_lt:
+        type: integer
+      src_address:
+        items:
+          type: integer
+        type: array
+      state_init_code:
+        items:
+          type: integer
+        type: array
+      state_init_data:
+        items:
+          type: integer
+        type: array
+      transfer_comment:
+        type: string
+      type:
+        description: 'TODO: ch enum'
+        type: string
+    type: object
+  core.MessagePayload:
+    properties:
+      body_hash:
+        items:
+          type: integer
+        type: array
+      created_at:
+        type: integer
+      created_lt:
+        type: integer
+      data:
+        items:
+          type: integer
+        type: array
+      dst_address:
+        items:
+          type: integer
+        type: array
+      dst_contract:
+        type: string
+      hash:
+        items:
+          type: integer
+        type: array
+      operation_id:
+        type: integer
+      operation_name:
+        type: string
+      src_address:
+        items:
+          type: integer
+        type: array
+      src_contract:
+        type: string
+      type:
+        type: string
+    type: object
+  core.Transaction:
+    properties:
+      account:
+        $ref: '#/definitions/core.AccountState'
+      account_activated:
+        type: boolean
+      address:
+        items:
+          type: integer
+        type: array
+      block_seq_no:
+        type: integer
+      block_shard:
+        type: integer
+      block_workchain:
+        type: integer
+      compute_success:
+        description: 'TODO: parse tx description'
+        type: boolean
+      created_at:
+        type: integer
+      created_lt:
+        type: integer
+      description:
+        items:
+          type: integer
+        type: array
+      end_status:
+        type: string
+      gas_fees:
+        $ref: '#/definitions/bunbig.Int'
+      hash:
+        items:
+          type: integer
+        type: array
+      in_amount:
+        $ref: '#/definitions/bunbig.Int'
+      in_msg:
+        $ref: '#/definitions/core.Message'
+      in_msg_hash:
+        items:
+          type: integer
+        type: array
+      msg_state_used:
+        type: boolean
+      orig_status:
+        type: string
+      out_amount:
+        $ref: '#/definitions/bunbig.Int'
+      out_msg:
+        items:
+          $ref: '#/definitions/core.Message'
+        type: array
+      out_msg_count:
+        type: integer
+      prev_tx_hash:
+        items:
+          type: integer
+        type: array
+      prev_tx_lt:
+        type: integer
+      state_update:
+        items:
+          type: integer
+        type: array
+      total_fees:
+        $ref: '#/definitions/bunbig.Int'
+      vm_exit_arg:
+        type: integer
+      vm_exit_code:
+        type: integer
+      vm_gas_credit:
+        $ref: '#/definitions/bunbig.Int'
+      vm_gas_limit:
+        $ref: '#/definitions/bunbig.Int'
+      vm_gas_used:
+        $ref: '#/definitions/bunbig.Int'
+      vm_mode:
+        type: integer
+      vm_steps:
+        type: integer
+    type: object
+host: anton.tools
+info:
+  contact:
+    name: Dat Boi
+    url: https://datboi420.t.me
+  description: Project fetches data from TON blockchain.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: tonidx
+  version: 0.0.1
+paths:
+  /accounts:
+    get:
+      consumes:
+      - application/json
+      description: Returns account states and its parsed data
+      parameters:
+      - description: only given addresses
+        in: query
+        items:
+          type: string
+        name: address
+        type: array
+      - description: only latest account states
+        in: query
+        name: latest
+        type: boolean
+      - description: filter by interfaces
+        in: query
+        items:
+          type: string
+        name: interface
+        type: array
+      - description: filter FTs or NFTs by owner address
+        in: query
+        name: owner_address
+        type: string
+      - description: filter NFT items by collection address
+        in: query
+        name: collection_address
+        type: string
+      - description: filter FT wallets by minter address
+        in: query
+        name: master_address
+        type: string
+      - default: DESC
+        description: order by last_tx_lt
+        enum:
+        - ASC
+        - DESC
+        in: query
+        name: order
+        type: string
+      - description: start from this last_tx_lt
+        in: query
+        name: after
+        type: integer
+      - default: 3
+        description: limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/core.AccountState'
+            type: array
+      summary: account data
+      tags:
+      - account
+  /blocks:
+    get:
+      consumes:
+      - application/json
+      description: Returns filtered blocks
+      parameters:
+      - default: -1
+        description: workchain
+        in: query
+        name: workchain
+        type: integer
+      - description: shard
+        in: query
+        name: shard
+        type: integer
+      - description: seq_no
+        in: query
+        name: seq_no
+        type: integer
+      - default: false
+        description: include transactions
+        in: query
+        name: with_transactions
+        type: boolean
+      - default: DESC
+        description: order by seq_no
+        enum:
+        - ASC
+        - DESC
+        in: query
+        name: order
+        type: string
+      - description: start from this seq_no
+        in: query
+        name: after
+        type: integer
+      - default: 3
+        description: limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/core.Block'
+            type: array
+      summary: block info
+      tags:
+      - block
+  /contract/interfaces:
+    get:
+      consumes:
+      - application/json
+      description: Returns known contract interfaces
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/core.ContractInterface'
+            type: array
+      summary: contract interfaces
+      tags:
+      - contract
+  /contract/operations:
+    get:
+      consumes:
+      - application/json
+      description: Returns known contract message payloads schema
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/core.ContractOperation'
+            type: array
+      summary: contract operations
+      tags:
+      - contract
+  /messages:
+    get:
+      consumes:
+      - application/json
+      description: Returns filtered messages
+      parameters:
+      - description: msg hash
+        in: query
+        name: hash
+        type: string
+      - description: source address
+        in: query
+        items:
+          type: string
+        name: src_address
+        type: array
+      - description: destination address
+        in: query
+        items:
+          type: string
+        name: dst_address
+        type: array
+      - description: source contract interface
+        in: query
+        items:
+          type: string
+        name: src_contract
+        type: array
+      - description: destination contract interface
+        in: query
+        items:
+          type: string
+        name: dst_contract
+        type: array
+      - description: filter by contract operation names
+        in: query
+        items:
+          type: string
+        name: operation_name
+        type: array
+      - default: DESC
+        description: order by created_lt
+        enum:
+        - ASC
+        - DESC
+        in: query
+        name: order
+        type: string
+      - description: start from this created_lt
+        in: query
+        name: after
+        type: integer
+      - default: 3
+        description: limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/core.Message'
+            type: array
+      summary: transaction messages
+      tags:
+      - transaction
+  /transactions:
+    get:
+      consumes:
+      - application/json
+      description: Returns transactions, states and messages
+      parameters:
+      - description: only given addresses
+        in: query
+        items:
+          type: string
+        name: address
+        type: array
+      - description: search by tx hash
+        in: query
+        name: hash
+        type: string
+      - description: filter by workchain
+        in: query
+        name: workchain
+        type: integer
+      - default: DESC
+        description: order by created_lt
+        enum:
+        - ASC
+        - DESC
+        in: query
+        name: order
+        type: string
+      - description: start from this created_lt
+        in: query
+        name: after
+        type: integer
+      - default: 3
+        description: limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/core.Transaction'
+            type: array
+      summary: transactions data
+      tags:
+      - transaction
+schemes:
+- https
+swagger: "2.0"

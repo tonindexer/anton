@@ -15,7 +15,7 @@ var _ core.ContractRepository = (*Repository)(nil)
 type Repository struct {
 	pg         *bun.DB
 	interfaces []*core.ContractInterface
-	// operations []*core.ContractOperation
+	operations []*core.ContractOperation
 }
 
 func NewRepository(db *bun.DB) *Repository {
@@ -60,6 +60,27 @@ func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterfa
 
 	if len(ret) > 0 {
 		r.interfaces = ret
+	}
+
+	return ret, nil
+}
+
+func (r *Repository) GetOperations(ctx context.Context) ([]*core.ContractOperation, error) {
+	var ret []*core.ContractOperation
+
+	// TODO: clear cache
+
+	if len(r.operations) > 0 {
+		return r.operations, nil
+	}
+
+	err := r.pg.NewSelect().Model(&ret).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ret) > 0 {
+		r.operations = ret
 	}
 
 	return ret, nil

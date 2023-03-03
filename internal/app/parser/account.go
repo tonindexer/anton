@@ -3,30 +3,29 @@ package parser
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"reflect"
-	"runtime"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func matchByAddress(acc *tlb.Account, addr string) bool {
-	if addr == "" {
-		return false
+func matchByAddress(acc *core.AccountState, addresses []*addr.Address) bool {
+	for _, a := range addresses {
+		if addr.Equal(a, &acc.Address) {
+			return true
+		}
 	}
-	return acc.State != nil && addr == acc.State.Address.String()
+	return false
 }
 
-func matchByCode(acc *tlb.Account, code []byte) bool {
-	if len(code) == 0 {
+func matchByCode(acc *core.AccountState, code []byte) bool {
+	if len(acc.Code) == 0 || len(code) == 0 {
 		return false
 	}
 
@@ -36,17 +35,36 @@ func matchByCode(acc *tlb.Account, code []byte) bool {
 		return false
 	}
 
-	return acc.Code != nil && bytes.Equal(acc.Code.Hash(), codeCell.Hash())
+	accCodeCell, err := cell.FromBOC(acc.Code)
+	if err != nil {
+		log.Error().Err(err).Str("addr", acc.Address.Base64()).Msg("parse account code cell")
+		return false
+	}
+
+	return bytes.Equal(accCodeCell.Hash(), codeCell.Hash())
 }
 
-func (s *Service) DetermineInterfaces(ctx context.Context, acc *tlb.Account) ([]abi.ContractName, error) {
-	var ret []abi.ContractName
-
-	version := wallet.GetWalletVersion(acc)
-	if version != wallet.Unknown {
-		ret = append(ret,
-			abi.ContractName(fmt.Sprintf("wallet_%s", version.String())))
+func matchByGetMethods(acc *core.AccountState, getMethodHashes []uint32) bool {
+	if len(acc.GetMethodHashes) == 0 || len(getMethodHashes) == 0 {
+		return false
 	}
+	for _, x := range getMethodHashes {
+		var found bool
+		for _, y := range acc.GetMethodHashes {
+			if x == y {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *Service) DetermineInterfaces(ctx context.Context, acc *core.AccountState) ([]abi.ContractName, error) {
+	var ret []abi.ContractName
 
 	ifaces, err := s.contractRepo.GetInterfaces(ctx)
 	if err != nil {
@@ -54,7 +72,7 @@ func (s *Service) DetermineInterfaces(ctx context.Context, acc *tlb.Account) ([]
 	}
 
 	for _, iface := range ifaces {
-		if matchByAddress(acc, iface.Address) {
+		if matchByAddress(acc, iface.Addresses) {
 			ret = append(ret, iface.Name)
 			continue
 		}
@@ -64,64 +82,47 @@ func (s *Service) DetermineInterfaces(ctx context.Context, acc *tlb.Account) ([]
 			continue
 		}
 
-		if len(iface.GetMethods) == 0 {
-			continue
-		}
-
-		var hasMethods = true
-		for _, get := range iface.GetMethods {
-			if !acc.HasGetMethod(get) {
-				hasMethods = false
-				break
-			}
-		}
-		if hasMethods {
+		if matchByGetMethods(acc, iface.GetMethodHashes) {
 			ret = append(ret, iface.Name)
+			continue
 		}
 	}
 
 	return ret, nil
 }
 
-func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account) (*core.AccountData, error) {
+func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *core.AccountState, types []abi.ContractName) (*core.AccountData, error) {
 	var unknown int
 
-	if acc.State == nil {
-		return nil, errors.Wrap(core.ErrNotAvailable, "no account state")
-	}
-	if acc.State.Address.Type() != address.StdAddress {
-		return nil, errors.Wrap(core.ErrNotAvailable, "no account address")
-	}
-
-	types, err := s.DetermineInterfaces(ctx, acc)
-	if err != nil {
-		return nil, errors.Wrap(err, "get contract interfaces")
-	}
 	if len(types) == 0 {
 		return nil, errors.Wrap(core.ErrNotAvailable, "unknown contract interfaces")
 	}
 
+	a, err := acc.Address.ToTU()
+	if err != nil {
+		return nil, errors.Wrapf(err, "address to TU (%s)", acc.Address.Base64())
+	}
+
 	data := new(core.AccountData)
-	data.Address = acc.State.Address.String()
+	data.Address = acc.Address
 	data.LastTxLT = acc.LastTxLT
 	data.LastTxHash = acc.LastTxHash
+	data.Balance = acc.Balance
+	data.Types = types
 
-	getters := []func(context.Context, *tlb.BlockInfo, *tlb.Account, []abi.ContractName, *core.AccountData) error{
+	getters := []func(context.Context, *tlb.BlockInfo, *address.Address, []abi.ContractName, *core.AccountData) bool{
 		s.getAccountDataNFT,
 		s.getAccountDataFT,
 	}
 	for _, getter := range getters {
-		// TODO: do not return error in known contract getter, save error to a database
-
-		if err := getter(ctx, b, acc, types, data); err != nil && !errors.Is(err, core.ErrNotAvailable) {
-			return nil, fmt.Errorf("%s: %w", runtime.FuncForPC(reflect.ValueOf(getter).Pointer()).Name(), err)
-		} else if err != nil {
+		if !getter(ctx, b, a, types, data) {
 			unknown++
+			continue
 		}
 	}
-	if unknown == len(getters) {
-		return nil, errors.Wrap(core.ErrNotAvailable, "no data getters got a contract")
-	}
 
+	if data.Errors != nil {
+		log.Warn().Str("address", acc.Address.Base64()).Strs("errors", data.Errors).Msg("parse account data")
+	}
 	return data, nil
 }

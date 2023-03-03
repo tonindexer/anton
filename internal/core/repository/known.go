@@ -2,9 +2,6 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"net/http"
 	"reflect"
 
 	"github.com/iancoleman/strcase"
@@ -12,6 +9,7 @@ import (
 	"github.com/uptrace/bun"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -21,9 +19,23 @@ func insertKnownInterfaces(ctx context.Context, db *bun.DB) error {
 			Name:       n,
 			GetMethods: get,
 		}
+		for _, g := range row.GetMethods {
+			row.GetMethodHashes = append(row.GetMethodHashes, abi.MethodNameHash(g))
+		}
 		_, err := db.NewInsert().Model(&row).Exec(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "%s [%v]", n, get)
+		}
+	}
+
+	for v, code := range abi.WalletCode {
+		row := core.ContractInterface{
+			Name: v.Name(),
+			Code: code.ToBOC(),
+		}
+		_, err := db.NewInsert().Model(&row).Exec(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "wallet code %s", row.Name)
 		}
 	}
 
@@ -63,39 +75,36 @@ func insertKnownOperations(ctx context.Context, db *bun.DB) error {
 }
 
 func insertKnownAddresses(ctx context.Context, db *bun.DB) error {
-	for addr, n := range abi.KnownAddresses {
-		row := core.ContractInterface{
-			Name:    n,
-			Address: addr,
-		}
-		_, err := db.NewInsert().Model(&row).Exec(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "%s [%v]", n, addr)
-		}
-	}
-
-	res, err := http.Get("https://raw.githubusercontent.com/menschee/tonscanplus/main/data.json")
-	if err != nil {
-		return err
-	}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
 	var addrMap = make(map[string]abi.ContractName)
-	if err := json.Unmarshal(body, &addrMap); err != nil {
-		return errors.Wrap(err, "tonscanplus data unmarshal")
+
+	// res, err := http.Get("https://raw.githubusercontent.com/menschee/tonscanplus/main/data.json")
+	// if err != nil {
+	// 	return err
+	// }
+	// body, err := io.ReadAll(res.Body)
+	// if err != nil {
+	// 	return err
+	// }
+	// if err := json.Unmarshal(body, &addrMap); err != nil {
+	// 	return errors.Wrap(err, "tonscanplus data unmarshal")
+	// }
+
+	for a, n := range abi.KnownAddresses {
+		addrMap[a] = n
 	}
 
-	for addr, name := range addrMap {
-		row := core.ContractInterface{
-			Name:    name,
-			Address: addr,
+	knownAddr := make(map[abi.ContractName]*core.ContractInterface)
+	for a, n := range addrMap {
+		if knownAddr[n] == nil {
+			knownAddr[n] = new(core.ContractInterface)
+			knownAddr[n].Name = n
 		}
-		_, err = db.NewInsert().Model(&row).Exec(ctx)
+		knownAddr[n].Addresses = append(knownAddr[n].Addresses, addr.MustFromBase64(a))
+	}
+	for n, iface := range knownAddr {
+		_, err := db.NewInsert().Model(iface).Exec(ctx)
 		if err != nil {
-			return errors.Wrapf(err, "%s [%s]", name, addr)
+			return errors.Wrapf(err, "%s [%v]", n, iface.Addresses)
 		}
 	}
 

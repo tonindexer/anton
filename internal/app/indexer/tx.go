@@ -74,7 +74,7 @@ func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, shard
 		return errors.Wrap(err, "parse block messages")
 	}
 
-	payloads := s.parseMessagePayloads(ctx, tx, messages, accountMap)
+	payloads := s.parseMessagePayloads(ctx, tx, messages, accountDataMap)
 
 	for _, st := range accountMap {
 		accounts = append(accounts, st)

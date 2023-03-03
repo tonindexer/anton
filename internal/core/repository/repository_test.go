@@ -9,11 +9,15 @@ import (
 	"testing"
 
 	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/extra/bunbig"
 
+	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/repository"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
 	"github.com/iam047801/tonidx/internal/core/repository/block"
+	"github.com/iam047801/tonidx/internal/core/repository/contract"
 	"github.com/iam047801/tonidx/internal/core/repository/tx"
 )
 
@@ -23,6 +27,7 @@ var (
 	db *repository.DB
 
 	accountRepo core.AccountRepository
+	abiRepo     core.ContractRepository
 	blockRepo   core.BlockRepository
 	txRepo      core.TxRepository
 )
@@ -38,6 +43,7 @@ func initDB() {
 	}
 
 	accountRepo = account.NewRepository(db.CH, db.PG)
+	abiRepo = contract.NewRepository(db.PG)
 	blockRepo = block.NewRepository(db.CH, db.PG)
 	txRepo = tx.NewRepository(db.CH, db.PG)
 }
@@ -139,6 +145,17 @@ func TestInsertKnownInterfaces(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+
+	t.Run("get contact operation", func(t *testing.T) {
+		op, err := abiRepo.GetOperationByID(ctx, []abi.ContractName{abi.NFTItem}, false, 0x5fcc3d14)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = abi.UnmarshalSchema(op.Schema)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master block data insertion
@@ -184,6 +201,17 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 		if err := accountRepo.AddAccountData(ctx, insertTx, nil); err != nil {
 			t.Fatal(err)
 		}
+
+		sd := new(core.AccountData)
+		if err := db.CH.NewSelect().Model(sd).Where("address = ?", &accDataItem.Address).Where("last_tx_lt = ?", accDataItem.LastTxLT).Scan(ctx); err != nil {
+			t.Fatal(err)
+		}
+		ad := accDataItem
+		ad.TotalSupply, ad.TotalSupply, sd.ContentImageData, sd.Errors =
+			bunbig.FromInt64(0), bunbig.FromInt64(0), nil, nil
+		if !reflect.DeepEqual(sd, &ad) {
+			t.Fatalf("wrong account data, expected: %+v, got: %+v", ad, sd)
+		}
 	})
 
 	t.Run("add account states", func(t *testing.T) {
@@ -205,6 +233,17 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 		}
 		if err := accountRepo.AddAccountStates(ctx, insertTx, nil); err != nil {
 			t.Fatal(err)
+		}
+
+		s := new(core.AccountState)
+		if err := db.CH.NewSelect().Model(s).Where("address = ?", &accWallet.Address).Where("last_tx_lt = ?", accWallet.LastTxLT).Scan(ctx); err != nil {
+			t.Fatal(err)
+		}
+		acc := accWallet
+		acc.Latest = false
+		s.GetMethodHashes = nil
+		if !reflect.DeepEqual(s, &acc) {
+			t.Fatalf("wrong account, expected: %+v, got: %+v", acc, s)
 		}
 	})
 
@@ -270,11 +309,17 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 func TestGraphFilterAccounts(t *testing.T) {
 	initDB()
 
+	// TODO: optional fields
+	accWallet.Code, accWallet.Data = nil, nil
+	accItem.Code, accItem.Data = nil, nil
+
 	t.Run("filter latest state by address", func(t *testing.T) {
 		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
-			Address:     accWallet.Address,
+			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: true,
-		}, 0, 100)
+			Order:       "DESC",
+			Limit:       1,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -289,10 +334,12 @@ func TestGraphFilterAccounts(t *testing.T) {
 
 	t.Run("filter latest state by address", func(t *testing.T) {
 		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
-			Address:     accWallet.Address,
+			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: true,
 			WithData:    true,
-		}, 0, 100)
+			Order:       "DESC",
+			Limit:       1,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -308,12 +355,37 @@ func TestGraphFilterAccounts(t *testing.T) {
 		}
 	})
 
+	t.Run("filter latest item account states by types", func(t *testing.T) {
+		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+			LatestState:   true,
+			WithData:      true,
+			ContractTypes: []abi.ContractName{"item"},
+			Order:         "DESC",
+			Limit:         1,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		acc := accItem
+		acc.StateData = &accDataItem
+
+		if len(ret) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
+		}
+		if !reflect.DeepEqual(&acc, ret[0]) {
+			t.Fatalf("wrong account, expected: %+v, got: %+v", acc, ret[0])
+		}
+	})
+
 	t.Run("filter latest item account states by owner address", func(t *testing.T) {
 		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 			LatestState:  true,
 			WithData:     true,
 			OwnerAddress: accDataItem.OwnerAddress,
-		}, 0, 100)
+			Order:        "DESC",
+			Limit:        1,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -335,9 +407,11 @@ func TestGraphFilterMessages(t *testing.T) {
 
 	t.Run("filter messages by operation name with source", func(t *testing.T) {
 		ret, err := txRepo.GetMessages(ctx, &core.MessageFilter{
-			WithPayload:   true,
-			OperationName: "item_transfer",
-		}, 0, 100)
+			WithPayload:    true,
+			OperationNames: []string{"item_transfer"},
+			Order:          "DESC",
+			Limit:          10,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -348,8 +422,14 @@ func TestGraphFilterMessages(t *testing.T) {
 		if len(ret) != 1 {
 			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
 		}
+		if !reflect.DeepEqual(msgIn.Payload.DataJSON, ret[0].Payload.DataJSON) {
+			t.Fatalf("wrong msg payload data json, expected: %s, got: %s", msgIn.Payload.DataJSON, ret[0].Payload.DataJSON)
+		}
+		if !reflect.DeepEqual(msgIn.Payload, ret[0].Payload) {
+			t.Fatalf("wrong msg payload, expected: %+v, got: %+v", msgIn.Payload, ret[0].Payload)
+		}
 		if !reflect.DeepEqual(&msgIn, ret[0]) {
-			t.Fatalf("wrong tx, expected: %+v, got: %+v", msgIn, ret[0])
+			t.Fatalf("wrong msg, expected: %+v, got: %+v", msgIn, ret[0])
 		}
 	})
 }
@@ -359,11 +439,13 @@ func TestGraphFilterTransactions(t *testing.T) {
 
 	t.Run("filter tx with msg by address", func(t *testing.T) {
 		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
-			Address:             accWallet.Address,
+			Addresses:           []*addr.Address{&accWallet.Address},
 			WithAccountState:    true,
 			WithMessages:        true,
 			WithMessagePayloads: true,
-		}, 0, 100)
+			Order:               "DESC",
+			Limit:               10,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -391,12 +473,14 @@ func TestGraphFilterTransactions(t *testing.T) {
 
 	t.Run("filter tx with msg by address __item", func(t *testing.T) {
 		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
-			Address:             accItem.Address,
+			Addresses:           []*addr.Address{&accItem.Address},
 			WithAccountState:    true,
 			WithAccountData:     true,
 			WithMessages:        true,
 			WithMessagePayloads: true,
-		}, 0, 100)
+			Order:               "DESC",
+			Limit:               8,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -436,9 +520,11 @@ func TestGraphFilterBlocks(t *testing.T) {
 		f := &core.BlockFilter{
 			Workchain:  &wc,
 			WithShards: true,
+			Order:      "DESC",
+			Limit:      100,
 		}
 
-		blocks, err := blockRepo.GetBlocks(ctx, f, 0, 100)
+		blocks, err := blockRepo.GetBlocks(ctx, f)
 		if err != nil {
 			t.Error(err)
 		}
@@ -459,9 +545,12 @@ func TestGraphFilterBlocks(t *testing.T) {
 
 		f := &core.BlockFilter{
 			Workchain: &wc,
+
+			Order: "DESC",
+			Limit: 100,
 		}
 
-		blocks, err := blockRepo.GetBlocks(ctx, f, 0, 100)
+		blocks, err := blockRepo.GetBlocks(ctx, f)
 		if err != nil {
 			t.Error(err)
 		}
@@ -488,9 +577,12 @@ func Example_blockRepo_GetBlocks() {
 		WithTransactions:               true,
 		WithTransactionMessages:        true,
 		WithTransactionMessagePayloads: true,
+
+		Order: "DESC",
+		Limit: 100,
 	}
 
-	blocks, err := blockRepo.GetBlocks(ctx, f, 0, 100)
+	blocks, err := blockRepo.GetBlocks(ctx, f)
 	if err != nil {
 		panic(err)
 	}
@@ -527,7 +619,6 @@ func Example_blockRepo_GetBlocks() {
 	}
 
 	fmt.Printf("%s", graph)
-	// Output: {"workchain":-1,"shard":2222,"seq_no":1234,"FileHash":"Uv38ByGCZU8WP18PmmIdcpVmx00QA3xNe7sEB9Hixkk=","RootHash":"gYVa2GgdDYbR6R4AFnk5y2aU0sQirNIIoAcpOUh/aZk=","MasterID":{"workchain":0,"shard":0,"seq_no":0},"Shards":[{"workchain":0,"shard":8888,"seq_no":4320,"FileHash":"YyUlP+xzjdep4ov5IRGcFg8HAkSGFbvaCDE/ao62aNI=","RootHash":"C/UFmHWSHmaKW98sf8SERZLSVyvNBmjS1sUvUFTi0IM=","MasterID":{"workchain":-1,"shard":2222,"seq_no":1234},"Shards":null,"Transactions":null},{"workchain":0,"shard":8888,"seq_no":4321,"FileHash":"650YpEeEBF2H88Z88idG6ZWvWiU2eVG6ov9s1HHEg/E=","RootHash":"X7kLrbN8WCG22VUmpBqVBGgLTnyLdjobHUnUlVyEhiE=","MasterID":{"workchain":-1,"shard":2222,"seq_no":1234},"Shards":null,"Transactions":[{"Hash":"4sr8yuOmH7WGsUMjpryPnn3x2SkzP/mTkzvqb1s69t4=","Address":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","Account":{"Latest":true,"Address":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","IsActive":true,"Status":"ACTIVE","Balance":1000000000,"LastTxLT":10683692646452564431,"LastTxHash":"4sr8yuOmH7WGsUMjpryPnn3x2SkzP/mTkzvqb1s69t4=","StateData":{"Address":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","LastTxLT":10683692646452564431,"LastTxHash":"4sr8yuOmH7WGsUMjpryPnn3x2SkzP/mTkzvqb1s69t4=","Types":["wallet"],"OwnerAddress":"","NextItemIndex":0,"RoyaltyAddress":"","RoyaltyFactor":0,"RoyaltyBase":0,"ContentURI":"","ContentName":"","ContentDescription":"","ContentImage":"","ContentImageData":null,"Initialized":false,"ItemIndex":0,"CollectionAddress":"","EditorAddress":""},"StateHash":"A3Q2bEcZ5DobBn2JvH8B8fVzmBZZpE/xekxyFaO1Oes=","Code":"HlhJxgd9u1ci9XF6KJomb5dkeYGZjr6onAtLNzlwEV6C7W9BJcj6cxHk1976ki2q53hmZ/fpNs1PJKv334ZrqlYDg2etYUXeHuj0qLCZPr34iDoK2L6cOXiwSIPlahVqjeVjr6Rn1J3sakDpodAH8DPCgjBhvdDqpZ+OTaZDAQU=","CodeHash":"Ig0LKWiLc0uOoPPKmTboRh8Q13yW6oCnpmX2BvamO38=","Data":"Pf0lZ8GJeeTWDyZobZvy+ybJAf81TN4WB+4pSznzK3x4Irpk+Eq0PKDG5rkcH9O+iZBDQXnTr0SRo2kBLbktGE/DnRc0/1cWQolTu2hl/PkrDDoXyQKL6ZFOt2ScbJNHgAl50YMDVvKlTD3qsqS0R11jr76PtWmHx39YGFJvGBQ=","DataHash":"voIzUOqxOTXzHYRIRRfpJK73iuFRwAdVklg2twdYhWU=","Depth":0,"Tick":false,"Tock":false,"Types":["wallet"]},"BlockWorkchain":0,"BlockShard":8888,"BlockSeqNo":4321,"PrevTxHash":"MjXZazscVCT84LcnsDBy5kFadh8Dq6pAq8lEj93rIZE=","PrevTxLT":13717360897469088943,"InMsgHash":"nhOGR6S0TtS86WTtR/dKpZRGjO0yPLdvDT+sR2yfsD8=","InMsg":{"Type":"EXTERNAL_IN","Hash":"nhOGR6S0TtS86WTtR/dKpZRGjO0yPLdvDT+sR2yfsD8=","SrcAddress":"","DstAddress":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","SourceTxHash":null,"SourceTxLT":0,"Source":null,"Bounce":false,"Bounced":false,"Amount":0,"IHRDisabled":false,"IHRFee":0,"FwdFee":0,"Body":"ySKPuuiP1YBmOgRUtoMSIH8KO1hMYjFkkrSXU7XVAnzhWk8KWCUNj7UOd/K/TwFS5dSUNYB/nUuXvm+3eXBGalYm/jNAjPnojix5dAijLSlBa68gajKc//1KdeSYMgmCyFqtcDhIWcBaSxOh1bL1v+9abtktpILKqVaOW2/p2Kk=","BodyHash":"3dnrCSd7ks75BG76GFAJRMvoAKCxUn6mRymoYdL2SXo=","OperationID":0,"TransferComment":"","Payload":null,"StateInitCode":null,"StateInitData":null,"CreatedAt":198614094973075395,"CreatedLT":10683692646452564431},"OutMsg":[{"Type":"INTERNAL","Hash":"2UXAR2eIV7eZrLGOSv+r4wN//n+miqivXjnMQW5zTTc=","SrcAddress":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","DstAddress":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","SourceTxHash":"4sr8yuOmH7WGsUMjpryPnn3x2SkzP/mTkzvqb1s69t4=","SourceTxLT":10683692646452564431,"Source":null,"Bounce":false,"Bounced":false,"Amount":100000,"IHRDisabled":false,"IHRFee":0,"FwdFee":0,"Body":"PF6+vJzcxZW8zjx709jfk/q34SXd66/mWjG9XUHi0s4=","BodyHash":"nCsXiS8P6hkxopAiB3epMUPf3L+mhAbodwc/8Ig04Zc=","OperationID":16772846,"TransferComment":"","Payload":{"Type":"INTERNAL","Hash":"2UXAR2eIV7eZrLGOSv+r4wN//n+miqivXjnMQW5zTTc=","SrcAddress":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","SrcContract":"wallet","DstAddress":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","DstContract":"item","BodyHash":"nCsXiS8P6hkxopAiB3epMUPf3L+mhAbodwc/8Ig04Zc=","OperationID":16772846,"OperationName":"item_transfer","DataJSON":"{\"new_owner\": \"kkkkkk\"}","CreatedAt":198614094973075395,"CreatedLT":10683692646452564432},"StateInitCode":null,"StateInitData":null,"CreatedAt":198614094973075395,"CreatedLT":10683692646452564432}],"TotalFees":100000,"StateUpdate":null,"Description":null,"OrigStatus":"ACTIVE","EndStatus":"ACTIVE","CreatedAt":198614094973075395,"CreatedLT":10683692646452564431},{"Hash":"Jx0D6USzyds2a3UEX479adIq5UEZR8tVPXaUJnrvTrw=","Address":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","Account":{"Latest":true,"Address":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","IsActive":true,"Status":"ACTIVE","Balance":1000000000,"LastTxLT":10683692646452564441,"LastTxHash":"Jx0D6USzyds2a3UEX479adIq5UEZR8tVPXaUJnrvTrw=","StateData":{"Address":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","LastTxLT":10683692646452564441,"LastTxHash":"Jx0D6USzyds2a3UEX479adIq5UEZR8tVPXaUJnrvTrw=","Types":["item"],"OwnerAddress":"0:3e9ac0b7413ef110bd58b00ce73bff706f7ff4b6f44090a32711f3208e4e4b89","NextItemIndex":43,"RoyaltyAddress":"0:cb5165ce64002cbd9c2887aa113df2468928d5a23b9ca740f80c9382d9c6034a","RoyaltyFactor":0,"RoyaltyBase":0,"ContentURI":"git://asdf.t","ContentName":"","ContentDescription":"","ContentImage":"","ContentImageData":null,"Initialized":false,"ItemIndex":42,"CollectionAddress":"0:d2960c796503e1ce221725f50caf1fbfe831b10b7bf5b15c47a53dbf8e7dcafc","EditorAddress":""},"StateHash":"6kBrMtYQi9aFhPV+N8qsbjP+qjJjo5lDcCS6nJsUZ4o=","Code":"J08BqRCuKV9u+/5fWr9EzN4mO1YGYz4r8ABvKCldfTkGnwGiOcQ2WFTDr39rQdYx+SuajRL0ElcyX/8zL3V2sGIFVjBKPj6uFMKNDOo50pAaUnINqFyh5LOOrz9Exsbvg2Ly9U/ADgnW/CVkCFTBXfysqoos7M5aOrpTq3BbGNs=","CodeHash":"lLTTOKUUPmNAjYcksM8/rhej95vhBy+2PDXWBCxBYPM=","Data":"juniqfP7T/sAGbRU1SK1/6F2BBk/uJZnEKeWBzLKUs9Tw/UgyIm3m/UEz7V8dgEjLVibrM6p1uJj4lwndB0/bGLLuxXZr7y/f32kGrBAjjlpwuLNzyM0OL8XdKzncJpPCR6ag/3q4OxV6yM6m1OUyzx4VrVG0xPIo7TBwOBUR/Q=","DataHash":"ujcOs228/eyQswLc3Due9SLipvHtCv7B+OIPqr7faxY=","Depth":0,"Tick":false,"Tock":false,"Types":["item"]},"BlockWorkchain":0,"BlockShard":8888,"BlockSeqNo":4321,"PrevTxHash":"pANKpIr6P4W4picIyuu6yIC1uJuT2lOBAWRAIQTmSLY=","PrevTxLT":13955768992965067384,"InMsgHash":"2UXAR2eIV7eZrLGOSv+r4wN//n+miqivXjnMQW5zTTc=","InMsg":{"Type":"INTERNAL","Hash":"2UXAR2eIV7eZrLGOSv+r4wN//n+miqivXjnMQW5zTTc=","SrcAddress":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","DstAddress":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","SourceTxHash":"4sr8yuOmH7WGsUMjpryPnn3x2SkzP/mTkzvqb1s69t4=","SourceTxLT":10683692646452564431,"Source":null,"Bounce":false,"Bounced":false,"Amount":100000,"IHRDisabled":false,"IHRFee":0,"FwdFee":0,"Body":"PF6+vJzcxZW8zjx709jfk/q34SXd66/mWjG9XUHi0s4=","BodyHash":"nCsXiS8P6hkxopAiB3epMUPf3L+mhAbodwc/8Ig04Zc=","OperationID":16772846,"TransferComment":"","Payload":{"Type":"INTERNAL","Hash":"2UXAR2eIV7eZrLGOSv+r4wN//n+miqivXjnMQW5zTTc=","SrcAddress":"0:6bf84c7174cb7476364cc3dbd968b0f7172ed85794bb358b0c3b525da1786f9f","SrcContract":"wallet","DstAddress":"0:0c30ec29a3703934bf50a28da102975deda77e758579ea3dfe4136abf752b3b8","DstContract":"item","BodyHash":"nCsXiS8P6hkxopAiB3epMUPf3L+mhAbodwc/8Ig04Zc=","OperationID":16772846,"OperationName":"item_transfer","DataJSON":"{\"new_owner\": \"kkkkkk\"}","CreatedAt":198614094973075395,"CreatedLT":10683692646452564432},"StateInitCode":null,"StateInitData":null,"CreatedAt":198614094973075395,"CreatedLT":10683692646452564432},"OutMsg":null,"TotalFees":1000,"StateUpdate":"ImobDzE6id38RUxfj3KsibOLGfU3hMGem+rAPIdaJ9s=","Description":"Ap3jeuN6QjGIE0h2hZKTWcqMXrlOFS3Br0LqPRZ2wb0=","OrigStatus":"ACTIVE","EndStatus":"ACTIVE","CreatedAt":198614094973075395,"CreatedLT":10683692646452564441}]}],"Transactions":null}
 }
 
 func Example_blockRepo_GetBlocks_writeFile() {
@@ -543,9 +634,12 @@ func Example_blockRepo_GetBlocks_writeFile() {
 		WithTransactions:               true,
 		WithTransactionMessages:        true,
 		WithTransactionMessagePayloads: true,
+
+		Order: "DESC",
+		Limit: 12,
 	}
 
-	blocks, err := blockRepo.GetBlocks(ctx, f, 0, 42)
+	blocks, err := blockRepo.GetBlocks(ctx, f)
 	if err != nil {
 		panic(err)
 	}
@@ -560,7 +654,7 @@ func Example_blockRepo_GetBlocks_writeFile() {
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	_, err = file.Write(graph)
 	if err != nil {

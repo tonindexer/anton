@@ -125,6 +125,15 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "message payload pg create dst_contract index")
 	}
 
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.MessagePayload{}).
+		Using("HASH").
+		Column("operation_name").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "message payload pg create operation name index")
+	}
+
 	return nil
 }
 
@@ -254,7 +263,9 @@ func (r *Repository) AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads
 
 func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQuery {
 	if f.WithAccountState {
-		q = q.Relation("Account")
+		q = q.Relation("Account", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.ExcludeColumn("code", "data") // TODO: optional
+		})
 		if f.WithAccountData {
 			q = q.Relation("Account.StateData")
 		}
@@ -270,22 +281,40 @@ func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQu
 	if len(f.Hash) > 0 {
 		q = q.Where("transaction.hash = ?", f.Hash)
 	}
-	if len(f.Address) > 0 {
-		q = q.Where("transaction.address = ?", f.Address)
+	if len(f.Addresses) > 0 {
+		q = q.Where("transaction.address in (?)", bun.In(f.Addresses))
+	}
+	if f.Workchain != nil {
+		q = q.Where("transaction.block_workchain = ?", f.Workchain)
 	}
 	if f.BlockID != nil {
-		q = q.Where("block_workchain = ?", f.BlockID.Workchain).
-			Where("block_shard = ?", f.BlockID.Shard).
-			Where("block_seq_no = ?", f.BlockID.SeqNo)
+		q = q.Where("transaction.block_workchain = ?", f.BlockID.Workchain).
+			Where("transaction.block_shard = ?", f.BlockID.Shard).
+			Where("transaction.block_seq_no = ?", f.BlockID.SeqNo)
 	}
+
+	if f.AfterTxLT != nil {
+		if f.Order == "ASC" {
+			q = q.Where("transaction.created_lt > ?", f.AfterTxLT)
+		} else {
+			q = q.Where("transaction.created_lt < ?", f.AfterTxLT)
+		}
+	}
+
+	if f.Order != "" {
+		q = q.Order("transaction.created_lt " + strings.ToUpper(f.Order))
+	}
+
+	if f.Limit == 0 {
+		f.Limit = 3
+	}
+	q = q.Limit(f.Limit)
 
 	return q
 }
 
-func (r *Repository) GetTransactions(ctx context.Context, filter *core.TransactionFilter, offset, limit int) (ret []*core.Transaction, err error) {
-	err = selectTxFilter(r.pg.NewSelect().Model(&ret), filter).
-		Order("created_lt DESC").
-		Offset(offset).Limit(limit).Scan(ctx)
+func (r *Repository) GetTransactions(ctx context.Context, filter *core.TransactionFilter) (ret []*core.Transaction, err error) {
+	err = selectTxFilter(r.pg.NewSelect().Model(&ret), filter).Scan(ctx)
 	return ret, err
 }
 
@@ -295,37 +324,52 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 	}
 
 	if len(f.Hash) > 0 {
-		q = q.Where("hash = ?", f.Hash)
+		q = q.Where("message.hash = ?", f.Hash)
 	}
-	if len(f.SrcAddress) > 0 {
-		q = q.Where("src_address = ?", f.SrcAddress)
+	if len(f.SrcAddresses) > 0 {
+		q = q.Where("message.src_address in (?)", bun.In(f.SrcAddresses))
 	}
-	if len(f.DstAddress) > 0 {
-		q = q.Where("dst_address = ?", f.DstAddress)
+	if len(f.DstAddresses) > 0 {
+		q = q.Where("message.dst_address in (?)", bun.In(f.DstAddresses))
 	}
 
 	if f.WithPayload {
-		if f.SrcContract != "" {
-			q = q.Where("payload.src_contract = ?", f.SrcContract)
+		if len(f.SrcContracts) > 0 {
+			q = q.Where("payload.src_contract in (?)", bun.In(f.SrcContracts))
 		}
-		if f.DstContract != "" {
-			q = q.Where("payload.dst_contract = ?", f.DstContract)
+		if len(f.DstContracts) > 0 {
+			q = q.Where("payload.dst_contract in (?)", bun.In(f.DstContracts))
 		}
-		if f.OperationName != "" {
-			q = q.Where("payload.operation_name = ?", f.OperationName)
+		if len(f.OperationNames) > 0 {
+			q = q.Where("payload.operation_name IN (?)", bun.In(f.OperationNames))
 		}
 	}
+
+	if f.AfterTxLT != nil {
+		if f.Order == "ASC" {
+			q = q.Where("message.created_lt > ?", f.AfterTxLT)
+		} else {
+			q = q.Where("message.created_lt < ?", f.AfterTxLT)
+		}
+	}
+
+	if f.Order != "" {
+		q = q.Order("message.created_lt " + strings.ToUpper(f.Order))
+	}
+
+	if f.Limit == 0 {
+		f.Limit = 3
+	}
+	q = q.Limit(f.Limit)
 
 	return q
 }
 
-func (r *Repository) GetMessages(ctx context.Context, filter *core.MessageFilter, offset, limit int) (ret []*core.Message, err error) {
+func (r *Repository) GetMessages(ctx context.Context, filter *core.MessageFilter) (ret []*core.Message, err error) {
 	q := r.pg.NewSelect()
 	if filter.DBTx != nil {
 		q = filter.DBTx.NewSelect()
 	}
-	err = selectMsgFilter(q.Model(&ret), filter).
-		Order("created_lt DESC").
-		Offset(offset).Limit(limit).Scan(ctx)
+	err = selectMsgFilter(q.Model(&ret), filter).Scan(ctx)
 	return ret, err
 }

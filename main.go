@@ -4,12 +4,14 @@ import (
 	"os"
 
 	"github.com/allisson/go-env"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/iam047801/tonidx/cmd/archive"
 	"github.com/iam047801/tonidx/cmd/contract"
 	"github.com/iam047801/tonidx/cmd/indexer"
+	"github.com/iam047801/tonidx/cmd/query"
 )
 
 func init() {
@@ -31,6 +33,10 @@ var availableCommands = map[string]struct {
 	"indexer": {
 		Description: "Background task to scan new blocks",
 		Run:         indexer.Run,
+	},
+	"query": {
+		Description: "HTTP API",
+		Run:         query.Run,
 	},
 	"archiveNodes": {
 		Description: "Returns archive nodes found from config",

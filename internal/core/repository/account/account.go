@@ -9,6 +9,7 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/go-clickhouse/ch"
 
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -46,6 +47,16 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "address state pg create unique index")
 	}
 
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountData{}).
+		Using("HASH").
+		Column("master_address").
+		Where("length(master_address) > 0").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address state pg create unique index")
+	}
+
 	// account state
 
 	_, err = pgDB.NewCreateIndex().
@@ -60,7 +71,7 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.AccountState{}).
 		Unique().
-		Column("latest", "address").
+		Column("address", "latest").
 		Where("latest IS TRUE").
 		Exec(ctx)
 	if err != nil {
@@ -73,11 +84,11 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		Where("latest IS TRUE").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "account state contract types pg create index")
+		return errors.Wrap(err, "latest account state pg create index")
 	}
 
 	_, err = pgDB.NewCreateIndex().
-		Model(&core.AccountState{}).
+		Model(&core.AccountData{}).
 		Using("GIN").
 		Column("types").
 		Exec(ctx)
@@ -143,13 +154,15 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	return createIndexes(ctx, pgDB)
 }
 
-func accountAddresses(accounts []*core.AccountState) (ret []string) {
-	m := make(map[string]struct{})
+func accountAddresses(accounts []*core.AccountState) (ret []*addr.Address) {
+	m := make(map[addr.Address]struct{})
 	for _, a := range accounts {
 		m[a.Address] = struct{}{}
 	}
 	for a := range m {
-		ret = append(ret, a)
+		r := new(addr.Address)
+		*r = a
+		ret = append(ret, r)
 	}
 	return
 }
@@ -215,36 +228,55 @@ func (r *Repository) AddAccountData(ctx context.Context, tx bun.Tx, data []*core
 	return nil
 }
 
-func selectAccountStatesFilter(q *bun.SelectQuery, filter *core.AccountStateFilter) *bun.SelectQuery {
-	if filter.WithData {
+func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (ret []*core.AccountState, err error) {
+	q := r.pg.NewSelect().Model(&ret)
+
+	if f.WithData {
 		q = q.Relation("StateData")
 	}
 
-	if filter.LatestState {
+	q = q.ExcludeColumn("code", "data") // TODO: optional
+
+	if f.LatestState {
 		q.Where("account_state.latest = ?", true)
 	}
-	if filter.Address != "" {
-		q.Where("account_state.address = ?", filter.Address)
-	}
-	if len(filter.ContractTypes) > 0 {
-		q.Where("account_state.contract_types && ?", pgdialect.Array(filter.ContractTypes))
+	if len(f.Addresses) > 0 {
+		q.Where("account_state.address in (?)", bun.In(f.Addresses))
 	}
 
-	if filter.WithData {
-		if filter.OwnerAddress != "" {
-			q = q.Where("state_data.owner_address = ?", filter.OwnerAddress)
+	if f.WithData {
+		if len(f.ContractTypes) > 0 {
+			q.Where("state_data.types && ?", pgdialect.Array(f.ContractTypes))
 		}
-		if filter.CollectionAddress != "" {
-			q = q.Where("state_data.collection_address = ?", filter.CollectionAddress)
+		if f.OwnerAddress != nil {
+			q = q.Where("state_data.owner_address = ?", f.OwnerAddress)
+		}
+		if f.CollectionAddress != nil {
+			q = q.Where("state_data.collection_address = ?", f.CollectionAddress)
+		}
+		if f.MasterAddress != nil {
+			q = q.Where("state_data.master_address = ?", f.MasterAddress)
 		}
 	}
 
-	return q
-}
+	if f.AfterTxLT != nil {
+		if f.Order == "ASC" {
+			q = q.Where("account_state.last_tx_lt > ?", f.AfterTxLT)
+		} else {
+			q = q.Where("account_state.last_tx_lt < ?", f.AfterTxLT)
+		}
+	}
 
-func (r *Repository) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter, offset, limit int) (ret []*core.AccountState, err error) {
-	err = selectAccountStatesFilter(r.pg.NewSelect().Model(&ret), filter).
-		Order("last_tx_lt DESC").
-		Offset(offset).Limit(limit).Scan(ctx)
+	if f.Order != "" {
+		q = q.Order("account_state.last_tx_lt " + strings.ToUpper(f.Order))
+	}
+
+	if f.Limit == 0 {
+		f.Limit = 3
+	}
+	q = q.Limit(f.Limit)
+
+	err = q.Scan(ctx)
+
 	return ret, err
 }

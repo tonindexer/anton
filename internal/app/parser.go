@@ -24,7 +24,8 @@ type ParserConfig struct {
 type ParserService interface {
 	API() *ton.APIClient
 
-	DetermineInterfaces(ctx context.Context, acc *tlb.Account) ([]abi.ContractName, error)
-	ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *tlb.Account) (*core.AccountData, error)
-	ParseMessagePayload(ctx context.Context, src, dst *core.AccountState, message *core.Message) (*core.MessagePayload, error)
+	DetermineInterfaces(ctx context.Context, acc *core.AccountState) ([]abi.ContractName, error)
+	ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *core.AccountState, types []abi.ContractName) (*core.AccountData, error)
+
+	ParseMessagePayload(ctx context.Context, src, dst *core.AccountData, message *core.Message) (*core.MessagePayload, error)
 }

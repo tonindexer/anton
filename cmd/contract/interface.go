@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/repository"
 )
@@ -37,7 +38,7 @@ func InsertInterface() {
 
 	contract.Name = abi.ContractName(*name)
 	if *address != "" {
-		contract.Address = *address
+		contract.Addresses = []*addr.Address{addr.MustFromBase64(*address)}
 	}
 	if *code != "" {
 		contract.Code, err = hex.DecodeString(*code)
@@ -47,6 +48,9 @@ func InsertInterface() {
 	}
 	if *getMethods != "" {
 		contract.GetMethods = strings.Split(*getMethods, ",")
+	}
+	for _, get := range contract.GetMethods {
+		contract.GetMethodHashes = append(contract.GetMethodHashes, abi.MethodNameHash(get))
 	}
 
 	conn, err := repository.ConnectDB(context.Background(),
@@ -62,7 +66,7 @@ func InsertInterface() {
 
 	log.Info().
 		Str("name", string(contract.Name)).
-		Str("address", contract.Address).
+		Str("address", contract.Addresses[0].Base64()).
 		Str("get_methods", fmt.Sprintf("%+v", contract.GetMethods)).
 		Str("code", hex.EncodeToString(contract.Code)).
 		Msg("inserted new contract interface")

@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 
+	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func skipAccounts(addr string) bool {
-	switch addr {
+func (s *Service) skipAccounts(_ *tlb.BlockInfo, a *address.Address) bool {
+	switch a.String() {
 	case "Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF": // skip elector contract
 		return true
 	case "Ef80UXx731GHxVr0-LYf3DIViMerdo3uJLAG3ykQZFjXz2kW": // skip log tests contract
@@ -30,14 +30,14 @@ func skipAccounts(addr string) bool {
 	}
 }
 
-func (s *Service) processAccount(ctx context.Context, b *tlb.BlockInfo, addr *address.Address) (*core.AccountState, *core.AccountData, error) {
-	if skipAccounts(addr.String()) {
+func (s *Service) processAccount(ctx context.Context, b *tlb.BlockInfo, a *address.Address) (*core.AccountState, *core.AccountData, error) {
+	if s.skipAccounts(b, a) {
 		return nil, nil, nil
 	}
 
-	defer timeTrack(time.Now(), fmt.Sprintf("processAccount(%d, %d, %s)", b.Workchain, b.SeqNo, addr.String()))
+	defer timeTrack(time.Now(), fmt.Sprintf("processAccount(%d, %d, %s)", b.Workchain, b.SeqNo, a.String()))
 
-	raw, err := s.api.GetAccount(ctx, b, addr)
+	raw, err := s.api.GetAccount(ctx, b, a)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "get account")
 	}
@@ -47,18 +47,14 @@ func (s *Service) processAccount(ctx context.Context, b *tlb.BlockInfo, addr *ad
 		return nil, nil, nil
 	}
 
-	accTypes, err := s.parser.DetermineInterfaces(ctx, raw)
+	types, err := s.parser.DetermineInterfaces(ctx, acc)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "determine contract interfaces")
 	}
-	for _, t := range accTypes { // TODO: remove this
-		acc.Types = append(acc.Types, string(t))
-	}
 
-	data, err := s.parser.ParseAccountData(ctx, b, raw)
+	data, err := s.parser.ParseAccountData(ctx, b, acc, types)
 	if err != nil && !errors.Is(err, core.ErrNotAvailable) {
-		log.Error().Err(err).Str("addr", addr.String()).Msg("parse account data")
-		// return nil, nil, errors.Wrapf(err, "get account (%s)", addr.String())
+		return nil, nil, errors.Wrapf(err, "get account (%s)", a.String())
 	}
 
 	return acc, data, nil
@@ -67,16 +63,16 @@ func (s *Service) processAccount(ctx context.Context, b *tlb.BlockInfo, addr *ad
 func (s *Service) processTxAccounts(
 	ctx context.Context, b *tlb.BlockInfo,
 	transactions []*core.Transaction,
-) (accounts map[string]*core.AccountState, accountsData map[string]*core.AccountData, err error) {
-	accounts = make(map[string]*core.AccountState)
-	accountsData = make(map[string]*core.AccountData)
+) (accounts map[addr.Address]*core.AccountState, accountsData map[addr.Address]*core.AccountData, err error) {
+	accounts = make(map[addr.Address]*core.AccountState)
+	accountsData = make(map[addr.Address]*core.AccountData)
 
 	for _, tx := range transactions {
-		addr := address.MustParseAddr(tx.Address)
+		a := address.MustParseAddr(tx.Address.Base64())
 
-		acc, data, err := s.processAccount(ctx, b, addr)
+		acc, data, err := s.processAccount(ctx, b, a)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "process account (%s)", addr.String())
+			return nil, nil, errors.Wrapf(err, "process account (%s)", a.String())
 		}
 
 		if acc != nil {

@@ -3,6 +3,7 @@ package block
 import (
 	"context"
 	"database/sql"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
@@ -92,7 +93,9 @@ func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Bloc
 func transactionsLoad(q *bun.SelectQuery, prefix string, f *core.BlockFilter) *bun.SelectQuery {
 	q = q.Relation(prefix + "Transactions")
 	if f.WithTransactionAccountState {
-		q = q.Relation(prefix + "Transactions.Account")
+		q = q.Relation(prefix+"Transactions.Account", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.ExcludeColumn("code", "data") // TODO: optional
+		})
 		if f.WithTransactionAccountData {
 			q = q.Relation(prefix + "Transactions.Account.StateData")
 		}
@@ -110,7 +113,9 @@ func transactionsLoad(q *bun.SelectQuery, prefix string, f *core.BlockFilter) *b
 	return q
 }
 
-func blocksFilter(q *bun.SelectQuery, f *core.BlockFilter) *bun.SelectQuery {
+func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter) (ret []*core.Block, err error) {
+	q := r.pg.NewSelect().Model(&ret)
+
 	if f.WithShards {
 		q = q.Relation("Shards")
 		if f.WithTransactions {
@@ -121,25 +126,38 @@ func blocksFilter(q *bun.SelectQuery, f *core.BlockFilter) *bun.SelectQuery {
 		q = transactionsLoad(q, "", f)
 	}
 
-	if f.ID != nil {
-		q = q.Where("workchain = ?", f.ID.Workchain).
-			Where("shard = ?", f.ID.Shard).
-			Where("seq_no = ?", f.ID.SeqNo)
-	} else if f.Workchain != nil {
+	if f.Workchain != nil {
 		q = q.Where("workchain = ?", *f.Workchain)
+	}
+	if f.Shard != nil {
+		q = q.Where("shard = ?", *f.Shard)
+	}
+	if f.SeqNo != nil {
+		q = q.Where("seq_no = ?", *f.SeqNo)
 	}
 
 	if len(f.FileHash) > 0 {
 		q = q.Where("file_hash = ?", f.FileHash)
 	}
 
-	q = q.Order("seq_no DESC")
+	if f.AfterSeqNo != nil {
+		if f.Order == "ASC" {
+			q = q.Where("seq_no > ?", f.AfterSeqNo)
+		} else {
+			q = q.Where("seq_no < ?", f.AfterSeqNo)
+		}
+	}
 
-	return q
-}
+	if f.Order != "" {
+		q = q.Order("seq_no " + strings.ToUpper(f.Order))
+	}
 
-func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter, offset, limit int) (ret []*core.Block, err error) {
-	err = blocksFilter(r.pg.NewSelect().Model(&ret), f).
-		Offset(offset).Limit(limit).Scan(ctx)
+	if f.Limit == 0 {
+		f.Limit = 3
+	}
+	q = q.Limit(f.Limit)
+
+	err = q.Scan(ctx)
+
 	return ret, err
 }
