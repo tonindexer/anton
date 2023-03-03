@@ -17,8 +17,8 @@ import (
 )
 
 // @title      		tonidx
-// @version         0.0.1
-// @description     Project fetches data from TON blockchain.
+// @version     	0.0.1
+// @description 	Project fetches data from TON blockchain.
 
 // @contact.name   	Dat Boi
 // @contact.url    	https://datboi420.t.me
