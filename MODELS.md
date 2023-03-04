@@ -5,7 +5,7 @@
 ```go
 package tlb
 
-// LookupBlock(workchain, shard, seq) => *tlb.BlockInfo
+// LookupBlock(workchain, shard, seq) => *ton.BlockIDExt
 type BlockInfo struct {
     Workchain int32
     Shard     int64
@@ -13,7 +13,7 @@ type BlockInfo struct {
     RootHash  []byte
     FileHash  []byte
 }
-// GetBlockShardsInfo(master *tlb.BlockInfo) => shards []*tlb.BlockInfo
+// GetBlockShardsInfo(master *ton.BlockIDExt) => shards []*ton.BlockIDExt
 ```
 
 ## Transaction
@@ -21,8 +21,8 @@ type BlockInfo struct {
 ```go
 package tlb
 
-// GetBlockTransactions(block *tlb.BlockInfo) => (addr *address.Address, lt uint64)
-// GetTransaction(block *tlb.BlockInfo, addr *address.Address, lt uint64) => *tlb.Transaction
+// GetBlockTransactions(block *ton.BlockIDExt) => (addr *address.Address, lt uint64)
+// GetTransaction(block *ton.BlockIDExt, addr *address.Address, lt uint64) => *tlb.Transaction
 type Transaction struct {
     Hash        []byte
     AccountAddr []byte
@@ -84,7 +84,7 @@ const (
     AccountStatusNonExist = "NON_EXIST"
 )
 
-// GetAccount(block *tlb.BlockInfo, addr *address.Address) => *tlb.Account
+// GetAccount(block *ton.BlockIDExt, addr *address.Address) => *tlb.Account
 type Account struct {
     IsActive                    bool
     State struct {

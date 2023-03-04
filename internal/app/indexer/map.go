@@ -5,6 +5,7 @@ import (
 	"github.com/uptrace/bun/extra/bunbig"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/addr"
@@ -141,7 +142,7 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 
 	ret.IsActive = acc.IsActive
 	ret.Status = core.NonExist
-	if acc.State != nil {
+	if acc.State != nil { //nolint:nestif // mapping pointers
 		if acc.State.Address != nil {
 			ret.Address = *addr.MustFromTU(acc.State.Address)
 		}
@@ -149,7 +150,9 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 		ret.Balance = bunbig.FromMathBig(acc.State.Balance.NanoTON())
 		ret.StateHash = acc.State.StateHash
 		if acc.State.StateInit != nil {
-			ret.Depth = acc.State.StateInit.Depth
+			if d := acc.State.StateInit.Depth; d != nil {
+				ret.Depth = *d
+			}
 			if acc.State.StateInit.TickTock != nil {
 				ret.Tick = acc.State.StateInit.TickTock.Tick
 				ret.Tock = acc.State.StateInit.TickTock.Tock
@@ -171,7 +174,7 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 	return ret
 }
 
-func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, error) {
+func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction, error) {
 	var err error
 
 	tx := &core.Transaction{
@@ -223,7 +226,7 @@ func mapTransaction(b *tlb.BlockInfo, raw *tlb.Transaction) (*core.Transaction, 
 	return tx, nil
 }
 
-func mapTransactions(b *tlb.BlockInfo, blockTx []*tlb.Transaction) ([]*core.Transaction, error) {
+func mapTransactions(b *ton.BlockIDExt, blockTx []*tlb.Transaction) ([]*core.Transaction, error) {
 	var transactions []*core.Transaction
 
 	for _, raw := range blockTx {

@@ -7,13 +7,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func (s *Service) skipAccounts(_ *tlb.BlockInfo, a *address.Address) bool {
+func (s *Service) skipAccounts(_ *ton.BlockIDExt, a *address.Address) bool {
 	switch a.String() {
 	case "Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF": // skip elector contract
 		return true
@@ -30,7 +30,7 @@ func (s *Service) skipAccounts(_ *tlb.BlockInfo, a *address.Address) bool {
 	}
 }
 
-func (s *Service) processAccount(ctx context.Context, b *tlb.BlockInfo, a *address.Address) (*core.AccountState, *core.AccountData, error) {
+func (s *Service) processAccount(ctx context.Context, b *ton.BlockIDExt, a *address.Address) (*core.AccountState, *core.AccountData, error) {
 	if s.skipAccounts(b, a) {
 		return nil, nil, nil
 	}
@@ -61,7 +61,7 @@ func (s *Service) processAccount(ctx context.Context, b *tlb.BlockInfo, a *addre
 }
 
 func (s *Service) processTxAccounts(
-	ctx context.Context, b *tlb.BlockInfo,
+	ctx context.Context, b *ton.BlockIDExt,
 	transactions []*core.Transaction,
 ) (accounts map[addr.Address]*core.AccountState, accountsData map[addr.Address]*core.AccountData, err error) {
 	accounts = make(map[addr.Address]*core.AccountState)

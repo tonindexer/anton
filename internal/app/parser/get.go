@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun/extra/bunbig"
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/ton/nft"
 
 	"github.com/iam047801/tonidx/abi"
@@ -66,7 +66,7 @@ func mapEditorDataNFT(ret *core.AccountData, data *abi.NFTEditableData) {
 	ret.EditorAddress, _ = new(addr.Address).FromTU(data.Editor)
 }
 
-func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, a *address.Address, types []abi.ContractName, ret *core.AccountData) (ok bool) {
+func (s *Service) getAccountDataNFT(ctx context.Context, b *ton.BlockIDExt, a *address.Address, types []abi.ContractName, ret *core.AccountData) (ok bool) {
 	var unknown int
 
 	for _, t := range types {
@@ -111,7 +111,7 @@ func (s *Service) getAccountDataNFT(ctx context.Context, b *tlb.BlockInfo, a *ad
 	return unknown != len(types)
 }
 
-func (s *Service) getAccountDataFT(ctx context.Context, b *tlb.BlockInfo, a *address.Address, types []abi.ContractName, ret *core.AccountData) (ok bool) {
+func (s *Service) getAccountDataFT(ctx context.Context, b *ton.BlockIDExt, a *address.Address, types []abi.ContractName, ret *core.AccountData) (ok bool) {
 	var unknown int
 
 	for _, t := range types {

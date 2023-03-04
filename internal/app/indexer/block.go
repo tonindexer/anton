@@ -8,13 +8,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
-	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func (s *Service) getNotSeenShards(ctx context.Context, shard *tlb.BlockInfo) (ret []*tlb.BlockInfo, err error) {
+func (s *Service) getNotSeenShards(ctx context.Context, shard *ton.BlockIDExt) (ret []*ton.BlockIDExt, err error) {
 	defer timeTrack(time.Now(), fmt.Sprintf("getNotSeenShards(%d, %d)", shard.Workchain, shard.SeqNo))
 
 	if no, ok := s.shardLastSeqno[getShardID(shard)]; ok && no == shard.SeqNo {
@@ -43,7 +42,7 @@ func (s *Service) getNotSeenShards(ctx context.Context, shard *tlb.BlockInfo) (r
 	return ret, nil
 }
 
-func (s *Service) processShards(ctx context.Context, tx bun.Tx, master *tlb.BlockInfo) error {
+func (s *Service) processShards(ctx context.Context, tx bun.Tx, master *ton.BlockIDExt) error {
 	var dbShards []*core.Block
 
 	currentShards, err := s.api.GetBlockShardsInfo(ctx, master)
@@ -57,7 +56,7 @@ func (s *Service) processShards(ctx context.Context, tx bun.Tx, master *tlb.Bloc
 
 	// shards in master block may have holes, e.g. shard seqno 2756461, then 2756463, and no 2756462 in master chain
 	// thus we need to scan a bit back in case of discovering a hole, till last seen, to fill the misses.
-	var newShards []*tlb.BlockInfo
+	var newShards []*ton.BlockIDExt
 	for _, shard := range currentShards {
 		notSeen, err := s.getNotSeenShards(ctx, shard)
 		if err != nil {
@@ -104,7 +103,7 @@ func (s *Service) processShards(ctx context.Context, tx bun.Tx, master *tlb.Bloc
 	return nil
 }
 
-func (s *Service) processMaster(ctx context.Context, master *tlb.BlockInfo) error {
+func (s *Service) processMaster(ctx context.Context, master *ton.BlockIDExt) error {
 	insertTx, err := s.cfg.DB.PG.Begin()
 	if err != nil {
 		return errors.Wrap(err, "cannot begin db tx")

@@ -89,7 +89,7 @@ type Excesses struct {
 	QueryID uint64    `tlb:"## 64"`
 }
 
-func GetNFTCollectionData(ctx context.Context, api *ton.APIClient, b *tlb.BlockInfo, addr *address.Address) (*NFTCollectionData, error) {
+func GetNFTCollectionData(ctx context.Context, api *ton.APIClient, b *ton.BlockIDExt, addr *address.Address) (*NFTCollectionData, error) {
 	c := nft.NewCollectionClient(api, addr)
 
 	data, err := c.GetCollectionDataAtBlock(ctx, b)
@@ -100,7 +100,7 @@ func GetNFTCollectionData(ctx context.Context, api *ton.APIClient, b *tlb.BlockI
 	return (*NFTCollectionData)(data), nil
 }
 
-func GetNFTRoyaltyData(ctx context.Context, api *ton.APIClient, b *tlb.BlockInfo, addr *address.Address) (*NFTRoyaltyData, error) {
+func GetNFTRoyaltyData(ctx context.Context, api *ton.APIClient, b *ton.BlockIDExt, addr *address.Address) (*NFTRoyaltyData, error) {
 	c := nft.NewCollectionClient(api, addr)
 
 	data, err := c.RoyaltyParamsAtBlock(ctx, b)
@@ -111,7 +111,7 @@ func GetNFTRoyaltyData(ctx context.Context, api *ton.APIClient, b *tlb.BlockInfo
 	return (*NFTRoyaltyData)(data), nil
 }
 
-func GetNFTItemData(ctx context.Context, api *ton.APIClient, b *tlb.BlockInfo, addr *address.Address) (*NFTItemData, error) {
+func GetNFTItemData(ctx context.Context, api *ton.APIClient, b *ton.BlockIDExt, addr *address.Address) (*NFTItemData, error) {
 	c := nft.NewItemClient(api, addr)
 
 	data, err := c.GetNFTDataAtBlock(ctx, b)
@@ -131,7 +131,7 @@ func GetNFTItemData(ctx context.Context, api *ton.APIClient, b *tlb.BlockInfo, a
 	return (*NFTItemData)(data), nil
 }
 
-func GetNFTEditableData(ctx context.Context, api *ton.APIClient, b *tlb.BlockInfo, addr *address.Address) (*NFTEditableData, error) {
+func GetNFTEditableData(ctx context.Context, api *ton.APIClient, b *ton.BlockIDExt, addr *address.Address) (*NFTEditableData, error) {
 	c := nft.NewItemEditableClient(api, addr)
 
 	editor, err := c.GetEditorAtBlock(ctx, b)

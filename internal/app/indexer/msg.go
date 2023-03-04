@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
 	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
@@ -32,7 +33,7 @@ func (s *Service) messageAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.M
 	return false, nil
 }
 
-func (s *Service) processBlockMessages(ctx context.Context, dbtx bun.Tx, b *tlb.BlockInfo, blockTx []*tlb.Transaction) ([]*core.Message, error) {
+func (s *Service) processBlockMessages(ctx context.Context, dbtx bun.Tx, b *ton.BlockIDExt, blockTx []*tlb.Transaction) ([]*core.Message, error) {
 	var (
 		inMessages  []*core.Message
 		outMessages []*core.Message

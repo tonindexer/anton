@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/iam047801/tonidx/abi"
@@ -91,7 +91,7 @@ func (s *Service) DetermineInterfaces(ctx context.Context, acc *core.AccountStat
 	return ret, nil
 }
 
-func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *core.AccountState, types []abi.ContractName) (*core.AccountData, error) {
+func (s *Service) ParseAccountData(ctx context.Context, b *ton.BlockIDExt, acc *core.AccountState, types []abi.ContractName) (*core.AccountData, error) {
 	var unknown int
 
 	if len(types) == 0 {
@@ -110,7 +110,7 @@ func (s *Service) ParseAccountData(ctx context.Context, b *tlb.BlockInfo, acc *c
 	data.Balance = acc.Balance
 	data.Types = types
 
-	getters := []func(context.Context, *tlb.BlockInfo, *address.Address, []abi.ContractName, *core.AccountData) bool{
+	getters := []func(context.Context, *ton.BlockIDExt, *address.Address, []abi.ContractName, *core.AccountData) bool{
 		s.getAccountDataNFT,
 		s.getAccountDataFT,
 	}

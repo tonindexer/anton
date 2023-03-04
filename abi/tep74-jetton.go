@@ -45,7 +45,7 @@ type (
 	JettonBurn jetton.BurnPayload
 )
 
-func GetJettonData(ctx context.Context, api *ton.APIClient, b *tlb.BlockInfo, addr *address.Address) (*JettonData, error) {
+func GetJettonData(ctx context.Context, api *ton.APIClient, b *ton.BlockIDExt, addr *address.Address) (*JettonData, error) {
 	c := jetton.NewJettonMasterClient(api, addr)
 
 	data, err := c.GetJettonDataAtBlock(ctx, b)
@@ -56,7 +56,7 @@ func GetJettonData(ctx context.Context, api *ton.APIClient, b *tlb.BlockInfo, ad
 	return (*JettonData)(data), nil
 }
 
-func GetJettonWalletData(ctx context.Context, api *ton.APIClient, b *tlb.BlockInfo, addr *address.Address) (*JettonWalletData, error) {
+func GetJettonWalletData(ctx context.Context, api *ton.APIClient, b *ton.BlockIDExt, addr *address.Address) (*JettonWalletData, error) {
 	res, err := api.RunGetMethod(ctx, b, addr, "get_wallet_data")
 	if err != nil {
 		return nil, fmt.Errorf("failed to run get_wallet_data method: %w", err)

@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core/repository"
@@ -42,7 +43,7 @@ func testService(t *testing.T) *Service {
 	return _testService
 }
 
-func getCurrentMaster(t *testing.T) *tlb.BlockInfo {
+func getCurrentMaster(t *testing.T) *ton.BlockIDExt {
 	s := testService(t)
 
 	master, err := s.api.GetMasterchainInfo(ctx)

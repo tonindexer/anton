@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/internal/app"
@@ -65,7 +64,7 @@ func (s *Service) running() bool {
 }
 
 // func to get storage map key
-func getShardID(shard *tlb.BlockInfo) string {
+func getShardID(shard *ton.BlockIDExt) string {
 	return fmt.Sprintf("%d|%d", shard.Workchain, shard.Shard)
 }
 

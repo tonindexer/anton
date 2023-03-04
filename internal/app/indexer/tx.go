@@ -9,14 +9,15 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-func (s *Service) fetchBlockTransactions(ctx context.Context, b *tlb.BlockInfo) ([]*tlb.Transaction, error) {
+func (s *Service) fetchBlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*tlb.Transaction, error) {
 	var (
-		after        *tlb.TransactionID
-		fetchedIDs   []*tlb.TransactionID
+		after        ton.TransactionShortInfo
+		fetchedIDs   []ton.TransactionShortInfo
 		transactions []*tlb.Transaction
 		more         = true
 		err          error
@@ -25,7 +26,10 @@ func (s *Service) fetchBlockTransactions(ctx context.Context, b *tlb.BlockInfo) 
 	defer timeTrack(time.Now(), fmt.Sprintf("fetchBlockTransactions(%d, %d)", b.Workchain, b.SeqNo))
 
 	for more {
-		fetchedIDs, more, err = s.api.GetBlockTransactions(ctx, b, 100, after)
+		fetchedIDs, more, err = s.api.GetBlockTransactionsV2(ctx, b, 100, &ton.TransactionID3{
+			Account: after.Account,
+			LT:      after.LT,
+		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "get b transactions (workchain = %d, seq = %d)",
 				b.Workchain, b.SeqNo)
@@ -34,8 +38,9 @@ func (s *Service) fetchBlockTransactions(ctx context.Context, b *tlb.BlockInfo) 
 			after = fetchedIDs[len(fetchedIDs)-1]
 		}
 
-		for _, id := range fetchedIDs {
-			addr := address.NewAddress(0, byte(b.Workchain), id.AccountID)
+		for i := range fetchedIDs {
+			id := &fetchedIDs[i]
+			addr := address.NewAddress(0, byte(b.Workchain), id.Account)
 
 			tx, err := s.api.GetTransaction(ctx, b, addr, id.LT)
 			if err != nil {
@@ -50,7 +55,7 @@ func (s *Service) fetchBlockTransactions(ctx context.Context, b *tlb.BlockInfo) 
 	return transactions, nil
 }
 
-func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, shard *tlb.BlockInfo) error {
+func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, shard *ton.BlockIDExt) error {
 	var accounts []*core.AccountState
 	var accountData []*core.AccountData
 
