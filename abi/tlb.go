@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
@@ -122,19 +123,21 @@ func fieldsToStruct(schema []*structField) (reflect.Type, error) {
 		ft, ok := typeNameMap[field.Type]
 
 		switch {
-		case ok:
-			f.Type = ft
-
-		case field.Type == structTypeName:
-			f.Type, err = fieldsToStruct(field.StructFields)
+		case !ok && field.Type == structTypeName:
+			ft, err = fieldsToStruct(field.StructFields)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", f.Name, err)
 			}
 
-		default:
+		case !ok:
 			return nil, fmt.Errorf("cannot unmarshal type %s", f.Type)
 		}
 
+		if strings.HasPrefix(f.Tag.Get("tlb"), "maybe") && ft.Kind() != reflect.Pointer {
+			f.Type = reflect.PointerTo(ft)
+		} else {
+			f.Type = ft
+		}
 		fields = append(fields, f)
 	}
 
