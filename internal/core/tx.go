@@ -131,6 +131,8 @@ type MessagePayload struct {
 
 	CreatedAt uint64 `bun:",notnull" json:"created_at"`
 	CreatedLT uint64 `bun:",notnull" json:"created_lt"`
+
+	Error string `json:"error,omitempty"`
 }
 
 type TransactionFilter struct {
