@@ -10,6 +10,7 @@ import (
 
 	"github.com/allisson/go-env"
 	"github.com/rs/zerolog/log"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/addr"
@@ -45,6 +46,11 @@ func InsertInterface() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("cannot parse contract code")
 		}
+		codeBOC, err := cell.FromBOC(contract.Code)
+		if err != nil {
+			log.Fatal().Err(err).Msg("cannot get contract code cell from boc")
+		}
+		contract.CodeHash = codeBOC.Hash()
 	}
 	if *getMethods != "" {
 		contract.GetMethods = strings.Split(*getMethods, ",")

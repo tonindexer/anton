@@ -30,8 +30,9 @@ func insertKnownInterfaces(ctx context.Context, db *bun.DB) error {
 
 	for v, code := range abi.WalletCode {
 		row := core.ContractInterface{
-			Name: v.Name(),
-			Code: code.ToBOC(),
+			Name:     v.Name(),
+			Code:     code.ToBOC(),
+			CodeHash: code.Hash(),
 		}
 		_, err := db.NewInsert().Model(&row).Exec(ctx)
 		if err != nil {

@@ -20,6 +20,7 @@ type ContractInterface struct {
 	Name            abi.ContractName `ch:",pk" bun:",pk" json:"name"`
 	Addresses       []*addr.Address  `ch:"type:Array(String),pk" bun:"type:bytea[]" json:"addresses"`
 	Code            []byte           `ch:"type:String" bun:"type:bytea,unique" json:"code"`
+	CodeHash        []byte           `ch:"type:String" bun:"type:bytea,unique" json:"code_hash"` // TODO: match by code hash
 	GetMethods      []string         `ch:"type:Array(String)" bun:",unique,array" json:"get_methods"`
 	GetMethodHashes []uint32         `ch:"type:Array(UInt32)" bun:",unique,array" json:"get_method_hashes"`
 }
