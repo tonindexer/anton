@@ -16,8 +16,9 @@ import (
 
 func (s *Service) fetchBlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*tlb.Transaction, error) {
 	var (
-		after        *tlb.TransactionID
-		fetchedIDs   []*tlb.TransactionID
+		txID         *ton.TransactionID3
+		after        *ton.TransactionShortInfo
+		fetchedIDs   []ton.TransactionShortInfo
 		transactions []*tlb.Transaction
 		more         = true
 		err          error
@@ -26,17 +27,24 @@ func (s *Service) fetchBlockTransactions(ctx context.Context, b *ton.BlockIDExt)
 	defer timeTrack(time.Now(), fmt.Sprintf("fetchBlockTransactions(%d, %d)", b.Workchain, b.SeqNo))
 
 	for more {
-		fetchedIDs, more, err = s.api.GetBlockTransactions(ctx, b, 100, after)
+		if after != nil {
+			txID = &ton.TransactionID3{
+				Account: after.Account,
+				LT:      after.LT,
+			}
+		}
+
+		fetchedIDs, more, err = s.api.GetBlockTransactionsV2(ctx, b, 100, txID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "get b transactions (workchain = %d, seq = %d)",
 				b.Workchain, b.SeqNo)
 		}
 		if more {
-			after = fetchedIDs[len(fetchedIDs)-1]
+			after = &fetchedIDs[len(fetchedIDs)-1]
 		}
 
 		for _, id := range fetchedIDs {
-			addr := address.NewAddress(0, byte(b.Workchain), id.AccountID)
+			addr := address.NewAddress(0, byte(b.Workchain), id.Account)
 
 			tx, err := s.api.GetTransaction(ctx, b, addr, id.LT)
 			if err != nil {
