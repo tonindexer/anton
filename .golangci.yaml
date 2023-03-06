@@ -78,7 +78,7 @@ linters-settings:
       nestingReduce:
         bodyWidth: 4
       rangeValCopy:
-        sizeThreshold: 32
+        sizeThreshold: 64
         skipTestFuncs: false
       tooManyResultsChecker:
         maxResults: 100
@@ -88,8 +88,5 @@ linters-settings:
         skipRecvDeref: false
       unnamedResult:
         checkExported: true
-      rangeExprCopy:
-        sizeThreshold: 512
-        skipTestFuncs: false
       hugeParam:
         sizeThreshold: 64
