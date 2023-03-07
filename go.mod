@@ -21,7 +21,7 @@ require (
 	github.com/uptrace/bun/driver/pgdriver v1.1.12
 	github.com/uptrace/bun/extra/bunbig v1.1.12
 	github.com/uptrace/go-clickhouse v0.3.0
-	github.com/xssnick/tonutils-go v1.6.1
+	github.com/xssnick/tonutils-go v1.6.2
 )
 
 require (
