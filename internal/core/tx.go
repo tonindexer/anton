@@ -122,10 +122,12 @@ type MessagePayload struct {
 	DstAddress  addr.Address     `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
 	DstContract abi.ContractName `ch:",lc" json:"dst_contract,omitempty"`
 
+	Amount *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"amount,omitempty"`
+
 	BodyHash      []byte          `bun:"type:bytea,notnull" json:"body_hash"`
 	OperationID   uint32          `bun:",notnull" json:"operation_id"`
 	OperationName string          `ch:",lc" bun:",notnull" json:"operation_name"`
-	DataJSON      json.RawMessage ` ch:"String" bun:"type:jsonb" json:"data"`
+	DataJSON      json.RawMessage `ch:"type:String" bun:"type:jsonb" json:"data"`
 
 	// TODO: save fields from parsed data to payloads table
 

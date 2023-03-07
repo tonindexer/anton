@@ -69,6 +69,7 @@ func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.Accoun
 		Hash:        message.Hash,
 		SrcAddress:  message.SrcAddress,
 		DstAddress:  message.DstAddress,
+		Amount:      message.Amount,
 		BodyHash:    message.BodyHash,
 		OperationID: message.OperationID,
 		CreatedLT:   message.CreatedLT,
