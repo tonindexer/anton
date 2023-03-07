@@ -92,6 +92,8 @@ func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, shard
 		accountData = append(accountData, st)
 	}
 
+	defer timeTrack(time.Now(), fmt.Sprintf("add account and transactions data(%d, %d)", shard.Workchain, shard.SeqNo))
+
 	if err := s.accountRepo.AddAccountStates(ctx, tx, accounts); err != nil {
 		return errors.Wrap(err, "add account states")
 	}
