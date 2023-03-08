@@ -15,6 +15,8 @@ import (
 
 func (s *Service) skipAccounts(_ *ton.BlockIDExt, a *address.Address) bool {
 	switch a.String() {
+	case "Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU": // skip system contract
+		return true
 	case "Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF": // skip elector contract
 		return true
 	case "Ef80UXx731GHxVr0-LYf3DIViMerdo3uJLAG3ykQZFjXz2kW": // skip log tests contract
