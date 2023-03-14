@@ -107,10 +107,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/core.AccountState"
-                            }
+                            "$ref": "#/definitions/http.GetAccountStatesRes"
                         }
                     }
                 }
@@ -185,10 +182,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/core.Block"
-                            }
+                            "$ref": "#/definitions/http.GetBlocksRes"
                         }
                     }
                 }
@@ -211,10 +205,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/core.ContractInterface"
-                            }
+                            "$ref": "#/definitions/http.GetInterfacesRes"
                         }
                     }
                 }
@@ -237,10 +228,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/core.ContractOperation"
-                            }
+                            "$ref": "#/definitions/http.GetOperationsRes"
                         }
                     }
                 }
@@ -340,10 +328,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/core.Message"
-                            }
+                            "$ref": "#/definitions/http.GetMessagesRes"
                         }
                     }
                 }
@@ -413,10 +398,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/core.Transaction"
-                            }
+                            "$ref": "#/definitions/http.GetTransactionsRes"
                         }
                     }
                 }
@@ -1013,6 +995,72 @@ const docTemplate = `{
                 },
                 "vm_steps": {
                     "type": "integer"
+                }
+            }
+        },
+        "http.GetAccountStatesRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.AccountState"
+                    }
+                }
+            }
+        },
+        "http.GetBlocksRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Block"
+                    }
+                }
+            }
+        },
+        "http.GetInterfacesRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.ContractInterface"
+                    }
+                }
+            }
+        },
+        "http.GetMessagesRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Message"
+                    }
+                }
+            }
+        },
+        "http.GetOperationsRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.ContractOperation"
+                    }
+                }
+            }
+        },
+        "http.GetTransactionsRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Transaction"
+                    }
                 }
             }
         }
