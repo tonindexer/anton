@@ -70,7 +70,7 @@ func getShardID(shard *ton.BlockIDExt) string {
 
 func timeTrack(start time.Time, name string) {
 	elapsed := float64(time.Since(start)) / 1e9
-	if elapsed < 0.02 {
+	if elapsed < 0.05 {
 		return
 	}
 	log.Debug().Str("func", name).Float64("elapsed", elapsed).Msg("")
