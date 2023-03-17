@@ -119,7 +119,7 @@ func GetNFTItemData(ctx context.Context, api *ton.APIClient, b *ton.BlockIDExt, 
 		return nil, errors.Wrap(err, "get nft item data")
 	}
 
-	if data.CollectionAddress != nil && data.Content != nil {
+	if data.CollectionAddress != nil && !data.CollectionAddress.IsAddrNone() && data.Content != nil {
 		collect := nft.NewCollectionClient(api, data.CollectionAddress)
 
 		data.Content, err = collect.GetNFTContentAtBlock(ctx, data.Index, data.Content, b)

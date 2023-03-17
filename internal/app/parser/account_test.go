@@ -60,6 +60,11 @@ func TestService_ParseAccount(t *testing.T) {
 			contentURI:     "https://nft.fragment.com/username/datboi420.json",
 			collectionAddr: "EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi",
 		},
+		{
+			addr:     address.MustParseAddr("EQB2NJFK0H5OxJTgyQbej0fy5zuicZAXk2vFZEDrqbQ_n5YW"),
+			contract: abi.NFTItem,
+			status:   core.Active,
+		},
 	}
 
 	for _, c := range cases {

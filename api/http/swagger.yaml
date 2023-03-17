@@ -395,6 +395,48 @@ definitions:
       vm_steps:
         type: integer
     type: object
+  http.GetAccountStatesRes:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.AccountState'
+        type: array
+    type: object
+  http.GetBlocksRes:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.Block'
+        type: array
+    type: object
+  http.GetInterfacesRes:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.ContractInterface'
+        type: array
+    type: object
+  http.GetMessagesRes:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.Message'
+        type: array
+    type: object
+  http.GetOperationsRes:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.ContractOperation'
+        type: array
+    type: object
+  http.GetTransactionsRes:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.Transaction'
+        type: array
+    type: object
 host: anton.tools
 info:
   contact:
@@ -464,9 +506,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/core.AccountState'
-            type: array
+            $ref: '#/definitions/http.GetAccountStatesRes'
       summary: account data
       tags:
       - account
@@ -517,9 +557,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/core.Block'
-            type: array
+            $ref: '#/definitions/http.GetBlocksRes'
       summary: block info
       tags:
       - block
@@ -534,9 +572,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/core.ContractInterface'
-            type: array
+            $ref: '#/definitions/http.GetInterfacesRes'
       summary: contract interfaces
       tags:
       - contract
@@ -551,9 +587,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/core.ContractOperation'
-            type: array
+            $ref: '#/definitions/http.GetOperationsRes'
       summary: contract operations
       tags:
       - contract
@@ -620,9 +654,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/core.Message'
-            type: array
+            $ref: '#/definitions/http.GetMessagesRes'
       summary: transaction messages
       tags:
       - transaction
@@ -669,9 +701,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/core.Transaction'
-            type: array
+            $ref: '#/definitions/http.GetTransactionsRes'
       summary: transactions data
       tags:
       - transaction

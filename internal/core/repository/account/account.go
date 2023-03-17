@@ -179,7 +179,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 
 	_, err = tx.NewUpdate().Model(&accounts).
 		Where("address in (?)", bun.In(accountAddresses(accounts))).
-		Where("latest = ?", true).
+		Where("latest is true").
 		Set("latest = ?", false).
 		Exec(ctx)
 	if err != nil {
@@ -195,15 +195,15 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		With("late",
 			tx.NewSelect().
 				Model(&accounts).
-				Column("address").
-				ColumnExpr("max(last_tx_lt) AS max_tx_lt").
+				DistinctOn("address").
+				Column("address", "last_tx_lt").
 				Where("address in (?)", bun.In(accountAddresses(accounts))).
-				Group("address"),
+				Order("address", "last_tx_lt DESC"),
 		).
 		Model((*core.AccountState)(nil)).
 		Table("late").
 		Where("account_state.address = late.address").
-		Where("account_state.last_tx_lt = late.max_tx_lt").
+		Where("account_state.last_tx_lt = late.last_tx_lt").
 		Set("latest = ?", true).
 		Exec(ctx)
 	if err != nil {

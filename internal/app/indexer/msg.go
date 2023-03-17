@@ -131,9 +131,6 @@ func (s *Service) parseMessagePayloads(ctx context.Context, tx bun.Tx, messages 
 		if msg.Type != core.Internal {
 			continue // TODO: external message parsing
 		}
-		if msg.SrcAddress.Base64() == "Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU" {
-			continue
-		}
 
 		known, err := s.messagePayloadAlreadyKnown(ctx, tx, msg, msgMap)
 		if err != nil {

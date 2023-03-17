@@ -66,6 +66,16 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Message{}).
+		Column("src_address", "source_tx_lt").
+		Where("length(src_address) > 0").
+		Where("source_tx_lt > 0").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "message src_address source_tx_lt pg create index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.Message{}).
 		Using("HASH").
 		Column("src_address").
 		Where("length(src_address) > 0").

@@ -105,13 +105,17 @@ func getAddresses(ctx *gin.Context, name string) ([]*addr.Address, error) {
 	return ret, nil
 }
 
+type GetInterfacesRes struct {
+	Results []*core.ContractInterface `json:"results"`
+}
+
 // GetInterfaces godoc
 //	@Summary		contract interfaces
 //	@Description	Returns known contract interfaces
 //	@Tags			contract
 //	@Accept			json
 //	@Produce		json
-//	@Success		200		{array}		core.ContractInterface
+//	@Success		200		{object}		GetInterfacesRes
 //	@Router			/contract/interfaces [get]
 func (c *Controller) GetInterfaces(ctx *gin.Context) {
 	ret, err := c.svc.GetInterfaces(ctx)
@@ -119,7 +123,11 @@ func (c *Controller) GetInterfaces(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
+	ctx.IndentedJSON(http.StatusOK, GetInterfacesRes{Results: ret})
+}
+
+type GetOperationsRes struct {
+	Results []*core.ContractOperation `json:"results"`
 }
 
 // GetOperations godoc
@@ -128,7 +136,7 @@ func (c *Controller) GetInterfaces(ctx *gin.Context) {
 //	@Tags			contract
 //	@Accept			json
 //	@Produce		json
-//	@Success		200		{array}		core.ContractOperation
+//	@Success		200		{object}		GetOperationsRes
 //	@Router			/contract/operations [get]
 func (c *Controller) GetOperations(ctx *gin.Context) {
 	ret, err := c.svc.GetOperations(ctx)
@@ -136,7 +144,11 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
+	ctx.IndentedJSON(http.StatusOK, GetOperationsRes{Results: ret})
+}
+
+type GetBlocksRes struct {
+	Results []*core.Block `json:"results"`
 }
 
 // GetBlocks godoc
@@ -152,7 +164,7 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 //  @Param			order				query	string	false	"order by seq_no"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 	false	"start from this seq_no"
 //  @Param   		limit	     		query   int 	false	"limit"						default(3)
-//	@Success		200		{array}		core.Block
+//	@Success		200		{object}	GetBlocksRes
 //	@Router			/blocks [get]
 func (c *Controller) GetBlocks(ctx *gin.Context) {
 	var filter core.BlockFilter
@@ -188,7 +200,11 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
+	ctx.IndentedJSON(http.StatusOK, GetBlocksRes{Results: ret})
+}
+
+type GetAccountStatesRes struct {
+	Results []*core.AccountState `json:"results"`
 }
 
 // GetAccountStates godoc
@@ -206,7 +222,7 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 //  @Param			order				query	string		false	"order by last_tx_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this last_tx_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3)
-//	@Success		200		{array}		core.AccountState
+//	@Success		200		{object}	GetAccountStatesRes
 //	@Router			/accounts [get]
 func (c *Controller) GetAccountStates(ctx *gin.Context) {
 	var filter core.AccountStateFilter
@@ -252,7 +268,11 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
+	ctx.IndentedJSON(http.StatusOK, GetAccountStatesRes{Results: ret})
+}
+
+type GetTransactionsRes struct {
+	Results []*core.Transaction `json:"results"`
 }
 
 // GetTransactions godoc
@@ -267,7 +287,7 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 //  @Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
 //  @Param   		limit	     		query   int 		false	"limit"							default(3)
-//	@Success		200		{array}		core.Transaction
+//	@Success		200		{object}	GetTransactionsRes
 //	@Router			/transactions [get]
 func (c *Controller) GetTransactions(ctx *gin.Context) {
 	var filter core.TransactionFilter
@@ -306,7 +326,11 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
+	ctx.IndentedJSON(http.StatusOK, GetTransactionsRes{Results: ret})
+}
+
+type GetMessagesRes struct {
+	Results []*core.Message `json:"results"`
 }
 
 // GetMessages godoc
@@ -324,7 +348,7 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 //  @Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3)
-//	@Success		200		{array}		core.Message
+//	@Success		200		{object}	GetMessagesRes
 //	@Router			/messages [get]
 func (c *Controller) GetMessages(ctx *gin.Context) {
 	var filter core.MessageFilter
@@ -364,5 +388,5 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, gin.H{"results": ret})
+	ctx.IndentedJSON(http.StatusOK, GetMessagesRes{Results: ret})
 }
