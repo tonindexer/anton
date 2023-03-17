@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/uptrace/bun/extra/bunbig"
 
@@ -30,8 +31,8 @@ func randUint() uint64 {
 	return rand.Uint64() // nolint
 }
 
-func randTs() uint64 {
-	return randUint()
+func randTs() int64 {
+	return time.Now().Unix()
 }
 
 func randLT() uint64 {
@@ -224,7 +225,7 @@ var (
 		BodyHash:      randBytes(32),
 		StateInitCode: nil,
 		StateInitData: nil,
-		CreatedAt:     randTs(),
+		CreatedAt:     time.Unix(randTs(), 0).UTC(),
 		CreatedLT:     accWallet.LastTxLT,
 	}
 

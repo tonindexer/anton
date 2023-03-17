@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bunbig"
@@ -44,8 +45,8 @@ type Transaction struct {
 	OrigStatus AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"orig_status"`
 	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"end_status"`
 
-	CreatedAt uint64 `bun:",notnull" json:"created_at"`
-	CreatedLT uint64 `bun:",notnull" json:"created_lt"`
+	CreatedAt time.Time `bun:",notnull" json:"created_at"`
+	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
 }
 
 type MessageType string
@@ -91,8 +92,8 @@ type Message struct {
 	StateInitCode []byte `bun:"type:bytea" json:"state_init_code,omitempty"`
 	StateInitData []byte `bun:"type:bytea" json:"state_init_data,omitempty"`
 
-	CreatedAt uint64 `bun:",notnull" json:"created_at"`
-	CreatedLT uint64 `bun:",notnull" json:"created_lt"`
+	CreatedAt time.Time `bun:",notnull" json:"created_at"`
+	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
 
 	Known bool `ch:"-" bun:"-" json:"-"`
 }
@@ -118,8 +119,8 @@ type MessagePayload struct {
 
 	// TODO: save fields from parsed data to payloads table
 
-	CreatedAt uint64 `bun:",notnull" json:"created_at"`
-	CreatedLT uint64 `bun:",notnull" json:"created_lt"`
+	CreatedAt time.Time `bun:",notnull" json:"created_at"`
+	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
 
 	Error string `json:"error,omitempty"`
 }

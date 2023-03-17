@@ -1,6 +1,8 @@
 package indexer
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun/extra/bunbig"
 	"github.com/xssnick/tonutils-go/address"
@@ -82,7 +84,7 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 		}
 
 		msg.CreatedLT = raw.CreatedLT
-		msg.CreatedAt = uint64(raw.CreatedAt)
+		msg.CreatedAt = time.Unix(int64(raw.CreatedAt), 0)
 
 	case *tlb.ExternalMessage:
 		msg.Type = core.ExternalIn
@@ -102,7 +104,7 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 		msg.BodyHash = raw.Body.Hash()
 
 		msg.CreatedLT = tx.LT
-		msg.CreatedAt = uint64(tx.Now)
+		msg.CreatedAt = time.Unix(int64(tx.Now), 0)
 
 	case *tlb.ExternalMessageOut:
 		msg.Type = core.ExternalOut
@@ -117,7 +119,7 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 		msg.SourceTxLT = tx.LT
 
 		msg.CreatedLT = raw.CreatedLT
-		msg.CreatedAt = uint64(raw.CreatedAt)
+		msg.CreatedAt = time.Unix(int64(raw.CreatedAt), 0)
 
 		if raw.StateInit != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
@@ -194,7 +196,7 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 		EndStatus:  core.AccountStatus(raw.EndStatus),
 
 		CreatedLT: raw.LT,
-		CreatedAt: uint64(raw.Now),
+		CreatedAt: time.Unix(int64(raw.Now), 0),
 	}
 	if b != nil {
 		tx.Address = *addr.MustFromTU(address.NewAddress(0, byte(b.Workchain), raw.AccountAddr))
