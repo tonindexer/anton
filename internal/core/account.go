@@ -21,12 +21,19 @@ const (
 	NonExist = AccountStatus(tlb.AccountStatusNonExist)
 )
 
+type LatestAccountState struct {
+	bun.BaseModel `bun:"table:latest_account_states" json:"-"`
+
+	Address      addr.Address  `bun:"type:bytea,pk,notnull" json:"address"`
+	LastTxLT     uint64        `bun:"type:bigint,notnull" json:"last_tx_lt"`
+	AccountState *AccountState `bun:"rel:has-one,join:address=address,join:last_tx_lt=last_tx_lt" json:"account"`
+}
+
 type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:is_active,status" json:"-"`
 	bun.BaseModel `bun:"table:account_states" json:"-"`
 
 	Address  addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
-	Latest   bool          `ch:"-" json:"latest"`
 	IsActive bool          `json:"is_active"`
 	Status   AccountStatus `ch:",lc" bun:"type:account_status" json:"status"` // TODO: ch enum
 	Balance  *bunbig.Int   `ch:"type:UInt256" bun:"type:numeric" json:"balance"`
@@ -41,10 +48,6 @@ type AccountState struct {
 	CodeHash  []byte `bun:"type:bytea" json:"code_hash,omitempty"`
 	Data      []byte `bun:"type:bytea" json:"data,omitempty"`
 	DataHash  []byte `bun:"type:bytea" json:"data_hash,omitempty"`
-
-	Depth uint64 `json:"depth"`
-	Tick  bool   `json:"tick"`
-	Tock  bool   `json:"tock"`
 
 	GetMethodHashes []uint32 `ch:"type:Array(UInt32)" bun:",array" json:"get_method_hashes"`
 }

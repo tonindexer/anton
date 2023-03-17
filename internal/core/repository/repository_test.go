@@ -80,6 +80,11 @@ func dropTables(t *testing.T) { //nolint:gocyclo // clean database
 		t.Fatal(err)
 	}
 
+	_, err = db.PG.NewDropTable().Model((*core.LatestAccountState)(nil)).IfExists().Exec(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	_, err = db.CH.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -240,7 +245,6 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 			t.Fatal(err)
 		}
 		acc := accWallet
-		acc.Latest = false
 		s.GetMethodHashes = nil
 		if !reflect.DeepEqual(s, &acc) {
 			t.Fatalf("wrong account, expected: %+v, got: %+v", acc, s)

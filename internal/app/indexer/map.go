@@ -144,22 +144,13 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 
 	ret.IsActive = acc.IsActive
 	ret.Status = core.NonExist
-	if acc.State != nil { //nolint:nestif // mapping pointers
+	if acc.State != nil {
 		if acc.State.Address != nil {
 			ret.Address = *addr.MustFromTU(acc.State.Address)
 		}
 		ret.Status = core.AccountStatus(acc.State.Status)
 		ret.Balance = bunbig.FromMathBig(acc.State.Balance.NanoTON())
 		ret.StateHash = acc.State.StateHash
-		if acc.State.StateInit != nil {
-			if d := acc.State.StateInit.Depth; d != nil {
-				ret.Depth = *d
-			}
-			if acc.State.StateInit.TickTock != nil {
-				ret.Tick = acc.State.StateInit.TickTock.Tick
-				ret.Tock = acc.State.StateInit.TickTock.Tock
-			}
-		}
 	}
 	if acc.Data != nil {
 		ret.Data = acc.Data.ToBOC()

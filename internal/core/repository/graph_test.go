@@ -36,7 +36,7 @@ func randTs() int64 {
 }
 
 func randLT() uint64 {
-	return randUint()
+	return uint64(rand.Uint32())
 }
 
 func intFromStr(str string) *bunbig.Int {
@@ -98,7 +98,6 @@ var (
 	addrWallet = *randAddr()
 
 	accWalletOlder = core.AccountState{
-		Latest:     true,
 		Address:    addrWallet,
 		IsActive:   true,
 		Status:     core.Active,
@@ -109,7 +108,6 @@ var (
 	}
 
 	accWalletOld = core.AccountState{
-		Latest:     true,
 		Address:    accWalletOlder.Address,
 		IsActive:   true,
 		Status:     core.Active,
@@ -120,7 +118,6 @@ var (
 	}
 
 	accWallet = core.AccountState{
-		Latest:  true,
 		Address: accWalletOld.Address,
 
 		IsActive: true,
@@ -142,7 +139,6 @@ var (
 	addrItem = *randAddr()
 
 	accItem = core.AccountState{
-		Latest:  true,
 		Address: addrItem,
 
 		IsActive: true,
@@ -165,7 +161,6 @@ var (
 	addrNoState = randAddr()
 
 	accNoState = core.AccountState{
-		Latest:     true,
 		Address:    *addrNoState,
 		IsActive:   false,
 		Status:     core.NonExist,

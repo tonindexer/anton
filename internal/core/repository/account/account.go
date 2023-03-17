@@ -4,12 +4,12 @@ import (
 	"context"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/go-clickhouse/ch"
 
-	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 )
 
@@ -66,25 +66,6 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "address state pg create unique index")
-	}
-
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.AccountState{}).
-		Unique().
-		Column("address", "latest").
-		Where("latest IS TRUE").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "address state pg create unique index")
-	}
-
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.AccountState{}).
-		Column("latest").
-		Where("latest IS TRUE").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "latest account state pg create index")
 	}
 
 	_, err = pgDB.NewCreateIndex().
@@ -151,20 +132,16 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "account state pg create table")
 	}
 
-	return createIndexes(ctx, pgDB)
-}
+	_, err = pgDB.NewCreateTable().
+		Model(&core.LatestAccountState{}).
+		IfNotExists().
+		WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state pg create table")
+	}
 
-func accountAddresses(accounts []*core.AccountState) (ret []*addr.Address) {
-	m := make(map[addr.Address]struct{})
-	for _, a := range accounts {
-		m[a.Address] = struct{}{}
-	}
-	for a := range m {
-		r := new(addr.Address)
-		*r = a
-		ret = append(ret, r)
-	}
-	return
+	return createIndexes(ctx, pgDB)
 }
 
 func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts []*core.AccountState) error {
@@ -177,37 +154,24 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		return err
 	}
 
-	_, err = tx.NewUpdate().Model(&accounts).
-		Where("address in (?)", bun.In(accountAddresses(accounts))).
-		Where("latest is true").
-		Set("latest = ?", false).
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "cannot drop latest state")
-	}
-
-	_, err = tx.NewInsert().Model(&accounts).ExcludeColumn("latest").Exec(ctx)
+	_, err = tx.NewInsert().Model(&accounts).Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "cannot insert new states")
 	}
 
-	_, err = tx.NewUpdate().
-		With("late",
-			tx.NewSelect().
-				Model(&accounts).
-				DistinctOn("address").
-				Column("address", "last_tx_lt").
-				Where("address in (?)", bun.In(accountAddresses(accounts))).
-				Order("address", "last_tx_lt DESC"),
-		).
-		Model((*core.AccountState)(nil)).
-		Table("late").
-		Where("account_state.address = late.address").
-		Where("account_state.last_tx_lt = late.last_tx_lt").
-		Set("latest = ?", true).
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "cannot set latest state")
+	for _, a := range accounts {
+		_, err = tx.NewInsert().
+			Model(&core.LatestAccountState{
+				Address:  a.Address,
+				LastTxLT: a.LastTxLT,
+			}).
+			On("CONFLICT (address) DO UPDATE").
+			Where("latest_account_state.last_tx_lt < ?", a.LastTxLT).
+			Set("last_tx_lt = EXCLUDED.last_tx_lt").
+			Exec(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "cannot set latest state for %s", &a.Address)
+		}
 	}
 
 	return nil
@@ -229,33 +193,41 @@ func (r *Repository) AddAccountData(ctx context.Context, tx bun.Tx, data []*core
 }
 
 func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (ret []*core.AccountState, err error) {
-	q := r.pg.NewSelect().Model(&ret)
-
-	if f.WithData {
-		q = q.Relation("StateData")
-	}
-
-	q = q.ExcludeColumn("code", "data") // TODO: optional
+	var (
+		q         *bun.SelectQuery
+		relPrefix string
+		latest    []*core.LatestAccountState
+	)
 
 	if f.LatestState {
-		q.Where("account_state.latest = ?", true)
+		q = r.pg.NewSelect().Model(&latest).Relation("AccountState", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.ExcludeColumn("code", "data") // TODO: optional
+		})
+		relPrefix = "account_state__"
+	} else {
+		q = r.pg.NewSelect().Model(&ret).
+			ExcludeColumn("code", "data") // TODO: optional
 	}
+	if f.WithData {
+		q = q.Relation(strcase.ToCamel(relPrefix) + "." + "StateData")
+	}
+
 	if len(f.Addresses) > 0 {
 		q.Where("account_state.address in (?)", bun.In(f.Addresses))
 	}
 
 	if f.WithData {
 		if len(f.ContractTypes) > 0 {
-			q.Where("state_data.types && ?", pgdialect.Array(f.ContractTypes))
+			q.Where(relPrefix+"state_data.types && ?", pgdialect.Array(f.ContractTypes))
 		}
 		if f.OwnerAddress != nil {
-			q = q.Where("state_data.owner_address = ?", f.OwnerAddress)
+			q = q.Where(relPrefix+"state_data.owner_address = ?", f.OwnerAddress)
 		}
 		if f.CollectionAddress != nil {
-			q = q.Where("state_data.collection_address = ?", f.CollectionAddress)
+			q = q.Where(relPrefix+"state_data.collection_address = ?", f.CollectionAddress)
 		}
 		if f.MasterAddress != nil {
-			q = q.Where("state_data.master_address = ?", f.MasterAddress)
+			q = q.Where(relPrefix+"state_data.master_address = ?", f.MasterAddress)
 		}
 	}
 
@@ -277,6 +249,12 @@ func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateF
 	q = q.Limit(f.Limit)
 
 	err = q.Scan(ctx)
+
+	if f.LatestState {
+		for _, a := range latest {
+			ret = append(ret, a.AccountState)
+		}
+	}
 
 	return ret, err
 }
