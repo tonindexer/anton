@@ -24,15 +24,18 @@ func matchByAddress(acc *core.AccountState, addresses []*addr.Address) bool {
 	return false
 }
 
-func matchByCode(acc *core.AccountState, code []byte) bool {
+func matchByCode(acc *core.AccountState, code []byte, codeHash []byte) bool {
 	if len(acc.Code) == 0 || len(code) == 0 {
 		return false
 	}
 
-	codeCell, err := cell.FromBOC(code)
-	if err != nil {
-		log.Error().Err(err).Msg("parse contract interface code")
-		return false
+	if len(code) > 0 {
+		codeCell, err := cell.FromBOC(code)
+		if err != nil {
+			log.Error().Err(err).Msg("parse contract interface code")
+			return false
+		}
+		codeHash = codeCell.Hash()
 	}
 
 	accCodeCell, err := cell.FromBOC(acc.Code)
@@ -41,7 +44,7 @@ func matchByCode(acc *core.AccountState, code []byte) bool {
 		return false
 	}
 
-	return bytes.Equal(accCodeCell.Hash(), codeCell.Hash())
+	return bytes.Equal(accCodeCell.Hash(), codeHash)
 }
 
 func matchByGetMethods(acc *core.AccountState, getMethodHashes []uint32) bool {
@@ -77,7 +80,7 @@ func (s *Service) DetermineInterfaces(ctx context.Context, acc *core.AccountStat
 			continue
 		}
 
-		if matchByCode(acc, iface.Code) {
+		if matchByCode(acc, iface.Code, iface.CodeHash) {
 			ret = append(ret, iface.Name)
 			continue
 		}
