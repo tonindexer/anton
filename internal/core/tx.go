@@ -41,19 +41,6 @@ type Transaction struct {
 	StateUpdate []byte `bun:"type:bytea" json:"state_update,omitempty"`
 	Description []byte `bun:"type:bytea" json:"description,omitempty"`
 
-	// TODO: parse tx description
-	ComputeSuccess   bool        `bun:",notnull" json:"compute_success"`
-	MsgStateUsed     bool        `bun:",notnull" json:"msg_state_used"`
-	AccountActivated bool        `bun:",notnull" json:"account_activated"`
-	GasFees          *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"gas_fees"`
-	VmGasUsed        *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"vm_gas_used"`
-	VmGasLimit       *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"vm_gas_limit"`
-	VmGasCredit      *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"vm_gas_credit"`
-	VmMode           int8        `json:"vm_mode"`
-	VmExitCode       int32       `json:"vm_exit_code"`
-	VmExitArg        int32       `json:"vm_exit_arg"`
-	VmSteps          uint32      `json:"vm_steps"`
-
 	OrigStatus AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"orig_status"`
 	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"end_status"`
 
