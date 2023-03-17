@@ -24,7 +24,7 @@ func matchByAddress(acc *core.AccountState, addresses []*addr.Address) bool {
 	return false
 }
 
-func matchByCode(acc *core.AccountState, code []byte, codeHash []byte) bool {
+func matchByCode(acc *core.AccountState, code, codeHash []byte) bool {
 	if len(acc.Code) == 0 || len(code) == 0 {
 		return false
 	}
