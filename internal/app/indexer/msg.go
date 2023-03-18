@@ -157,7 +157,6 @@ func (s *Service) parseMessagePayloads(ctx context.Context, tx bun.Tx, messages 
 			continue
 		}
 		if err != nil {
-			log.Error().Err(err).Hex("msg_hash", msg.BodyHash).Hex("tx_hash", msg.SourceTxHash).Msg("parse message payload")
 			payload.Error = err.Error()
 		}
 
