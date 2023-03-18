@@ -57,8 +57,8 @@ services:
       - indexer_network
     volumes:
       - idx_pg_data:/var/lib/postgresql/data
-      - ./config/postgresql.conf:/etc/postgresql.conf
-      - ./logs:/var/lib/postgresql/data/log
+      - ./config/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
+      - ./log/postgresql:/var/lib/postgresql/data/log
     ports:
       - "5432:5432"
     expose:
