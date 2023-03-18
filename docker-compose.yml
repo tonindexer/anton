@@ -52,14 +52,17 @@ services:
         hard: 262144
   postgres:
     image: "postgres:15"
+    command: ["postgres", "-c", "log_min_duration_statement=1000", "-c", "logging_collector=on"]
     networks:
       - indexer_network
     volumes:
       - idx_pg_data:/var/lib/postgresql/data
+      - ./config/postgresql.conf:/etc/postgresql.conf
     ports:
       - "5432:5432"
     expose:
       - "5432"
+    shm_size: 64gb
     environment:
       POSTGRES_DB: "${DB_NAME}"
       POSTGRES_USER: "${DB_USER}"
