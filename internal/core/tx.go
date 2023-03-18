@@ -15,7 +15,7 @@ import (
 )
 
 type Transaction struct {
-	ch.CHModel    `ch:"transactions,partition:block_workchain,block_shard,round(block_seq_no,-5),toYYYYMMDD(toDateTime(created_at))" json:"-"`
+	ch.CHModel    `ch:"transactions,partition:block_workchain,block_shard,round(block_seq_no,-5),toYYYYMMDD(created_at)" json:"-"`
 	bun.BaseModel `bun:"table:transactions" json:"-"`
 
 	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull" json:"hash"`
@@ -58,7 +58,7 @@ const (
 )
 
 type Message struct {
-	ch.CHModel    `ch:"messages,partition:type,incoming,toYYYYMMDD(toDateTime(created_at))" json:"-"`
+	ch.CHModel    `ch:"messages,partition:type,incoming,toYYYYMMDD(created_at)" json:"-"`
 	bun.BaseModel `bun:"table:messages" json:"-"`
 
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull" json:"type"` // TODO: ch enum
@@ -99,7 +99,7 @@ type Message struct {
 }
 
 type MessagePayload struct {
-	ch.CHModel    `ch:"message_payloads,partition:src_contract,partition:dst_contract,partition:toYYYYMMDD(toDateTime(created_at))" json:"-"`
+	ch.CHModel    `ch:"message_payloads,partition:src_contract,partition:dst_contract,partition:toYYYYMMDD(created_at)" json:"-"`
 	bun.BaseModel `bun:"table:message_payloads" json:"-"`
 
 	Type MessageType `ch:",lc" bun:"type:message_type,notnull" json:"type"`
