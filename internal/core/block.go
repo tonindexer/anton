@@ -14,7 +14,7 @@ type BlockID struct {
 }
 
 type Block struct {
-	ch.CHModel    `ch:"block_info,partition:workchain,shard" json:"-"`
+	ch.CHModel    `ch:"block_info,partition:workchain" json:"-"`
 	bun.BaseModel `bun:"table:block_info" json:"-"`
 
 	Workchain int32  `ch:",pk" bun:",pk,notnull" json:"workchain"`

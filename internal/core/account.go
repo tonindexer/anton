@@ -30,7 +30,7 @@ type LatestAccountState struct {
 }
 
 type AccountState struct {
-	ch.CHModel    `ch:"account_states,partition:is_active,status" json:"-"`
+	ch.CHModel    `ch:"account_states,partition:status" json:"-"`
 	bun.BaseModel `bun:"table:account_states" json:"-"`
 
 	Address  addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
