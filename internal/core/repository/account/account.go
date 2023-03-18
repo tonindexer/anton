@@ -86,6 +86,17 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "account state last_tx_lt pg create index")
 	}
 
+	// latest account state
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.LatestAccountState{}).
+		Using("BTREE").
+		Column("last_tx_lt").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state last_tx_lt pg create index")
+	}
+
 	return nil
 }
 
@@ -244,7 +255,11 @@ func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateF
 	}
 
 	if f.Order != "" {
-		q = q.Order("account_state.last_tx_lt " + strings.ToUpper(f.Order))
+		column := "account_state.last_tx_lt"
+		if f.LatestState {
+			column = "latest_" + column
+		}
+		q = q.Order(column + " " + strings.ToUpper(f.Order))
 	}
 
 	if f.Limit == 0 {
