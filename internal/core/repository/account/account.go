@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -205,61 +204,68 @@ func (r *Repository) AddAccountData(ctx context.Context, tx bun.Tx, data []*core
 
 func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (ret []*core.AccountState, err error) {
 	var (
-		q         *bun.SelectQuery
-		relPrefix string
-		latest    []*core.LatestAccountState
+		q, qAddr    *bun.SelectQuery
+		statesTable string
+		latest      []*core.LatestAccountState
 	)
 
+	// choose table to filter states by
+	// and optionally join account data
 	if f.LatestState {
 		q = r.pg.NewSelect().Model(&latest).Relation("AccountState", func(q *bun.SelectQuery) *bun.SelectQuery {
 			return q.ExcludeColumn("code", "data") // TODO: optional
 		})
-		relPrefix = "account_state__"
+		if f.WithData {
+			q = q.Relation("AccountState.StateData")
+		}
+		statesTable = "latest_account_state."
 	} else {
 		q = r.pg.NewSelect().Model(&ret).
 			ExcludeColumn("code", "data") // TODO: optional
-	}
-	if f.WithData {
-		if relPrefix != "" {
-			q = q.Relation(strcase.ToCamel(relPrefix) + "." + "StateData")
-		} else {
+		if f.WithData {
 			q = q.Relation("StateData")
 		}
+		statesTable = "account_state."
 	}
 
 	if len(f.Addresses) > 0 {
-		q.Where("account_state.address in (?)", bun.In(f.Addresses))
+		q.Where(statesTable+"address in (?)", bun.In(f.Addresses))
 	}
-
 	if f.WithData {
+		var needed bool
+
+		// select unique addresses by given data filter
+		qAddr = r.pg.NewSelect().Model((*core.AccountData)(nil)).
+			Distinct().
+			Column("address")
+
 		if len(f.ContractTypes) > 0 {
-			q.Where(relPrefix+"state_data.types && ?", pgdialect.Array(f.ContractTypes))
+			qAddr, needed = qAddr.Where("types && ?", pgdialect.Array(f.ContractTypes)), true
 		}
 		if f.OwnerAddress != nil {
-			q = q.Where(relPrefix+"state_data.owner_address = ?", f.OwnerAddress)
+			qAddr, needed = qAddr.Where("owner_address = ?", f.OwnerAddress), true
 		}
 		if f.CollectionAddress != nil {
-			q = q.Where(relPrefix+"state_data.collection_address = ?", f.CollectionAddress)
+			qAddr, needed = qAddr.Where("collection_address = ?", f.CollectionAddress), true
 		}
 		if f.MasterAddress != nil {
-			q = q.Where(relPrefix+"state_data.master_address = ?", f.MasterAddress)
+			qAddr, needed = qAddr.Where("master_address = ?", f.MasterAddress), true
+		}
+
+		if needed {
+			q = q.Where(statesTable+"address in (?)", qAddr)
 		}
 	}
 
 	if f.AfterTxLT != nil {
 		if f.Order == "ASC" {
-			q = q.Where("account_state.last_tx_lt > ?", f.AfterTxLT)
+			q = q.Where(statesTable+"last_tx_lt > ?", f.AfterTxLT)
 		} else {
-			q = q.Where("account_state.last_tx_lt < ?", f.AfterTxLT)
+			q = q.Where(statesTable+"last_tx_lt < ?", f.AfterTxLT)
 		}
 	}
-
 	if f.Order != "" {
-		column := "account_state.last_tx_lt"
-		if f.LatestState {
-			column = "latest_" + column
-		}
-		q = q.Order(column + " " + strings.ToUpper(f.Order))
+		q = q.Order(statesTable + "last_tx_lt " + strings.ToUpper(f.Order))
 	}
 
 	if f.Limit == 0 {
