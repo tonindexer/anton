@@ -229,7 +229,7 @@ func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateF
 	}
 
 	if len(f.Addresses) > 0 {
-		q.Where(statesTable+"address in (?)", bun.In(f.Addresses))
+		q = q.Where(statesTable+"address in (?)", bun.In(f.Addresses))
 	}
 	if f.WithData {
 		var needed bool
@@ -253,6 +253,9 @@ func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateF
 		}
 
 		if needed {
+			if !f.LatestState {
+				return nil, errors.Wrap(core.ErrInvalidArg, "account data filters are applicable only to latest account states")
+			}
 			q = q.Where(statesTable+"address in (?)", qAddr)
 		}
 	}
