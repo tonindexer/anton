@@ -62,6 +62,8 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountDat
 }
 
 func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.AccountData, message *core.Message) (*core.MessagePayload, error) {
+	var err = core.ErrNotAvailable // save message parsing error to a database to look at it later
+
 	// you can parse separately incoming messages to known contracts and outgoing message from them
 
 	ret := &core.MessagePayload{
@@ -79,29 +81,31 @@ func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.Accoun
 		return nil, errors.Wrap(core.ErrNotAvailable, "no message body")
 	}
 
-	err := s.parseDirectedMessage(ctx, dst, message, ret)
-	if err != nil && !errors.Is(err, core.ErrNotAvailable) {
+	errIn := s.parseDirectedMessage(ctx, dst, message, ret)
+	if errIn != nil && !errors.Is(errIn, core.ErrNotAvailable) {
 		log.Warn().
-			Err(err).
+			Err(errIn).
 			Hex("tx_hash", message.SourceTxHash).
 			Str("dst_addr", dst.Address.Base64()).
 			Uint32("op_id", message.OperationID).Msgf("parse dst %v message", dst.Types)
+		err = errors.Wrap(errIn, "incoming")
 	}
-	if err == nil {
+	if errIn == nil {
 		return ret, nil
 	}
 
-	err = s.parseDirectedMessage(ctx, src, message, ret)
-	if err != nil && !errors.Is(err, core.ErrNotAvailable) {
+	errOut := s.parseDirectedMessage(ctx, src, message, ret)
+	if errOut != nil && !errors.Is(errOut, core.ErrNotAvailable) {
 		log.Warn().
-			Err(err).
+			Err(errOut).
 			Hex("tx_hash", message.SourceTxHash).
 			Str("src_addr", src.Address.Base64()).
 			Uint32("op_id", message.OperationID).Msgf("parse src %v message", src.Types)
+		err = errors.Wrap(errOut, "outgoing")
 	}
-	if err == nil {
+	if errOut == nil {
 		return ret, nil
 	}
 
-	return nil, err
+	return ret, err
 }
