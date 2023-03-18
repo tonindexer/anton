@@ -209,7 +209,11 @@ func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateF
 			ExcludeColumn("code", "data") // TODO: optional
 	}
 	if f.WithData {
-		q = q.Relation(strcase.ToCamel(relPrefix) + "." + "StateData")
+		if relPrefix != "" {
+			q = q.Relation(strcase.ToCamel(relPrefix) + "." + "StateData")
+		} else {
+			q = q.Relation("StateData")
+		}
 	}
 
 	if len(f.Addresses) > 0 {

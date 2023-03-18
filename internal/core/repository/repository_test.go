@@ -314,8 +314,29 @@ func TestGraphFilterAccounts(t *testing.T) {
 	initDB()
 
 	// TODO: optional fields
+	accWalletOlder.Code, accWalletOlder.Data = nil, nil
 	accWallet.Code, accWallet.Data = nil, nil
 	accItem.Code, accItem.Data = nil, nil
+
+	t.Run("filter state by address", func(t *testing.T) {
+		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+			Addresses:   []*addr.Address{&accWallet.Address},
+			LatestState: false,
+			WithData:    true,
+			Order:       "ASC",
+			Limit:       1,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(ret) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
+		}
+		if !reflect.DeepEqual(&accWalletOlder, ret[0]) {
+			t.Fatalf("wrong account, expected: %+v, got: %+v", accWalletOlder, ret[0])
+		}
+	})
 
 	t.Run("filter latest state by address", func(t *testing.T) {
 		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
