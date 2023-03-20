@@ -657,6 +657,10 @@ paths:
         in: query
         name: hash
         type: string
+      - description: search by incoming message hash
+        in: query
+        name: in_msg_hash
+        type: string
       - description: filter by workchain
         in: query
         name: workchain

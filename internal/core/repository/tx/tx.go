@@ -59,7 +59,16 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		Column("created_lt").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "message created_lt pg create index")
+		return errors.Wrap(err, "tx created_lt pg create index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.Transaction{}).
+		Using("HASH").
+		Column("in_msg_hash").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "tx in_msg hash pg create index")
 	}
 
 	// messages
@@ -300,6 +309,9 @@ func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQu
 
 	if len(f.Hash) > 0 {
 		q = q.Where("transaction.hash = ?", f.Hash)
+	}
+	if len(f.InMsgHash) > 0 {
+		q = q.Where("transaction.in_msg_hash = ?", f.InMsgHash)
 	}
 	if len(f.Addresses) > 0 {
 		q = q.Where("transaction.address in (?)", bun.In(f.Addresses))

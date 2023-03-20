@@ -129,7 +129,8 @@ type MessagePayload struct {
 }
 
 type TransactionFilter struct {
-	Hash []byte // `form:"hash"`
+	Hash      []byte // `form:"hash"`
+	InMsgHash []byte // `form:"in_msg_hash"`
 
 	Addresses []*addr.Address //
 

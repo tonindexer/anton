@@ -490,6 +490,26 @@ func TestGraphFilterMessages(t *testing.T) {
 func TestGraphFilterTransactions(t *testing.T) {
 	initDB()
 
+	t.Run("filter tx by in_msg_hash", func(t *testing.T) {
+		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
+			InMsgHash: txInItem.InMsgHash,
+			Order:     "DESC",
+			Limit:     10,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		txIn := txInItem
+
+		if len(ret) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
+		}
+		if !reflect.DeepEqual(&txIn, ret[0]) {
+			t.Fatalf("wrong tx, expected: %+v, got: %+v", txIn, ret[0])
+		}
+	})
+
 	t.Run("filter tx with msg by address", func(t *testing.T) {
 		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
 			Addresses:           []*addr.Address{&accWallet.Address},

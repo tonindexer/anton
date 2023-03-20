@@ -367,6 +367,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "search by incoming message hash",
+                        "name": "in_msg_hash",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "filter by workchain",
                         "name": "workchain",

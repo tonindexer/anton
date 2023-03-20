@@ -275,6 +275,7 @@ type GetTransactionsRes struct {
 //	@Produce		json
 //  @Param   		address     		query   []string 	false   "only given addresses"
 //  @Param   		hash				query	string  	false	"search by tx hash"
+//  @Param   		in_msg_hash			query	string  	false	"search by incoming message hash"
 //  @Param   		workchain			query	int32  		false	"filter by workchain"
 //  @Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
@@ -293,6 +294,11 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 	filter.Hash, err = unmarshalBytes(ctx.Query("hash"))
 	if err != nil {
 		paramErr(ctx, "hash", err)
+		return
+	}
+	filter.InMsgHash, err = unmarshalBytes(ctx.Query("in_msg_hash"))
+	if err != nil {
+		paramErr(ctx, "in_msg_hash", err)
 		return
 	}
 
