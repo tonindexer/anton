@@ -38,6 +38,98 @@ func getMsgHash(msg *tlb.Message) ([]byte, error) {
 	return msgCell.Hash(), nil
 }
 
+func mapMessageInternal(msg *core.Message, raw *tlb.InternalMessage) error {
+	msg.Type = core.Internal
+
+	src, err := new(addr.Address).FromTU(raw.SrcAddr)
+	if err != nil {
+		return errors.Wrapf(err, "src addr from tu %s", raw.SrcAddr)
+	}
+	dst, err := new(addr.Address).FromTU(raw.DstAddr)
+	if err != nil {
+		return errors.Wrapf(err, "dst addr from tu %s", raw.DstAddr)
+	}
+	msg.SrcAddress = *src
+	msg.DstAddress = *dst
+
+	msg.Bounce = raw.Bounce
+	msg.Bounced = raw.Bounced
+
+	msg.Amount = bunbig.FromMathBig(raw.Amount.NanoTON())
+
+	msg.IHRDisabled = raw.IHRDisabled
+	msg.IHRFee = bunbig.FromMathBig(raw.IHRFee.NanoTON())
+	msg.FwdFee = bunbig.FromMathBig(raw.FwdFee.NanoTON())
+
+	msg.Body = raw.Body.ToBOC()
+	msg.BodyHash = raw.Body.Hash()
+
+	if raw.StateInit != nil && raw.StateInit.Code != nil {
+		msg.StateInitCode = raw.StateInit.Code.ToBOC()
+	}
+	if raw.StateInit != nil && raw.StateInit.Data != nil {
+		msg.StateInitData = raw.StateInit.Data.ToBOC()
+	}
+
+	msg.CreatedLT = raw.CreatedLT
+	msg.CreatedAt = time.Unix(int64(raw.CreatedAt), 0)
+
+	return nil
+}
+
+func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg *tlb.Message) error {
+	switch raw := rawMsg.Msg.(type) {
+	case *tlb.ExternalMessage:
+		msg.Type = core.ExternalIn
+
+		dst, err := new(addr.Address).FromTU(raw.DstAddr)
+		if err != nil {
+			return errors.Wrapf(err, "dst addr from tu %s", raw.DstAddr)
+		}
+		msg.DstAddress = *dst
+
+		if raw.StateInit != nil && raw.StateInit.Code != nil {
+			msg.StateInitCode = raw.StateInit.Code.ToBOC()
+		}
+		if raw.StateInit != nil && raw.StateInit.Data != nil {
+			msg.StateInitData = raw.StateInit.Data.ToBOC()
+		}
+
+		msg.Body = raw.Body.ToBOC()
+		msg.BodyHash = raw.Body.Hash()
+
+		msg.CreatedLT = rawTx.LT
+		msg.CreatedAt = time.Unix(int64(rawTx.Now), 0)
+
+	case *tlb.ExternalMessageOut:
+		msg.Type = core.ExternalOut
+
+		src, err := new(addr.Address).FromTU(raw.SrcAddr)
+		if err != nil {
+			return errors.Wrapf(err, "src addr from tu %s", raw.SrcAddr)
+		}
+		msg.SrcAddress = *src
+
+		msg.SourceTxHash = rawTx.Hash
+		msg.SourceTxLT = rawTx.LT
+
+		msg.CreatedLT = raw.CreatedLT
+		msg.CreatedAt = time.Unix(int64(raw.CreatedAt), 0)
+
+		if raw.StateInit != nil && raw.StateInit.Code != nil {
+			msg.StateInitCode = raw.StateInit.Code.ToBOC()
+		}
+		if raw.StateInit != nil && raw.StateInit.Data != nil {
+			msg.StateInitData = raw.StateInit.Data.ToBOC()
+		}
+
+		msg.Body = raw.Body.ToBOC()
+		msg.BodyHash = raw.Body.Hash()
+	}
+
+	return nil
+}
+
 func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error) {
 	var (
 		msg = new(core.Message)
@@ -51,87 +143,14 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 
 	switch raw := message.Msg.(type) {
 	case *tlb.InternalMessage:
-		msg.Type = core.Internal
-
-		src, err := new(addr.Address).FromTU(raw.SrcAddr)
-		if err != nil {
-			return nil, errors.Wrapf(err, "src addr from tu %s", raw.SrcAddr)
-		}
-		dst, err := new(addr.Address).FromTU(raw.DstAddr)
-		if err != nil {
-			return nil, errors.Wrapf(err, "dst addr from tu %s", raw.DstAddr)
-		}
-		msg.SrcAddress = *src
-		msg.DstAddress = *dst
-
-		msg.Bounce = raw.Bounce
-		msg.Bounced = raw.Bounced
-
-		msg.Amount = bunbig.FromMathBig(raw.Amount.NanoTON())
-
-		msg.IHRDisabled = raw.IHRDisabled
-		msg.IHRFee = bunbig.FromMathBig(raw.IHRFee.NanoTON())
-		msg.FwdFee = bunbig.FromMathBig(raw.FwdFee.NanoTON())
-
-		msg.Body = raw.Body.ToBOC()
-		msg.BodyHash = raw.Body.Hash()
-
-		if raw.StateInit != nil && raw.StateInit.Code != nil {
-			msg.StateInitCode = raw.StateInit.Code.ToBOC()
-		}
-		if raw.StateInit != nil && raw.StateInit.Data != nil {
-			msg.StateInitData = raw.StateInit.Data.ToBOC()
+		if err := mapMessageInternal(msg, raw); err != nil {
+			return nil, err
 		}
 
-		msg.CreatedLT = raw.CreatedLT
-		msg.CreatedAt = time.Unix(int64(raw.CreatedAt), 0)
-
-	case *tlb.ExternalMessage:
-		msg.Type = core.ExternalIn
-
-		dst, err := new(addr.Address).FromTU(raw.DstAddr)
-		if err != nil {
-			return nil, errors.Wrapf(err, "dst addr from tu %s", raw.DstAddr)
+	case *tlb.ExternalMessage, *tlb.ExternalMessageOut:
+		if err := mapMessageExternal(msg, tx, message); err != nil {
+			return nil, err
 		}
-		msg.DstAddress = *dst
-
-		if raw.StateInit != nil {
-			if raw.StateInit.Code != nil {
-				msg.StateInitCode = raw.StateInit.Code.ToBOC()
-			}
-			if raw.StateInit.Data != nil {
-				msg.StateInitData = raw.StateInit.Data.ToBOC()
-			}
-		}
-
-		msg.Body = raw.Body.ToBOC()
-		msg.BodyHash = raw.Body.Hash()
-
-		msg.CreatedLT = tx.LT
-		msg.CreatedAt = time.Unix(int64(tx.Now), 0)
-
-	case *tlb.ExternalMessageOut:
-		msg.Type = core.ExternalOut
-
-		src, err := new(addr.Address).FromTU(raw.SrcAddr)
-		if err != nil {
-			return nil, errors.Wrapf(err, "src addr from tu %s", raw.SrcAddr)
-		}
-		msg.SrcAddress = *src
-
-		msg.SourceTxHash = tx.Hash
-		msg.SourceTxLT = tx.LT
-
-		msg.CreatedLT = raw.CreatedLT
-		msg.CreatedAt = time.Unix(int64(raw.CreatedAt), 0)
-
-		if raw.StateInit != nil {
-			msg.StateInitCode = raw.StateInit.Code.ToBOC()
-			msg.StateInitData = raw.StateInit.Data.ToBOC()
-		}
-
-		msg.Body = raw.Body.ToBOC()
-		msg.BodyHash = raw.Body.Hash()
 	}
 
 	if msg.Body == nil {
