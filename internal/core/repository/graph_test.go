@@ -36,7 +36,7 @@ func randTs() int64 {
 }
 
 func randLT() uint64 {
-	return uint64(rand.Uint32())
+	return uint64(rand.Uint32()) // nolint
 }
 
 func intFromStr(str string) *bunbig.Int {
