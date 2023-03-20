@@ -85,7 +85,7 @@ func unmarshalBytes(x string) ([]byte, error) {
 		return ret, nil
 	}
 	ret, err = hex.DecodeString(x)
-	if err != nil {
+	if err == nil {
 		return ret, nil
 	}
 	return nil, fmt.Errorf("cannot decode bytes %s", x)
