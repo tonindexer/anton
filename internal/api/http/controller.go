@@ -80,12 +80,10 @@ func unmarshalBytes(x string) ([]byte, error) {
 	if x == "" {
 		return nil, nil
 	}
-	ret, err := base64.StdEncoding.DecodeString(x)
-	if err == nil {
+	if ret, err := hex.DecodeString(x); err == nil {
 		return ret, nil
 	}
-	ret, err = hex.DecodeString(x)
-	if err == nil {
+	if ret, err := base64.StdEncoding.DecodeString(x); err == nil {
 		return ret, nil
 	}
 	return nil, fmt.Errorf("cannot decode bytes %s", x)
