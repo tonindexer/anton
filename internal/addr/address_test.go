@@ -62,11 +62,20 @@ func TestAddress_FromBase64(t *testing.T) {
 			t.Fatal(c.b64, err)
 		}
 
-		if addr.String() != c.uf {
+		addrStr := addr.String()
+		if addrStr != c.uf {
 			t.Fatal(c.uf, addr.String())
 		}
 		if addr.Base64() != c.b64 {
 			t.Fatal(c.b64, addr.Base64())
+		}
+
+		addrGot, err := new(Address).FromString(addrStr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if addrGot.Base64() != addr.Base64() {
+			t.Fatal(addrGot.Base64(), addr.Base64())
 		}
 	}
 }

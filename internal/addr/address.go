@@ -65,7 +65,7 @@ func (x *Address) FromString(str string) (*Address, error) {
 	if len(split) != 2 {
 		return nil, fmt.Errorf("wrong address format")
 	}
-	w, err := strconv.ParseUint(split[0], 10, 8)
+	w, err := strconv.ParseInt(split[0], 10, 8)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse address workchain int8")
 	}
@@ -73,12 +73,7 @@ func (x *Address) FromString(str string) (*Address, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "parse address data hex")
 	}
-
-	x[0] = 0
-	x[1] = byte(w)
-	copy(x[2:34], d)
-
-	return x, nil
+	return x.FromTU(address.NewAddress(0, byte(w), d))
 }
 
 func (x *Address) Base64() string {
