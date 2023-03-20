@@ -58,6 +58,8 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountDat
 		return errors.Wrap(err, "json marshal parsed payload")
 	}
 
+	ret.MinterAddress = acc.MinterAddress
+
 	return nil
 }
 

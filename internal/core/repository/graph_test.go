@@ -322,6 +322,8 @@ var (
 		OperationName: "item_transfer",
 		DataJSON:      json.RawMessage(`{"new_owner": "kkkkkk", "collection_address": "aaaaaa"}`),
 
+		MinterAddress: accDataItem.MinterAddress,
+
 		CreatedAt: msgOutWallet.CreatedAt,
 		CreatedLT: msgOutWallet.CreatedLT,
 	}

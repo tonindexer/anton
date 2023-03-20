@@ -144,6 +144,16 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "message payload pg create operation name index")
 	}
 
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.MessagePayload{}).
+		Using("HASH").
+		Column("minter_address").
+		Where("length(minter_address) > 0").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address state pg create unique index")
+	}
+
 	return nil
 }
 
@@ -352,6 +362,9 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 		}
 		if len(f.OperationNames) > 0 {
 			q = q.Where("payload.operation_name IN (?)", bun.In(f.OperationNames))
+		}
+		if f.MinterAddress != nil {
+			q = q.Where("payload.minter_address = ?", f.MinterAddress)
 		}
 	}
 

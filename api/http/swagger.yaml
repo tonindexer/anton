@@ -298,6 +298,11 @@ definitions:
         items:
           type: integer
         type: array
+      minter_address:
+        description: can be used to show all jetton or nft item transfers
+        items:
+          type: integer
+        type: array
       operation_id:
         type: integer
       operation_name:
@@ -604,6 +609,10 @@ paths:
           type: string
         name: operation_name
         type: array
+      - description: filter FT or NFT operations by minter address
+        in: query
+        name: minter_address
+        type: string
       - default: DESC
         description: order by created_lt
         enum:

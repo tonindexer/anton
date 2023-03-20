@@ -296,6 +296,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter FT or NFT operations by minter address",
+                        "name": "minter_address",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "ASC",
                             "DESC"
@@ -843,6 +849,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "hash": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "minter_address": {
+                    "description": "can be used to show all jetton or nft item transfers",
                     "type": "array",
                     "items": {
                         "type": "integer"

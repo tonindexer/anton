@@ -457,6 +457,34 @@ func TestGraphFilterMessages(t *testing.T) {
 			t.Fatalf("wrong msg, expected: %+v, got: %+v", msgIn, ret[0])
 		}
 	})
+
+	t.Run("filter messages by minter address", func(t *testing.T) {
+		ret, err := txRepo.GetMessages(ctx, &core.MessageFilter{
+			WithPayload:   true,
+			MinterAddress: accDataItem.MinterAddress,
+			Order:         "DESC",
+			Limit:         10,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		msgIn := msgOutWallet
+		msgIn.Payload = &msgInItemPayload
+
+		if len(ret) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
+		}
+		if !reflect.DeepEqual(msgIn.Payload.DataJSON, ret[0].Payload.DataJSON) {
+			t.Fatalf("wrong msg payload data json, expected: %s, got: %s", msgIn.Payload.DataJSON, ret[0].Payload.DataJSON)
+		}
+		if !reflect.DeepEqual(msgIn.Payload, ret[0].Payload) {
+			t.Fatalf("wrong msg payload, expected: %+v, got: %+v", msgIn.Payload, ret[0].Payload)
+		}
+		if !reflect.DeepEqual(&msgIn, ret[0]) {
+			t.Fatalf("wrong msg, expected: %+v, got: %+v", msgIn, ret[0])
+		}
+	})
 }
 
 func TestGraphFilterTransactions(t *testing.T) {

@@ -119,6 +119,9 @@ type MessagePayload struct {
 
 	// TODO: save fields from parsed data to payloads table
 
+	// can be used to show all jetton or nft item transfers
+	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
+
 	CreatedAt time.Time `bun:"type:timestamp,notnull" json:"created_at"`
 	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
 
@@ -153,9 +156,10 @@ type MessageFilter struct {
 	DstAddresses []*addr.Address // `form:"dst_address"`
 
 	WithPayload    bool
-	SrcContracts   []string `form:"src_contract"`
-	DstContracts   []string `form:"dst_contract"`
-	OperationNames []string `form:"operation_name"`
+	SrcContracts   []string      `form:"src_contract"`
+	DstContracts   []string      `form:"dst_contract"`
+	OperationNames []string      `form:"operation_name"`
+	MinterAddress  *addr.Address // `form:"minter_address"`
 
 	Order string `form:"order"` // ASC, DESC
 
