@@ -107,7 +107,7 @@ type AccountData struct {
 
 	// common fields for FT and NFT
 	OwnerAddress  *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
-	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"master_address,omitempty"`
+	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
 
 	NFTCollectionData
 	NFTRoyaltyData

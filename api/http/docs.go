@@ -471,14 +471,14 @@ const docTemplate = `{
                 "last_tx_lt": {
                     "type": "integer"
                 },
-                "master_address": {
+                "mintable": {
+                    "type": "boolean"
+                },
+                "minter_address": {
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
-                },
-                "mintable": {
-                    "type": "boolean"
                 },
                 "next_item_index": {
                     "$ref": "#/definitions/bunbig.Int"

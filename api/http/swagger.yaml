@@ -46,12 +46,12 @@ definitions:
         type: array
       last_tx_lt:
         type: integer
-      master_address:
+      mintable:
+        type: boolean
+      minter_address:
         items:
           type: integer
         type: array
-      mintable:
-        type: boolean
       next_item_index:
         $ref: '#/definitions/bunbig.Int'
       owner_address:
