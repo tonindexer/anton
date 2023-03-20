@@ -403,13 +403,13 @@ func TestGraphFilterAccounts(t *testing.T) {
 		}
 	})
 
-	t.Run("filter latest item account states by owner address", func(t *testing.T) {
+	t.Run("filter latest item account states by minter address", func(t *testing.T) {
 		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
-			LatestState:  true,
-			WithData:     true,
-			OwnerAddress: accDataItem.OwnerAddress,
-			Order:        "DESC",
-			Limit:        1,
+			LatestState:   true,
+			WithData:      true,
+			MinterAddress: accDataItem.MinterAddress,
+			Order:         "DESC",
+			Limit:         1,
 		})
 		if err != nil {
 			t.Fatal(err)

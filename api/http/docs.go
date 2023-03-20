@@ -62,20 +62,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter FTs or NFTs by owner address",
+                        "description": "filter FT wallets or NFT items by owner address",
                         "name": "owner_address",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "filter NFT items by collection address",
-                        "name": "collection_address",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter FT wallets by minter address",
-                        "name": "master_address",
+                        "description": "filter FT wallets or NFT items by minter address",
+                        "name": "minter_address",
                         "in": "query"
                     },
                     {
@@ -96,6 +90,7 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "maximum": 10000,
                         "type": "integer",
                         "default": 3,
                         "description": "limit",
@@ -171,6 +166,7 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "maximum": 1000,
                         "type": "integer",
                         "default": 3,
                         "description": "limit",
@@ -317,6 +313,7 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "maximum": 10000,
                         "type": "integer",
                         "default": 3,
                         "description": "limit",
@@ -387,6 +384,7 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "maximum": 10000,
                         "type": "integer",
                         "default": 3,
                         "description": "limit",
@@ -427,12 +425,6 @@ const docTemplate = `{
                 "balance": {
                     "type": "string"
                 },
-                "collection_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
                 "content_description": {
                     "type": "string"
                 },
@@ -452,6 +444,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "editor_address": {
+                    "description": "CollectionAddress *addr.Address ` + "`" + `ch:\"type:String\" bun:\"type:bytea\" json:\"collection_address,omitempty\"` + "`" + `",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -479,7 +472,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "master_address": {
-                    "description": "OwnerAddress  Address",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -492,7 +484,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/bunbig.Int"
                 },
                 "owner_address": {
-                    "description": "universal column for many contracts",
+                    "description": "common fields for FT and NFT",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -557,9 +549,6 @@ const docTemplate = `{
                         "type": "integer"
                     }
                 },
-                "depth": {
-                    "type": "integer"
-                },
                 "get_method_hashes": {
                     "type": "array",
                     "items": {
@@ -578,9 +567,6 @@ const docTemplate = `{
                 "last_tx_lt": {
                     "type": "integer"
                 },
-                "latest": {
-                    "type": "boolean"
-                },
                 "state_data": {
                     "$ref": "#/definitions/core.AccountData"
                 },
@@ -594,12 +580,6 @@ const docTemplate = `{
                 "status": {
                     "description": "TODO: ch enum",
                     "type": "string"
-                },
-                "tick": {
-                    "type": "boolean"
-                },
-                "tock": {
-                    "type": "boolean"
                 }
             }
         },
@@ -676,6 +656,13 @@ const docTemplate = `{
                         "type": "integer"
                     }
                 },
+                "code_hash": {
+                    "description": "TODO: match by code hash",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "get_method_hashes": {
                     "type": "array",
                     "items": {
@@ -742,7 +729,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "created_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "created_lt": {
                     "type": "integer"
@@ -822,6 +809,9 @@ const docTemplate = `{
         "core.MessagePayload": {
             "type": "object",
             "properties": {
+                "amount": {
+                    "$ref": "#/definitions/bunbig.Int"
+                },
                 "body_hash": {
                     "type": "array",
                     "items": {
@@ -829,7 +819,7 @@ const docTemplate = `{
                     }
                 },
                 "created_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "created_lt": {
                     "type": "integer"
@@ -847,6 +837,9 @@ const docTemplate = `{
                     }
                 },
                 "dst_contract": {
+                    "type": "string"
+                },
+                "error": {
                     "type": "string"
                 },
                 "hash": {
@@ -881,9 +874,6 @@ const docTemplate = `{
                 "account": {
                     "$ref": "#/definitions/core.AccountState"
                 },
-                "account_activated": {
-                    "type": "boolean"
-                },
                 "address": {
                     "type": "array",
                     "items": {
@@ -899,12 +889,8 @@ const docTemplate = `{
                 "block_workchain": {
                     "type": "integer"
                 },
-                "compute_success": {
-                    "description": "TODO: parse tx description",
-                    "type": "boolean"
-                },
                 "created_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "created_lt": {
                     "type": "integer"
@@ -917,9 +903,6 @@ const docTemplate = `{
                 },
                 "end_status": {
                     "type": "string"
-                },
-                "gas_fees": {
-                    "$ref": "#/definitions/bunbig.Int"
                 },
                 "hash": {
                     "type": "array",
@@ -938,9 +921,6 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
-                },
-                "msg_state_used": {
-                    "type": "boolean"
                 },
                 "orig_status": {
                     "type": "string"
@@ -974,27 +954,6 @@ const docTemplate = `{
                 },
                 "total_fees": {
                     "$ref": "#/definitions/bunbig.Int"
-                },
-                "vm_exit_arg": {
-                    "type": "integer"
-                },
-                "vm_exit_code": {
-                    "type": "integer"
-                },
-                "vm_gas_credit": {
-                    "$ref": "#/definitions/bunbig.Int"
-                },
-                "vm_gas_limit": {
-                    "$ref": "#/definitions/bunbig.Int"
-                },
-                "vm_gas_used": {
-                    "$ref": "#/definitions/bunbig.Int"
-                },
-                "vm_mode": {
-                    "type": "integer"
-                },
-                "vm_steps": {
-                    "type": "integer"
                 }
             }
         },

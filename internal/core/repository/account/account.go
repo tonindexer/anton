@@ -39,18 +39,8 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.AccountData{}).
 		Using("HASH").
-		Column("collection_address").
-		Where("length(collection_address) > 0").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "address state pg create unique index")
-	}
-
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.AccountData{}).
-		Using("HASH").
-		Column("master_address").
-		Where("length(master_address) > 0").
+		Column("minter_address").
+		Where("length(minter_address) > 0").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "address state pg create unique index")
@@ -218,11 +208,8 @@ func addAccountDataFilter(q *bun.SelectQuery, f *core.AccountStateFilter) *bun.S
 	if f.OwnerAddress != nil {
 		q = q.Where(prefix+"state_data.owner_address = ?", f.OwnerAddress)
 	}
-	if f.CollectionAddress != nil {
-		q = q.Where(prefix+"state_data.collection_address = ?", f.CollectionAddress)
-	}
-	if f.MasterAddress != nil {
-		q = q.Where(prefix+"state_data.master_address = ?", f.MasterAddress)
+	if f.MinterAddress != nil {
+		q = q.Where(prefix+"state_data.minter_address = ?", f.MinterAddress)
 	}
 
 	return q

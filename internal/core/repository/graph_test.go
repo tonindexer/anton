@@ -190,12 +190,13 @@ var (
 	accDataItemJetBalance, _ = new(bunbig.Int).FromString(fmt.Sprintf("%d", randUint())) // TODO: bunbig.Int.FromUint64
 
 	accDataItem = core.AccountData{
-		Address:      accItem.Address,
-		LastTxLT:     accItem.LastTxLT,
-		LastTxHash:   accItem.LastTxHash,
-		Balance:      accItem.Balance,
-		Types:        []abi.ContractName{"item"},
-		OwnerAddress: randAddr(),
+		Address:       accItem.Address,
+		LastTxLT:      accItem.LastTxLT,
+		LastTxHash:    accItem.LastTxHash,
+		Balance:       accItem.Balance,
+		Types:         []abi.ContractName{"item"},
+		OwnerAddress:  randAddr(),
+		MinterAddress: randAddr(),
 		NFTCollectionData: core.NFTCollectionData{
 			NextItemIndex: idx,
 		},
@@ -206,8 +207,7 @@ var (
 			ContentURI: "git://asdf.t",
 		},
 		NFTItemData: core.NFTItemData{
-			ItemIndex:         bunbig.FromInt64(42),
-			CollectionAddress: randAddr(),
+			ItemIndex: bunbig.FromInt64(42),
 		},
 		FTWalletData: core.FTWalletData{JettonBalance: accDataItemJetBalance},
 	}

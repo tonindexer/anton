@@ -72,11 +72,11 @@ type NFTContentData struct {
 }
 
 type NFTItemData struct {
-	Initialized       bool          `ch:"type:Bool" json:"initialized,omitempty"`
-	ItemIndex         *bunbig.Int   `ch:"type:UInt256" json:"item_index,omitempty"`
-	CollectionAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"collection_address,omitempty"`
-	EditorAddress     *addr.Address `ch:"type:String" bun:"type:bytea" json:"editor_address,omitempty"`
-	// OwnerAddress      Address
+	Initialized bool        `ch:"type:Bool" json:"initialized,omitempty"`
+	ItemIndex   *bunbig.Int `ch:"type:UInt256" json:"item_index,omitempty"`
+	// CollectionAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"collection_address,omitempty"`
+	EditorAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"editor_address,omitempty"`
+	// OwnerAddress      *addr.Address
 }
 
 type FTMasterData struct {
@@ -90,8 +90,8 @@ type FTMasterData struct {
 type FTWalletData struct {
 	JettonBalance *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"balance,omitempty" swaggertype:"string"`
 	// OwnerAddress  Address
-	MasterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"master_address,omitempty"`
-	// WalletCode  *cell.Cell
+	// MasterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"master_address,omitempty"`
+	// WalletCode    *cell.Cell
 }
 
 type AccountData struct {
@@ -105,7 +105,9 @@ type AccountData struct {
 
 	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types"`
 
-	OwnerAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
+	// common fields for FT and NFT
+	OwnerAddress  *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
+	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"master_address,omitempty"`
 
 	NFTCollectionData
 	NFTRoyaltyData
@@ -123,11 +125,10 @@ type AccountStateFilter struct {
 	LatestState bool            `form:"latest"`
 
 	// contract data filter
-	WithData          bool
-	ContractTypes     []abi.ContractName `form:"interface"`
-	OwnerAddress      *addr.Address      // `form:"owner_address"`
-	CollectionAddress *addr.Address      // `form:"collection_address"`
-	MasterAddress     *addr.Address      // `form:"master_address"`
+	WithData      bool
+	ContractTypes []abi.ContractName `form:"interface"`
+	OwnerAddress  *addr.Address      // `form:"owner_address"`
+	MinterAddress *addr.Address      // `form:"minter_address"`
 
 	Order string `form:"order"` // ASC, DESC
 

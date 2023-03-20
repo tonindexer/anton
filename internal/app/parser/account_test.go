@@ -116,8 +116,8 @@ func TestService_ParseAccount(t *testing.T) {
 		if c.contentURI != "" && c.contentURI != data.ContentURI {
 			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.contentURI, data.ContentURI)
 		}
-		if c.collectionAddr != "" && c.collectionAddr != data.CollectionAddress.Base64() {
-			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.collectionAddr, data.CollectionAddress.Base64())
+		if c.collectionAddr != "" && c.collectionAddr != data.MinterAddress.Base64() {
+			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.collectionAddr, data.MinterAddress.Base64())
 		}
 	}
 }

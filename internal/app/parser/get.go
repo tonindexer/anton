@@ -54,7 +54,7 @@ func mapItemDataNFT(ret *core.AccountData, data *abi.NFTItemData) {
 	var err error
 	ret.Initialized = data.Initialized
 	ret.ItemIndex = bunbig.FromMathBig(data.Index)
-	ret.CollectionAddress, err = new(addr.Address).FromTU(data.CollectionAddress)
+	ret.MinterAddress, err = new(addr.Address).FromTU(data.CollectionAddress)
 	if err != nil {
 		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft item collection_address from TU").Error())
 	}
@@ -145,7 +145,7 @@ func (s *Service) getAccountDataFT(ctx context.Context, b *ton.BlockIDExt, a *ad
 			if err != nil {
 				ret.Errors = append(ret.Errors, errors.Wrap(err, "jetton wallet owner addr from TU").Error())
 			}
-			ret.MasterAddress, err = new(addr.Address).FromTU(data.MasterAddress)
+			ret.MinterAddress, err = new(addr.Address).FromTU(data.MasterAddress)
 			if err != nil {
 				ret.Errors = append(ret.Errors, errors.Wrap(err, "jetton wallet master addr from TU").Error())
 			}

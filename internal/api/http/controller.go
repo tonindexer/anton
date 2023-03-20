@@ -163,7 +163,7 @@ type GetBlocksRes struct {
 //  @Param   		with_transactions	query	bool  	false	"include transactions"		default(false)
 //  @Param			order				query	string	false	"order by seq_no"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 	false	"start from this seq_no"
-//  @Param   		limit	     		query   int 	false	"limit"						default(3)
+//  @Param   		limit	     		query   int 	false	"limit"						default(3) maximum(1000)
 //	@Success		200		{object}	GetBlocksRes
 //	@Router			/blocks [get]
 func (c *Controller) GetBlocks(ctx *gin.Context) {
@@ -216,12 +216,11 @@ type GetAccountStatesRes struct {
 //  @Param   		address     		query   []string 	false   "only given addresses"
 //  @Param   		latest				query	bool  		false	"only latest account states"
 //  @Param   		interface			query	[]string  	false	"filter by interfaces"
-//  @Param   		owner_address		query	string  	false	"filter FTs or NFTs by owner address"
-//  @Param   		collection_address	query	string  	false	"filter NFT items by collection address"
-//  @Param   		master_address		query	string  	false	"filter FT wallets by minter address"
+//  @Param   		owner_address		query	string  	false	"filter FT wallets or NFT items by owner address"
+//  @Param   		minter_address		query	string  	false	"filter FT wallets or NFT items by minter address"
 //  @Param			order				query	string		false	"order by last_tx_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this last_tx_lt"
-//  @Param   		limit	     		query   int 		false	"limit"										default(3)
+//  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
 //	@Success		200		{object}	GetAccountStatesRes
 //	@Router			/accounts [get]
 func (c *Controller) GetAccountStates(ctx *gin.Context) {
@@ -245,14 +244,9 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 		paramErr(ctx, "owner_address", err)
 		return
 	}
-	filter.CollectionAddress, err = unmarshalAddress(ctx.Query("collection_address"))
+	filter.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
 	if err != nil {
-		paramErr(ctx, "collection_address", err)
-		return
-	}
-	filter.MasterAddress, err = unmarshalAddress(ctx.Query("master_address"))
-	if err != nil {
-		paramErr(ctx, "master_address", err)
+		paramErr(ctx, "minter_address", err)
 		return
 	}
 
@@ -286,7 +280,7 @@ type GetTransactionsRes struct {
 //  @Param   		workchain			query	int32  		false	"filter by workchain"
 //  @Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
-//  @Param   		limit	     		query   int 		false	"limit"							default(3)
+//  @Param   		limit	     		query   int 		false	"limit"							default(3) maximum(10000)
 //	@Success		200		{object}	GetTransactionsRes
 //	@Router			/transactions [get]
 func (c *Controller) GetTransactions(ctx *gin.Context) {
@@ -347,7 +341,7 @@ type GetMessagesRes struct {
 //  @Param   		operation_name		query	[]string  	false	"filter by contract operation names"
 //  @Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
-//  @Param   		limit	     		query   int 		false	"limit"										default(3)
+//  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
 //	@Success		200		{object}	GetMessagesRes
 //	@Router			/messages [get]
 func (c *Controller) GetMessages(ctx *gin.Context) {
