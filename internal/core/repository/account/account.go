@@ -202,9 +202,35 @@ func (r *Repository) AddAccountData(ctx context.Context, tx bun.Tx, data []*core
 	return nil
 }
 
+func addAccountDataFilter(q *bun.SelectQuery, f *core.AccountStateFilter) *bun.SelectQuery {
+	if !f.WithData {
+		return q
+	}
+
+	prefix := ""
+	if f.LatestState {
+		prefix = "account_state__"
+	}
+
+	if len(f.ContractTypes) > 0 {
+		q = q.Where(prefix+"state_data.types && ?", pgdialect.Array(f.ContractTypes))
+	}
+	if f.OwnerAddress != nil {
+		q = q.Where(prefix+"state_data.owner_address = ?", f.OwnerAddress)
+	}
+	if f.CollectionAddress != nil {
+		q = q.Where(prefix+"state_data.collection_address = ?", f.CollectionAddress)
+	}
+	if f.MasterAddress != nil {
+		q = q.Where(prefix+"state_data.master_address = ?", f.MasterAddress)
+	}
+
+	return q
+}
+
 func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (ret []*core.AccountState, err error) {
 	var (
-		q, qAddr    *bun.SelectQuery
+		q           *bun.SelectQuery
 		statesTable string
 		latest      []*core.LatestAccountState
 	)
@@ -231,34 +257,8 @@ func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateF
 	if len(f.Addresses) > 0 {
 		q = q.Where(statesTable+"address in (?)", bun.In(f.Addresses))
 	}
-	if f.WithData {
-		var needed bool
 
-		// select unique addresses by given data filter
-		qAddr = r.pg.NewSelect().Model((*core.AccountData)(nil)).
-			Distinct().
-			Column("address")
-
-		if len(f.ContractTypes) > 0 {
-			qAddr, needed = qAddr.Where("types && ?", pgdialect.Array(f.ContractTypes)), true
-		}
-		if f.OwnerAddress != nil {
-			qAddr, needed = qAddr.Where("owner_address = ?", f.OwnerAddress), true
-		}
-		if f.CollectionAddress != nil {
-			qAddr, needed = qAddr.Where("collection_address = ?", f.CollectionAddress), true
-		}
-		if f.MasterAddress != nil {
-			qAddr, needed = qAddr.Where("master_address = ?", f.MasterAddress), true
-		}
-
-		if needed {
-			if !f.LatestState {
-				return nil, errors.Wrap(core.ErrInvalidArg, "account data filters are applicable only to latest account states")
-			}
-			q = q.Where(statesTable+"address in (?)", qAddr)
-		}
-	}
+	q = addAccountDataFilter(q, f)
 
 	if f.AfterTxLT != nil {
 		if f.Order == "ASC" {
