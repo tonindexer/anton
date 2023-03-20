@@ -161,7 +161,7 @@ type GetBlocksRes struct {
 //  @Param   		with_transactions	query	bool  	false	"include transactions"		default(false)
 //  @Param			order				query	string	false	"order by seq_no"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 	false	"start from this seq_no"
-//  @Param   		limit	     		query   int 	false	"limit"						default(3) maximum(1000)
+//  @Param   		limit	     		query   int 	false	"limit"						default(3) maximum(100)
 //	@Success		200		{object}	GetBlocksRes
 //	@Router			/blocks [get]
 func (c *Controller) GetBlocks(ctx *gin.Context) {
@@ -170,6 +170,10 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 	err := ctx.ShouldBindQuery(&filter)
 	if err != nil {
 		paramErr(ctx, "block_filter", err)
+		return
+	}
+	if filter.Limit > 100 {
+		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
@@ -227,6 +231,10 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 	err := ctx.ShouldBindQuery(&filter)
 	if err != nil {
 		paramErr(ctx, "account_filter", err)
+		return
+	}
+	if filter.Limit > 10000 {
+		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
@@ -288,6 +296,10 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 	err := ctx.ShouldBindQuery(&filter)
 	if err != nil {
 		paramErr(ctx, "tx_filter", err)
+		return
+	}
+	if filter.Limit > 10000 {
+		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
@@ -355,6 +367,10 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 	err := ctx.ShouldBindQuery(&filter)
 	if err != nil {
 		paramErr(ctx, "msg_filter", err)
+		return
+	}
+	if filter.Limit > 10000 {
+		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
