@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -41,6 +42,10 @@ func (s *Service) processAccount(ctx context.Context, b *ton.BlockIDExt, a *addr
 
 	raw, err := s.api.GetAccount(ctx, b, a)
 	if err != nil {
+		if strings.Contains(err.Error(), "extra currency info is not supported for AccountStorage") { // tonutils-go v1.6.2
+			// skip accounts with extra currency info
+			return nil, nil, nil
+		}
 		return nil, nil, errors.Wrapf(err, "get account")
 	}
 
@@ -56,7 +61,7 @@ func (s *Service) processAccount(ctx context.Context, b *ton.BlockIDExt, a *addr
 
 	data, err := s.parser.ParseAccountData(ctx, b, acc, types)
 	if err != nil && !errors.Is(err, core.ErrNotAvailable) {
-		return nil, nil, errors.Wrapf(err, "get account (%s)", a.String())
+		return nil, nil, errors.Wrapf(err, "parse account (%s)", a.String())
 	}
 
 	return acc, data, nil
