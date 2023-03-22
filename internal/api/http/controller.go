@@ -265,6 +265,44 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
+// AggregateAccountStates godoc
+//	@Summary		aggregated account data
+//	@Description	Aggregates FT or NFT data filtered by minter address
+//	@Tags			account
+//	@Accept			json
+//	@Produce		json
+//  @Param   		minter_address		query	string  	false	"NFT collection or FT master address"
+//  @Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
+//	@Success		200		{object}	core.AccountStateAggregation
+//	@Router			/accounts/aggregated [get]
+func (c *Controller) AggregateAccountStates(ctx *gin.Context) {
+	var req core.AccountStateAggregate
+
+	err := ctx.ShouldBindQuery(&req)
+	if err != nil {
+		paramErr(ctx, "account_filter", err)
+		return
+	}
+	if req.Limit > 1000000 {
+		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		return
+	}
+
+	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
+	if err != nil {
+		paramErr(ctx, "minter_address", err)
+		return
+	}
+
+	ret, err := c.svc.AggregateAccountStates(ctx, &req)
+	if err != nil {
+		internalErr(ctx, err)
+		return
+	}
+
+	ctx.IndentedJSON(http.StatusOK, ret)
+}
+
 // GetTransactions godoc
 //	@Summary		transactions data
 //	@Description	Returns transactions, states and messages

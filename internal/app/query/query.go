@@ -55,6 +55,10 @@ func (s *Service) GetAccountStates(ctx context.Context, filter *core.AccountStat
 	return s.accountRepo.GetAccountStates(ctx, filter)
 }
 
+func (s *Service) AggregateAccountStates(ctx context.Context, req *core.AccountStateAggregate) (*core.AccountStateAggregation, error) {
+	return s.accountRepo.AggregateAccountStates(ctx, req)
+}
+
 func (s *Service) GetTransactions(ctx context.Context, filter *core.TransactionFilter) (*core.TransactionFilterResults, error) {
 	return s.txRepo.GetTransactions(ctx, filter)
 }

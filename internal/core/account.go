@@ -144,7 +144,7 @@ type AccountStateFilterResults struct {
 type AccountStateAggregate struct {
 	MinterAddress *addr.Address // NFT or FT minter
 
-	Limit int
+	Limit int `form:"limit"`
 }
 
 type OwnedItems struct {

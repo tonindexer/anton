@@ -19,6 +19,7 @@ type QueryService interface {
 	GetBlocks(ctx context.Context, filter *core.BlockFilter) (*core.BlockFilterResults, error)
 
 	GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) (*core.AccountStateFilterResults, error)
+	AggregateAccountStates(ctx context.Context, req *core.AccountStateAggregate) (*core.AccountStateAggregation, error)
 
 	GetTransactions(ctx context.Context, filter *core.TransactionFilter) (*core.TransactionFilterResults, error)
 	GetMessages(ctx context.Context, filter *core.MessageFilter) (*core.MessageFilterResults, error)

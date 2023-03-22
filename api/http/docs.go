@@ -108,6 +108,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/accounts/aggregated": {
+            "get": {
+                "description": "Aggregates FT or NFT data filtered by minter address",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "aggregated account data",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "NFT collection or FT master address",
+                        "name": "minter_address",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 1000000,
+                        "type": "integer",
+                        "default": 25,
+                        "description": "limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/core.AccountStateAggregation"
+                        }
+                    }
+                }
+            }
+        },
         "/blocks": {
             "get": {
                 "description": "Returns filtered blocks",
@@ -595,6 +634,43 @@ const docTemplate = `{
                 }
             }
         },
+        "core.AccountStateAggregation": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "NFT minter",
+                    "type": "integer"
+                },
+                "owned_balance": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.OwnedBalance"
+                    }
+                },
+                "owned_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.OwnedItems"
+                    }
+                },
+                "owners_count": {
+                    "type": "integer"
+                },
+                "total_supply": {
+                    "$ref": "#/definitions/bunbig.Int"
+                },
+                "unique_owners": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.UniqueOwners"
+                    }
+                },
+                "wallets": {
+                    "description": "FT minter",
+                    "type": "integer"
+                }
+            }
+        },
         "core.AccountStateFilterResults": {
             "type": "object",
             "properties": {
@@ -929,6 +1005,40 @@ const docTemplate = `{
                 }
             }
         },
+        "core.OwnedBalance": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "$ref": "#/definitions/bunbig.Int"
+                },
+                "owner_address": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "wallet_address": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "core.OwnedItems": {
+            "type": "object",
+            "properties": {
+                "items_count": {
+                    "type": "integer"
+                },
+                "owner_address": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
         "core.Transaction": {
             "type": "object",
             "properties": {
@@ -1028,6 +1138,20 @@ const docTemplate = `{
                     }
                 },
                 "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "core.UniqueOwners": {
+            "type": "object",
+            "properties": {
+                "item_address": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "owners_count": {
                     "type": "integer"
                 }
             }

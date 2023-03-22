@@ -121,6 +121,31 @@ definitions:
         description: 'TODO: ch enum'
         type: string
     type: object
+  core.AccountStateAggregation:
+    properties:
+      items:
+        description: NFT minter
+        type: integer
+      owned_balance:
+        items:
+          $ref: '#/definitions/core.OwnedBalance'
+        type: array
+      owned_items:
+        items:
+          $ref: '#/definitions/core.OwnedItems'
+        type: array
+      owners_count:
+        type: integer
+      total_supply:
+        $ref: '#/definitions/bunbig.Int'
+      unique_owners:
+        items:
+          $ref: '#/definitions/core.UniqueOwners'
+        type: array
+      wallets:
+        description: FT minter
+        type: integer
+    type: object
   core.AccountStateFilterResults:
     properties:
       results:
@@ -343,6 +368,28 @@ definitions:
       type:
         type: string
     type: object
+  core.OwnedBalance:
+    properties:
+      balance:
+        $ref: '#/definitions/bunbig.Int'
+      owner_address:
+        items:
+          type: integer
+        type: array
+      wallet_address:
+        items:
+          type: integer
+        type: array
+    type: object
+  core.OwnedItems:
+    properties:
+      items_count:
+        type: integer
+      owner_address:
+        items:
+          type: integer
+        type: array
+    type: object
   core.Transaction:
     properties:
       account:
@@ -409,6 +456,15 @@ definitions:
           $ref: '#/definitions/core.Transaction'
         type: array
       total:
+        type: integer
+    type: object
+  core.UniqueOwners:
+    properties:
+      item_address:
+        items:
+          type: integer
+        type: array
+      owners_count:
         type: integer
     type: object
   http.GetInterfacesRes:
@@ -497,6 +553,32 @@ paths:
           schema:
             $ref: '#/definitions/core.AccountStateFilterResults'
       summary: account data
+      tags:
+      - account
+  /accounts/aggregated:
+    get:
+      consumes:
+      - application/json
+      description: Aggregates FT or NFT data filtered by minter address
+      parameters:
+      - description: NFT collection or FT master address
+        in: query
+        name: minter_address
+        type: string
+      - default: 25
+        description: limit
+        in: query
+        maximum: 1000000
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core.AccountStateAggregation'
+      summary: aggregated account data
       tags:
       - account
   /blocks:
