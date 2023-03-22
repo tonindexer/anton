@@ -178,7 +178,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.GetBlocksRes"
+                            "$ref": "#/definitions/core.BlockFilterResults"
                         }
                     }
                 }
@@ -650,6 +650,20 @@ const docTemplate = `{
                 }
             }
         },
+        "core.BlockFilterResults": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Block"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "core.BlockID": {
             "type": "object",
             "properties": {
@@ -987,17 +1001,6 @@ const docTemplate = `{
                 },
                 "total_fees": {
                     "$ref": "#/definitions/bunbig.Int"
-                }
-            }
-        },
-        "http.GetBlocksRes": {
-            "type": "object",
-            "properties": {
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/core.Block"
-                    }
                 }
             }
         },

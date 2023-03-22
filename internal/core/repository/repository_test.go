@@ -617,7 +617,7 @@ func TestGraphFilterBlocks(t *testing.T) {
 			Limit:      100,
 		}
 
-		blocks, err := blockRepo.GetBlocks(ctx, f)
+		res, err := blockRepo.GetBlocks(ctx, f)
 		if err != nil {
 			t.Error(err)
 		}
@@ -625,11 +625,14 @@ func TestGraphFilterBlocks(t *testing.T) {
 		m := master
 		m.Shards = []*core.Block{&shardPrev, &shard}
 
-		if len(blocks) != 1 {
-			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(blocks))
+		if res.Total != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, res.Total)
 		}
-		if !reflect.DeepEqual(&m, blocks[0]) {
-			t.Fatalf("wrong master block, expected: %v, got: %v", master, blocks[0])
+		if len(res.Rows) != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(res.Rows))
+		}
+		if !reflect.DeepEqual(&m, res.Rows[0]) {
+			t.Fatalf("wrong master block, expected: %v, got: %v", master, res.Rows[0])
 		}
 	})
 
@@ -643,16 +646,19 @@ func TestGraphFilterBlocks(t *testing.T) {
 			Limit: 100,
 		}
 
-		blocks, err := blockRepo.GetBlocks(ctx, f)
+		res, err := blockRepo.GetBlocks(ctx, f)
 		if err != nil {
 			t.Error(err)
 		}
 
-		if len(blocks) != 2 {
-			t.Fatalf("wrong len, expected: %d, got: %d", 2, len(blocks))
+		if res.Total != 2 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 2, res.Total)
 		}
-		if exp := []*core.Block{&shard, &shardPrev}; !reflect.DeepEqual(exp, blocks) {
-			t.Fatalf("wrong shard block, expected: %v, got: %v", exp, blocks)
+		if len(res.Rows) != 2 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 2, len(res.Rows))
+		}
+		if exp := []*core.Block{&shard, &shardPrev}; !reflect.DeepEqual(exp, res.Rows) {
+			t.Fatalf("wrong shard block, expected: %v, got: %v", exp, res.Rows)
 		}
 	})
 }
@@ -675,10 +681,11 @@ func Example_blockRepo_GetBlocks() {
 		Limit: 100,
 	}
 
-	blocks, err := blockRepo.GetBlocks(ctx, f)
+	res, err := blockRepo.GetBlocks(ctx, f)
 	if err != nil {
 		panic(err)
 	}
+	blocks := res.Rows
 
 	s, sv := shard, shardPrev
 
@@ -732,10 +739,11 @@ func Example_blockRepo_GetBlocks_writeFile() {
 		Limit: 12,
 	}
 
-	blocks, err := blockRepo.GetBlocks(ctx, f)
+	res, err := blockRepo.GetBlocks(ctx, f)
 	if err != nil {
 		panic(err)
 	}
+	blocks := res.Rows
 
 	graph, err := json.Marshal(blocks)
 	if err != nil {

@@ -145,10 +145,6 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, GetOperationsRes{Results: ret})
 }
 
-type GetBlocksRes struct {
-	Results []*core.Block `json:"results"`
-}
-
 // GetBlocks godoc
 //	@Summary		block info
 //	@Description	Returns filtered blocks
@@ -162,7 +158,7 @@ type GetBlocksRes struct {
 //  @Param			order				query	string	false	"order by seq_no"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 	false	"start from this seq_no"
 //  @Param   		limit	     		query   int 	false	"limit"						default(3) maximum(100)
-//	@Success		200		{object}	GetBlocksRes
+//	@Success		200		{object}	core.BlockFilterResults
 //	@Router			/blocks [get]
 func (c *Controller) GetBlocks(ctx *gin.Context) {
 	var filter core.BlockFilter
@@ -202,7 +198,7 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, GetBlocksRes{Results: ret})
+	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
 // GetAccountStates godoc

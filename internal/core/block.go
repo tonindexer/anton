@@ -51,8 +51,13 @@ type BlockFilter struct {
 	Limit      int     `form:"limit"`
 }
 
+type BlockFilterResults struct {
+	Total int      `json:"total_count"`
+	Rows  []*Block `json:"results"`
+}
+
 type BlockRepository interface {
 	AddBlocks(ctx context.Context, tx bun.Tx, info []*Block) error
 	GetLastMasterBlock(ctx context.Context) (*Block, error)
-	GetBlocks(ctx context.Context, filter *BlockFilter) ([]*Block, error)
+	GetBlocks(ctx context.Context, filter *BlockFilter) (*BlockFilterResults, error)
 }

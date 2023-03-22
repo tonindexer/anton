@@ -47,7 +47,7 @@ func (s *Service) GetLastMasterBlock(ctx context.Context) (*core.Block, error) {
 	return s.blockRepo.GetLastMasterBlock(ctx)
 }
 
-func (s *Service) GetBlocks(ctx context.Context, filter *core.BlockFilter) ([]*core.Block, error) {
+func (s *Service) GetBlocks(ctx context.Context, filter *core.BlockFilter) (*core.BlockFilterResults, error) {
 	return s.blockRepo.GetBlocks(ctx, filter)
 }
 

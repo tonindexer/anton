@@ -113,7 +113,7 @@ func transactionsLoad(q *bun.SelectQuery, prefix string, f *core.BlockFilter) *b
 	return q
 }
 
-func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter) (ret []*core.Block, err error) {
+func (r *Repository) filterBlocks(ctx context.Context, f *core.BlockFilter) (ret []*core.Block, err error) {
 	q := r.pg.NewSelect().Model(&ret)
 
 	if f.WithShards {
@@ -158,6 +158,48 @@ func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter) (ret []
 	q = q.Limit(f.Limit)
 
 	err = q.Scan(ctx)
-
 	return ret, err
+}
+
+func (r *Repository) countBlocks(ctx context.Context, f *core.BlockFilter) (int, error) {
+	q := r.ch.NewSelect().
+		Model((*core.Block)(nil))
+
+	if f.Workchain != nil {
+		q = q.Where("workchain = ?", *f.Workchain)
+	}
+	if f.Shard != nil {
+		q = q.Where("shard = ?", *f.Shard)
+	}
+	if f.SeqNo != nil {
+		q = q.Where("seq_no = ?", *f.SeqNo)
+	}
+
+	if len(f.FileHash) > 0 {
+		q = q.Where("file_hash = ?", f.FileHash)
+	}
+
+	return q.Count(ctx)
+}
+
+func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter) (*core.BlockFilterResults, error) {
+	var (
+		res = new(core.BlockFilterResults)
+		err error
+	)
+
+	res.Rows, err = r.filterBlocks(ctx, f)
+	if err != nil {
+		return res, err
+	}
+	if len(res.Rows) == 0 {
+		return res, nil
+	}
+
+	res.Total, err = r.countBlocks(ctx, f)
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
 }

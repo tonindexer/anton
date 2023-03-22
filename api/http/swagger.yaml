@@ -157,6 +157,15 @@ definitions:
       workchain:
         type: integer
     type: object
+  core.BlockFilterResults:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.Block'
+        type: array
+      total_count:
+        type: integer
+    type: object
   core.BlockID:
     properties:
       seq_no:
@@ -384,13 +393,6 @@ definitions:
       total_fees:
         $ref: '#/definitions/bunbig.Int'
     type: object
-  http.GetBlocksRes:
-    properties:
-      results:
-        items:
-          $ref: '#/definitions/core.Block'
-        type: array
-    type: object
   http.GetInterfacesRes:
     properties:
       results:
@@ -537,7 +539,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/http.GetBlocksRes'
+            $ref: '#/definitions/core.BlockFilterResults'
       summary: block info
       tags:
       - block
