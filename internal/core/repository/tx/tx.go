@@ -362,7 +362,7 @@ func (r *Repository) countTx(ctx context.Context, f *core.TransactionFilter) (in
 		q = q.Where("address in (?)", ch.In(f.Addresses))
 	}
 	if f.Workchain != nil {
-		q = q.Where("block_workchain = ?", f.Workchain)
+		q = q.Where("block_workchain = ?", *f.Workchain)
 	}
 	if f.BlockID != nil {
 		q = q.Where("block_workchain = ?", f.BlockID.Workchain).

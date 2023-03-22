@@ -523,6 +523,7 @@ func TestGraphFilterTransactions(t *testing.T) {
 	t.Run("filter tx by in_msg_hash", func(t *testing.T) {
 		res, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
 			InMsgHash: txInItem.InMsgHash,
+			Workchain: new(int32),
 			Order:     "DESC",
 			Limit:     10,
 		})
