@@ -18,7 +18,7 @@ type QueryService interface {
 	GetLastMasterBlock(ctx context.Context) (*core.Block, error)
 	GetBlocks(ctx context.Context, filter *core.BlockFilter) ([]*core.Block, error)
 
-	GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) ([]*core.AccountState, error)
+	GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) (*core.AccountStateFilterResults, error)
 
 	GetTransactions(ctx context.Context, filter *core.TransactionFilter) ([]*core.Transaction, error)
 	GetMessages(ctx context.Context, filter *core.MessageFilter) ([]*core.Message, error)

@@ -107,7 +107,7 @@ func (s *Service) getLatestAccount(ctx context.Context, a addr.Address, accountM
 
 	defer timeTrack(time.Now(), fmt.Sprintf("getLatestAccount(%s)", a.Base64()))
 
-	state, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+	res, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 		Addresses:   []*addr.Address{&a},
 		LatestState: true,
 		WithData:    true,
@@ -117,8 +117,8 @@ func (s *Service) getLatestAccount(ctx context.Context, a addr.Address, accountM
 	if err != nil {
 		return nil, errors.Wrap(err, "get account data")
 	}
-	if len(state) > 0 && state[0].StateData != nil {
-		return state[0].StateData, nil
+	if len(res.Rows) > 0 && res.Rows[0].StateData != nil {
+		return res.Rows[0].StateData, nil
 	}
 
 	return nil, errors.Wrap(core.ErrNotFound, "no account data found")

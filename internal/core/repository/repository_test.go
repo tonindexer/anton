@@ -319,7 +319,7 @@ func TestGraphFilterAccounts(t *testing.T) {
 	accItem.Code, accItem.Data = nil, nil
 
 	t.Run("filter state by address", func(t *testing.T) {
-		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: false,
 			WithData:    true,
@@ -329,7 +329,11 @@ func TestGraphFilterAccounts(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		ret := results.Rows
 
+		if results.Total != 3 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 3, results.Total)
+		}
 		if len(ret) != 1 {
 			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
 		}
@@ -339,7 +343,7 @@ func TestGraphFilterAccounts(t *testing.T) {
 	})
 
 	t.Run("filter latest state by address", func(t *testing.T) {
-		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: true,
 			Order:       "DESC",
@@ -348,7 +352,11 @@ func TestGraphFilterAccounts(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		ret := results.Rows
 
+		if results.Total != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, results.Total)
+		}
 		if len(ret) != 1 {
 			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
 		}
@@ -358,7 +366,7 @@ func TestGraphFilterAccounts(t *testing.T) {
 	})
 
 	t.Run("filter latest state by address", func(t *testing.T) {
-		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: true,
 			WithData:    true,
@@ -368,10 +376,14 @@ func TestGraphFilterAccounts(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		ret := results.Rows
 
 		acc := accWallet
 		acc.StateData = &accDataWallet
 
+		if results.Total != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, results.Total)
+		}
 		if len(ret) != 1 {
 			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
 		}
@@ -381,7 +393,7 @@ func TestGraphFilterAccounts(t *testing.T) {
 	})
 
 	t.Run("filter latest item account states by types", func(t *testing.T) {
-		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 			LatestState:   true,
 			WithData:      true,
 			ContractTypes: []abi.ContractName{"item"},
@@ -391,10 +403,14 @@ func TestGraphFilterAccounts(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		ret := results.Rows
 
 		acc := accItem
 		acc.StateData = &accDataItem
 
+		if results.Total != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, results.Total)
+		}
 		if len(ret) != 1 {
 			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
 		}
@@ -404,7 +420,7 @@ func TestGraphFilterAccounts(t *testing.T) {
 	})
 
 	t.Run("filter latest item account states by minter address", func(t *testing.T) {
-		ret, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 			LatestState:   true,
 			WithData:      true,
 			MinterAddress: accDataItem.MinterAddress,
@@ -414,10 +430,14 @@ func TestGraphFilterAccounts(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		ret := results.Rows
 
 		acc := accItem
 		acc.StateData = &accDataItem
 
+		if results.Total != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, results.Total)
+		}
 		if len(ret) != 1 {
 			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
 		}

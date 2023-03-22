@@ -205,10 +205,6 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, GetBlocksRes{Results: ret})
 }
 
-type GetAccountStatesRes struct {
-	Results []*core.AccountState `json:"results"`
-}
-
 // GetAccountStates godoc
 //	@Summary		account data
 //	@Description	Returns account states and its parsed data
@@ -223,7 +219,7 @@ type GetAccountStatesRes struct {
 //  @Param			order				query	string		false	"order by last_tx_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this last_tx_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
-//	@Success		200		{object}	GetAccountStatesRes
+//	@Success		200		{object}	core.AccountStateFilterResults
 //	@Router			/accounts [get]
 func (c *Controller) GetAccountStates(ctx *gin.Context) {
 	var filter core.AccountStateFilter
@@ -268,7 +264,7 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, GetAccountStatesRes{Results: ret})
+	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
 type GetTransactionsRes struct {

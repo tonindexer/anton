@@ -215,7 +215,7 @@ func addAccountDataFilter(q *bun.SelectQuery, f *core.AccountStateFilter) *bun.S
 	return q
 }
 
-func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (ret []*core.AccountState, err error) {
+func (r *Repository) filterAccountStates(ctx context.Context, f *core.AccountStateFilter) (ret []*core.AccountState, err error) {
 	var (
 		q           *bun.SelectQuery
 		statesTable string
@@ -272,4 +272,63 @@ func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateF
 	}
 
 	return ret, err
+}
+
+func (r *Repository) countAccountStates(ctx context.Context, f *core.AccountStateFilter) (int, error) {
+	var data bool // do we need to count account_data or account_states
+
+	q := r.ch.NewSelect()
+
+	if f.WithData {
+		if len(f.ContractTypes) > 0 {
+			q, data = q.Where("hasAny(types, [?])", ch.In(f.ContractTypes)), true
+		}
+		if f.OwnerAddress != nil {
+			q, data = q.Where("owner_address = ?", f.OwnerAddress), true
+		}
+		if f.MinterAddress != nil {
+			q, data = q.Where("minter_address = ?", f.MinterAddress), true
+		}
+	}
+
+	if len(f.Addresses) > 0 {
+		q = q.Where("address in (?)", ch.In(f.Addresses))
+	}
+
+	if data {
+		q = q.Model((*core.AccountData)(nil))
+	} else {
+		q = q.Model((*core.AccountState)(nil))
+	}
+
+	if f.LatestState {
+		q = q.ColumnExpr("argMax(address, last_tx_lt)").
+			Group("address")
+	} else {
+		q = q.ColumnExpr("address")
+	}
+
+	ret, err := r.ch.NewSelect().TableExpr("(?) as q", q).Count(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "count states")
+	}
+
+	return ret, nil
+}
+
+func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (res *core.AccountStateFilterResults, err error) {
+	res.Rows, err = r.filterAccountStates(ctx, f)
+	if err != nil {
+		return res, err
+	}
+	if len(res.Rows) == 0 {
+		return res, nil
+	}
+
+	res.Total, err = r.countAccountStates(ctx, f)
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
 }

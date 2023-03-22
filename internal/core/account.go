@@ -136,8 +136,13 @@ type AccountStateFilter struct {
 	Limit     int     `form:"limit"`
 }
 
+type AccountStateFilterResults struct {
+	Total int             `json:"total_count"`
+	Rows  []*AccountState `json:"results"`
+}
+
 type AccountRepository interface {
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
 	AddAccountData(ctx context.Context, tx bun.Tx, data []*AccountData) error
-	GetAccountStates(ctx context.Context, filter *AccountStateFilter) ([]*AccountState, error)
+	GetAccountStates(ctx context.Context, filter *AccountStateFilter) (*AccountStateFilterResults, error)
 }

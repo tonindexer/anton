@@ -51,7 +51,7 @@ func (s *Service) GetBlocks(ctx context.Context, filter *core.BlockFilter) ([]*c
 	return s.blockRepo.GetBlocks(ctx, filter)
 }
 
-func (s *Service) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) ([]*core.AccountState, error) {
+func (s *Service) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) (*core.AccountStateFilterResults, error) {
 	return s.accountRepo.GetAccountStates(ctx, filter)
 }
 

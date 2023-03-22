@@ -102,7 +102,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.GetAccountStatesRes"
+                            "$ref": "#/definitions/core.AccountStateFilterResults"
                         }
                     }
                 }
@@ -166,7 +166,7 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "maximum": 1000,
+                        "maximum": 100,
                         "type": "integer",
                         "default": 3,
                         "description": "limit",
@@ -595,6 +595,20 @@ const docTemplate = `{
                 }
             }
         },
+        "core.AccountStateFilterResults": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.AccountState"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "core.Block": {
             "type": "object",
             "properties": {
@@ -973,17 +987,6 @@ const docTemplate = `{
                 },
                 "total_fees": {
                     "$ref": "#/definitions/bunbig.Int"
-                }
-            }
-        },
-        "http.GetAccountStatesRes": {
-            "type": "object",
-            "properties": {
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/core.AccountState"
-                    }
                 }
             }
         },

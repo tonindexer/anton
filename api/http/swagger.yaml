@@ -121,6 +121,15 @@ definitions:
         description: 'TODO: ch enum'
         type: string
     type: object
+  core.AccountStateFilterResults:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.AccountState'
+        type: array
+      total_count:
+        type: integer
+    type: object
   core.Block:
     properties:
       file_hash:
@@ -375,13 +384,6 @@ definitions:
       total_fees:
         $ref: '#/definitions/bunbig.Int'
     type: object
-  http.GetAccountStatesRes:
-    properties:
-      results:
-        items:
-          $ref: '#/definitions/core.AccountState'
-        type: array
-    type: object
   http.GetBlocksRes:
     properties:
       results:
@@ -483,7 +485,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/http.GetAccountStatesRes'
+            $ref: '#/definitions/core.AccountStateFilterResults'
       summary: account data
       tags:
       - account
@@ -526,7 +528,7 @@ paths:
       - default: 3
         description: limit
         in: query
-        maximum: 1000
+        maximum: 100
         name: limit
         type: integer
       produces:
