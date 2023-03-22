@@ -432,7 +432,8 @@ func (r *Repository) filterMsg(ctx context.Context, f *core.MessageFilter) (ret 
 			q = q.Where("payload.operation_name IN (?)", bun.In(f.OperationNames))
 		}
 		if f.MinterAddress != nil {
-			q = q.Where("payload.minter_address = ?", f.MinterAddress)
+			q = q.Where("payload.minter_address = ?", f.MinterAddress).
+				Where("length(payload.minter_address) > 0") // partial index
 		}
 	}
 
