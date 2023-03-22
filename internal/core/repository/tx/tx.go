@@ -411,18 +411,22 @@ func (r *Repository) filterMsg(ctx context.Context, f *core.MessageFilter) (ret 
 		q = q.Where("message.hash = ?", f.Hash)
 	}
 	if len(f.SrcAddresses) > 0 {
-		q = q.Where("message.src_address in (?)", bun.In(f.SrcAddresses))
+		q = q.Where("message.src_address in (?)", bun.In(f.SrcAddresses)).
+			Where("length(message.src_address) > 0") // partial index
 	}
 	if len(f.DstAddresses) > 0 {
-		q = q.Where("message.dst_address in (?)", bun.In(f.DstAddresses))
+		q = q.Where("message.dst_address in (?)", bun.In(f.DstAddresses)).
+			Where("length(message.dst_address) > 0") // partial index
 	}
 
 	if f.WithPayload {
 		if len(f.SrcContracts) > 0 {
-			q = q.Where("payload.src_contract IN (?)", bun.In(f.SrcContracts))
+			q = q.Where("payload.src_contract IN (?)", bun.In(f.SrcContracts)).
+				Where("length(payload.src_contract) > 0") // partial index
 		}
 		if len(f.DstContracts) > 0 {
-			q = q.Where("payload.dst_contract IN (?)", bun.In(f.DstContracts))
+			q = q.Where("payload.dst_contract IN (?)", bun.In(f.DstContracts)).
+				Where("length(payload.dst_contract) > 0") // partial index
 		}
 		if len(f.OperationNames) > 0 {
 			q = q.Where("payload.operation_name IN (?)", bun.In(f.OperationNames))
