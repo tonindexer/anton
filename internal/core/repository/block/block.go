@@ -79,11 +79,11 @@ func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Bloc
 	if len(info) == 0 {
 		return nil
 	}
-	_, err := r.ch.NewInsert().Model(&info).Exec(ctx)
+	_, err := tx.NewInsert().Model(&info).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = tx.NewInsert().Model(&info).Exec(ctx)
+	_, err = r.ch.NewInsert().Model(&info).Exec(ctx)
 	if err != nil {
 		return err
 	}

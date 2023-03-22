@@ -238,11 +238,11 @@ func (r *Repository) AddTransactions(ctx context.Context, tx bun.Tx, transaction
 	if len(transactions) == 0 {
 		return nil
 	}
-	_, err := r.ch.NewInsert().Model(&transactions).Exec(ctx)
+	_, err := tx.NewInsert().Model(&transactions).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = tx.NewInsert().Model(&transactions).Exec(ctx)
+	_, err = r.ch.NewInsert().Model(&transactions).Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -263,11 +263,11 @@ func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*cor
 		return nil
 	}
 
-	_, err := r.ch.NewInsert().Model(&unknown).Exec(ctx)
+	_, err := tx.NewInsert().Model(&unknown).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = tx.NewInsert().Model(&unknown).Exec(ctx)
+	_, err = r.ch.NewInsert().Model(&unknown).Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -279,11 +279,11 @@ func (r *Repository) AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads
 	if len(payloads) == 0 {
 		return nil
 	}
-	_, err := r.ch.NewInsert().Model(&payloads).Exec(ctx)
+	_, err := tx.NewInsert().Model(&payloads).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = tx.NewInsert().Model(&payloads).Exec(ctx)
+	_, err = r.ch.NewInsert().Model(&payloads).Exec(ctx)
 	if err != nil {
 		return err
 	}

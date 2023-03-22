@@ -149,12 +149,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		return nil
 	}
 
-	_, err := r.ch.NewInsert().Model(&accounts).Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.NewInsert().Model(&accounts).Exec(ctx)
+	_, err := tx.NewInsert().Model(&accounts).Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "cannot insert new states")
 	}
@@ -174,6 +169,11 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		}
 	}
 
+	_, err = r.ch.NewInsert().Model(&accounts).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -181,11 +181,11 @@ func (r *Repository) AddAccountData(ctx context.Context, tx bun.Tx, data []*core
 	if len(data) == 0 {
 		return nil
 	}
-	_, err := r.ch.NewInsert().Model(&data).Exec(ctx)
+	_, err := tx.NewInsert().Model(&data).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = tx.NewInsert().Model(&data).Exec(ctx)
+	_, err = r.ch.NewInsert().Model(&data).Exec(ctx)
 	if err != nil {
 		return err
 	}
