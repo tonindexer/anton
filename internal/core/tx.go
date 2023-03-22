@@ -149,7 +149,7 @@ type TransactionFilter struct {
 	Limit     int     `form:"limit"`
 }
 
-type TransactionFilterResults struct {
+type TransactionFiltered struct {
 	Total int            `json:"total"`
 	Rows  []*Transaction `json:"results"`
 }
@@ -173,7 +173,7 @@ type MessageFilter struct {
 	Limit     int     `form:"limit"`
 }
 
-type MessageFilterResults struct {
+type MessageFiltered struct {
 	Total int        `json:"total"`
 	Rows  []*Message `json:"results"`
 }
@@ -182,6 +182,6 @@ type TxRepository interface {
 	AddTransactions(ctx context.Context, tx bun.Tx, transactions []*Transaction) error
 	AddMessages(ctx context.Context, tx bun.Tx, messages []*Message) error
 	AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads []*MessagePayload) error
-	GetTransactions(ctx context.Context, filter *TransactionFilter) (*TransactionFilterResults, error)
-	GetMessages(ctx context.Context, filter *MessageFilter) (*MessageFilterResults, error)
+	GetTransactions(ctx context.Context, filter *TransactionFilter) (*TransactionFiltered, error)
+	GetMessages(ctx context.Context, filter *MessageFilter) (*MessageFiltered, error)
 }

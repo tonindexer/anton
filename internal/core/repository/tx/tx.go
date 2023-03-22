@@ -373,9 +373,9 @@ func (r *Repository) countTx(ctx context.Context, f *core.TransactionFilter) (in
 	return q.Count(ctx)
 }
 
-func (r *Repository) GetTransactions(ctx context.Context, f *core.TransactionFilter) (*core.TransactionFilterResults, error) {
+func (r *Repository) GetTransactions(ctx context.Context, f *core.TransactionFilter) (*core.TransactionFiltered, error) {
 	var (
-		res = new(core.TransactionFilterResults)
+		res = new(core.TransactionFiltered)
 		err error
 	)
 
@@ -497,9 +497,9 @@ func (r *Repository) countMsg(ctx context.Context, f *core.MessageFilter) (int, 
 	return q.Count(ctx)
 }
 
-func (r *Repository) GetMessages(ctx context.Context, f *core.MessageFilter) (*core.MessageFilterResults, error) {
+func (r *Repository) GetMessages(ctx context.Context, f *core.MessageFilter) (*core.MessageFiltered, error) {
 	var (
-		res = new(core.MessageFilterResults)
+		res = new(core.MessageFiltered)
 		err error
 	)
 

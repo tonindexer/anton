@@ -16,11 +16,11 @@ type QueryService interface {
 	GetOperations(ctx context.Context) ([]*core.ContractOperation, error)
 
 	GetLastMasterBlock(ctx context.Context) (*core.Block, error)
-	GetBlocks(ctx context.Context, filter *core.BlockFilter) (*core.BlockFilterResults, error)
+	GetBlocks(ctx context.Context, filter *core.BlockFilter) (*core.BlockFiltered, error)
 
-	GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) (*core.AccountStateFilterResults, error)
-	AggregateAccountStates(ctx context.Context, req *core.AccountStateAggregate) (*core.AccountStateAggregation, error)
+	GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) (*core.AccountStateFiltered, error)
+	AggregateAccountStates(ctx context.Context, req *core.AccountStateAggregate) (*core.AccountStateAggregated, error)
 
-	GetTransactions(ctx context.Context, filter *core.TransactionFilter) (*core.TransactionFilterResults, error)
-	GetMessages(ctx context.Context, filter *core.MessageFilter) (*core.MessageFilterResults, error)
+	GetTransactions(ctx context.Context, filter *core.TransactionFilter) (*core.TransactionFiltered, error)
+	GetMessages(ctx context.Context, filter *core.MessageFilter) (*core.MessageFiltered, error)
 }

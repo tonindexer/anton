@@ -99,7 +99,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.AccountStateFilterResults"
+                            "$ref": "#/definitions/core.AccountStateFiltered"
                         }
                     }
                 }
@@ -138,7 +138,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.AccountStateAggregation"
+                            "$ref": "#/definitions/core.AccountStateAggregated"
                         }
                     }
                 }
@@ -214,7 +214,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.BlockFilterResults"
+                            "$ref": "#/definitions/core.BlockFiltered"
                         }
                     }
                 }
@@ -367,7 +367,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.MessageFilterResults"
+                            "$ref": "#/definitions/core.MessageFiltered"
                         }
                     }
                 }
@@ -444,7 +444,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.TransactionFilterResults"
+                            "$ref": "#/definitions/core.TransactionFiltered"
                         }
                     }
                 }
@@ -631,7 +631,7 @@
                 }
             }
         },
-        "core.AccountStateAggregation": {
+        "core.AccountStateAggregated": {
             "type": "object",
             "properties": {
                 "items": {
@@ -668,7 +668,7 @@
                 }
             }
         },
-        "core.AccountStateFilterResults": {
+        "core.AccountStateFiltered": {
             "type": "object",
             "properties": {
                 "results": {
@@ -723,7 +723,7 @@
                 }
             }
         },
-        "core.BlockFilterResults": {
+        "core.BlockFiltered": {
             "type": "object",
             "properties": {
                 "results": {
@@ -919,7 +919,7 @@
                 }
             }
         },
-        "core.MessageFilterResults": {
+        "core.MessageFiltered": {
             "type": "object",
             "properties": {
                 "results": {
@@ -1125,7 +1125,7 @@
                 }
             }
         },
-        "core.TransactionFilterResults": {
+        "core.TransactionFiltered": {
             "type": "object",
             "properties": {
                 "results": {

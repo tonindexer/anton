@@ -136,7 +136,7 @@ type AccountStateFilter struct {
 	Limit     int     `form:"limit"`
 }
 
-type AccountStateFilterResults struct {
+type AccountStateFiltered struct {
 	Total int             `json:"total"`
 	Rows  []*AccountState `json:"results"`
 }
@@ -147,40 +147,34 @@ type AccountStateAggregate struct {
 	Limit int `form:"limit"`
 }
 
-type OwnedItems struct {
-	OwnerAddress *addr.Address `ch:"type:String" json:"owner_address"`
-	ItemsCount   int           `json:"items_count"`
-}
-
-type UniqueOwners struct {
-	ItemAddress *addr.Address `ch:"type:String" json:"item_address"`
-	OwnersCount int           `json:"owners_count"`
-}
-
-type OwnedBalance struct {
-	WalletAddress *addr.Address `ch:"item_address,type:String" json:"wallet_address"`
-	OwnerAddress  *addr.Address `ch:"type:String" json:"owner_address"`
-	Balance       *bunbig.Int   `ch:"type:UInt256" json:"balance"`
-}
-
-type AccountStateAggregation struct {
+type AccountStateAggregated struct {
 	// NFT minter
-	Items        int             `json:"items,omitempty"`
-	OwnersCount  int             `json:"owners_count,omitempty"`
-	OwnedItems   []*OwnedItems   `json:"owned_items,omitempty"`
-	UniqueOwners []*UniqueOwners `json:"unique_owners,omitempty"`
+	Items       int `json:"items,omitempty"`
+	OwnersCount int `json:"owners_count,omitempty"`
+	OwnedItems  []*struct {
+		OwnerAddress *addr.Address `ch:"type:String" json:"owner_address"`
+		ItemsCount   int           `json:"items_count"`
+	} `json:"owned_items,omitempty"`
+	UniqueOwners []*struct {
+		ItemAddress *addr.Address `ch:"type:String" json:"item_address"`
+		OwnersCount int           `json:"owners_count"`
+	} `json:"unique_owners,omitempty"`
 
 	// FT minter
-	Wallets      int            `json:"wallets,omitempty"`
-	TotalSupply  *bunbig.Int    `json:"total_supply,omitempty"`
-	OwnedBalance []OwnedBalance `json:"owned_balance,omitempty"`
+	Wallets      int         `json:"wallets,omitempty"`
+	TotalSupply  *bunbig.Int `json:"total_supply,omitempty"`
+	OwnedBalance []*struct {
+		WalletAddress *addr.Address `ch:"item_address,type:String" json:"wallet_address"`
+		OwnerAddress  *addr.Address `ch:"type:String" json:"owner_address"`
+		Balance       *bunbig.Int   `ch:"type:UInt256" json:"balance"`
+	} `json:"owned_balance,omitempty"`
 }
 
 type AccountRepository interface {
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
 	AddAccountData(ctx context.Context, tx bun.Tx, data []*AccountData) error
 
-	GetAccountStates(ctx context.Context, filter *AccountStateFilter) (*AccountStateFilterResults, error)
+	GetAccountStates(ctx context.Context, filter *AccountStateFilter) (*AccountStateFiltered, error)
 
-	AggregateAccountStates(ctx context.Context, req *AccountStateAggregate) (*AccountStateAggregation, error)
+	AggregateAccountStates(ctx context.Context, req *AccountStateAggregate) (*AccountStateAggregated, error)
 }

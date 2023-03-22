@@ -47,22 +47,22 @@ func (s *Service) GetLastMasterBlock(ctx context.Context) (*core.Block, error) {
 	return s.blockRepo.GetLastMasterBlock(ctx)
 }
 
-func (s *Service) GetBlocks(ctx context.Context, filter *core.BlockFilter) (*core.BlockFilterResults, error) {
+func (s *Service) GetBlocks(ctx context.Context, filter *core.BlockFilter) (*core.BlockFiltered, error) {
 	return s.blockRepo.GetBlocks(ctx, filter)
 }
 
-func (s *Service) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) (*core.AccountStateFilterResults, error) {
+func (s *Service) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) (*core.AccountStateFiltered, error) {
 	return s.accountRepo.GetAccountStates(ctx, filter)
 }
 
-func (s *Service) AggregateAccountStates(ctx context.Context, req *core.AccountStateAggregate) (*core.AccountStateAggregation, error) {
+func (s *Service) AggregateAccountStates(ctx context.Context, req *core.AccountStateAggregate) (*core.AccountStateAggregated, error) {
 	return s.accountRepo.AggregateAccountStates(ctx, req)
 }
 
-func (s *Service) GetTransactions(ctx context.Context, filter *core.TransactionFilter) (*core.TransactionFilterResults, error) {
+func (s *Service) GetTransactions(ctx context.Context, filter *core.TransactionFilter) (*core.TransactionFiltered, error) {
 	return s.txRepo.GetTransactions(ctx, filter)
 }
 
-func (s *Service) GetMessages(ctx context.Context, filter *core.MessageFilter) (*core.MessageFilterResults, error) {
+func (s *Service) GetMessages(ctx context.Context, filter *core.MessageFilter) (*core.MessageFiltered, error) {
 	return s.txRepo.GetMessages(ctx, filter)
 }

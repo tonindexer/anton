@@ -102,7 +102,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.AccountStateFilterResults"
+                            "$ref": "#/definitions/core.AccountStateFiltered"
                         }
                     }
                 }
@@ -141,7 +141,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.AccountStateAggregation"
+                            "$ref": "#/definitions/core.AccountStateAggregated"
                         }
                     }
                 }
@@ -217,7 +217,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.BlockFilterResults"
+                            "$ref": "#/definitions/core.BlockFiltered"
                         }
                     }
                 }
@@ -370,7 +370,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.MessageFilterResults"
+                            "$ref": "#/definitions/core.MessageFiltered"
                         }
                     }
                 }
@@ -447,7 +447,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.TransactionFilterResults"
+                            "$ref": "#/definitions/core.TransactionFiltered"
                         }
                     }
                 }
@@ -634,7 +634,7 @@ const docTemplate = `{
                 }
             }
         },
-        "core.AccountStateAggregation": {
+        "core.AccountStateAggregated": {
             "type": "object",
             "properties": {
                 "items": {
@@ -671,7 +671,7 @@ const docTemplate = `{
                 }
             }
         },
-        "core.AccountStateFilterResults": {
+        "core.AccountStateFiltered": {
             "type": "object",
             "properties": {
                 "results": {
@@ -726,7 +726,7 @@ const docTemplate = `{
                 }
             }
         },
-        "core.BlockFilterResults": {
+        "core.BlockFiltered": {
             "type": "object",
             "properties": {
                 "results": {
@@ -922,7 +922,7 @@ const docTemplate = `{
                 }
             }
         },
-        "core.MessageFilterResults": {
+        "core.MessageFiltered": {
             "type": "object",
             "properties": {
                 "results": {
@@ -1128,7 +1128,7 @@ const docTemplate = `{
                 }
             }
         },
-        "core.TransactionFilterResults": {
+        "core.TransactionFiltered": {
             "type": "object",
             "properties": {
                 "results": {

@@ -24,7 +24,7 @@ func (r *Repository) makeLastItemOwnerQuery(minter *addr.Address) *ch.SelectQuer
 		ColumnExpr("argMax(owner_address, last_tx_lt) AS owner_address")
 }
 
-func (r *Repository) aggregateNFTMinter(ctx context.Context, req *core.AccountStateAggregate, res *core.AccountStateAggregation) error {
+func (r *Repository) aggregateNFTMinter(ctx context.Context, req *core.AccountStateAggregate, res *core.AccountStateAggregated) error {
 	var err error
 
 	res.Items, err = r.makeLastItemStateQuery(req.MinterAddress).Count(ctx)
@@ -68,7 +68,7 @@ func (r *Repository) aggregateNFTMinter(ctx context.Context, req *core.AccountSt
 	return nil
 }
 
-func (r *Repository) aggregateFTMinter(ctx context.Context, req *core.AccountStateAggregate, res *core.AccountStateAggregation) error {
+func (r *Repository) aggregateFTMinter(ctx context.Context, req *core.AccountStateAggregate, res *core.AccountStateAggregated) error {
 	var err error
 
 	res.Wallets, err = r.makeLastItemStateQuery(req.MinterAddress).Count(ctx)
@@ -98,9 +98,9 @@ func (r *Repository) aggregateFTMinter(ctx context.Context, req *core.AccountSta
 	return err
 }
 
-func (r *Repository) AggregateAccountStates(ctx context.Context, req *core.AccountStateAggregate) (*core.AccountStateAggregation, error) {
+func (r *Repository) AggregateAccountStates(ctx context.Context, req *core.AccountStateAggregate) (*core.AccountStateAggregated, error) {
 	var (
-		res        core.AccountStateAggregation
+		res        core.AccountStateAggregated
 		interfaces []abi.ContractName
 	)
 

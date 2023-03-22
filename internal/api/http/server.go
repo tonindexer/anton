@@ -18,6 +18,7 @@ type QueryController interface {
 	GetBlocks(*gin.Context)
 
 	GetAccountStates(*gin.Context)
+	AggregateAccountStates(ctx *gin.Context)
 
 	GetTransactions(*gin.Context)
 	GetMessages(*gin.Context)
@@ -41,6 +42,7 @@ func (s *Server) RegisterRoutes(t QueryController) {
 	base.GET("/blocks", t.GetBlocks)
 
 	base.GET("/accounts", t.GetAccountStates)
+	base.GET("/accounts/aggregated", t.AggregateAccountStates)
 
 	base.GET("/transactions", t.GetTransactions)
 	base.GET("/messages", t.GetMessages)

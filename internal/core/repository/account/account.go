@@ -348,9 +348,9 @@ func (r *Repository) countAccountStates(ctx context.Context, f *core.AccountStat
 	return r.ch.NewSelect().TableExpr("(?) as q", q).Count(ctx)
 }
 
-func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (*core.AccountStateFilterResults, error) {
+func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (*core.AccountStateFiltered, error) {
 	var (
-		res = new(core.AccountStateFilterResults)
+		res = new(core.AccountStateFiltered)
 		err error
 	)
 

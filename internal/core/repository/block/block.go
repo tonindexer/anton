@@ -182,9 +182,9 @@ func (r *Repository) countBlocks(ctx context.Context, f *core.BlockFilter) (int,
 	return q.Count(ctx)
 }
 
-func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter) (*core.BlockFilterResults, error) {
+func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter) (*core.BlockFiltered, error) {
 	var (
-		res = new(core.BlockFilterResults)
+		res = new(core.BlockFiltered)
 		err error
 	)
 

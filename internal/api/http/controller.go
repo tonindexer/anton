@@ -160,7 +160,7 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 //  @Param			order				query	string	false	"order by seq_no"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 	false	"start from this seq_no"
 //  @Param   		limit	     		query   int 	false	"limit"						default(3) maximum(100)
-//	@Success		200		{object}	core.BlockFilterResults
+//	@Success		200		{object}	core.BlockFiltered
 //	@Router			/blocks [get]
 func (c *Controller) GetBlocks(ctx *gin.Context) {
 	var filter core.BlockFilter
@@ -217,7 +217,7 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 //  @Param			order				query	string		false	"order by last_tx_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this last_tx_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
-//	@Success		200		{object}	core.AccountStateFilterResults
+//	@Success		200		{object}	core.AccountStateFiltered
 //	@Router			/accounts [get]
 func (c *Controller) GetAccountStates(ctx *gin.Context) {
 	var filter core.AccountStateFilter
@@ -273,7 +273,7 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 //	@Produce		json
 //  @Param   		minter_address		query	string  	false	"NFT collection or FT master address"
 //  @Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
-//	@Success		200		{object}	core.AccountStateAggregation
+//	@Success		200		{object}	core.AccountStateAggregated
 //	@Router			/accounts/aggregated [get]
 func (c *Controller) AggregateAccountStates(ctx *gin.Context) {
 	var req core.AccountStateAggregate
@@ -316,7 +316,7 @@ func (c *Controller) AggregateAccountStates(ctx *gin.Context) {
 //  @Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
 //  @Param   		limit	     		query   int 		false	"limit"							default(3) maximum(10000)
-//	@Success		200		{object}	core.TransactionFilterResults
+//	@Success		200		{object}	core.TransactionFiltered
 //	@Router			/transactions [get]
 func (c *Controller) GetTransactions(ctx *gin.Context) {
 	var filter core.TransactionFilter
@@ -383,7 +383,7 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 //  @Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
-//	@Success		200		{object}	core.MessageFilterResults
+//	@Success		200		{object}	core.MessageFiltered
 //	@Router			/messages [get]
 func (c *Controller) GetMessages(ctx *gin.Context) {
 	var filter core.MessageFilter

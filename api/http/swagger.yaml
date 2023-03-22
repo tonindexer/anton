@@ -121,7 +121,7 @@ definitions:
         description: 'TODO: ch enum'
         type: string
     type: object
-  core.AccountStateAggregation:
+  core.AccountStateAggregated:
     properties:
       items:
         description: NFT minter
@@ -146,7 +146,7 @@ definitions:
         description: FT minter
         type: integer
     type: object
-  core.AccountStateFilterResults:
+  core.AccountStateFiltered:
     properties:
       results:
         items:
@@ -182,7 +182,7 @@ definitions:
       workchain:
         type: integer
     type: object
-  core.BlockFilterResults:
+  core.BlockFiltered:
     properties:
       results:
         items:
@@ -313,7 +313,7 @@ definitions:
         description: 'TODO: ch enum'
         type: string
     type: object
-  core.MessageFilterResults:
+  core.MessageFiltered:
     properties:
       results:
         items:
@@ -449,7 +449,7 @@ definitions:
       total_fees:
         $ref: '#/definitions/bunbig.Int'
     type: object
-  core.TransactionFilterResults:
+  core.TransactionFiltered:
     properties:
       results:
         items:
@@ -551,7 +551,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/core.AccountStateFilterResults'
+            $ref: '#/definitions/core.AccountStateFiltered'
       summary: account data
       tags:
       - account
@@ -577,7 +577,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/core.AccountStateAggregation'
+            $ref: '#/definitions/core.AccountStateAggregated'
       summary: aggregated account data
       tags:
       - account
@@ -629,7 +629,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/core.BlockFilterResults'
+            $ref: '#/definitions/core.BlockFiltered'
       summary: block info
       tags:
       - block
@@ -731,7 +731,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/core.MessageFilterResults'
+            $ref: '#/definitions/core.MessageFiltered'
       summary: transaction messages
       tags:
       - transaction
@@ -783,7 +783,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/core.TransactionFilterResults'
+            $ref: '#/definitions/core.TransactionFiltered'
       summary: transactions data
       tags:
       - transaction
