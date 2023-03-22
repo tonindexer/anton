@@ -141,8 +141,46 @@ type AccountStateFilterResults struct {
 	Rows  []*AccountState `json:"results"`
 }
 
+type AccountStateAggregate struct {
+	MinterAddress *addr.Address // NFT or FT minter
+
+	Limit int
+}
+
+type OwnedItems struct {
+	OwnerAddress *addr.Address `ch:"type:String" json:"owner_address"`
+	ItemsCount   int           `json:"items_count"`
+}
+
+type UniqueOwners struct {
+	ItemAddress *addr.Address `ch:"type:String" json:"item_address"`
+	OwnersCount int           `json:"owners_count"`
+}
+
+type OwnedBalance struct {
+	WalletAddress *addr.Address `ch:"item_address,type:String" json:"wallet_address"`
+	OwnerAddress  *addr.Address `ch:"type:String" json:"owner_address"`
+	Balance       *bunbig.Int   `ch:"type:UInt256" json:"balance"`
+}
+
+type AccountStateAggregation struct {
+	// NFT minter
+	Items        int             `json:"items,omitempty"`
+	OwnersCount  int             `json:"owners_count,omitempty"`
+	OwnedItems   []*OwnedItems   `json:"owned_items,omitempty"`
+	UniqueOwners []*UniqueOwners `json:"unique_owners,omitempty"`
+
+	// FT minter
+	Wallets      int            `json:"wallets,omitempty"`
+	TotalSupply  *bunbig.Int    `json:"total_supply,omitempty"`
+	OwnedBalance []OwnedBalance `json:"owned_balance,omitempty"`
+}
+
 type AccountRepository interface {
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
 	AddAccountData(ctx context.Context, tx bun.Tx, data []*AccountData) error
+
 	GetAccountStates(ctx context.Context, filter *AccountStateFilter) (*AccountStateFilterResults, error)
+
+	AggregateAccountStates(ctx context.Context, req *AccountStateAggregate) (*AccountStateAggregation, error)
 }

@@ -199,7 +199,7 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 	})
 
 	t.Run("add account data", func(t *testing.T) {
-		err := accountRepo.AddAccountData(ctx, insertTx, []*core.AccountData{&accDataWallet, &accDataItem})
+		err := accountRepo.AddAccountData(ctx, insertTx, []*core.AccountData{&accDataWallet, &accDataItem, &accDataMinter})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -228,7 +228,7 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{&accItem})
+		err = accountRepo.AddAccountStates(ctx, insertTx, []*core.AccountState{&accItem, &accItemMinter})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -396,7 +396,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
 			LatestState:   true,
 			WithData:      true,
-			ContractTypes: []abi.ContractName{"item"},
+			ContractTypes: []abi.ContractName{abi.NFTItem},
 			Order:         "DESC",
 			Limit:         1,
 		})
@@ -443,6 +443,53 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 		}
 		if !reflect.DeepEqual(&acc, ret[0]) {
 			t.Fatalf("wrong account, expected: %+v, got: %+v", acc, ret[0])
+		}
+	})
+}
+
+func TestGraphAggregateAccounts(t *testing.T) {
+	initDB()
+
+	t.Run("aggregate nft collection", func(t *testing.T) {
+		res, err := accountRepo.AggregateAccountStates(ctx, &core.AccountStateAggregate{
+			MinterAddress: accDataItem.MinterAddress,
+			Limit:         1000,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if res.Items != 1 {
+			t.Fatalf("expected: %d, got: %d", 1, res.Items)
+		}
+		if res.OwnersCount != 1 {
+			t.Fatalf("expected: %d, got: %d", 1, res.OwnersCount)
+		}
+		if len(res.UniqueOwners) != 1 || res.UniqueOwners[0].ItemAddress.String() != accDataItem.Address.String() || res.UniqueOwners[0].OwnersCount != 1 {
+			t.Fatalf("wrong owned items: %+v", res.OwnedItems)
+		}
+		if len(res.OwnedItems) != 1 || res.OwnedItems[0].OwnerAddress.String() != accDataItem.OwnerAddress.String() || res.OwnedItems[0].ItemsCount != 1 {
+			t.Fatalf("wrong owned items: %+v", res.OwnedItems)
+		}
+	})
+
+	t.Run("aggregate jetton wallets", func(t *testing.T) {
+		res, err := accountRepo.AggregateAccountStates(ctx, &core.AccountStateAggregate{
+			MinterAddress: accDataItem.MinterAddress,
+			Limit:         1000,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if res.Wallets != 1 {
+			t.Fatalf("expected: %d, got: %d", 1, res.Items)
+		}
+		if res.TotalSupply == nil || res.TotalSupply.ToUInt64() != accDataItem.JettonBalance.ToUInt64() {
+			t.Fatalf("expected: %s, got: %s", accDataItem.JettonBalance, res.TotalSupply)
+		}
+		if len(res.OwnedBalance) != 1 || res.OwnedBalance[0].OwnerAddress.String() != accDataItem.OwnerAddress.String() || res.OwnedBalance[0].Balance.ToUInt64() != accDataItem.JettonBalance.ToUInt64() {
+			t.Fatalf("wrong owned balance: %+v", res.OwnedItems)
 		}
 	})
 }
