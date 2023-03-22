@@ -59,8 +59,8 @@ type NFTCollectionData struct {
 
 type NFTRoyaltyData struct {
 	RoyaltyAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"royalty_address,omitempty"`
-	RoyaltyFactor  uint16        `ch:"type:UInt16" json:"royalty_factor,omitempty"`
-	RoyaltyBase    uint16        `ch:"type:UInt16" json:"royalty_base,omitempty"`
+	RoyaltyFactor  uint16        `ch:"type:UInt16" bun:"type:integer" json:"royalty_factor,omitempty"`
+	RoyaltyBase    uint16        `ch:"type:UInt16" bun:"type:integer" json:"royalty_base,omitempty"`
 }
 
 type NFTContentData struct {
