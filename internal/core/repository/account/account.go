@@ -241,10 +241,12 @@ func addAccountDataFilter(q *bun.SelectQuery, f *core.AccountStateFilter) *bun.S
 		q = q.Where(prefix+"state_data.types && ?", pgdialect.Array(f.ContractTypes))
 	}
 	if f.OwnerAddress != nil {
-		q = q.Where(prefix+"state_data.owner_address = ?", f.OwnerAddress)
+		q = q.Where(prefix+"state_data.owner_address = ?", f.OwnerAddress).
+			Where("length(" + prefix + "state_data.owner_address) > 0")
 	}
 	if f.MinterAddress != nil {
-		q = q.Where(prefix+"state_data.minter_address = ?", f.MinterAddress)
+		q = q.Where(prefix+"state_data.minter_address = ?", f.MinterAddress).
+			Where("length(" + prefix + "state_data.minter_address) > 0")
 	}
 
 	return q
