@@ -1012,6 +1012,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/core.ContractInterface"
                     }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -1034,6 +1037,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/core.ContractOperation"
                     }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

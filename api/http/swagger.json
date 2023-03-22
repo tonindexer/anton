@@ -1009,6 +1009,9 @@
                     "items": {
                         "$ref": "#/definitions/core.ContractInterface"
                     }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -1031,6 +1034,9 @@
                     "items": {
                         "$ref": "#/definitions/core.ContractOperation"
                     }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

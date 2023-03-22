@@ -399,6 +399,8 @@ definitions:
         items:
           $ref: '#/definitions/core.ContractInterface'
         type: array
+      total:
+        type: integer
     type: object
   http.GetMessagesRes:
     properties:
@@ -413,6 +415,8 @@ definitions:
         items:
           $ref: '#/definitions/core.ContractOperation'
         type: array
+      total:
+        type: integer
     type: object
   http.GetTransactionsRes:
     properties:

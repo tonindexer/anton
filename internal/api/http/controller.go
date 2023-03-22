@@ -104,6 +104,7 @@ func getAddresses(ctx *gin.Context, name string) ([]*addr.Address, error) {
 }
 
 type GetInterfacesRes struct {
+	Total   int                       `json:"total"`
 	Results []*core.ContractInterface `json:"results"`
 }
 
@@ -121,10 +122,11 @@ func (c *Controller) GetInterfaces(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, GetInterfacesRes{Results: ret})
+	ctx.IndentedJSON(http.StatusOK, GetInterfacesRes{Total: len(ret), Results: ret})
 }
 
 type GetOperationsRes struct {
+	Total   int                       `json:"total"`
 	Results []*core.ContractOperation `json:"results"`
 }
 
@@ -142,7 +144,7 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, GetOperationsRes{Results: ret})
+	ctx.IndentedJSON(http.StatusOK, GetOperationsRes{Total: len(ret), Results: ret})
 }
 
 // GetBlocks godoc
