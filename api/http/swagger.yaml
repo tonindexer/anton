@@ -127,7 +127,7 @@ definitions:
         items:
           $ref: '#/definitions/core.AccountState'
         type: array
-      total_count:
+      total:
         type: integer
     type: object
   core.Block:
@@ -163,7 +163,7 @@ definitions:
         items:
           $ref: '#/definitions/core.Block'
         type: array
-      total_count:
+      total:
         type: integer
     type: object
   core.BlockID:

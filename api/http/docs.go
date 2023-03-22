@@ -604,7 +604,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/core.AccountState"
                     }
                 },
-                "total_count": {
+                "total": {
                     "type": "integer"
                 }
             }
@@ -659,7 +659,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/core.Block"
                     }
                 },
-                "total_count": {
+                "total": {
                     "type": "integer"
                 }
             }

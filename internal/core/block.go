@@ -52,7 +52,7 @@ type BlockFilter struct {
 }
 
 type BlockFilterResults struct {
-	Total int      `json:"total_count"`
+	Total int      `json:"total"`
 	Rows  []*Block `json:"results"`
 }
 

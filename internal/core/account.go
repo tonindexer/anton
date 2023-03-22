@@ -137,7 +137,7 @@ type AccountStateFilter struct {
 }
 
 type AccountStateFilterResults struct {
-	Total int             `json:"total_count"`
+	Total int             `json:"total"`
 	Rows  []*AccountState `json:"results"`
 }
 

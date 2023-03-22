@@ -601,7 +601,7 @@
                         "$ref": "#/definitions/core.AccountState"
                     }
                 },
-                "total_count": {
+                "total": {
                     "type": "integer"
                 }
             }
@@ -656,7 +656,7 @@
                         "$ref": "#/definitions/core.Block"
                     }
                 },
-                "total_count": {
+                "total": {
                     "type": "integer"
                 }
             }
