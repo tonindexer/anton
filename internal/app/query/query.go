@@ -55,10 +55,10 @@ func (s *Service) GetAccountStates(ctx context.Context, filter *core.AccountStat
 	return s.accountRepo.GetAccountStates(ctx, filter)
 }
 
-func (s *Service) GetTransactions(ctx context.Context, filter *core.TransactionFilter) ([]*core.Transaction, error) {
+func (s *Service) GetTransactions(ctx context.Context, filter *core.TransactionFilter) (*core.TransactionFilterResults, error) {
 	return s.txRepo.GetTransactions(ctx, filter)
 }
 
-func (s *Service) GetMessages(ctx context.Context, filter *core.MessageFilter) ([]*core.Message, error) {
+func (s *Service) GetMessages(ctx context.Context, filter *core.MessageFilter) (*core.MessageFilterResults, error) {
 	return s.txRepo.GetMessages(ctx, filter)
 }

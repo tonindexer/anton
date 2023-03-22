@@ -20,6 +20,6 @@ type QueryService interface {
 
 	GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) (*core.AccountStateFilterResults, error)
 
-	GetTransactions(ctx context.Context, filter *core.TransactionFilter) ([]*core.Transaction, error)
-	GetMessages(ctx context.Context, filter *core.MessageFilter) ([]*core.Message, error)
+	GetTransactions(ctx context.Context, filter *core.TransactionFilter) (*core.TransactionFilterResults, error)
+	GetMessages(ctx context.Context, filter *core.MessageFilter) (*core.MessageFilterResults, error)
 }

@@ -26,7 +26,7 @@ func (s *Service) messageAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.M
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
 	}
-	if len(res) == 1 {
+	if len(res.Rows) == 1 {
 		return true, nil
 	}
 
@@ -92,7 +92,7 @@ func (s *Service) messagePayloadAlreadyKnown(ctx context.Context, tx bun.Tx, in 
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
 	}
-	if len(res) > 0 && res[0].Payload != nil {
+	if len(res.Rows) > 0 && res.Rows[0].Payload != nil {
 		return true, nil
 	}
 

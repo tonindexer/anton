@@ -310,7 +310,7 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 	})
 }
 
-func TestGraphFilterAccounts(t *testing.T) {
+func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot of functions
 	initDB()
 
 	// TODO: optional fields
@@ -451,7 +451,7 @@ func TestGraphFilterMessages(t *testing.T) {
 	initDB()
 
 	t.Run("filter messages by operation name with source", func(t *testing.T) {
-		ret, err := txRepo.GetMessages(ctx, &core.MessageFilter{
+		res, err := txRepo.GetMessages(ctx, &core.MessageFilter{
 			WithPayload:    true,
 			OperationNames: []string{"item_transfer"},
 			Order:          "DESC",
@@ -459,6 +459,11 @@ func TestGraphFilterMessages(t *testing.T) {
 		})
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		ret := res.Rows
+		if res.Total != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, res.Total)
 		}
 
 		msgIn := msgOutWallet
@@ -479,7 +484,7 @@ func TestGraphFilterMessages(t *testing.T) {
 	})
 
 	t.Run("filter messages by minter address", func(t *testing.T) {
-		ret, err := txRepo.GetMessages(ctx, &core.MessageFilter{
+		res, err := txRepo.GetMessages(ctx, &core.MessageFilter{
 			WithPayload:   true,
 			MinterAddress: accDataItem.MinterAddress,
 			Order:         "DESC",
@@ -487,6 +492,11 @@ func TestGraphFilterMessages(t *testing.T) {
 		})
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		ret := res.Rows
+		if res.Total != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, res.Total)
 		}
 
 		msgIn := msgOutWallet
@@ -511,13 +521,18 @@ func TestGraphFilterTransactions(t *testing.T) {
 	initDB()
 
 	t.Run("filter tx by in_msg_hash", func(t *testing.T) {
-		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
+		res, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
 			InMsgHash: txInItem.InMsgHash,
 			Order:     "DESC",
 			Limit:     10,
 		})
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		ret := res.Rows
+		if res.Total != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, res.Total)
 		}
 
 		txIn := txInItem
@@ -531,7 +546,7 @@ func TestGraphFilterTransactions(t *testing.T) {
 	})
 
 	t.Run("filter tx with msg by address", func(t *testing.T) {
-		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
+		res, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
 			Addresses:           []*addr.Address{&accWallet.Address},
 			WithAccountState:    true,
 			WithMessages:        true,
@@ -541,6 +556,11 @@ func TestGraphFilterTransactions(t *testing.T) {
 		})
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		ret := res.Rows
+		if res.Total != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, res.Total)
 		}
 
 		txOut := txOutWallet
@@ -565,7 +585,7 @@ func TestGraphFilterTransactions(t *testing.T) {
 	})
 
 	t.Run("filter tx with msg by address __item", func(t *testing.T) {
-		ret, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
+		res, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
 			Addresses:           []*addr.Address{&accItem.Address},
 			WithAccountState:    true,
 			WithAccountData:     true,
@@ -576,6 +596,11 @@ func TestGraphFilterTransactions(t *testing.T) {
 		})
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		ret := res.Rows
+		if res.Total != 1 {
+			t.Fatalf("wrong len, expected: %d, got: %d", 1, res.Total)
 		}
 
 		txIn, acc := txInItem, accItem

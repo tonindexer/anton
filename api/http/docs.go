@@ -331,7 +331,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.GetMessagesRes"
+                            "$ref": "#/definitions/core.MessageFilterResults"
                         }
                     }
                 }
@@ -408,7 +408,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.GetTransactionsRes"
+                            "$ref": "#/definitions/core.TransactionFilterResults"
                         }
                     }
                 }
@@ -846,6 +846,20 @@ const docTemplate = `{
                 }
             }
         },
+        "core.MessageFilterResults": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Message"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "core.MessagePayload": {
             "type": "object",
             "properties": {
@@ -1004,6 +1018,20 @@ const docTemplate = `{
                 }
             }
         },
+        "core.TransactionFilterResults": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Transaction"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "http.GetInterfacesRes": {
             "type": "object",
             "properties": {
@@ -1018,17 +1046,6 @@ const docTemplate = `{
                 }
             }
         },
-        "http.GetMessagesRes": {
-            "type": "object",
-            "properties": {
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/core.Message"
-                    }
-                }
-            }
-        },
         "http.GetOperationsRes": {
             "type": "object",
             "properties": {
@@ -1040,17 +1057,6 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
-                }
-            }
-        },
-        "http.GetTransactionsRes": {
-            "type": "object",
-            "properties": {
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/core.Transaction"
-                    }
                 }
             }
         }

@@ -328,7 +328,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.GetMessagesRes"
+                            "$ref": "#/definitions/core.MessageFilterResults"
                         }
                     }
                 }
@@ -405,7 +405,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.GetTransactionsRes"
+                            "$ref": "#/definitions/core.TransactionFilterResults"
                         }
                     }
                 }
@@ -843,6 +843,20 @@
                 }
             }
         },
+        "core.MessageFilterResults": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Message"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "core.MessagePayload": {
             "type": "object",
             "properties": {
@@ -1001,6 +1015,20 @@
                 }
             }
         },
+        "core.TransactionFilterResults": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Transaction"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "http.GetInterfacesRes": {
             "type": "object",
             "properties": {
@@ -1015,17 +1043,6 @@
                 }
             }
         },
-        "http.GetMessagesRes": {
-            "type": "object",
-            "properties": {
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/core.Message"
-                    }
-                }
-            }
-        },
         "http.GetOperationsRes": {
             "type": "object",
             "properties": {
@@ -1037,17 +1054,6 @@
                 },
                 "total": {
                     "type": "integer"
-                }
-            }
-        },
-        "http.GetTransactionsRes": {
-            "type": "object",
-            "properties": {
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/core.Transaction"
-                    }
                 }
             }
         }

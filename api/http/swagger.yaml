@@ -288,6 +288,15 @@ definitions:
         description: 'TODO: ch enum'
         type: string
     type: object
+  core.MessageFilterResults:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.Message'
+        type: array
+      total:
+        type: integer
+    type: object
   core.MessagePayload:
     properties:
       amount:
@@ -393,6 +402,15 @@ definitions:
       total_fees:
         $ref: '#/definitions/bunbig.Int'
     type: object
+  core.TransactionFilterResults:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.Transaction'
+        type: array
+      total:
+        type: integer
+    type: object
   http.GetInterfacesRes:
     properties:
       results:
@@ -402,13 +420,6 @@ definitions:
       total:
         type: integer
     type: object
-  http.GetMessagesRes:
-    properties:
-      results:
-        items:
-          $ref: '#/definitions/core.Message'
-        type: array
-    type: object
   http.GetOperationsRes:
     properties:
       results:
@@ -417,13 +428,6 @@ definitions:
         type: array
       total:
         type: integer
-    type: object
-  http.GetTransactionsRes:
-    properties:
-      results:
-        items:
-          $ref: '#/definitions/core.Transaction'
-        type: array
     type: object
 host: anton.tools
 info:
@@ -645,7 +649,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/http.GetMessagesRes'
+            $ref: '#/definitions/core.MessageFilterResults'
       summary: transaction messages
       tags:
       - transaction
@@ -697,7 +701,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/http.GetTransactionsRes'
+            $ref: '#/definitions/core.TransactionFilterResults'
       summary: transactions data
       tags:
       - transaction

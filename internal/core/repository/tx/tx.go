@@ -290,7 +290,9 @@ func (r *Repository) AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads
 	return nil
 }
 
-func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQuery {
+func (r *Repository) filterTx(ctx context.Context, f *core.TransactionFilter) (ret []*core.Transaction, err error) {
+	q := r.pg.NewSelect().Model(&ret)
+
 	if f.WithAccountState {
 		q = q.Relation("Account", func(q *bun.SelectQuery) *bun.SelectQuery {
 			return q.ExcludeColumn("code", "data") // TODO: optional
@@ -342,15 +344,65 @@ func selectTxFilter(q *bun.SelectQuery, f *core.TransactionFilter) *bun.SelectQu
 	}
 	q = q.Limit(f.Limit)
 
-	return q
-}
-
-func (r *Repository) GetTransactions(ctx context.Context, filter *core.TransactionFilter) (ret []*core.Transaction, err error) {
-	err = selectTxFilter(r.pg.NewSelect().Model(&ret), filter).Scan(ctx)
+	err = q.Scan(ctx)
 	return ret, err
 }
 
-func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery {
+func (r *Repository) countTx(ctx context.Context, f *core.TransactionFilter) (int, error) {
+	q := r.ch.NewSelect().
+		Model((*core.Transaction)(nil))
+
+	if len(f.Hash) > 0 {
+		q = q.Where("hash = ?", f.Hash)
+	}
+	if len(f.InMsgHash) > 0 {
+		q = q.Where("in_msg_hash = ?", f.InMsgHash)
+	}
+	if len(f.Addresses) > 0 {
+		q = q.Where("address in (?)", ch.In(f.Addresses))
+	}
+	if f.Workchain != nil {
+		q = q.Where("block_workchain = ?", f.Workchain)
+	}
+	if f.BlockID != nil {
+		q = q.Where("block_workchain = ?", f.BlockID.Workchain).
+			Where("block_shard = ?", f.BlockID.Shard).
+			Where("block_seq_no = ?", f.BlockID.SeqNo)
+	}
+
+	return q.Count(ctx)
+}
+
+func (r *Repository) GetTransactions(ctx context.Context, f *core.TransactionFilter) (*core.TransactionFilterResults, error) {
+	var (
+		res = new(core.TransactionFilterResults)
+		err error
+	)
+
+	res.Rows, err = r.filterTx(ctx, f)
+	if err != nil {
+		return res, err
+	}
+	if len(res.Rows) == 0 {
+		return res, nil
+	}
+
+	res.Total, err = r.countTx(ctx, f)
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
+func (r *Repository) filterMsg(ctx context.Context, f *core.MessageFilter) (ret []*core.Message, err error) {
+	q := r.pg.NewSelect()
+	if f.DBTx != nil {
+		q = f.DBTx.NewSelect()
+	}
+
+	q = q.Model(&ret)
+
 	if f.WithPayload {
 		q = q.Relation("Payload")
 	}
@@ -367,10 +419,10 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 
 	if f.WithPayload {
 		if len(f.SrcContracts) > 0 {
-			q = q.Where("payload.src_contract in (?)", bun.In(f.SrcContracts))
+			q = q.Where("payload.src_contract IN (?)", bun.In(f.SrcContracts))
 		}
 		if len(f.DstContracts) > 0 {
-			q = q.Where("payload.dst_contract in (?)", bun.In(f.DstContracts))
+			q = q.Where("payload.dst_contract IN (?)", bun.In(f.DstContracts))
 		}
 		if len(f.OperationNames) > 0 {
 			q = q.Where("payload.operation_name IN (?)", bun.In(f.OperationNames))
@@ -397,14 +449,67 @@ func selectMsgFilter(q *bun.SelectQuery, f *core.MessageFilter) *bun.SelectQuery
 	}
 	q = q.Limit(f.Limit)
 
-	return q
+	err = q.Scan(ctx)
+	return ret, err
 }
 
-func (r *Repository) GetMessages(ctx context.Context, filter *core.MessageFilter) (ret []*core.Message, err error) {
-	q := r.pg.NewSelect()
-	if filter.DBTx != nil {
-		q = filter.DBTx.NewSelect()
+func (r *Repository) countMsg(ctx context.Context, f *core.MessageFilter) (int, error) {
+	var payload bool // do we need to count account_data or account_states
+
+	q := r.ch.NewSelect()
+
+	if f.WithPayload {
+		if len(f.SrcContracts) > 0 {
+			q, payload = q.Where("src_contract IN (?)", ch.In(f.SrcContracts)), true
+		}
+		if len(f.DstContracts) > 0 {
+			q, payload = q.Where("dst_contract IN (?)", ch.In(f.DstContracts)), true
+		}
+		if len(f.OperationNames) > 0 {
+			q, payload = q.Where("operation_name IN (?)", ch.In(f.OperationNames)), true
+		}
+		if f.MinterAddress != nil {
+			q, payload = q.Where("minter_address = ?", f.MinterAddress), true
+		}
 	}
-	err = selectMsgFilter(q.Model(&ret), filter).Scan(ctx)
-	return ret, err
+
+	if len(f.Hash) > 0 {
+		q = q.Where("hash = ?", f.Hash)
+	}
+	if len(f.SrcAddresses) > 0 {
+		q = q.Where("src_address in (?)", ch.In(f.SrcAddresses))
+	}
+	if len(f.DstAddresses) > 0 {
+		q = q.Where("dst_address in (?)", ch.In(f.DstAddresses))
+	}
+
+	if payload {
+		q = q.Model((*core.MessagePayload)(nil))
+	} else {
+		q = q.Model((*core.Message)(nil))
+	}
+
+	return q.Count(ctx)
+}
+
+func (r *Repository) GetMessages(ctx context.Context, f *core.MessageFilter) (*core.MessageFilterResults, error) {
+	var (
+		res = new(core.MessageFilterResults)
+		err error
+	)
+
+	res.Rows, err = r.filterMsg(ctx, f)
+	if err != nil {
+		return res, err
+	}
+	if len(res.Rows) == 0 {
+		return res, nil
+	}
+
+	res.Total, err = r.countMsg(ctx, f)
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
 }

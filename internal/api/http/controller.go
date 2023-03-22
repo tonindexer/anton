@@ -265,10 +265,6 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
-type GetTransactionsRes struct {
-	Results []*core.Transaction `json:"results"`
-}
-
 // GetTransactions godoc
 //	@Summary		transactions data
 //	@Description	Returns transactions, states and messages
@@ -282,7 +278,7 @@ type GetTransactionsRes struct {
 //  @Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
 //  @Param   		limit	     		query   int 		false	"limit"							default(3) maximum(10000)
-//	@Success		200		{object}	GetTransactionsRes
+//	@Success		200		{object}	core.TransactionFilterResults
 //	@Router			/transactions [get]
 func (c *Controller) GetTransactions(ctx *gin.Context) {
 	var filter core.TransactionFilter
@@ -330,11 +326,7 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, GetTransactionsRes{Results: ret})
-}
-
-type GetMessagesRes struct {
-	Results []*core.Message `json:"results"`
+	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
 // GetMessages godoc
@@ -353,7 +345,7 @@ type GetMessagesRes struct {
 //  @Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
-//	@Success		200		{object}	GetMessagesRes
+//	@Success		200		{object}	core.MessageFilterResults
 //	@Router			/messages [get]
 func (c *Controller) GetMessages(ctx *gin.Context) {
 	var filter core.MessageFilter
@@ -402,5 +394,5 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, GetMessagesRes{Results: ret})
+	ctx.IndentedJSON(http.StatusOK, ret)
 }
