@@ -308,15 +308,15 @@ func (r *Repository) countAccountStates(ctx context.Context, f *core.AccountStat
 		q = q.ColumnExpr("address")
 	}
 
-	ret, err := r.ch.NewSelect().TableExpr("(?) as q", q).Count(ctx)
-	if err != nil {
-		return 0, errors.Wrap(err, "count states")
-	}
-
-	return ret, nil
+	return r.ch.NewSelect().TableExpr("(?) as q", q).Count(ctx)
 }
 
-func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (res *core.AccountStateFilterResults, err error) {
+func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (*core.AccountStateFilterResults, error) {
+	var (
+		res = new(core.AccountStateFilterResults)
+		err error
+	)
+
 	res.Rows, err = r.filterAccountStates(ctx, f)
 	if err != nil {
 		return res, err
