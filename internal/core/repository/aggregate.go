@@ -12,32 +12,36 @@ import (
 type Statistics struct {
 	FirstBlock int `json:"first_masterchain_block"`
 	LastBlock  int `json:"last_masterchain_block"`
-
 	BlockCount int `json:"masterchain_block_count"`
 
 	AddressCount       int `json:"address_count"`
 	ParsedAddressCount int `json:"parsed_address_count"`
+
 	AccountCount       int `json:"account_count"`
-	AccountDataCount   int `json:"account_data_count"`
+	ParsedAccountCount int `json:"parsed_account_count"`
+
+	TransactionCount int `json:"transaction_count"`
+
+	MessageCount       int `json:"message_count"`
+	ParsedMessageCount int `json:"parsed_message_count"`
+
+	ContractInterfaceCount int `json:"contract_interface_count"`
+	ContractOperationCount int `json:"contract_operation_count"`
+
 	AccountStatusCount []struct {
 		Status core.AccountStatus `json:"status"`
 		Count  int                `json:"count"`
 	} `json:"account_count_by_status"`
+
 	AccountTypesCount []struct {
 		Interfaces []abi.ContractName `json:"interfaces"`
 		Count      int                `json:"count"`
 	} `json:"account_count_by_interfaces"`
 
-	TransactionCount   int `json:"transaction_count"`
-	MessageCount       int `json:"message_count"`
-	ParsedMessageCount int `json:"parsed_message_count"`
-	MessageTypesCount  []struct {
+	MessageTypesCount []struct {
 		Operation string `json:"operation"`
 		Count     int    `json:"count"`
 	} `json:"message_count_by_operation"`
-
-	ContractInterfaceCount int `json:"contract_interface_count"`
-	ContractOperationCount int `json:"contract_operation_count"`
 }
 
 func GetStatistics(ctx context.Context, db *DB) (*Statistics, error) {
@@ -51,10 +55,7 @@ func GetStatistics(ctx context.Context, db *DB) (*Statistics, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "first and last masterchain blocks")
 	}
-	ret.BlockCount, err = db.CH.NewSelect().Model((*core.Block)(nil)).Count(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "block count")
-	}
+	ret.BlockCount = ret.LastBlock - ret.FirstBlock + 1
 
 	ret.AccountCount, err = db.CH.NewSelect().Model((*core.AccountState)(nil)).Count(ctx)
 	if err != nil {
@@ -79,7 +80,7 @@ func GetStatistics(ctx context.Context, db *DB) (*Statistics, error) {
 		ret.AddressCount += row.Count
 	}
 
-	ret.AccountDataCount, err = db.CH.NewSelect().Model((*core.AccountData)(nil)).Count(ctx)
+	ret.ParsedAccountCount, err = db.CH.NewSelect().Model((*core.AccountData)(nil)).Count(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "account data count")
 	}
