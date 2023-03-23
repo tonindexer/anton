@@ -148,7 +148,7 @@ func (s *Service) fetchBlocksLoop(workchain int32, shard int64, fromBlock uint32
 		ctx := context.Background()
 
 		master, err := s.api.LookupBlock(ctx, workchain, shard, seq)
-		if errors.Is(err, ton.ErrBlockNotFound) {
+		if errors.Is(err, ton.ErrBlockNotFound) || strings.Contains(err.Error(), "block is not applied") {
 			continue
 		}
 		if err != nil {
