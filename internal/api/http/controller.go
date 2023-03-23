@@ -48,7 +48,9 @@ func paramErr(ctx *gin.Context, param string, err error) {
 func internalErr(ctx *gin.Context, err error) {
 	if errors.Is(err, core.ErrInvalidArg) {
 		ctx.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
+
 	log.Error().Str("path", ctx.FullPath()).Err(err).Msg("internal server error")
 	ctx.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 }
@@ -290,7 +292,7 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 //	@Tags			account
 //	@Accept			json
 //	@Produce		json
-//  @Param   		minter_address		query	string  	false	"NFT collection or FT master address"
+//  @Param   		minter_address		query	string  	true	"NFT collection or FT master address"
 //  @Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
 //	@Success		200		{object}	core.AccountStateAggregated
 //	@Router			/accounts/aggregated [get]
