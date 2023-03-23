@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -140,7 +141,7 @@ func (s *Service) processMaster(ctx context.Context, master *ton.BlockIDExt) err
 
 func (s *Service) processMasterID(ctx context.Context, workchain int32, shard int64, seq uint32) bool {
 	master, err := s.api.LookupBlock(ctx, workchain, shard, seq)
-	if errors.Is(err, ton.ErrBlockNotFound) {
+	if errors.Is(err, ton.ErrBlockNotFound) || (err != nil && strings.Contains(err.Error(), "block is not applied")) {
 		log.Debug().Err(err).Int32("workchain", workchain).Int64("shard", shard).Uint32("master_seq", seq).Msg("cannot lookup masterchain block")
 		return false
 	}
@@ -150,6 +151,9 @@ func (s *Service) processMasterID(ctx context.Context, workchain int32, shard in
 	}
 
 	if err := s.processMaster(ctx, master); err != nil {
+		if strings.Contains(err.Error(), "block is not applied") {
+			return false
+		}
 		log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot process masterchain block")
 		return false
 	}
