@@ -12,8 +12,7 @@ import (
 )
 
 type QueryController interface {
-	GetInterfaces(*gin.Context)
-	GetOperations(*gin.Context)
+	GetStatistics(*gin.Context)
 
 	GetBlocks(*gin.Context)
 
@@ -22,6 +21,9 @@ type QueryController interface {
 
 	GetTransactions(*gin.Context)
 	GetMessages(*gin.Context)
+
+	GetInterfaces(*gin.Context)
+	GetOperations(*gin.Context)
 }
 
 type Server struct {
@@ -36,8 +38,7 @@ func NewServer(host string) *Server {
 func (s *Server) RegisterRoutes(t QueryController) {
 	base := s.router.Group(basePath)
 
-	base.GET("/contract/interfaces", t.GetInterfaces)
-	base.GET("/contract/operations", t.GetOperations)
+	base.GET("/statistics", t.GetStatistics)
 
 	base.GET("/blocks", t.GetBlocks)
 
@@ -46,6 +47,9 @@ func (s *Server) RegisterRoutes(t QueryController) {
 
 	base.GET("/transactions", t.GetTransactions)
 	base.GET("/messages", t.GetMessages)
+
+	base.GET("/contract/interfaces", t.GetInterfaces)
+	base.GET("/contract/operations", t.GetOperations)
 
 	base.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerFiles.Handler,

@@ -5,6 +5,7 @@ import (
 
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/repository"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
 	"github.com/iam047801/tonidx/internal/core/repository/block"
 	"github.com/iam047801/tonidx/internal/core/repository/contract"
@@ -33,6 +34,10 @@ func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
 	s.contractRepo = contract.NewRepository(pg)
 
 	return s, nil
+}
+
+func (s *Service) GetStatistics(ctx context.Context) (*repository.Statistics, error) {
+	return repository.GetStatistics(ctx, s.cfg.DB)
 }
 
 func (s *Service) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {

@@ -103,6 +103,23 @@ func getAddresses(ctx *gin.Context, name string) ([]*addr.Address, error) {
 	return ret, nil
 }
 
+// GetStatistics godoc
+//	@Summary		statistics on all tables
+//	@Description	Returns statistics on blocks, transactions, messages and accounts
+//	@Tags			statistics
+//	@Accept			json
+//	@Produce		json
+//	@Success		200		{object}		repository.Statistics
+//	@Router			/statistics [get]
+func (c *Controller) GetStatistics(ctx *gin.Context) {
+	ret, err := c.svc.GetStatistics(ctx)
+	if err != nil {
+		internalErr(ctx, err)
+		return
+	}
+	ctx.IndentedJSON(http.StatusOK, ret)
+}
+
 type GetInterfacesRes struct {
 	Total   int                       `json:"total"`
 	Results []*core.ContractInterface `json:"results"`

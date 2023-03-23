@@ -12,7 +12,9 @@ type QueryConfig struct {
 }
 
 type QueryService interface {
-	GetInterfaces(context.Context) ([]*core.ContractInterface, error)
+	GetStatistics(ctx context.Context) (*repository.Statistics, error)
+
+	GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error)
 	GetOperations(ctx context.Context) ([]*core.ContractOperation, error)
 
 	GetLastMasterBlock(ctx context.Context) (*core.Block, error)

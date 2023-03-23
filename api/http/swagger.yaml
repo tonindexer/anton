@@ -128,11 +128,29 @@ definitions:
         type: integer
       owned_balance:
         items:
-          $ref: '#/definitions/core.OwnedBalance'
+          properties:
+            balance:
+              $ref: '#/definitions/bunbig.Int'
+            owner_address:
+              items:
+                type: integer
+              type: array
+            wallet_address:
+              items:
+                type: integer
+              type: array
+          type: object
         type: array
       owned_items:
         items:
-          $ref: '#/definitions/core.OwnedItems'
+          properties:
+            items_count:
+              type: integer
+            owner_address:
+              items:
+                type: integer
+              type: array
+          type: object
         type: array
       owners_count:
         type: integer
@@ -140,7 +158,14 @@ definitions:
         $ref: '#/definitions/bunbig.Int'
       unique_owners:
         items:
-          $ref: '#/definitions/core.UniqueOwners'
+          properties:
+            item_address:
+              items:
+                type: integer
+              type: array
+            owners_count:
+              type: integer
+          type: object
         type: array
       wallets:
         description: FT minter
@@ -368,28 +393,6 @@ definitions:
       type:
         type: string
     type: object
-  core.OwnedBalance:
-    properties:
-      balance:
-        $ref: '#/definitions/bunbig.Int'
-      owner_address:
-        items:
-          type: integer
-        type: array
-      wallet_address:
-        items:
-          type: integer
-        type: array
-    type: object
-  core.OwnedItems:
-    properties:
-      items_count:
-        type: integer
-      owner_address:
-        items:
-          type: integer
-        type: array
-    type: object
   core.Transaction:
     properties:
       account:
@@ -458,15 +461,6 @@ definitions:
       total:
         type: integer
     type: object
-  core.UniqueOwners:
-    properties:
-      item_address:
-        items:
-          type: integer
-        type: array
-      owners_count:
-        type: integer
-    type: object
   http.GetInterfacesRes:
     properties:
       results:
@@ -483,6 +477,62 @@ definitions:
           $ref: '#/definitions/core.ContractOperation'
         type: array
       total:
+        type: integer
+    type: object
+  repository.Statistics:
+    properties:
+      account_count:
+        type: integer
+      account_count_by_interfaces:
+        items:
+          properties:
+            count:
+              type: integer
+            interfaces:
+              items:
+                type: string
+              type: array
+          type: object
+        type: array
+      account_count_by_status:
+        items:
+          properties:
+            count:
+              type: integer
+            status:
+              type: string
+          type: object
+        type: array
+      account_data_count:
+        type: integer
+      address_count:
+        type: integer
+      contract_interface_count:
+        type: integer
+      contract_operation_count:
+        type: integer
+      first_masterchain_block:
+        type: integer
+      last_masterchain_block:
+        type: integer
+      masterchain_block_count:
+        type: integer
+      message_count:
+        type: integer
+      message_count_by_operation:
+        items:
+          properties:
+            count:
+              type: integer
+            operation:
+              type: string
+          type: object
+        type: array
+      parsed_address_count:
+        type: integer
+      parsed_message_count:
+        type: integer
+      transaction_count:
         type: integer
     type: object
 host: anton.tools
@@ -735,6 +785,21 @@ paths:
       summary: transaction messages
       tags:
       - transaction
+  /statistics:
+    get:
+      consumes:
+      - application/json
+      description: Returns statistics on blocks, transactions, messages and accounts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.Statistics'
+      summary: statistics on all tables
+      tags:
+      - statistics
   /transactions:
     get:
       consumes:

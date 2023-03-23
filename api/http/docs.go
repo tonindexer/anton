@@ -376,6 +376,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/statistics": {
+            "get": {
+                "description": "Returns statistics on blocks, transactions, messages and accounts",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "statistics on all tables",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repository.Statistics"
+                        }
+                    }
+                }
+            }
+        },
         "/transactions": {
             "get": {
                 "description": "Returns transactions, states and messages",
@@ -644,13 +667,41 @@ const docTemplate = `{
                 "owned_balance": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/core.OwnedBalance"
+                        "type": "object",
+                        "properties": {
+                            "balance": {
+                                "$ref": "#/definitions/bunbig.Int"
+                            },
+                            "owner_address": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            },
+                            "wallet_address": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
                     }
                 },
                 "owned_items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/core.OwnedItems"
+                        "type": "object",
+                        "properties": {
+                            "items_count": {
+                                "type": "integer"
+                            },
+                            "owner_address": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
                     }
                 },
                 "owners_count": {
@@ -662,7 +713,18 @@ const docTemplate = `{
                 "unique_owners": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/core.UniqueOwners"
+                        "type": "object",
+                        "properties": {
+                            "item_address": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            },
+                            "owners_count": {
+                                "type": "integer"
+                            }
+                        }
                     }
                 },
                 "wallets": {
@@ -1005,40 +1067,6 @@ const docTemplate = `{
                 }
             }
         },
-        "core.OwnedBalance": {
-            "type": "object",
-            "properties": {
-                "balance": {
-                    "$ref": "#/definitions/bunbig.Int"
-                },
-                "owner_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "wallet_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "core.OwnedItems": {
-            "type": "object",
-            "properties": {
-                "items_count": {
-                    "type": "integer"
-                },
-                "owner_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
         "core.Transaction": {
             "type": "object",
             "properties": {
@@ -1142,20 +1170,6 @@ const docTemplate = `{
                 }
             }
         },
-        "core.UniqueOwners": {
-            "type": "object",
-            "properties": {
-                "item_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "owners_count": {
-                    "type": "integer"
-                }
-            }
-        },
         "http.GetInterfacesRes": {
             "type": "object",
             "properties": {
@@ -1180,6 +1194,92 @@ const docTemplate = `{
                     }
                 },
                 "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "repository.Statistics": {
+            "type": "object",
+            "properties": {
+                "account_count": {
+                    "type": "integer"
+                },
+                "account_count_by_interfaces": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "interfaces": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "account_count_by_status": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "status": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "account_data_count": {
+                    "type": "integer"
+                },
+                "address_count": {
+                    "type": "integer"
+                },
+                "contract_interface_count": {
+                    "type": "integer"
+                },
+                "contract_operation_count": {
+                    "type": "integer"
+                },
+                "first_masterchain_block": {
+                    "type": "integer"
+                },
+                "last_masterchain_block": {
+                    "type": "integer"
+                },
+                "masterchain_block_count": {
+                    "type": "integer"
+                },
+                "message_count": {
+                    "type": "integer"
+                },
+                "message_count_by_operation": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "operation": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "parsed_address_count": {
+                    "type": "integer"
+                },
+                "parsed_message_count": {
+                    "type": "integer"
+                },
+                "transaction_count": {
                     "type": "integer"
                 }
             }
