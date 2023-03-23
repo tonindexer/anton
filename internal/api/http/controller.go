@@ -3,7 +3,6 @@ package http
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -59,7 +58,7 @@ func unmarshalAddress(a string) (*addr.Address, error) {
 	var x = new(addr.Address)
 
 	if err := x.UnmarshalJSON([]byte(a)); err != nil {
-		return nil, errors.Wrapf(err, "unmarshal %s address", a)
+		return nil, errors.Wrapf(core.ErrInvalidArg, "unmarshal %s address (%s)", a, err.Error())
 	}
 
 	return x, nil
@@ -72,7 +71,7 @@ func unmarshalSorting(sort string) (string, error) {
 	case "ASC":
 		return sort, nil
 	default:
-		return "", fmt.Errorf("only DESC and ASC sorting available")
+		return "", errors.Wrap(core.ErrInvalidArg, "only DESC and ASC sorting available")
 	}
 }
 
@@ -86,7 +85,7 @@ func unmarshalBytes(x string) ([]byte, error) {
 	if ret, err := base64.StdEncoding.DecodeString(x); err == nil {
 		return ret, nil
 	}
-	return nil, fmt.Errorf("cannot decode bytes %s", x)
+	return nil, errors.Wrapf(core.ErrInvalidArg, "cannot decode bytes %s", x)
 }
 
 func getAddresses(ctx *gin.Context, name string) ([]*addr.Address, error) {
@@ -449,5 +448,51 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
+	ctx.IndentedJSON(http.StatusOK, ret)
+}
+
+// AggregateMessages godoc
+//	@Summary		aggregated messages
+//	@Description	Aggregates receivers and senders
+//	@Tags			transaction
+//	@Accept			json
+//	@Produce		json
+//  @Param   		address				query	string  	false	"address to aggregate by"
+//  @Param   		order_by	     	query   string 		false	"order aggregated by amount or message count"	Enums(amount, count)	default(amount)
+//  @Param   		limit	     		query   int 		false	"limit"											default(25) maximum(1000000)
+//	@Success		200		{object}	core.MessageAggregated
+//	@Router			/messages/aggregated [get]
+func (c *Controller) AggregateMessages(ctx *gin.Context) {
+	var req core.MessageAggregate
+
+	err := ctx.ShouldBindQuery(&req)
+	if err != nil {
+		paramErr(ctx, "msg_filter", err)
+		return
+	}
+	if req.Limit > 1000000 {
+		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		return
+	}
+
+	req.Address, err = unmarshalAddress(ctx.Query("address"))
+	if err != nil {
+		paramErr(ctx, "address", err)
+		return
+	}
+
+	switch req.OrderBy {
+	case "amount", "count":
+	default:
+		paramErr(ctx, "order_by", errors.Wrap(core.ErrInvalidArg, "wrong order_by argument"))
+		return
+	}
+
+	ret, err := c.svc.AggregateMessages(ctx, &req)
+	if err != nil {
+		internalErr(ctx, err)
+		return
+	}
+
 	ctx.IndentedJSON(http.StatusOK, ret)
 }

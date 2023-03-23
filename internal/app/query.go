@@ -25,4 +25,5 @@ type QueryService interface {
 
 	GetTransactions(ctx context.Context, filter *core.TransactionFilter) (*core.TransactionFiltered, error)
 	GetMessages(ctx context.Context, filter *core.MessageFilter) (*core.MessageFiltered, error)
+	AggregateMessages(ctx context.Context, req *core.MessageAggregate) (*core.MessageAggregated, error)
 }

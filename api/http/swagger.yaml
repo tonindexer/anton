@@ -338,6 +338,43 @@ definitions:
         description: 'TODO: ch enum'
         type: string
     type: object
+  core.MessageAggregated:
+    properties:
+      received_count:
+        type: integer
+      received_from_address:
+        items:
+          properties:
+            amount:
+              $ref: '#/definitions/bunbig.Int'
+            count:
+              type: integer
+            sender:
+              items:
+                type: integer
+              type: array
+          type: object
+        type: array
+      received_ton_amount:
+        $ref: '#/definitions/bunbig.Int'
+      sent_count:
+        type: integer
+      sent_to_address:
+        items:
+          properties:
+            amount:
+              $ref: '#/definitions/bunbig.Int'
+            count:
+              type: integer
+            receiver:
+              items:
+                type: integer
+              type: array
+          type: object
+        type: array
+      sent_ton_amount:
+        $ref: '#/definitions/bunbig.Int'
+    type: object
   core.MessageFiltered:
     properties:
       results:
@@ -503,8 +540,6 @@ definitions:
               type: string
           type: object
         type: array
-      account_data_count:
-        type: integer
       address_count:
         type: integer
       contract_interface_count:
@@ -528,6 +563,8 @@ definitions:
               type: string
           type: object
         type: array
+      parsed_account_count:
+        type: integer
       parsed_address_count:
         type: integer
       parsed_message_count:
@@ -783,6 +820,40 @@ paths:
           schema:
             $ref: '#/definitions/core.MessageFiltered'
       summary: transaction messages
+      tags:
+      - transaction
+  /messages/aggregated:
+    get:
+      consumes:
+      - application/json
+      description: Aggregates receivers and senders
+      parameters:
+      - description: address to aggregate by
+        in: query
+        name: address
+        type: string
+      - default: amount
+        description: order aggregated by amount or message count
+        enum:
+        - amount
+        - count
+        in: query
+        name: order_by
+        type: string
+      - default: 25
+        description: limit
+        in: query
+        maximum: 1000000
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core.MessageAggregated'
+      summary: aggregated messages
       tags:
       - transaction
   /statistics:

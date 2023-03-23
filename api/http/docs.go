@@ -376,6 +376,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/messages/aggregated": {
+            "get": {
+                "description": "Aggregates receivers and senders",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transaction"
+                ],
+                "summary": "aggregated messages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "address to aggregate by",
+                        "name": "address",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "amount",
+                            "count"
+                        ],
+                        "type": "string",
+                        "default": "amount",
+                        "description": "order aggregated by amount or message count",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 1000000,
+                        "type": "integer",
+                        "default": 25,
+                        "description": "limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/core.MessageAggregated"
+                        }
+                    }
+                }
+            }
+        },
         "/statistics": {
             "get": {
                 "description": "Returns statistics on blocks, transactions, messages and accounts",
@@ -984,6 +1034,63 @@ const docTemplate = `{
                 }
             }
         },
+        "core.MessageAggregated": {
+            "type": "object",
+            "properties": {
+                "received_count": {
+                    "type": "integer"
+                },
+                "received_from_address": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "amount": {
+                                "$ref": "#/definitions/bunbig.Int"
+                            },
+                            "count": {
+                                "type": "integer"
+                            },
+                            "sender": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                },
+                "received_ton_amount": {
+                    "$ref": "#/definitions/bunbig.Int"
+                },
+                "sent_count": {
+                    "type": "integer"
+                },
+                "sent_to_address": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "amount": {
+                                "$ref": "#/definitions/bunbig.Int"
+                            },
+                            "count": {
+                                "type": "integer"
+                            },
+                            "receiver": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                },
+                "sent_ton_amount": {
+                    "$ref": "#/definitions/bunbig.Int"
+                }
+            }
+        },
         "core.MessageFiltered": {
             "type": "object",
             "properties": {
@@ -1235,9 +1342,6 @@ const docTemplate = `{
                         }
                     }
                 },
-                "account_data_count": {
-                    "type": "integer"
-                },
                 "address_count": {
                     "type": "integer"
                 },
@@ -1272,6 +1376,9 @@ const docTemplate = `{
                             }
                         }
                     }
+                },
+                "parsed_account_count": {
+                    "type": "integer"
                 },
                 "parsed_address_count": {
                     "type": "integer"

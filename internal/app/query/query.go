@@ -71,3 +71,7 @@ func (s *Service) GetTransactions(ctx context.Context, filter *core.TransactionF
 func (s *Service) GetMessages(ctx context.Context, filter *core.MessageFilter) (*core.MessageFiltered, error) {
 	return s.txRepo.GetMessages(ctx, filter)
 }
+
+func (s *Service) AggregateMessages(ctx context.Context, req *core.MessageAggregate) (*core.MessageAggregated, error) {
+	return s.txRepo.AggregateMessages(ctx, req)
+}

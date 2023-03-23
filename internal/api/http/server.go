@@ -21,6 +21,7 @@ type QueryController interface {
 
 	GetTransactions(*gin.Context)
 	GetMessages(*gin.Context)
+	AggregateMessages(*gin.Context)
 
 	GetInterfaces(*gin.Context)
 	GetOperations(*gin.Context)
@@ -47,6 +48,7 @@ func (s *Server) RegisterRoutes(t QueryController) {
 
 	base.GET("/transactions", t.GetTransactions)
 	base.GET("/messages", t.GetMessages)
+	base.GET("/messages/aggregated", t.AggregateMessages)
 
 	base.GET("/contract/interfaces", t.GetInterfaces)
 	base.GET("/contract/operations", t.GetOperations)
