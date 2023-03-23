@@ -394,7 +394,8 @@ const docTemplate = `{
                         "type": "string",
                         "description": "address to aggregate by",
                         "name": "address",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "enum": [
@@ -405,7 +406,8 @@ const docTemplate = `{
                         "default": "amount",
                         "description": "order aggregated by amount or message count",
                         "name": "order_by",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "maximum": 1000000,

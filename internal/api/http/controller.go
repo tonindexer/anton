@@ -461,7 +461,7 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //  @Param   		address				query	string  	true	"address to aggregate by"
-//  @Param   		order_by	     	query   string 		false	"order aggregated by amount or message count"	Enums(amount, count)	default(amount)
+//  @Param   		order_by	     	query   string 		true	"order aggregated by amount or message count"	Enums(amount, count)	default(amount)
 //  @Param   		limit	     		query   int 		false	"limit"											default(25) maximum(1000000)
 //	@Success		200		{object}	core.MessageAggregated
 //	@Router			/messages/aggregated [get]

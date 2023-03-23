@@ -831,6 +831,7 @@ paths:
       - description: address to aggregate by
         in: query
         name: address
+        required: true
         type: string
       - default: amount
         description: order aggregated by amount or message count
@@ -839,6 +840,7 @@ paths:
         - count
         in: query
         name: order_by
+        required: true
         type: string
       - default: 25
         description: limit
