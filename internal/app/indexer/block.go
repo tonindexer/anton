@@ -139,28 +139,32 @@ func (s *Service) processMaster(ctx context.Context, master *ton.BlockIDExt) err
 	return nil
 }
 
-func (s *Service) fetchBlocksLoop(workchain int32, shard int64, fromBlock uint32) {
+func (s *Service) processMasterID(ctx context.Context, workchain int32, shard int64, seq uint32) bool {
+	master, err := s.api.LookupBlock(ctx, workchain, shard, seq)
+	if errors.Is(err, ton.ErrBlockNotFound) || (err != nil && strings.Contains(err.Error(), "block is not applied")) {
+		return false
+	}
+	if err != nil {
+		log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot lookup masterchain block")
+		return false
+	}
+
+	if err := s.processMaster(ctx, master); err != nil {
+		if strings.Contains(err.Error(), "block is not applied") {
+			return false
+		}
+		log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot process masterchain block")
+		return false
+	}
+
+	return true
+}
+
+func (s *Service) fetchBlocksLoop(ctx context.Context, workchain int32, shard int64, fromBlock uint32) {
 	defer s.wg.Done()
 
-	log.Info().Int32("workchain", workchain).Int64("shard", shard).Uint32("from_block", fromBlock).Msg("starting")
-
 	for seq := fromBlock; s.running(); time.Sleep(s.cfg.FetchBlockPeriod) {
-		ctx := context.Background()
-
-		master, err := s.api.LookupBlock(ctx, workchain, shard, seq)
-		if errors.Is(err, ton.ErrBlockNotFound) || (err != nil && strings.Contains(err.Error(), "block is not applied")) {
-			continue
-		}
-		if err != nil {
-			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot lookup masterchain block")
-			continue
-		}
-
-		if err := s.processMaster(ctx, master); err != nil {
-			if strings.Contains(err.Error(), "block is not applied") {
-				continue
-			}
-			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot process masterchain block")
+		if !s.processMasterID(ctx, workchain, shard, seq) {
 			continue
 		}
 

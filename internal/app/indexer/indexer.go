@@ -115,7 +115,9 @@ func (s *Service) Start() error {
 	}
 
 	s.wg.Add(1)
-	go s.fetchBlocksLoop(master.Workchain, master.Shard, fromBlock)
+	go s.fetchBlocksLoop(ctx, master.Workchain, master.Shard, fromBlock)
+
+	log.Info().Int32("workchain", master.Workchain).Int64("shard", master.Shard).Uint32("from_block", fromBlock).Msg("started")
 
 	s.mx.Lock()
 	s.run = true
