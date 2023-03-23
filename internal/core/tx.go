@@ -181,7 +181,7 @@ type MessageFiltered struct {
 type MessageAggregate struct {
 	Address *addr.Address
 
-	OrderBy string `form:"order"` // amount / count
+	OrderBy string `form:"order_by"` // amount / count
 	Limit   int    `form:"limit"`
 }
 
