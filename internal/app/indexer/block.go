@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -155,16 +156,19 @@ func (s *Service) fetchBlocksLoop(workchain int32, shard int64, fromBlock uint32
 			continue
 		}
 
+		if err := s.processMaster(ctx, master); err != nil {
+			if strings.Contains(err.Error(), "block is not applied") {
+				continue
+			}
+			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot process masterchain block")
+			continue
+		}
+
 		lvl := log.Debug()
 		if seq%100 == 0 {
 			lvl = log.Info()
 		}
 		lvl.Uint32("master_seq", seq).Msg("new masterchain block")
-
-		if err := s.processMaster(ctx, master); err != nil {
-			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot process masterchain block")
-			continue
-		}
 
 		seq++
 	}
