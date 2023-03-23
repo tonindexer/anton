@@ -141,6 +141,7 @@ func (s *Service) processMaster(ctx context.Context, master *ton.BlockIDExt) err
 func (s *Service) processMasterID(ctx context.Context, workchain int32, shard int64, seq uint32) bool {
 	master, err := s.api.LookupBlock(ctx, workchain, shard, seq)
 	if errors.Is(err, ton.ErrBlockNotFound) {
+		log.Debug().Err(err).Int32("workchain", workchain).Int64("shard", shard).Uint32("master_seq", seq).Msg("cannot lookup masterchain block")
 		return false
 	}
 	if err != nil {
