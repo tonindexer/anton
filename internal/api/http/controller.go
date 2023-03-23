@@ -46,6 +46,9 @@ func paramErr(ctx *gin.Context, param string, err error) {
 }
 
 func internalErr(ctx *gin.Context, err error) {
+	if errors.Is(err, core.ErrInvalidArg) {
+		ctx.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
 	log.Error().Str("path", ctx.FullPath()).Err(err).Msg("internal server error")
 	ctx.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 }
@@ -457,7 +460,7 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 //	@Tags			transaction
 //	@Accept			json
 //	@Produce		json
-//  @Param   		address				query	string  	false	"address to aggregate by"
+//  @Param   		address				query	string  	true	"address to aggregate by"
 //  @Param   		order_by	     	query   string 		false	"order aggregated by amount or message count"	Enums(amount, count)	default(amount)
 //  @Param   		limit	     		query   int 		false	"limit"											default(25) maximum(1000000)
 //	@Success		200		{object}	core.MessageAggregated
