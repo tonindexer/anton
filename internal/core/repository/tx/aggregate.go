@@ -43,7 +43,7 @@ func (r *Repository) AggregateMessages(ctx context.Context, req *core.MessageAgg
 				ColumnExpr("amount as sent_amount").
 				Where("dst_address = ?", req.Address)).
 		Group("src_address").
-		Order(req.OrderBy).
+		Order(req.OrderBy+" DESC").
 		Limit(req.Limit).
 		Scan(ctx, &res.RecvByAddress)
 	if err != nil {
@@ -60,7 +60,7 @@ func (r *Repository) AggregateMessages(ctx context.Context, req *core.MessageAgg
 				ColumnExpr("amount as sent_amount").
 				Where("src_address = ?", req.Address)).
 		Group("dst_address").
-		Order(req.OrderBy).
+		Order(req.OrderBy+" DESC").
 		Limit(req.Limit).
 		Scan(ctx, &res.SentByAddress)
 	if err != nil {
