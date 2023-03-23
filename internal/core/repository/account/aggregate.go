@@ -104,6 +104,10 @@ func (r *Repository) AggregateAccountStates(ctx context.Context, req *core.Accou
 		interfaces []abi.ContractName
 	)
 
+	if req.MinterAddress == nil {
+		return nil, errors.Wrap(core.ErrInvalidArg, "minter address must be set")
+	}
+
 	err := r.ch.NewSelect().
 		Model((*core.AccountData)(nil)).
 		ColumnExpr("argMax(types, last_tx_lt) as interfaces").

@@ -494,6 +494,41 @@ func TestGraphAggregateAccounts(t *testing.T) {
 	})
 }
 
+func TestGraphAggregateMessages(t *testing.T) {
+	initDB()
+
+	t.Run("aggregate sender and receivers", func(t *testing.T) {
+		res, err := txRepo.AggregateMessages(ctx, &core.MessageAggregate{
+			Address: &accWallet.Address,
+			OrderBy: "count",
+			Limit:   25,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if res.RecvCount != 1 {
+			t.Fatalf("expected: %d, got: %d", 1, res.RecvCount)
+		}
+		if res.RecvAmount.ToUInt64() != 0 {
+			t.Fatalf("expected: %d, got: %d", 0, res.RecvAmount.ToUInt64())
+		}
+		if res.SentAmount.ToUInt64() != msgOutWallet.Amount.ToUInt64() {
+			t.Fatalf("expected: %d, got: %d", msgOutWallet.Amount.ToUInt64(), res.SentAmount.ToUInt64())
+		}
+		if res.SentCount != 1 {
+			t.Fatalf("expected: %d, got: %d", 1, res.SentCount)
+		}
+
+		j, err := json.Marshal(res)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Logf("%s", string(j))
+	})
+}
+
 func TestGraphFilterMessages(t *testing.T) {
 	initDB()
 

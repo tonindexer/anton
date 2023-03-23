@@ -178,10 +178,40 @@ type MessageFiltered struct {
 	Rows  []*Message `json:"results"`
 }
 
+type MessageAggregate struct {
+	Address *addr.Address
+
+	OrderBy string `form:"order"` // amount / count
+	Limit   int    `form:"limit"`
+}
+
+type MessageAggregated struct {
+	RecvCount  int         `json:"received_count"`
+	RecvAmount *bunbig.Int `json:"received_ton_amount"`
+
+	SentCount  int         `json:"sent_count"`
+	SentAmount *bunbig.Int `json:"sent_ton_amount"`
+
+	RecvByAddress []struct {
+		Sender *addr.Address `ch:"type:String" json:"sender"`
+		Amount *bunbig.Int   `json:"amount"`
+		Count  int           `json:"count"`
+	} `json:"received_from_address"`
+
+	SentByAddress []struct {
+		Receiver *addr.Address `ch:"type:String" json:"receiver"`
+		Amount   *bunbig.Int   `json:"amount"`
+		Count    int           `json:"count"`
+	} `json:"sent_to_address"`
+}
+
 type TxRepository interface {
 	AddTransactions(ctx context.Context, tx bun.Tx, transactions []*Transaction) error
 	AddMessages(ctx context.Context, tx bun.Tx, messages []*Message) error
 	AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads []*MessagePayload) error
+
 	GetTransactions(ctx context.Context, filter *TransactionFilter) (*TransactionFiltered, error)
 	GetMessages(ctx context.Context, filter *MessageFilter) (*MessageFiltered, error)
+
+	AggregateMessages(ctx context.Context, req *MessageAggregate) (*MessageAggregated, error)
 }
