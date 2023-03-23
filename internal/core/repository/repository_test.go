@@ -736,6 +736,22 @@ func TestGraphFilterBlocks(t *testing.T) {
 	})
 }
 
+func TestGetStatistics(t *testing.T) {
+	initDB()
+
+	stats, err := repository.GetStatistics(ctx, db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	j, err := json.Marshal(stats)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("%s", string(j))
+}
+
 func Example_blockRepo_GetBlocks() {
 	var wc int32 = -1
 
