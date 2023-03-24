@@ -217,7 +217,8 @@ func joinLatestAccountData(q *bun.SelectQuery) *bun.SelectQuery {
 			"\"account_state__state_data\".\"mintable\" AS \"account_state__state_data__mintable\", " +
 			"\"account_state__state_data\".\"admin_address\" AS \"account_state__state_data__admin_address\", " +
 			"\"account_state__state_data\".\"jetton_balance\" AS \"account_state__state_data__jetton_balance\", " +
-			"\"account_state__state_data\".\"errors\" AS \"account_state__state_data__errors\"",
+			"\"account_state__state_data\".\"errors\" AS \"account_state__state_data__errors\", " +
+			"\"account_state__state_data\".\"updated_at\" AS \"account_state__state_data__updated_at\"",
 	)
 
 	q = q.Join("LEFT JOIN account_data AS account_state__state_data ON " +

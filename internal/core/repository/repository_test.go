@@ -212,8 +212,8 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 			t.Fatal(err)
 		}
 		ad := accDataItem
-		ad.TotalSupply, ad.TotalSupply, sd.ContentImageData, sd.Errors =
-			bunbig.FromInt64(0), bunbig.FromInt64(0), nil, nil
+		ad.TotalSupply, ad.TotalSupply, sd.ContentImageData, sd.Errors, ad.UpdatedAt =
+			bunbig.FromInt64(0), bunbig.FromInt64(0), nil, nil, ad.UpdatedAt.Local()
 		if !reflect.DeepEqual(sd, &ad) {
 			t.Fatalf("wrong account data, expected: %+v, got: %+v", ad, sd)
 		}
@@ -245,7 +245,7 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 			t.Fatal(err)
 		}
 		acc := accWallet
-		s.GetMethodHashes = nil
+		s.GetMethodHashes, acc.UpdatedAt = nil, acc.UpdatedAt.Local()
 		if !reflect.DeepEqual(s, &acc) {
 			t.Fatalf("wrong account, expected: %+v, got: %+v", acc, s)
 		}
@@ -386,6 +386,9 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 		}
 		if len(ret) != 1 {
 			t.Fatalf("wrong len, expected: %d, got: %d", 1, len(ret))
+		}
+		if !reflect.DeepEqual(acc.StateData, ret[0].StateData) {
+			t.Fatalf("wrong account data, expected: %+v, got: %+v", acc.StateData, ret[0].StateData)
 		}
 		if !reflect.DeepEqual(&acc, ret[0]) {
 			t.Fatalf("wrong account, expected: %+v, got: %+v", acc, ret[0])

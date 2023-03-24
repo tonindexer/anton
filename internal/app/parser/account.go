@@ -112,6 +112,7 @@ func (s *Service) ParseAccountData(ctx context.Context, b *ton.BlockIDExt, acc *
 	data.LastTxHash = acc.LastTxHash
 	data.Balance = acc.Balance
 	data.Types = types
+	data.UpdatedAt = acc.UpdatedAt
 
 	getters := []func(context.Context, *ton.BlockIDExt, *address.Address, []abi.ContractName, *core.AccountData) bool{
 		s.getAccountDataNFT,

@@ -105,6 +105,7 @@ var (
 		LastTxLT:   randLT(),
 		LastTxHash: randBytes(32),
 		// Types:      []abi.ContractName{"wallet"},
+		UpdatedAt: time.Unix(randTs(), 0).UTC(),
 	}
 
 	accWalletOld = core.AccountState{
@@ -115,6 +116,7 @@ var (
 		LastTxLT:   accWalletOlder.LastTxLT + 1e3,
 		LastTxHash: randBytes(32),
 		// Types:      []abi.ContractName{"wallet"},
+		UpdatedAt: time.Unix(randTs(), 0).UTC(),
 	}
 
 	accWallet = core.AccountState{
@@ -134,6 +136,8 @@ var (
 		DataHash:  randBytes(32),
 
 		// Types: []abi.ContractName{"wallet"},
+
+		UpdatedAt: time.Unix(randTs(), 0).UTC(),
 	}
 
 	addrItem = *randAddr()
@@ -156,6 +160,8 @@ var (
 
 		// Types: []abi.ContractName{"item"},
 		GetMethodHashes: []uint32{abi.MethodNameHash("get_item_data")},
+
+		UpdatedAt: time.Unix(randTs(), 0).UTC(),
 	}
 
 	addrItemMinter = *randAddr()
@@ -178,6 +184,8 @@ var (
 
 		// Types: []abi.ContractName{"item"},
 		GetMethodHashes: []uint32{abi.MethodNameHash("get_collection_data")},
+
+		UpdatedAt: time.Unix(randTs(), 0).UTC(),
 	}
 
 	addrNoState = randAddr()
@@ -189,6 +197,7 @@ var (
 		Balance:    bunbig.FromInt64(13),
 		LastTxLT:   randLT(),
 		LastTxHash: randBytes(32),
+		UpdatedAt:  time.Unix(randTs(), 0).UTC(),
 	}
 
 	accDataWallet = core.AccountData{
@@ -197,6 +206,7 @@ var (
 		LastTxHash: accWallet.LastTxHash,
 		Balance:    accWallet.Balance,
 		Types:      []abi.ContractName{"wallet"},
+		UpdatedAt:  time.Unix(randTs(), 0).UTC(),
 	}
 
 	ifaceItem = core.ContractInterface{
@@ -232,6 +242,7 @@ var (
 			ItemIndex: bunbig.FromInt64(42),
 		},
 		FTWalletData: core.FTWalletData{JettonBalance: accDataItemJetBalance},
+		UpdatedAt:    time.Unix(randTs(), 0).UTC(),
 	}
 
 	accDataMinter = core.AccountData{
@@ -241,6 +252,7 @@ var (
 		Balance:      accItemMinter.Balance,
 		Types:        []abi.ContractName{abi.JettonMinter, abi.NFTCollection},
 		OwnerAddress: randAddr(),
+		UpdatedAt:    time.Unix(randTs(), 0).UTC(),
 	}
 
 	msgExtWallet = core.Message{

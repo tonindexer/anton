@@ -45,7 +45,7 @@ type Transaction struct {
 	OrigStatus AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"orig_status"`
 	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"end_status"`
 
-	CreatedAt time.Time `bun:"type:timestamp,notnull" json:"created_at"`
+	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
 	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
 }
 
@@ -92,7 +92,7 @@ type Message struct {
 	StateInitCode []byte `bun:"type:bytea" json:"state_init_code,omitempty"`
 	StateInitData []byte `bun:"type:bytea" json:"state_init_data,omitempty"`
 
-	CreatedAt time.Time `bun:"type:timestamp,notnull" json:"created_at"`
+	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
 	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
 
 	Known bool `ch:"-" bun:"-" json:"-"`
@@ -122,7 +122,7 @@ type MessagePayload struct {
 	// can be used to show all jetton or nft item transfers
 	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
 
-	CreatedAt time.Time `bun:"type:timestamp,notnull" json:"created_at"`
+	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
 	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
 
 	Error string `json:"error,omitempty"`

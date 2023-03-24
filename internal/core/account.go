@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bunbig"
@@ -50,6 +51,8 @@ type AccountState struct {
 	DataHash  []byte `bun:"type:bytea" json:"data_hash,omitempty"`
 
 	GetMethodHashes []uint32 `ch:"type:Array(UInt32)" bun:",array" json:"get_method_hashes"`
+
+	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
 }
 
 type NFTCollectionData struct {
@@ -118,6 +121,8 @@ type AccountData struct {
 	FTWalletData
 
 	Errors []string `json:"error,omitempty"`
+
+	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
 }
 
 type AccountStateFilter struct {
