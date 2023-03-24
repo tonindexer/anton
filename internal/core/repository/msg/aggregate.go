@@ -1,4 +1,4 @@
-package tx
+package msg
 
 import (
 	"context"
@@ -6,10 +6,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/aggregate"
 )
 
-func (r *Repository) AggregateMessages(ctx context.Context, req *core.MessageAggregate) (*core.MessageAggregated, error) {
-	var res core.MessageAggregated
+func (r *Repository) AggregateMessages(ctx context.Context, req *aggregate.MessagesReq) (*aggregate.MessagesRes, error) {
+	var res aggregate.MessagesRes
 
 	if req.Address == nil {
 		return nil, errors.Wrap(core.ErrInvalidArg, "address must be set")

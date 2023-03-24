@@ -17,7 +17,11 @@ import (
 	"github.com/iam047801/tonidx/internal/app/indexer"
 	"github.com/iam047801/tonidx/internal/app/parser"
 	"github.com/iam047801/tonidx/internal/core/repository"
+	"github.com/iam047801/tonidx/internal/core/repository/account"
+	"github.com/iam047801/tonidx/internal/core/repository/block"
 	"github.com/iam047801/tonidx/internal/core/repository/contract"
+	"github.com/iam047801/tonidx/internal/core/repository/msg"
+	"github.com/iam047801/tonidx/internal/core/repository/tx"
 )
 
 func initDB(ctx context.Context, conn *repository.DB) error {
@@ -29,8 +33,26 @@ func initDB(ctx context.Context, conn *repository.DB) error {
 	}
 
 	log.Info().Msg("creating tables")
-	if err := repository.CreateTablesDB(ctx, conn); err != nil {
-		return errors.Wrap(err, "cannot create tables")
+
+	err = block.CreateTables(ctx, conn.CH, conn.PG)
+	if err != nil {
+		return err
+	}
+	err = account.CreateTables(ctx, conn.CH, conn.PG)
+	if err != nil {
+		return err
+	}
+	err = tx.CreateTables(ctx, conn.CH, conn.PG)
+	if err != nil {
+		return err
+	}
+	err = msg.CreateTables(ctx, conn.CH, conn.PG)
+	if err != nil {
+		return err
+	}
+	err = contract.CreateTables(ctx, conn.PG)
+	if err != nil {
+		return err
 	}
 
 	log.Info().Msg("inserting known contract interfaces")

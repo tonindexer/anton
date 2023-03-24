@@ -13,6 +13,7 @@ import (
 
 	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/filter"
 )
 
 func (s *Service) messageAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.Message, outMsgMap map[uint64]*core.Message) (bool, error) {
@@ -22,7 +23,7 @@ func (s *Service) messageAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.M
 		return true, nil
 	}
 
-	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash})
+	res, err := s.msgRepo.FilterMessages(ctx, &filter.MessagesReq{DBTx: &tx, Hash: in.Hash})
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
 	}
@@ -88,7 +89,7 @@ func (s *Service) messagePayloadAlreadyKnown(ctx context.Context, tx bun.Tx, in 
 		return true, nil
 	}
 
-	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash, WithPayload: true})
+	res, err := s.msgRepo.FilterMessages(ctx, &filter.MessagesReq{DBTx: &tx, Hash: in.Hash, WithPayload: true})
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
 	}
@@ -107,7 +108,7 @@ func (s *Service) getLatestAccount(ctx context.Context, a addr.Address, accountM
 
 	defer timeTrack(time.Now(), fmt.Sprintf("getLatestAccount(%s)", a.Base64()))
 
-	res, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+	res, err := s.accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
 		Addresses:   []*addr.Address{&a},
 		LatestState: true,
 		WithData:    true,

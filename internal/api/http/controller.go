@@ -13,6 +13,8 @@ import (
 	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/aggregate"
+	"github.com/iam047801/tonidx/internal/core/filter"
 )
 
 // @title      		tonidx
@@ -113,7 +115,7 @@ func getAddresses(ctx *gin.Context, name string) ([]*addr.Address, error) {
 //	@Tags			statistics
 //	@Accept			json
 //	@Produce		json
-//	@Success		200		{object}		repository.Statistics
+//	@Success		200		{object}		aggregate.Statistics
 //	@Router			/statistics [get]
 func (c *Controller) GetStatistics(ctx *gin.Context) {
 	ret, err := c.svc.GetStatistics(ctx)
@@ -181,41 +183,41 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 //  @Param			order				query	string	false	"order by seq_no"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 	false	"start from this seq_no"
 //  @Param   		limit	     		query   int 	false	"limit"						default(3) maximum(100)
-//	@Success		200		{object}	core.BlockFiltered
+//	@Success		200		{object}	filter.BlocksRes
 //	@Router			/blocks [get]
 func (c *Controller) GetBlocks(ctx *gin.Context) {
-	var filter core.BlockFilter
+	var req filter.BlocksReq
 
-	err := ctx.ShouldBindQuery(&filter)
+	err := ctx.ShouldBindQuery(&req)
 	if err != nil {
 		paramErr(ctx, "block_filter", err)
 		return
 	}
-	if filter.Limit > 100 {
+	if req.Limit > 100 {
 		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
 	if mw := int32(-1); ctx.Query("workchain") == "" {
-		filter.Workchain = &mw
+		req.Workchain = &mw
 	}
 
-	filter.WithShards = true
-	if filter.WithTransactions {
-		filter.WithTransactions = true
-		filter.WithTransactionAccountState = true
-		filter.WithTransactionAccountData = true
-		filter.WithTransactionMessages = true
-		filter.WithTransactionMessagePayloads = true
+	req.WithShards = true
+	if req.WithTransactions {
+		req.WithTransactions = true
+		req.WithTransactionAccountState = true
+		req.WithTransactionAccountData = true
+		req.WithTransactionMessages = true
+		req.WithTransactionMessagePayloads = true
 	}
 
-	filter.Order, err = unmarshalSorting(filter.Order)
+	req.Order, err = unmarshalSorting(req.Order)
 	if err != nil {
 		paramErr(ctx, "order", err)
 		return
 	}
 
-	ret, err := c.svc.GetBlocks(ctx, &filter)
+	ret, err := c.svc.FilterBlocks(ctx, &req)
 	if err != nil {
 		internalErr(ctx, err)
 		return
@@ -238,46 +240,46 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 //  @Param			order				query	string		false	"order by last_tx_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this last_tx_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
-//	@Success		200		{object}	core.AccountStateFiltered
+//	@Success		200		{object}	filter.AccountStatesRes
 //	@Router			/accounts [get]
 func (c *Controller) GetAccountStates(ctx *gin.Context) {
-	var filter core.AccountStateFilter
+	var req filter.AccountStatesReq
 
-	err := ctx.ShouldBindQuery(&filter)
+	err := ctx.ShouldBindQuery(&req)
 	if err != nil {
 		paramErr(ctx, "account_filter", err)
 		return
 	}
-	if filter.Limit > 10000 {
+	if req.Limit > 10000 {
 		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
-	filter.WithData = true
+	req.WithData = true
 
-	filter.Addresses, err = getAddresses(ctx, "address")
+	req.Addresses, err = getAddresses(ctx, "address")
 	if err != nil {
 		paramErr(ctx, "address", err)
 		return
 	}
-	filter.OwnerAddress, err = unmarshalAddress(ctx.Query("owner_address"))
+	req.OwnerAddress, err = unmarshalAddress(ctx.Query("owner_address"))
 	if err != nil {
 		paramErr(ctx, "owner_address", err)
 		return
 	}
-	filter.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
+	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
 	if err != nil {
 		paramErr(ctx, "minter_address", err)
 		return
 	}
 
-	filter.Order, err = unmarshalSorting(filter.Order)
+	req.Order, err = unmarshalSorting(req.Order)
 	if err != nil {
 		paramErr(ctx, "order", err)
 		return
 	}
 
-	ret, err := c.svc.GetAccountStates(ctx, &filter)
+	ret, err := c.svc.FilterAccountStates(ctx, &req)
 	if err != nil {
 		internalErr(ctx, err)
 		return
@@ -294,10 +296,10 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 //	@Produce		json
 //  @Param   		minter_address		query	string  	true	"NFT collection or FT master address"
 //  @Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
-//	@Success		200		{object}	core.AccountStateAggregated
+//	@Success		200		{object}	aggregate.AccountStatesRes
 //	@Router			/accounts/aggregated [get]
 func (c *Controller) AggregateAccountStates(ctx *gin.Context) {
-	var req core.AccountStateAggregate
+	var req aggregate.AccountStatesReq
 
 	err := ctx.ShouldBindQuery(&req)
 	if err != nil {
@@ -337,50 +339,50 @@ func (c *Controller) AggregateAccountStates(ctx *gin.Context) {
 //  @Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
 //  @Param   		limit	     		query   int 		false	"limit"							default(3) maximum(10000)
-//	@Success		200		{object}	core.TransactionFiltered
+//	@Success		200		{object}	filter.TransactionsRes
 //	@Router			/transactions [get]
 func (c *Controller) GetTransactions(ctx *gin.Context) {
-	var filter core.TransactionFilter
+	var req filter.TransactionsReq
 
-	err := ctx.ShouldBindQuery(&filter)
+	err := ctx.ShouldBindQuery(&req)
 	if err != nil {
 		paramErr(ctx, "tx_filter", err)
 		return
 	}
-	if filter.Limit > 10000 {
+	if req.Limit > 10000 {
 		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
-	filter.Hash, err = unmarshalBytes(ctx.Query("hash"))
+	req.Hash, err = unmarshalBytes(ctx.Query("hash"))
 	if err != nil {
 		paramErr(ctx, "hash", err)
 		return
 	}
-	filter.InMsgHash, err = unmarshalBytes(ctx.Query("in_msg_hash"))
+	req.InMsgHash, err = unmarshalBytes(ctx.Query("in_msg_hash"))
 	if err != nil {
 		paramErr(ctx, "in_msg_hash", err)
 		return
 	}
 
-	filter.WithAccountState = true
-	filter.WithAccountData = true
-	filter.WithMessages = true
-	filter.WithMessagePayloads = true
+	req.WithAccountState = true
+	req.WithAccountData = true
+	req.WithMessages = true
+	req.WithMessagePayloads = true
 
-	filter.Addresses, err = getAddresses(ctx, "address")
+	req.Addresses, err = getAddresses(ctx, "address")
 	if err != nil {
 		paramErr(ctx, "address", err)
 		return
 	}
 
-	filter.Order, err = unmarshalSorting(filter.Order)
+	req.Order, err = unmarshalSorting(req.Order)
 	if err != nil {
 		paramErr(ctx, "order", err)
 		return
 	}
 
-	ret, err := c.svc.GetTransactions(ctx, &filter)
+	ret, err := c.svc.FilterTransactions(ctx, &req)
 	if err != nil {
 		internalErr(ctx, err)
 		return
@@ -404,51 +406,51 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 //  @Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this created_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
-//	@Success		200		{object}	core.MessageFiltered
+//	@Success		200		{object}	filter.MessagesRes
 //	@Router			/messages [get]
 func (c *Controller) GetMessages(ctx *gin.Context) {
-	var filter core.MessageFilter
+	var req filter.MessagesReq
 
-	err := ctx.ShouldBindQuery(&filter)
+	err := ctx.ShouldBindQuery(&req)
 	if err != nil {
 		paramErr(ctx, "msg_filter", err)
 		return
 	}
-	if filter.Limit > 10000 {
+	if req.Limit > 10000 {
 		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
-	filter.Hash, err = unmarshalBytes(ctx.Query("hash"))
+	req.Hash, err = unmarshalBytes(ctx.Query("hash"))
 	if err != nil {
 		paramErr(ctx, "hash", err)
 		return
 	}
-	filter.SrcAddresses, err = getAddresses(ctx, "src_address")
+	req.SrcAddresses, err = getAddresses(ctx, "src_address")
 	if err != nil {
 		paramErr(ctx, "src_address", err)
 		return
 	}
-	filter.DstAddresses, err = getAddresses(ctx, "dst_address")
+	req.DstAddresses, err = getAddresses(ctx, "dst_address")
 	if err != nil {
 		paramErr(ctx, "dst_address", err)
 		return
 	}
-	filter.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
+	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
 	if err != nil {
 		paramErr(ctx, "minter_address", err)
 		return
 	}
 
-	filter.WithPayload = true
+	req.WithPayload = true
 
-	filter.Order, err = unmarshalSorting(filter.Order)
+	req.Order, err = unmarshalSorting(req.Order)
 	if err != nil {
 		paramErr(ctx, "order", err)
 		return
 	}
 
-	ret, err := c.svc.GetMessages(ctx, &filter)
+	ret, err := c.svc.FilterMessages(ctx, &req)
 	if err != nil {
 		internalErr(ctx, err)
 		return
@@ -465,10 +467,10 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 //  @Param   		address				query	string  	true	"address to aggregate by"
 //  @Param   		order_by	     	query   string 		true	"order aggregated by amount or message count"	Enums(amount, count)	default(amount)
 //  @Param   		limit	     		query   int 		false	"limit"											default(25) maximum(1000000)
-//	@Success		200		{object}	core.MessageAggregated
+//	@Success		200		{object}	aggregate.MessagesRes
 //	@Router			/messages/aggregated [get]
 func (c *Controller) AggregateMessages(ctx *gin.Context) {
-	var req core.MessageAggregate
+	var req aggregate.MessagesReq
 
 	err := ctx.ShouldBindQuery(&req)
 	if err != nil {

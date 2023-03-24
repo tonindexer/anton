@@ -8,9 +8,10 @@ import (
 
 	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/repository"
 )
 
-var _ core.ContractRepository = (*Repository)(nil)
+var _ repository.Contract = (*Repository)(nil)
 
 type Repository struct {
 	pg         *bun.DB

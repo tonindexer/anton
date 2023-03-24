@@ -3,24 +3,24 @@ package block
 import (
 	"context"
 	"database/sql"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/repository"
 )
 
-var _ core.BlockRepository = (*Repository)(nil)
+var _ repository.Block = (*Repository)(nil)
 
 type Repository struct {
 	ch *ch.DB
 	pg *bun.DB
 }
 
-func NewRepository(_ch *ch.DB, _pg *bun.DB) *Repository {
-	return &Repository{ch: _ch, pg: _pg}
+func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
+	return &Repository{ch: ck, pg: pg}
 }
 
 func createIndexes(ctx context.Context, pgDB *bun.DB) error {
@@ -57,6 +57,21 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	return createIndexes(ctx, pgDB)
 }
 
+func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Block) error {
+	if len(info) == 0 {
+		return nil
+	}
+	_, err := tx.NewInsert().Model(&info).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = r.ch.NewInsert().Model(&info).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *Repository) GetLastMasterBlock(ctx context.Context) (*core.Block, error) {
 	ret := new(core.Block)
 
@@ -73,133 +88,4 @@ func (r *Repository) GetLastMasterBlock(ctx context.Context) (*core.Block, error
 	}
 
 	return ret, nil
-}
-
-func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Block) error {
-	if len(info) == 0 {
-		return nil
-	}
-	_, err := tx.NewInsert().Model(&info).Exec(ctx)
-	if err != nil {
-		return err
-	}
-	_, err = r.ch.NewInsert().Model(&info).Exec(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func transactionsLoad(q *bun.SelectQuery, prefix string, f *core.BlockFilter) *bun.SelectQuery {
-	q = q.Relation(prefix + "Transactions")
-	if f.WithTransactionAccountState {
-		q = q.Relation(prefix+"Transactions.Account", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.ExcludeColumn("code", "data") // TODO: optional
-		})
-		if f.WithTransactionAccountData {
-			q = q.Relation(prefix + "Transactions.Account.StateData")
-		}
-	}
-	if f.WithTransactionMessages {
-		q = q.
-			Relation(prefix + "Transactions.InMsg").
-			Relation(prefix + "Transactions.OutMsg")
-		if f.WithTransactionMessagePayloads {
-			q = q.
-				Relation(prefix + "Transactions.InMsg.Payload").
-				Relation(prefix + "Transactions.OutMsg.Payload")
-		}
-	}
-	return q
-}
-
-func (r *Repository) filterBlocks(ctx context.Context, f *core.BlockFilter) (ret []*core.Block, err error) {
-	q := r.pg.NewSelect().Model(&ret)
-
-	if f.WithShards {
-		q = q.Relation("Shards")
-		if f.WithTransactions {
-			q = transactionsLoad(q, "Shards.", f)
-		}
-	}
-	if f.WithTransactions {
-		q = transactionsLoad(q, "", f)
-	}
-
-	if f.Workchain != nil {
-		q = q.Where("workchain = ?", *f.Workchain)
-	}
-	if f.Shard != nil {
-		q = q.Where("shard = ?", *f.Shard)
-	}
-	if f.SeqNo != nil {
-		q = q.Where("seq_no = ?", *f.SeqNo)
-	}
-
-	if len(f.FileHash) > 0 {
-		q = q.Where("file_hash = ?", f.FileHash)
-	}
-
-	if f.AfterSeqNo != nil {
-		if f.Order == "ASC" {
-			q = q.Where("seq_no > ?", f.AfterSeqNo)
-		} else {
-			q = q.Where("seq_no < ?", f.AfterSeqNo)
-		}
-	}
-
-	if f.Order != "" {
-		q = q.Order("seq_no " + strings.ToUpper(f.Order))
-	}
-
-	if f.Limit == 0 {
-		f.Limit = 3
-	}
-	q = q.Limit(f.Limit)
-
-	err = q.Scan(ctx)
-	return ret, err
-}
-
-func (r *Repository) countBlocks(ctx context.Context, f *core.BlockFilter) (int, error) {
-	q := r.ch.NewSelect().
-		Model((*core.Block)(nil))
-
-	if f.Workchain != nil {
-		q = q.Where("workchain = ?", *f.Workchain)
-	}
-	if f.Shard != nil {
-		q = q.Where("shard = ?", *f.Shard)
-	}
-	if f.SeqNo != nil {
-		q = q.Where("seq_no = ?", *f.SeqNo)
-	}
-
-	if len(f.FileHash) > 0 {
-		q = q.Where("file_hash = ?", f.FileHash)
-	}
-
-	return q.Count(ctx)
-}
-
-func (r *Repository) GetBlocks(ctx context.Context, f *core.BlockFilter) (*core.BlockFiltered, error) {
-	var (
-		res = new(core.BlockFiltered)
-		err error
-	)
-
-	res.Rows, err = r.filterBlocks(ctx, f)
-	if err != nil {
-		return res, err
-	}
-	if len(res.Rows) == 0 {
-		return res, nil
-	}
-
-	res.Total, err = r.countBlocks(ctx, f)
-	if err != nil {
-		return res, err
-	}
-
-	return res, nil
 }

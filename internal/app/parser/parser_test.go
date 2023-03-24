@@ -23,7 +23,7 @@ func testService(t *testing.T) *Service {
 		return _testService
 	}
 
-	db, err := repository.ConnectDB(ctx,
+	bd, err := repository.ConnectDB(ctx,
 		"clickhouse://localhost:9000/default?sslmode=disable",
 		"postgres://user:pass@localhost:5432/default?sslmode=disable")
 	if err != nil {
@@ -34,7 +34,7 @@ func testService(t *testing.T) *Service {
 		IPPort:    "135.181.177.59:53312",
 		PubKeyB64: "aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=",
 	}
-	s, err := NewService(context.Background(), &app.ParserConfig{DB: db, Servers: []*app.ServerAddr{&server}})
+	s, err := NewService(context.Background(), &app.ParserConfig{DB: bd, Servers: []*app.ServerAddr{&server}})
 	if err != nil {
 		t.Fatal(err)
 	}

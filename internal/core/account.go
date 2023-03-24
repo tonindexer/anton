@@ -125,61 +125,7 @@ type AccountData struct {
 	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
 }
 
-type AccountStateFilter struct {
-	Addresses   []*addr.Address // `form:"addresses"`
-	LatestState bool            `form:"latest"`
-
-	// contract data filter
-	WithData      bool
-	ContractTypes []abi.ContractName `form:"interface"`
-	OwnerAddress  *addr.Address      // `form:"owner_address"`
-	MinterAddress *addr.Address      // `form:"minter_address"`
-
-	Order string `form:"order"` // ASC, DESC
-
-	AfterTxLT *uint64 `form:"after"`
-	Limit     int     `form:"limit"`
-}
-
-type AccountStateFiltered struct {
-	Total int             `json:"total"`
-	Rows  []*AccountState `json:"results"`
-}
-
-type AccountStateAggregate struct {
-	MinterAddress *addr.Address // NFT or FT minter
-
-	Limit int `form:"limit"`
-}
-
-type AccountStateAggregated struct {
-	// NFT minter
-	Items       int `json:"items,omitempty"`
-	OwnersCount int `json:"owners_count,omitempty"`
-	OwnedItems  []*struct {
-		OwnerAddress *addr.Address `ch:"type:String" json:"owner_address"`
-		ItemsCount   int           `json:"items_count"`
-	} `json:"owned_items,omitempty"`
-	UniqueOwners []*struct {
-		ItemAddress *addr.Address `ch:"type:String" json:"item_address"`
-		OwnersCount int           `json:"owners_count"`
-	} `json:"unique_owners,omitempty"`
-
-	// FT minter
-	Wallets      int         `json:"wallets,omitempty"`
-	TotalSupply  *bunbig.Int `json:"total_supply,omitempty"`
-	OwnedBalance []*struct {
-		WalletAddress *addr.Address `ch:"item_address,type:String" json:"wallet_address"`
-		OwnerAddress  *addr.Address `ch:"type:String" json:"owner_address"`
-		Balance       *bunbig.Int   `ch:"type:UInt256" json:"balance"`
-	} `json:"owned_balance,omitempty"`
-}
-
 type AccountRepository interface {
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
 	AddAccountData(ctx context.Context, tx bun.Tx, data []*AccountData) error
-
-	GetAccountStates(ctx context.Context, filter *AccountStateFilter) (*AccountStateFiltered, error)
-
-	AggregateAccountStates(ctx context.Context, req *AccountStateAggregate) (*AccountStateAggregated, error)
 }

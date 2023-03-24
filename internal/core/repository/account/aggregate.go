@@ -9,6 +9,7 @@ import (
 	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/aggregate"
 )
 
 func (r *Repository) makeLastItemStateQuery(minter *addr.Address) *ch.SelectQuery {
@@ -24,7 +25,7 @@ func (r *Repository) makeLastItemOwnerQuery(minter *addr.Address) *ch.SelectQuer
 		ColumnExpr("argMax(owner_address, last_tx_lt) AS owner_address")
 }
 
-func (r *Repository) aggregateNFTMinter(ctx context.Context, req *core.AccountStateAggregate, res *core.AccountStateAggregated) error {
+func (r *Repository) aggregateNFTMinter(ctx context.Context, req *aggregate.AccountStatesReq, res *aggregate.AccountStatesRes) error {
 	var err error
 
 	res.Items, err = r.makeLastItemStateQuery(req.MinterAddress).Count(ctx)
@@ -68,7 +69,7 @@ func (r *Repository) aggregateNFTMinter(ctx context.Context, req *core.AccountSt
 	return nil
 }
 
-func (r *Repository) aggregateFTMinter(ctx context.Context, req *core.AccountStateAggregate, res *core.AccountStateAggregated) error {
+func (r *Repository) aggregateFTMinter(ctx context.Context, req *aggregate.AccountStatesReq, res *aggregate.AccountStatesRes) error {
 	var err error
 
 	res.Wallets, err = r.makeLastItemStateQuery(req.MinterAddress).Count(ctx)
@@ -98,9 +99,9 @@ func (r *Repository) aggregateFTMinter(ctx context.Context, req *core.AccountSta
 	return err
 }
 
-func (r *Repository) AggregateAccountStates(ctx context.Context, req *core.AccountStateAggregate) (*core.AccountStateAggregated, error) {
+func (r *Repository) AggregateAccountStates(ctx context.Context, req *aggregate.AccountStatesReq) (*aggregate.AccountStatesRes, error) {
 	var (
-		res        core.AccountStateAggregated
+		res        aggregate.AccountStatesRes
 		interfaces []abi.ContractName
 	)
 

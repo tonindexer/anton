@@ -32,32 +32,7 @@ type Block struct {
 	// TODO: block info data
 }
 
-type BlockFilter struct {
-	Workchain *int32  `form:"workchain"`
-	Shard     *int64  `form:"shard"`
-	SeqNo     *uint32 `form:"seq_no"`
-	FileHash  []byte  `form:"file_hash"`
-
-	WithShards                     bool // TODO: array of relations as strings
-	WithTransactionAccountState    bool
-	WithTransactionAccountData     bool
-	WithTransactions               bool `form:"with_transactions"`
-	WithTransactionMessages        bool
-	WithTransactionMessagePayloads bool
-
-	Order string `form:"order"` // ASC, DESC
-
-	AfterSeqNo *uint32 `form:"after"`
-	Limit      int     `form:"limit"`
-}
-
-type BlockFiltered struct {
-	Total int      `json:"total"`
-	Rows  []*Block `json:"results"`
-}
-
 type BlockRepository interface {
 	AddBlocks(ctx context.Context, tx bun.Tx, info []*Block) error
 	GetLastMasterBlock(ctx context.Context) (*Block, error)
-	GetBlocks(ctx context.Context, filter *BlockFilter) (*BlockFiltered, error)
 }

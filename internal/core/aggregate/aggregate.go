@@ -1,9 +1,11 @@
-package repository
+package aggregate
 
 import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/core"
@@ -44,10 +46,10 @@ type Statistics struct {
 	} `json:"message_count_by_operation"`
 }
 
-func GetStatistics(ctx context.Context, db *DB) (*Statistics, error) {
+func GetStatistics(ctx context.Context, ck *ch.DB, pg *bun.DB) (*Statistics, error) {
 	var ret Statistics
 
-	err := db.CH.NewSelect().Model((*core.Block)(nil)).
+	err := ck.NewSelect().Model((*core.Block)(nil)).
 		ColumnExpr("min(seq_no) as first_masterchain_block").
 		ColumnExpr("max(seq_no) as last_masterchain_block").
 		Where("workchain = -1").
@@ -57,15 +59,15 @@ func GetStatistics(ctx context.Context, db *DB) (*Statistics, error) {
 	}
 	ret.BlockCount = ret.LastBlock - ret.FirstBlock + 1
 
-	ret.AccountCount, err = db.CH.NewSelect().Model((*core.AccountState)(nil)).Count(ctx)
+	ret.AccountCount, err = ck.NewSelect().Model((*core.AccountState)(nil)).Count(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "account state count")
 	}
-	err = db.CH.NewSelect().
+	err = ck.NewSelect().
 		ColumnExpr("last_status as status").
 		ColumnExpr("count(addr) as count").
 		TableExpr("(?) as q",
-			db.CH.NewSelect().
+			ck.NewSelect().
 				Model((*core.AccountState)(nil)).
 				ColumnExpr("argMax(address, last_tx_lt) as addr").
 				ColumnExpr("argMax(status, last_tx_lt) as last_status").
@@ -80,15 +82,15 @@ func GetStatistics(ctx context.Context, db *DB) (*Statistics, error) {
 		ret.AddressCount += row.Count
 	}
 
-	ret.ParsedAccountCount, err = db.CH.NewSelect().Model((*core.AccountData)(nil)).Count(ctx)
+	ret.ParsedAccountCount, err = ck.NewSelect().Model((*core.AccountData)(nil)).Count(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "account data count")
 	}
-	err = db.CH.NewSelect().
+	err = ck.NewSelect().
 		ColumnExpr("last_types as interfaces").
 		ColumnExpr("count(addr) as count").
 		TableExpr("(?) as q",
-			db.CH.NewSelect().
+			ck.NewSelect().
 				Model((*core.AccountData)(nil)).
 				ColumnExpr("argMax(address, last_tx_lt) as addr").
 				ColumnExpr("argMax(types, last_tx_lt) as last_types").
@@ -103,15 +105,15 @@ func GetStatistics(ctx context.Context, db *DB) (*Statistics, error) {
 		ret.ParsedAddressCount += row.Count
 	}
 
-	ret.TransactionCount, err = db.CH.NewSelect().Model((*core.Transaction)(nil)).Count(ctx)
+	ret.TransactionCount, err = ck.NewSelect().Model((*core.Transaction)(nil)).Count(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "transaction count")
 	}
-	ret.MessageCount, err = db.CH.NewSelect().Model((*core.Message)(nil)).Count(ctx)
+	ret.MessageCount, err = ck.NewSelect().Model((*core.Message)(nil)).Count(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "message count")
 	}
-	err = db.CH.NewSelect().Model((*core.MessagePayload)(nil)).
+	err = ck.NewSelect().Model((*core.MessagePayload)(nil)).
 		ColumnExpr("operation_name as operation").
 		ColumnExpr("count() as count").
 		Group("operation_name").
@@ -124,11 +126,11 @@ func GetStatistics(ctx context.Context, db *DB) (*Statistics, error) {
 		ret.ParsedMessageCount += row.Count
 	}
 
-	ret.ContractInterfaceCount, err = db.PG.NewSelect().Model((*core.ContractInterface)(nil)).Count(ctx)
+	ret.ContractInterfaceCount, err = pg.NewSelect().Model((*core.ContractInterface)(nil)).Count(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "contract interface count")
 	}
-	ret.ContractOperationCount, err = db.PG.NewSelect().Model((*core.ContractOperation)(nil)).Count(ctx)
+	ret.ContractOperationCount, err = pg.NewSelect().Model((*core.ContractOperation)(nil)).Count(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "contract operation count")
 	}

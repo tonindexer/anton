@@ -14,38 +14,43 @@ import (
 	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/aggregate"
+	"github.com/iam047801/tonidx/internal/core/filter"
 	"github.com/iam047801/tonidx/internal/core/repository"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
 	"github.com/iam047801/tonidx/internal/core/repository/block"
 	"github.com/iam047801/tonidx/internal/core/repository/contract"
+	"github.com/iam047801/tonidx/internal/core/repository/msg"
 	"github.com/iam047801/tonidx/internal/core/repository/tx"
 )
 
 var (
 	ctx = context.Background()
 
-	db *repository.DB
+	_db *repository.DB
 
-	accountRepo core.AccountRepository
-	abiRepo     core.ContractRepository
-	blockRepo   core.BlockRepository
-	txRepo      core.TxRepository
+	accountRepo repository.Account
+	abiRepo     repository.Contract
+	blockRepo   repository.Block
+	txRepo      repository.Transaction
+	msgRepo     repository.Message
 )
 
 func initDB() {
 	var err error
 
-	db, err = repository.ConnectDB(context.Background(),
+	_db, err = repository.ConnectDB(context.Background(),
 		"clickhouse://localhost:9000/default?sslmode=disable",
 		"postgres://user:pass@localhost:5432/default?sslmode=disable")
 	if err != nil {
 		panic(err)
 	}
 
-	accountRepo = account.NewRepository(db.CH, db.PG)
-	abiRepo = contract.NewRepository(db.PG)
-	blockRepo = block.NewRepository(db.CH, db.PG)
-	txRepo = tx.NewRepository(db.CH, db.PG)
+	accountRepo = account.NewRepository(_db.CH, _db.PG)
+	abiRepo = contract.NewRepository(_db.PG)
+	blockRepo = block.NewRepository(_db.CH, _db.PG)
+	txRepo = tx.NewRepository(_db.CH, _db.PG)
+	msgRepo = msg.NewRepository(_db.CH, _db.PG)
 }
 
 func dropTables(t *testing.T) { //nolint:gocyclo // clean database
@@ -53,78 +58,101 @@ func dropTables(t *testing.T) { //nolint:gocyclo // clean database
 
 	// TODO: drop pg enums
 
-	_, err = db.CH.NewDropTable().Model((*core.Transaction)(nil)).IfExists().Exec(ctx)
+	_, err = _db.CH.NewDropTable().Model((*core.Transaction)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.PG.NewDropTable().Model((*core.Transaction)(nil)).IfExists().Exec(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = db.CH.NewDropTable().Model((*core.Message)(nil)).IfExists().Exec(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = db.PG.NewDropTable().Model((*core.Message)(nil)).IfExists().Exec(ctx)
+	_, err = _db.PG.NewDropTable().Model((*core.Transaction)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = db.CH.NewDropTable().Model((*core.MessagePayload)(nil)).IfExists().Exec(ctx)
+	_, err = _db.CH.NewDropTable().Model((*core.Message)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.PG.NewDropTable().Model((*core.MessagePayload)(nil)).IfExists().Exec(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = db.PG.NewDropTable().Model((*core.LatestAccountState)(nil)).IfExists().Exec(ctx)
+	_, err = _db.PG.NewDropTable().Model((*core.Message)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = db.CH.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
+	_, err = _db.CH.NewDropTable().Model((*core.MessagePayload)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.PG.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = db.CH.NewDropTable().Model((*core.AccountData)(nil)).IfExists().Exec(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = db.PG.NewDropTable().Model((*core.AccountData)(nil)).IfExists().Exec(ctx)
+	_, err = _db.PG.NewDropTable().Model((*core.MessagePayload)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = db.CH.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = db.PG.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
+	_, err = _db.PG.NewDropTable().Model((*core.LatestAccountState)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = db.CH.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
+	_, err = _db.CH.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.PG.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
+	_, err = _db.PG.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = _db.CH.NewDropTable().Model((*core.AccountData)(nil)).IfExists().Exec(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = _db.PG.NewDropTable().Model((*core.AccountData)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = db.CH.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
+	_, err = _db.CH.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.PG.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
+	_, err = _db.PG.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = _db.CH.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = _db.PG.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = _db.CH.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = _db.PG.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func createTables(t *testing.T) {
+	err := block.CreateTables(ctx, _db.CH, _db.PG)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = account.CreateTables(ctx, _db.CH, _db.PG)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = tx.CreateTables(ctx, _db.CH, _db.PG)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = msg.CreateTables(ctx, _db.CH, _db.PG)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = contract.CreateTables(ctx, _db.PG)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,14 +166,11 @@ func TestInsertKnownInterfaces(t *testing.T) {
 	})
 
 	t.Run("create tables", func(t *testing.T) {
-		err := repository.CreateTablesDB(ctx, db)
-		if err != nil {
-			t.Fatal(err)
-		}
+		createTables(t)
 	})
 
 	t.Run("insert known interfaces", func(t *testing.T) {
-		err := repository.InsertKnownInterfaces(ctx, db.PG)
+		err := repository.InsertKnownInterfaces(ctx, _db.PG)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -173,18 +198,15 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 	})
 
 	t.Run("create tables", func(t *testing.T) {
-		err := repository.CreateTablesDB(ctx, db)
-		if err != nil {
-			t.Fatal(err)
-		}
+		createTables(t)
 	})
 
 	t.Run("insert interfaces", func(t *testing.T) {
-		_, err := db.PG.NewInsert().Model(&ifaceItem).Exec(ctx)
+		_, err := _db.PG.NewInsert().Model(&ifaceItem).Exec(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = db.PG.NewInsert().Model(&opItemTransfer).Exec(ctx)
+		_, err = _db.PG.NewInsert().Model(&opItemTransfer).Exec(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -192,7 +214,7 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 
 	t.Run("create insert transaction", func(t *testing.T) {
 		var err error
-		insertTx, err = db.PG.Begin()
+		insertTx, err = _db.PG.Begin()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -208,7 +230,7 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 		}
 
 		sd := new(core.AccountData)
-		if err := db.CH.NewSelect().Model(sd).Where("address = ?", &accDataItem.Address).Where("last_tx_lt = ?", accDataItem.LastTxLT).Scan(ctx); err != nil {
+		if err := _db.CH.NewSelect().Model(sd).Where("address = ?", &accDataItem.Address).Where("last_tx_lt = ?", accDataItem.LastTxLT).Scan(ctx); err != nil {
 			t.Fatal(err)
 		}
 		ad := accDataItem
@@ -241,7 +263,7 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 		}
 
 		s := new(core.AccountState)
-		if err := db.CH.NewSelect().Model(s).Where("address = ?", &accWallet.Address).Where("last_tx_lt = ?", accWallet.LastTxLT).Scan(ctx); err != nil {
+		if err := _db.CH.NewSelect().Model(s).Where("address = ?", &accWallet.Address).Where("last_tx_lt = ?", accWallet.LastTxLT).Scan(ctx); err != nil {
 			t.Fatal(err)
 		}
 		acc := accWallet
@@ -252,21 +274,21 @@ func TestGraphInsert(t *testing.T) { //nolint:gocognit,gocyclo // test master bl
 	})
 
 	t.Run("add message payloads", func(t *testing.T) {
-		err := txRepo.AddMessagePayloads(ctx, insertTx, []*core.MessagePayload{&msgInItemPayload})
+		err := msgRepo.AddMessagePayloads(ctx, insertTx, []*core.MessagePayload{&msgInItemPayload})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := txRepo.AddMessagePayloads(ctx, insertTx, nil); err != nil {
+		if err := msgRepo.AddMessagePayloads(ctx, insertTx, nil); err != nil {
 			t.Fatal(err)
 		}
 	})
 
 	t.Run("add messages", func(t *testing.T) {
-		err := txRepo.AddMessages(ctx, insertTx, []*core.Message{&msgExtWallet, &msgOutWallet})
+		err := msgRepo.AddMessages(ctx, insertTx, []*core.Message{&msgExtWallet, &msgOutWallet})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := txRepo.AddMessages(ctx, insertTx, nil); err != nil {
+		if err := msgRepo.AddMessages(ctx, insertTx, nil); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -319,7 +341,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	accItem.Code, accItem.Data = nil, nil
 
 	t.Run("filter state by address", func(t *testing.T) {
-		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		results, err := accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
 			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: false,
 			WithData:    true,
@@ -343,7 +365,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	})
 
 	t.Run("filter latest state by address", func(t *testing.T) {
-		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		results, err := accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
 			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: true,
 			Order:       "DESC",
@@ -366,7 +388,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	})
 
 	t.Run("filter latest state by address", func(t *testing.T) {
-		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		results, err := accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
 			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: true,
 			WithData:    true,
@@ -396,7 +418,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	})
 
 	t.Run("filter latest item account states by types", func(t *testing.T) {
-		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		results, err := accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
 			LatestState:   true,
 			WithData:      true,
 			ContractTypes: []abi.ContractName{abi.NFTItem},
@@ -423,7 +445,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	})
 
 	t.Run("filter latest item account states by minter address", func(t *testing.T) {
-		results, err := accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+		results, err := accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
 			LatestState:   true,
 			WithData:      true,
 			MinterAddress: accDataItem.MinterAddress,
@@ -450,11 +472,11 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	})
 }
 
-func TestGraphAggregateAccounts(t *testing.T) {
+func TestGraphAggregateAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot of functions
 	initDB()
 
 	t.Run("aggregate nft collection", func(t *testing.T) {
-		res, err := accountRepo.AggregateAccountStates(ctx, &core.AccountStateAggregate{
+		res, err := accountRepo.AggregateAccountStates(ctx, &aggregate.AccountStatesReq{
 			MinterAddress: accDataItem.MinterAddress,
 			Limit:         1000,
 		})
@@ -477,7 +499,7 @@ func TestGraphAggregateAccounts(t *testing.T) {
 	})
 
 	t.Run("aggregate jetton wallets", func(t *testing.T) {
-		res, err := accountRepo.AggregateAccountStates(ctx, &core.AccountStateAggregate{
+		res, err := accountRepo.AggregateAccountStates(ctx, &aggregate.AccountStatesReq{
 			MinterAddress: accDataItem.MinterAddress,
 			Limit:         1000,
 		})
@@ -501,7 +523,7 @@ func TestGraphAggregateMessages(t *testing.T) {
 	initDB()
 
 	t.Run("aggregate sender and receivers", func(t *testing.T) {
-		res, err := txRepo.AggregateMessages(ctx, &core.MessageAggregate{
+		res, err := msgRepo.AggregateMessages(ctx, &aggregate.MessagesReq{
 			Address: &accWallet.Address,
 			OrderBy: "count",
 			Limit:   25,
@@ -536,7 +558,7 @@ func TestGraphFilterMessages(t *testing.T) {
 	initDB()
 
 	t.Run("filter messages by operation name with source", func(t *testing.T) {
-		res, err := txRepo.GetMessages(ctx, &core.MessageFilter{
+		res, err := msgRepo.FilterMessages(ctx, &filter.MessagesReq{
 			WithPayload:    true,
 			OperationNames: []string{"item_transfer"},
 			Order:          "DESC",
@@ -569,7 +591,7 @@ func TestGraphFilterMessages(t *testing.T) {
 	})
 
 	t.Run("filter messages by minter address", func(t *testing.T) {
-		res, err := txRepo.GetMessages(ctx, &core.MessageFilter{
+		res, err := msgRepo.FilterMessages(ctx, &filter.MessagesReq{
 			WithPayload:   true,
 			MinterAddress: accDataItem.MinterAddress,
 			Order:         "DESC",
@@ -606,7 +628,7 @@ func TestGraphFilterTransactions(t *testing.T) {
 	initDB()
 
 	t.Run("filter tx by in_msg_hash", func(t *testing.T) {
-		res, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
+		res, err := txRepo.FilterTransactions(ctx, &filter.TransactionsReq{
 			InMsgHash: txInItem.InMsgHash,
 			Workchain: new(int32),
 			Order:     "DESC",
@@ -632,7 +654,7 @@ func TestGraphFilterTransactions(t *testing.T) {
 	})
 
 	t.Run("filter tx with msg by address", func(t *testing.T) {
-		res, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
+		res, err := txRepo.FilterTransactions(ctx, &filter.TransactionsReq{
 			Addresses:           []*addr.Address{&accWallet.Address},
 			WithAccountState:    true,
 			WithMessages:        true,
@@ -671,7 +693,7 @@ func TestGraphFilterTransactions(t *testing.T) {
 	})
 
 	t.Run("filter tx with msg by address __item", func(t *testing.T) {
-		res, err := txRepo.GetTransactions(ctx, &core.TransactionFilter{
+		res, err := txRepo.FilterTransactions(ctx, &filter.TransactionsReq{
 			Addresses:           []*addr.Address{&accItem.Address},
 			WithAccountState:    true,
 			WithAccountData:     true,
@@ -721,14 +743,14 @@ func TestGraphFilterBlocks(t *testing.T) {
 	t.Run("filter master blocks", func(t *testing.T) {
 		var wc int32 = -1
 
-		f := &core.BlockFilter{
+		f := &filter.BlocksReq{
 			Workchain:  &wc,
 			WithShards: true,
 			Order:      "DESC",
 			Limit:      100,
 		}
 
-		res, err := blockRepo.GetBlocks(ctx, f)
+		res, err := blockRepo.FilterBlocks(ctx, f)
 		if err != nil {
 			t.Error(err)
 		}
@@ -750,14 +772,14 @@ func TestGraphFilterBlocks(t *testing.T) {
 	t.Run("filter shard blocks", func(t *testing.T) {
 		var wc int32 = 0
 
-		f := &core.BlockFilter{
+		f := &filter.BlocksReq{
 			Workchain: &wc,
 
 			Order: "DESC",
 			Limit: 100,
 		}
 
-		res, err := blockRepo.GetBlocks(ctx, f)
+		res, err := blockRepo.FilterBlocks(ctx, f)
 		if err != nil {
 			t.Error(err)
 		}
@@ -777,7 +799,7 @@ func TestGraphFilterBlocks(t *testing.T) {
 func TestGetStatistics(t *testing.T) {
 	initDB()
 
-	stats, err := repository.GetStatistics(ctx, db)
+	stats, err := aggregate.GetStatistics(ctx, _db.CH, _db.PG)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -795,7 +817,7 @@ func Example_blockRepo_GetBlocks() {
 
 	initDB()
 
-	f := &core.BlockFilter{
+	f := &filter.BlocksReq{
 		Workchain:                      &wc,
 		WithShards:                     true,
 		WithTransactionAccountState:    true,
@@ -808,7 +830,7 @@ func Example_blockRepo_GetBlocks() {
 		Limit: 100,
 	}
 
-	res, err := blockRepo.GetBlocks(ctx, f)
+	res, err := blockRepo.FilterBlocks(ctx, f)
 	if err != nil {
 		panic(err)
 	}
@@ -853,7 +875,7 @@ func Example_blockRepo_GetBlocks_writeFile() {
 
 	initDB()
 
-	f := &core.BlockFilter{
+	f := &filter.BlocksReq{
 		Workchain:                      &wc,
 		WithShards:                     true,
 		WithTransactionAccountState:    true,
@@ -866,7 +888,7 @@ func Example_blockRepo_GetBlocks_writeFile() {
 		Limit: 12,
 	}
 
-	res, err := blockRepo.GetBlocks(ctx, f)
+	res, err := blockRepo.FilterBlocks(ctx, f)
 	if err != nil {
 		panic(err)
 	}

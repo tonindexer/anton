@@ -5,10 +5,13 @@ import (
 
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/aggregate"
+	"github.com/iam047801/tonidx/internal/core/filter"
 	"github.com/iam047801/tonidx/internal/core/repository"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
 	"github.com/iam047801/tonidx/internal/core/repository/block"
 	"github.com/iam047801/tonidx/internal/core/repository/contract"
+	"github.com/iam047801/tonidx/internal/core/repository/msg"
 	"github.com/iam047801/tonidx/internal/core/repository/tx"
 )
 
@@ -18,9 +21,10 @@ type Service struct {
 	cfg *app.QueryConfig
 
 	contractRepo core.ContractRepository
-	blockRepo    core.BlockRepository
-	txRepo       core.TxRepository
-	accountRepo  core.AccountRepository
+	blockRepo    repository.Block
+	txRepo       repository.Transaction
+	msgRepo      repository.Message
+	accountRepo  repository.Account
 }
 
 func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
@@ -29,6 +33,7 @@ func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
 	s.cfg = cfg
 	ch, pg := s.cfg.DB.CH, s.cfg.DB.PG
 	s.txRepo = tx.NewRepository(ch, pg)
+	s.msgRepo = msg.NewRepository(ch, pg)
 	s.blockRepo = block.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)
 	s.contractRepo = contract.NewRepository(pg)
@@ -36,8 +41,8 @@ func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
 	return s, nil
 }
 
-func (s *Service) GetStatistics(ctx context.Context) (*repository.Statistics, error) {
-	return repository.GetStatistics(ctx, s.cfg.DB)
+func (s *Service) GetStatistics(ctx context.Context) (*aggregate.Statistics, error) {
+	return aggregate.GetStatistics(ctx, s.cfg.DB.CH, s.cfg.DB.PG)
 }
 
 func (s *Service) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
@@ -48,30 +53,26 @@ func (s *Service) GetOperations(ctx context.Context) ([]*core.ContractOperation,
 	return s.contractRepo.GetOperations(ctx)
 }
 
-func (s *Service) GetLastMasterBlock(ctx context.Context) (*core.Block, error) {
-	return s.blockRepo.GetLastMasterBlock(ctx)
+func (s *Service) FilterBlocks(ctx context.Context, req *filter.BlocksReq) (*filter.BlocksRes, error) {
+	return s.blockRepo.FilterBlocks(ctx, req)
 }
 
-func (s *Service) GetBlocks(ctx context.Context, filter *core.BlockFilter) (*core.BlockFiltered, error) {
-	return s.blockRepo.GetBlocks(ctx, filter)
+func (s *Service) FilterAccountStates(ctx context.Context, req *filter.AccountStatesReq) (*filter.AccountStatesRes, error) {
+	return s.accountRepo.FilterAccountStates(ctx, req)
 }
 
-func (s *Service) GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) (*core.AccountStateFiltered, error) {
-	return s.accountRepo.GetAccountStates(ctx, filter)
-}
-
-func (s *Service) AggregateAccountStates(ctx context.Context, req *core.AccountStateAggregate) (*core.AccountStateAggregated, error) {
+func (s *Service) AggregateAccountStates(ctx context.Context, req *aggregate.AccountStatesReq) (*aggregate.AccountStatesRes, error) {
 	return s.accountRepo.AggregateAccountStates(ctx, req)
 }
 
-func (s *Service) GetTransactions(ctx context.Context, filter *core.TransactionFilter) (*core.TransactionFiltered, error) {
-	return s.txRepo.GetTransactions(ctx, filter)
+func (s *Service) FilterTransactions(ctx context.Context, req *filter.TransactionsReq) (*filter.TransactionsRes, error) {
+	return s.txRepo.FilterTransactions(ctx, req)
 }
 
-func (s *Service) GetMessages(ctx context.Context, filter *core.MessageFilter) (*core.MessageFiltered, error) {
-	return s.txRepo.GetMessages(ctx, filter)
+func (s *Service) FilterMessages(ctx context.Context, req *filter.MessagesReq) (*filter.MessagesRes, error) {
+	return s.msgRepo.FilterMessages(ctx, req)
 }
 
-func (s *Service) AggregateMessages(ctx context.Context, req *core.MessageAggregate) (*core.MessageAggregated, error) {
-	return s.txRepo.AggregateMessages(ctx, req)
+func (s *Service) AggregateMessages(ctx context.Context, req *aggregate.MessagesReq) (*aggregate.MessagesRes, error) {
+	return s.msgRepo.AggregateMessages(ctx, req)
 }

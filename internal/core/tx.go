@@ -2,15 +2,12 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bunbig"
 	"github.com/uptrace/go-clickhouse/ch"
-	"github.com/xssnick/tonutils-go/tlb"
 
-	"github.com/iam047801/tonidx/abi"
 	"github.com/iam047801/tonidx/internal/addr"
 )
 
@@ -49,169 +46,6 @@ type Transaction struct {
 	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
 }
 
-type MessageType string
-
-const (
-	Internal    = MessageType(tlb.MsgTypeInternal)
-	ExternalIn  = MessageType(tlb.MsgTypeExternalIn)
-	ExternalOut = MessageType(tlb.MsgTypeExternalOut)
-)
-
-type Message struct {
-	ch.CHModel    `ch:"messages,partition:toYYYYMM(created_at)" json:"-"`
-	bun.BaseModel `bun:"table:messages" json:"-"`
-
-	Type MessageType `ch:",lc" bun:"type:message_type,notnull" json:"type"` // TODO: ch enum
-
-	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"  json:"hash"`
-
-	SrcAddress addr.Address `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
-	DstAddress addr.Address `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
-
-	// SourceTx initiates outgoing message.
-	// For external incoming messages SourceTx == nil.
-	SourceTxHash []byte       `bun:"type:bytea" json:"source_tx_hash,omitempty"`
-	SourceTxLT   uint64       `json:"source_tx_lt,omitempty"`
-	Source       *Transaction `ch:"-" bun:"-" json:"source,omitempty"` // TODO: join it
-
-	Bounce  bool `bun:",notnull" json:"bounce"`
-	Bounced bool `bun:",notnull" json:"bounced"`
-
-	Amount *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"amount,omitempty"`
-
-	IHRDisabled bool        `bun:",notnull" json:"ihr_disabled"`
-	IHRFee      *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"ihr_fee"`
-	FwdFee      *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"fwd_fee"`
-
-	Body            []byte          `bun:"type:bytea" json:"body"`
-	BodyHash        []byte          `bun:"type:bytea" json:"body_hash"`
-	OperationID     uint32          `json:"operation_id,omitempty"`
-	TransferComment string          `json:"transfer_comment,omitempty"`
-	Payload         *MessagePayload `ch:"-" bun:"rel:belongs-to,join:hash=hash" json:"payload,omitempty"`
-
-	StateInitCode []byte `bun:"type:bytea" json:"state_init_code,omitempty"`
-	StateInitData []byte `bun:"type:bytea" json:"state_init_data,omitempty"`
-
-	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
-	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
-
-	Known bool `ch:"-" bun:"-" json:"-"`
-}
-
-type MessagePayload struct {
-	ch.CHModel    `ch:"message_payloads,partition:toYYYYMM(created_at)" json:"-"`
-	bun.BaseModel `bun:"table:message_payloads" json:"-"`
-
-	Type MessageType `ch:",lc" bun:"type:message_type,notnull" json:"type"`
-	Hash []byte      `ch:",pk" bun:"type:bytea,pk,notnull" json:"hash"`
-
-	SrcAddress  addr.Address     `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
-	SrcContract abi.ContractName `ch:",lc" json:"src_contract,omitempty"`
-	DstAddress  addr.Address     `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
-	DstContract abi.ContractName `ch:",lc" json:"dst_contract,omitempty"`
-
-	Amount *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"amount,omitempty"`
-
-	BodyHash      []byte          `bun:"type:bytea,notnull" json:"body_hash"`
-	OperationID   uint32          `bun:",notnull" json:"operation_id"`
-	OperationName string          `ch:",lc" bun:",notnull" json:"operation_name"`
-	DataJSON      json.RawMessage `ch:"type:String" bun:"type:jsonb" json:"data"`
-
-	// TODO: save fields from parsed data to payloads table
-
-	// can be used to show all jetton or nft item transfers
-	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
-
-	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
-	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
-
-	Error string `json:"error,omitempty"`
-}
-
-type TransactionFilter struct {
-	Hash      []byte // `form:"hash"`
-	InMsgHash []byte // `form:"in_msg_hash"`
-
-	Addresses []*addr.Address //
-
-	Workchain *int32 `form:"workchain"`
-
-	BlockID *BlockID
-
-	WithAccountState    bool
-	WithAccountData     bool
-	WithMessages        bool
-	WithMessagePayloads bool
-
-	Order string `form:"order"` // ASC, DESC
-
-	AfterTxLT *uint64 `form:"after"`
-	Limit     int     `form:"limit"`
-}
-
-type TransactionFiltered struct {
-	Total int            `json:"total"`
-	Rows  []*Transaction `json:"results"`
-}
-
-type MessageFilter struct {
-	DBTx *bun.Tx
-
-	Hash         []byte          // `form:"hash"`
-	SrcAddresses []*addr.Address // `form:"src_address"`
-	DstAddresses []*addr.Address // `form:"dst_address"`
-
-	WithPayload    bool
-	SrcContracts   []string      `form:"src_contract"`
-	DstContracts   []string      `form:"dst_contract"`
-	OperationNames []string      `form:"operation_name"`
-	MinterAddress  *addr.Address // `form:"minter_address"`
-
-	Order string `form:"order"` // ASC, DESC
-
-	AfterTxLT *uint64 `form:"after"`
-	Limit     int     `form:"limit"`
-}
-
-type MessageFiltered struct {
-	Total int        `json:"total"`
-	Rows  []*Message `json:"results"`
-}
-
-type MessageAggregate struct {
-	Address *addr.Address
-
-	OrderBy string `form:"order_by"` // amount / count
-	Limit   int    `form:"limit"`
-}
-
-type MessageAggregated struct {
-	RecvCount  int         `json:"received_count"`
-	RecvAmount *bunbig.Int `json:"received_ton_amount"`
-
-	SentCount  int         `json:"sent_count"`
-	SentAmount *bunbig.Int `json:"sent_ton_amount"`
-
-	RecvByAddress []struct {
-		Sender *addr.Address `ch:"type:String" json:"sender"`
-		Amount *bunbig.Int   `json:"amount"`
-		Count  int           `json:"count"`
-	} `json:"received_from_address"`
-
-	SentByAddress []struct {
-		Receiver *addr.Address `ch:"type:String" json:"receiver"`
-		Amount   *bunbig.Int   `json:"amount"`
-		Count    int           `json:"count"`
-	} `json:"sent_to_address"`
-}
-
-type TxRepository interface {
+type TransactionRepository interface {
 	AddTransactions(ctx context.Context, tx bun.Tx, transactions []*Transaction) error
-	AddMessages(ctx context.Context, tx bun.Tx, messages []*Message) error
-	AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads []*MessagePayload) error
-
-	GetTransactions(ctx context.Context, filter *TransactionFilter) (*TransactionFiltered, error)
-	GetMessages(ctx context.Context, filter *MessageFilter) (*MessageFiltered, error)
-
-	AggregateMessages(ctx context.Context, req *MessageAggregate) (*MessageAggregated, error)
 }

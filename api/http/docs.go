@@ -102,7 +102,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.AccountStateFiltered"
+                            "$ref": "#/definitions/filter.AccountStatesRes"
                         }
                     }
                 }
@@ -126,7 +126,8 @@ const docTemplate = `{
                         "type": "string",
                         "description": "NFT collection or FT master address",
                         "name": "minter_address",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "maximum": 1000000,
@@ -141,7 +142,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.AccountStateAggregated"
+                            "$ref": "#/definitions/aggregate.AccountStatesRes"
                         }
                     }
                 }
@@ -217,7 +218,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.BlockFiltered"
+                            "$ref": "#/definitions/filter.BlocksRes"
                         }
                     }
                 }
@@ -370,7 +371,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.MessageFiltered"
+                            "$ref": "#/definitions/filter.MessagesRes"
                         }
                     }
                 }
@@ -422,7 +423,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.MessageAggregated"
+                            "$ref": "#/definitions/aggregate.MessagesRes"
                         }
                     }
                 }
@@ -445,7 +446,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/repository.Statistics"
+                            "$ref": "#/definitions/aggregate.Statistics"
                         }
                     }
                 }
@@ -522,7 +523,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/core.TransactionFiltered"
+                            "$ref": "#/definitions/filter.TransactionsRes"
                         }
                     }
                 }
@@ -530,6 +531,225 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "aggregate.AccountStatesRes": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "NFT minter",
+                    "type": "integer"
+                },
+                "owned_balance": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "balance": {
+                                "$ref": "#/definitions/bunbig.Int"
+                            },
+                            "owner_address": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            },
+                            "wallet_address": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                },
+                "owned_items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "items_count": {
+                                "type": "integer"
+                            },
+                            "owner_address": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                },
+                "owners_count": {
+                    "type": "integer"
+                },
+                "total_supply": {
+                    "$ref": "#/definitions/bunbig.Int"
+                },
+                "unique_owners": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "item_address": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            },
+                            "owners_count": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                },
+                "wallets": {
+                    "description": "FT minter",
+                    "type": "integer"
+                }
+            }
+        },
+        "aggregate.MessagesRes": {
+            "type": "object",
+            "properties": {
+                "received_count": {
+                    "type": "integer"
+                },
+                "received_from_address": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "amount": {
+                                "$ref": "#/definitions/bunbig.Int"
+                            },
+                            "count": {
+                                "type": "integer"
+                            },
+                            "sender": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                },
+                "received_ton_amount": {
+                    "$ref": "#/definitions/bunbig.Int"
+                },
+                "sent_count": {
+                    "type": "integer"
+                },
+                "sent_to_address": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "amount": {
+                                "$ref": "#/definitions/bunbig.Int"
+                            },
+                            "count": {
+                                "type": "integer"
+                            },
+                            "receiver": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                },
+                "sent_ton_amount": {
+                    "$ref": "#/definitions/bunbig.Int"
+                }
+            }
+        },
+        "aggregate.Statistics": {
+            "type": "object",
+            "properties": {
+                "account_count": {
+                    "type": "integer"
+                },
+                "account_count_by_interfaces": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "interfaces": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "account_count_by_status": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "status": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "address_count": {
+                    "type": "integer"
+                },
+                "contract_interface_count": {
+                    "type": "integer"
+                },
+                "contract_operation_count": {
+                    "type": "integer"
+                },
+                "first_masterchain_block": {
+                    "type": "integer"
+                },
+                "last_masterchain_block": {
+                    "type": "integer"
+                },
+                "masterchain_block_count": {
+                    "type": "integer"
+                },
+                "message_count": {
+                    "type": "integer"
+                },
+                "message_count_by_operation": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "operation": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "parsed_account_count": {
+                    "type": "integer"
+                },
+                "parsed_address_count": {
+                    "type": "integer"
+                },
+                "parsed_message_count": {
+                    "type": "integer"
+                },
+                "transaction_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "bunbig.Int": {
             "type": "object"
         },
@@ -636,6 +856,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -706,96 +929,9 @@ const docTemplate = `{
                 "status": {
                     "description": "TODO: ch enum",
                     "type": "string"
-                }
-            }
-        },
-        "core.AccountStateAggregated": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "description": "NFT minter",
-                    "type": "integer"
                 },
-                "owned_balance": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "balance": {
-                                "$ref": "#/definitions/bunbig.Int"
-                            },
-                            "owner_address": {
-                                "type": "array",
-                                "items": {
-                                    "type": "integer"
-                                }
-                            },
-                            "wallet_address": {
-                                "type": "array",
-                                "items": {
-                                    "type": "integer"
-                                }
-                            }
-                        }
-                    }
-                },
-                "owned_items": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "items_count": {
-                                "type": "integer"
-                            },
-                            "owner_address": {
-                                "type": "array",
-                                "items": {
-                                    "type": "integer"
-                                }
-                            }
-                        }
-                    }
-                },
-                "owners_count": {
-                    "type": "integer"
-                },
-                "total_supply": {
-                    "$ref": "#/definitions/bunbig.Int"
-                },
-                "unique_owners": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "item_address": {
-                                "type": "array",
-                                "items": {
-                                    "type": "integer"
-                                }
-                            },
-                            "owners_count": {
-                                "type": "integer"
-                            }
-                        }
-                    }
-                },
-                "wallets": {
-                    "description": "FT minter",
-                    "type": "integer"
-                }
-            }
-        },
-        "core.AccountStateFiltered": {
-            "type": "object",
-            "properties": {
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/core.AccountState"
-                    }
-                },
-                "total": {
-                    "type": "integer"
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -836,20 +972,6 @@ const docTemplate = `{
                     }
                 },
                 "workchain": {
-                    "type": "integer"
-                }
-            }
-        },
-        "core.BlockFiltered": {
-            "type": "object",
-            "properties": {
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/core.Block"
-                    }
-                },
-                "total": {
                     "type": "integer"
                 }
             }
@@ -1036,77 +1158,6 @@ const docTemplate = `{
                 }
             }
         },
-        "core.MessageAggregated": {
-            "type": "object",
-            "properties": {
-                "received_count": {
-                    "type": "integer"
-                },
-                "received_from_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "amount": {
-                                "$ref": "#/definitions/bunbig.Int"
-                            },
-                            "count": {
-                                "type": "integer"
-                            },
-                            "sender": {
-                                "type": "array",
-                                "items": {
-                                    "type": "integer"
-                                }
-                            }
-                        }
-                    }
-                },
-                "received_ton_amount": {
-                    "$ref": "#/definitions/bunbig.Int"
-                },
-                "sent_count": {
-                    "type": "integer"
-                },
-                "sent_to_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "amount": {
-                                "$ref": "#/definitions/bunbig.Int"
-                            },
-                            "count": {
-                                "type": "integer"
-                            },
-                            "receiver": {
-                                "type": "array",
-                                "items": {
-                                    "type": "integer"
-                                }
-                            }
-                        }
-                    }
-                },
-                "sent_ton_amount": {
-                    "$ref": "#/definitions/bunbig.Int"
-                }
-            }
-        },
-        "core.MessageFiltered": {
-            "type": "object",
-            "properties": {
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/core.Message"
-                    }
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
         "core.MessagePayload": {
             "type": "object",
             "properties": {
@@ -1265,7 +1316,49 @@ const docTemplate = `{
                 }
             }
         },
-        "core.TransactionFiltered": {
+        "filter.AccountStatesRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.AccountState"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "filter.BlocksRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Block"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "filter.MessagesRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Message"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "filter.TransactionsRes": {
             "type": "object",
             "properties": {
                 "results": {
@@ -1303,92 +1396,6 @@ const docTemplate = `{
                     }
                 },
                 "total": {
-                    "type": "integer"
-                }
-            }
-        },
-        "repository.Statistics": {
-            "type": "object",
-            "properties": {
-                "account_count": {
-                    "type": "integer"
-                },
-                "account_count_by_interfaces": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "count": {
-                                "type": "integer"
-                            },
-                            "interfaces": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                },
-                "account_count_by_status": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "count": {
-                                "type": "integer"
-                            },
-                            "status": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                },
-                "address_count": {
-                    "type": "integer"
-                },
-                "contract_interface_count": {
-                    "type": "integer"
-                },
-                "contract_operation_count": {
-                    "type": "integer"
-                },
-                "first_masterchain_block": {
-                    "type": "integer"
-                },
-                "last_masterchain_block": {
-                    "type": "integer"
-                },
-                "masterchain_block_count": {
-                    "type": "integer"
-                },
-                "message_count": {
-                    "type": "integer"
-                },
-                "message_count_by_operation": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "count": {
-                                "type": "integer"
-                            },
-                            "operation": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                },
-                "parsed_account_count": {
-                    "type": "integer"
-                },
-                "parsed_address_count": {
-                    "type": "integer"
-                },
-                "parsed_message_count": {
-                    "type": "integer"
-                },
-                "transaction_count": {
                     "type": "integer"
                 }
             }
