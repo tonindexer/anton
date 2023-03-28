@@ -14,6 +14,7 @@ import (
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/aggregate"
+	"github.com/iam047801/tonidx/internal/core/aggregate/history"
 	"github.com/iam047801/tonidx/internal/core/filter"
 )
 
@@ -22,7 +23,7 @@ import (
 // @description 	Project fetches data from TON blockchain.
 
 // @contact.name   	Dat Boi
-// @contact.url    	https://datboi420.t.me
+// @contact.url    	https://anton.tools
 
 // @license.name  	Apache 2.0
 // @license.url   	http://www.apache.org/licenses/LICENSE-2.0.html
@@ -226,7 +227,7 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
-// GetAccountStates godoc
+// GetAccounts godoc
 //	@Summary		account data
 //	@Description	Returns account states and its parsed data
 //	@Tags			account
@@ -242,7 +243,7 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 //  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
 //	@Success		200		{object}	filter.AccountsRes
 //	@Router			/accounts [get]
-func (c *Controller) GetAccountStates(ctx *gin.Context) {
+func (c *Controller) GetAccounts(ctx *gin.Context) {
 	var req filter.AccountsReq
 
 	err := ctx.ShouldBindQuery(&req)
@@ -288,7 +289,7 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
-// AggregateAccountStates godoc
+// AggregateAccounts godoc
 //	@Summary		aggregated account data
 //	@Description	Aggregates FT or NFT data filtered by minter address
 //	@Tags			account
@@ -298,7 +299,7 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 //  @Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
 //	@Success		200		{object}	aggregate.AccountsRes
 //	@Router			/accounts/aggregated [get]
-func (c *Controller) AggregateAccountStates(ctx *gin.Context) {
+func (c *Controller) AggregateAccounts(ctx *gin.Context) {
 	var req aggregate.AccountsReq
 
 	err := ctx.ShouldBindQuery(&req)
@@ -318,6 +319,37 @@ func (c *Controller) AggregateAccountStates(ctx *gin.Context) {
 	}
 
 	ret, err := c.svc.AggregateAccounts(ctx, &req)
+	if err != nil {
+		internalErr(ctx, err)
+		return
+	}
+
+	ctx.IndentedJSON(http.StatusOK, ret)
+}
+
+// AggregateAccountsHistory godoc
+//	@Summary		aggregated accounts grouped by timestamp
+//	@Description	Counts accounts
+//	@Tags			account
+//	@Accept			json
+//	@Produce		json
+//  @Param   		metric				query	string  	true	"metric to show"			Enums(unique_addresses)
+//  @Param   		interface			query	[]string  	false	"filter by interfaces"
+//  @Param   		from				query	string  	false	"from timestamp"
+//  @Param   		to					query	string  	false	"to timestamp"
+//  @Param   		interval			query	string  	true	"group interval"			Enums(15m, 1h, 4h, 8h, 24h)
+//	@Success		200		{object}	history.AccountsRes
+//	@Router			/accounts/aggregated/history [get]
+func (c *Controller) AggregateAccountsHistory(ctx *gin.Context) {
+	var req history.AccountsReq
+
+	err := ctx.ShouldBindQuery(&req)
+	if err != nil {
+		paramErr(ctx, "account_filter", err)
+		return
+	}
+
+	ret, err := c.svc.AggregateAccountsHistory(ctx, &req)
 	if err != nil {
 		internalErr(ctx, err)
 		return
@@ -387,6 +419,44 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 		internalErr(ctx, err)
 		return
 	}
+	ctx.IndentedJSON(http.StatusOK, ret)
+}
+
+// AggregateTransactionsHistory godoc
+//	@Summary		aggregated transactions grouped by timestamp
+//	@Description	Counts transactions
+//	@Tags			transaction
+//	@Accept			json
+//	@Produce		json
+//  @Param   		metric				query	string  	true	"metric to show"			Enums(transaction_count)
+//  @Param   		address     		query   []string 	false   "tx address"
+//  @Param   		workchain     		query  	int32  		false	"filter by workchain"
+//  @Param   		from				query	string  	false	"from timestamp"
+//  @Param   		to					query	string  	false	"to timestamp"
+//  @Param   		interval			query	string  	true	"group interval"			Enums(15m, 1h, 4h, 8h, 24h)
+//	@Success		200		{object}	history.TransactionsRes
+//	@Router			/transactions/aggregated/history [get]
+func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
+	var req history.TransactionsReq
+
+	err := ctx.ShouldBindQuery(&req)
+	if err != nil {
+		paramErr(ctx, "tx_filter", err)
+		return
+	}
+
+	req.Addresses, err = getAddresses(ctx, "address")
+	if err != nil {
+		paramErr(ctx, "address", err)
+		return
+	}
+
+	ret, err := c.svc.AggregateTransactionsHistory(ctx, &req)
+	if err != nil {
+		internalErr(ctx, err)
+		return
+	}
+
 	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
@@ -496,6 +566,58 @@ func (c *Controller) AggregateMessages(ctx *gin.Context) {
 	}
 
 	ret, err := c.svc.AggregateMessages(ctx, &req)
+	if err != nil {
+		internalErr(ctx, err)
+		return
+	}
+
+	ctx.IndentedJSON(http.StatusOK, ret)
+}
+
+// AggregateMessagesHistory godoc
+//	@Summary		aggregated messages grouped by timestamp
+//	@Description	Counts messages or sums amount
+//	@Tags			transaction
+//	@Accept			json
+//	@Produce		json
+//  @Param   		metric				query	string  	true	"metric to show"								Enums(message_count, state_init_count, message_amount_sum)
+//  @Param   		src_address     	query   []string 	false   "source address"
+//  @Param   		dst_address     	query   []string 	false   "destination address"
+//  @Param   		src_contract		query	[]string  	false	"source contract interface"
+//  @Param   		dst_contract		query	[]string  	false	"destination contract interface"
+//  @Param   		operation_name		query	[]string  	false	"filter by contract operation names"
+//  @Param   		minter_address		query	string  	false	"filter FT or NFT operations by minter address"
+//  @Param   		from				query	string  	false	"from timestamp"
+//  @Param   		to					query	string  	false	"to timestamp"
+//  @Param   		interval			query	string  	true	"group interval"								Enums(15m, 1h, 4h, 8h, 24h)
+//	@Success		200		{object}	history.MessagesRes
+//	@Router			/messages/aggregated/history [get]
+func (c *Controller) AggregateMessagesHistory(ctx *gin.Context) {
+	var req history.MessagesReq
+
+	err := ctx.ShouldBindQuery(&req)
+	if err != nil {
+		paramErr(ctx, "msg_filter", err)
+		return
+	}
+
+	req.SrcAddresses, err = getAddresses(ctx, "src_address")
+	if err != nil {
+		paramErr(ctx, "src_address", err)
+		return
+	}
+	req.DstAddresses, err = getAddresses(ctx, "dst_address")
+	if err != nil {
+		paramErr(ctx, "dst_address", err)
+		return
+	}
+	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
+	if err != nil {
+		paramErr(ctx, "minter_address", err)
+		return
+	}
+
+	ret, err := c.svc.AggregateMessagesHistory(ctx, &req)
 	if err != nil {
 		internalErr(ctx, err)
 		return

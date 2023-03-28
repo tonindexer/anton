@@ -21,7 +21,7 @@ type AccountsReq struct {
 }
 
 type AccountsRes struct {
-	CountRes `json:"count_results"`
+	CountRes `json:"count_results,omitempty"`
 }
 
 type AccountRepository interface {

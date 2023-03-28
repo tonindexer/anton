@@ -6,6 +6,7 @@ import (
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/aggregate"
+	"github.com/iam047801/tonidx/internal/core/aggregate/history"
 	"github.com/iam047801/tonidx/internal/core/filter"
 	"github.com/iam047801/tonidx/internal/core/repository"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
@@ -65,8 +66,16 @@ func (s *Service) AggregateAccounts(ctx context.Context, req *aggregate.Accounts
 	return s.accountRepo.AggregateAccounts(ctx, req)
 }
 
+func (s *Service) AggregateAccountsHistory(ctx context.Context, req *history.AccountsReq) (*history.AccountsRes, error) {
+	return s.accountRepo.AggregateAccountsHistory(ctx, req)
+}
+
 func (s *Service) FilterTransactions(ctx context.Context, req *filter.TransactionsReq) (*filter.TransactionsRes, error) {
 	return s.txRepo.FilterTransactions(ctx, req)
+}
+
+func (s *Service) AggregateTransactionsHistory(ctx context.Context, req *history.TransactionsReq) (*history.TransactionsRes, error) {
+	return s.txRepo.AggregateTransactionsHistory(ctx, req)
 }
 
 func (s *Service) FilterMessages(ctx context.Context, req *filter.MessagesReq) (*filter.MessagesRes, error) {
@@ -75,4 +84,8 @@ func (s *Service) FilterMessages(ctx context.Context, req *filter.MessagesReq) (
 
 func (s *Service) AggregateMessages(ctx context.Context, req *aggregate.MessagesReq) (*aggregate.MessagesRes, error) {
 	return s.msgRepo.AggregateMessages(ctx, req)
+}
+
+func (s *Service) AggregateMessagesHistory(ctx context.Context, req *history.MessagesReq) (*history.MessagesRes, error) {
+	return s.msgRepo.AggregateMessagesHistory(ctx, req)
 }

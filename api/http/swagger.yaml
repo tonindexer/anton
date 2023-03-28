@@ -1,6 +1,6 @@
 basePath: /api/v0
 definitions:
-  aggregate.AccountStatesRes:
+  aggregate.AccountsRes:
     properties:
       items:
         description: NFT minter
@@ -522,7 +522,7 @@ definitions:
       total_fees:
         $ref: '#/definitions/bunbig.Int'
     type: object
-  filter.AccountStatesRes:
+  filter.AccountsRes:
     properties:
       results:
         items:
@@ -558,6 +558,51 @@ definitions:
       total:
         type: integer
     type: object
+  history.AccountsRes:
+    properties:
+      count_results:
+        items:
+          properties:
+            timestamp:
+              type: string
+            value:
+              type: integer
+          type: object
+        type: array
+    type: object
+  history.MessagesRes:
+    properties:
+      count_results:
+        items:
+          properties:
+            timestamp:
+              type: string
+            value:
+              type: integer
+          type: object
+        type: array
+      sum_results:
+        items:
+          properties:
+            timestamp:
+              type: string
+            value:
+              $ref: '#/definitions/bunbig.Int'
+          type: object
+        type: array
+    type: object
+  history.TransactionsRes:
+    properties:
+      count_results:
+        items:
+          properties:
+            timestamp:
+              type: string
+            value:
+              type: integer
+          type: object
+        type: array
+    type: object
   http.GetInterfacesRes:
     properties:
       results:
@@ -580,7 +625,7 @@ host: anton.tools
 info:
   contact:
     name: Dat Boi
-    url: https://datboi420.t.me
+    url: https://anton.tools
   description: Project fetches data from TON blockchain.
   license:
     name: Apache 2.0
@@ -642,7 +687,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/filter.AccountStatesRes'
+            $ref: '#/definitions/filter.AccountsRes'
       summary: account data
       tags:
       - account
@@ -669,8 +714,56 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/aggregate.AccountStatesRes'
+            $ref: '#/definitions/aggregate.AccountsRes'
       summary: aggregated account data
+      tags:
+      - account
+  /accounts/aggregated/history:
+    get:
+      consumes:
+      - application/json
+      description: Counts accounts
+      parameters:
+      - description: metric to show
+        enum:
+        - unique_addresses
+        in: query
+        name: metric
+        required: true
+        type: string
+      - description: filter by interfaces
+        in: query
+        items:
+          type: string
+        name: interface
+        type: array
+      - description: from timestamp
+        in: query
+        name: from
+        type: string
+      - description: to timestamp
+        in: query
+        name: to
+        type: string
+      - description: group interval
+        enum:
+        - 15m
+        - 1h
+        - 4h
+        - 8h
+        - 24h
+        in: query
+        name: interval
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/history.AccountsRes'
+      summary: aggregated accounts grouped by timestamp
       tags:
       - account
   /blocks:
@@ -863,6 +956,84 @@ paths:
       summary: aggregated messages
       tags:
       - transaction
+  /messages/aggregated/history:
+    get:
+      consumes:
+      - application/json
+      description: Counts messages or sums amount
+      parameters:
+      - description: metric to show
+        enum:
+        - message_count
+        - state_init_count
+        - message_amount_sum
+        in: query
+        name: metric
+        required: true
+        type: string
+      - description: source address
+        in: query
+        items:
+          type: string
+        name: src_address
+        type: array
+      - description: destination address
+        in: query
+        items:
+          type: string
+        name: dst_address
+        type: array
+      - description: source contract interface
+        in: query
+        items:
+          type: string
+        name: src_contract
+        type: array
+      - description: destination contract interface
+        in: query
+        items:
+          type: string
+        name: dst_contract
+        type: array
+      - description: filter by contract operation names
+        in: query
+        items:
+          type: string
+        name: operation_name
+        type: array
+      - description: filter FT or NFT operations by minter address
+        in: query
+        name: minter_address
+        type: string
+      - description: from timestamp
+        in: query
+        name: from
+        type: string
+      - description: to timestamp
+        in: query
+        name: to
+        type: string
+      - description: group interval
+        enum:
+        - 15m
+        - 1h
+        - 4h
+        - 8h
+        - 24h
+        in: query
+        name: interval
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/history.MessagesRes'
+      summary: aggregated messages grouped by timestamp
+      tags:
+      - transaction
   /statistics:
     get:
       consumes:
@@ -928,6 +1099,58 @@ paths:
           schema:
             $ref: '#/definitions/filter.TransactionsRes'
       summary: transactions data
+      tags:
+      - transaction
+  /transactions/aggregated/history:
+    get:
+      consumes:
+      - application/json
+      description: Counts transactions
+      parameters:
+      - description: metric to show
+        enum:
+        - transaction_count
+        in: query
+        name: metric
+        required: true
+        type: string
+      - description: tx address
+        in: query
+        items:
+          type: string
+        name: address
+        type: array
+      - description: filter by workchain
+        in: query
+        name: workchain
+        type: integer
+      - description: from timestamp
+        in: query
+        name: from
+        type: string
+      - description: to timestamp
+        in: query
+        name: to
+        type: string
+      - description: group interval
+        enum:
+        - 15m
+        - 1h
+        - 4h
+        - 8h
+        - 24h
+        in: query
+        name: interval
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/history.TransactionsRes'
+      summary: aggregated transactions grouped by timestamp
       tags:
       - transaction
 schemes:

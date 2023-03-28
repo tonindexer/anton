@@ -11,9 +11,9 @@ import (
 )
 
 type ReqParams struct {
-	From     time.Time `form:"from"`
-	To       time.Time `form:"to"`
-	Interval time.Duration
+	From     time.Time     `form:"from"`
+	To       time.Time     `form:"to"`
+	Interval time.Duration `form:"interval"`
 }
 
 type CountRes []struct {
@@ -27,24 +27,27 @@ type BigIntRes []struct {
 }
 
 func GetRoundingFunction(interval time.Duration) (string, error) {
-	var unitInterval, unit string
+	funcFormat := "toStartOfInterval(%s, INTERVAL %d %s)"
 
-	switch sec := int(interval.Seconds()); sec {
-	case 15 * 60:
-		unitInterval, unit = "15", "minute"
-	case 60 * 60:
-		unitInterval, unit = "1", "hour"
-	case 4 * 60 * 60:
-		unitInterval, unit = "4", "hour"
-	case 8 * 60 * 60:
-		unitInterval, unit = "8", "hour"
-	case 24 * 60 * 60:
-		unitInterval, unit = "1", "day"
-	case 7 * 24 * 60 * 60:
-		unitInterval, unit = "1", "week"
-	default:
+	sec := int(interval.Seconds())
+
+	min := sec / 60
+	if min < 5 {
 		return "", errors.Wrapf(core.ErrInvalidArg, "unsupported interval %d seconds", sec)
 	}
+	if min < 60 {
+		return fmt.Sprintf(funcFormat, "%s", min, "minute"), nil
+	}
 
-	return fmt.Sprintf("toStartOfInterval(%s, INTERVAL %s %s)", "%s", unitInterval, unit), nil
+	hour := min / 60
+	if hour < 24 {
+		return fmt.Sprintf(funcFormat, "%s", hour, "hour"), nil
+	}
+
+	days := hour / 24
+	if days < 7 {
+		return fmt.Sprintf(funcFormat, "%s", hour, "day"), nil
+	}
+
+	return "", errors.Wrapf(core.ErrInvalidArg, "unsupported interval %d hours", days)
 }

@@ -14,16 +14,16 @@ var (
 )
 
 type TransactionsReq struct {
-	Metric TransactionMetric
+	Metric TransactionMetric `form:"metric"`
 
-	Addresses []*addr.Address
-	Workchain *int32
+	Addresses []*addr.Address // `form:"addresses"`
+	Workchain *int32          `form:"workchain"`
 
 	ReqParams
 }
 
 type TransactionsRes struct {
-	CountRes `json:"count_results"`
+	CountRes `json:"count_results,omitempty"`
 	// BigIntRes `json:"sum_results"`
 }
 

@@ -11,7 +11,7 @@ const docTemplate = `{
         "title": "{{.Title}}",
         "contact": {
             "name": "Dat Boi",
-            "url": "https://datboi420.t.me"
+            "url": "https://anton.tools"
         },
         "license": {
             "name": "Apache 2.0",
@@ -102,7 +102,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/filter.AccountStatesRes"
+                            "$ref": "#/definitions/filter.AccountsRes"
                         }
                     }
                 }
@@ -142,7 +142,77 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/aggregate.AccountStatesRes"
+                            "$ref": "#/definitions/aggregate.AccountsRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/aggregated/history": {
+            "get": {
+                "description": "Counts accounts",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "aggregated accounts grouped by timestamp",
+                "parameters": [
+                    {
+                        "enum": [
+                            "unique_addresses"
+                        ],
+                        "type": "string",
+                        "description": "metric to show",
+                        "name": "metric",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter by interfaces",
+                        "name": "interface",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "from timestamp",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "to timestamp",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "15m",
+                            "1h",
+                            "4h",
+                            "8h",
+                            "24h"
+                        ],
+                        "type": "string",
+                        "description": "group interval",
+                        "name": "interval",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/history.AccountsRes"
                         }
                     }
                 }
@@ -429,6 +499,120 @@ const docTemplate = `{
                 }
             }
         },
+        "/messages/aggregated/history": {
+            "get": {
+                "description": "Counts messages or sums amount",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transaction"
+                ],
+                "summary": "aggregated messages grouped by timestamp",
+                "parameters": [
+                    {
+                        "enum": [
+                            "message_count",
+                            "state_init_count",
+                            "message_amount_sum"
+                        ],
+                        "type": "string",
+                        "description": "metric to show",
+                        "name": "metric",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "source address",
+                        "name": "src_address",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "destination address",
+                        "name": "dst_address",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "source contract interface",
+                        "name": "src_contract",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "destination contract interface",
+                        "name": "dst_contract",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter by contract operation names",
+                        "name": "operation_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter FT or NFT operations by minter address",
+                        "name": "minter_address",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "from timestamp",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "to timestamp",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "15m",
+                            "1h",
+                            "4h",
+                            "8h",
+                            "24h"
+                        ],
+                        "type": "string",
+                        "description": "group interval",
+                        "name": "interval",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/history.MessagesRes"
+                        }
+                    }
+                }
+            }
+        },
         "/statistics": {
             "get": {
                 "description": "Returns statistics on blocks, transactions, messages and accounts",
@@ -528,10 +712,86 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/transactions/aggregated/history": {
+            "get": {
+                "description": "Counts transactions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transaction"
+                ],
+                "summary": "aggregated transactions grouped by timestamp",
+                "parameters": [
+                    {
+                        "enum": [
+                            "transaction_count"
+                        ],
+                        "type": "string",
+                        "description": "metric to show",
+                        "name": "metric",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "tx address",
+                        "name": "address",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "filter by workchain",
+                        "name": "workchain",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "from timestamp",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "to timestamp",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "15m",
+                            "1h",
+                            "4h",
+                            "8h",
+                            "24h"
+                        ],
+                        "type": "string",
+                        "description": "group interval",
+                        "name": "interval",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/history.TransactionsRes"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "aggregate.AccountStatesRes": {
+        "aggregate.AccountsRes": {
             "type": "object",
             "properties": {
                 "items": {
@@ -1316,7 +1576,7 @@ const docTemplate = `{
                 }
             }
         },
-        "filter.AccountStatesRes": {
+        "filter.AccountsRes": {
             "type": "object",
             "properties": {
                 "results": {
@@ -1369,6 +1629,77 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "history.AccountsRes": {
+            "type": "object",
+            "properties": {
+                "count_results": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string"
+                            },
+                            "value": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "history.MessagesRes": {
+            "type": "object",
+            "properties": {
+                "count_results": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string"
+                            },
+                            "value": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                },
+                "sum_results": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string"
+                            },
+                            "value": {
+                                "$ref": "#/definitions/bunbig.Int"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "history.TransactionsRes": {
+            "type": "object",
+            "properties": {
+                "count_results": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string"
+                            },
+                            "value": {
+                                "type": "integer"
+                            }
+                        }
+                    }
                 }
             }
         },

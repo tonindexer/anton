@@ -15,7 +15,7 @@ var (
 )
 
 type MessagesReq struct {
-	Metric MessageMetric
+	Metric MessageMetric `form:"metric"`
 
 	SrcAddresses []*addr.Address // `form:"src_address"`
 	DstAddresses []*addr.Address // `form:"dst_address"`
@@ -31,8 +31,8 @@ type MessagesReq struct {
 }
 
 type MessagesRes struct {
-	CountRes  `json:"count_results"`
-	BigIntRes `json:"sum_results"`
+	CountRes  `json:"count_results,omitempty"`
+	BigIntRes `json:"sum_results,omitempty"`
 }
 
 type MessageRepository interface {

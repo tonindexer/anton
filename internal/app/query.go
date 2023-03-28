@@ -5,6 +5,7 @@ import (
 
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/aggregate"
+	"github.com/iam047801/tonidx/internal/core/aggregate/history"
 	"github.com/iam047801/tonidx/internal/core/filter"
 	"github.com/iam047801/tonidx/internal/core/repository"
 )
@@ -26,4 +27,8 @@ type QueryService interface {
 
 	aggregate.AccountRepository
 	aggregate.MessageRepository
+
+	history.AccountRepository
+	history.TransactionRepository
+	history.MessageRepository
 }
