@@ -69,38 +69,38 @@ func (r *Repository) filterTx(ctx context.Context, f *filter.TransactionsReq) (r
 	return ret, err
 }
 
-func (r *Repository) countTx(ctx context.Context, f *filter.TransactionsReq) (int, error) {
+func (r *Repository) countTx(ctx context.Context, req *filter.TransactionsReq) (int, error) {
 	q := r.ch.NewSelect().
 		Model((*core.Transaction)(nil))
 
-	if len(f.Hash) > 0 {
-		q = q.Where("hash = ?", f.Hash)
+	if len(req.Hash) > 0 {
+		q = q.Where("hash = ?", req.Hash)
 	}
-	if len(f.InMsgHash) > 0 {
-		q = q.Where("in_msg_hash = ?", f.InMsgHash)
+	if len(req.InMsgHash) > 0 {
+		q = q.Where("in_msg_hash = ?", req.InMsgHash)
 	}
-	if len(f.Addresses) > 0 {
-		q = q.Where("address in (?)", ch.In(f.Addresses))
+	if len(req.Addresses) > 0 {
+		q = q.Where("address in (?)", ch.In(req.Addresses))
 	}
-	if f.Workchain != nil {
-		q = q.Where("block_workchain = ?", *f.Workchain)
+	if req.Workchain != nil {
+		q = q.Where("block_workchain = ?", *req.Workchain)
 	}
-	if f.BlockID != nil {
-		q = q.Where("block_workchain = ?", f.BlockID.Workchain).
-			Where("block_shard = ?", f.BlockID.Shard).
-			Where("block_seq_no = ?", f.BlockID.SeqNo)
+	if req.BlockID != nil {
+		q = q.Where("block_workchain = ?", req.BlockID.Workchain).
+			Where("block_shard = ?", req.BlockID.Shard).
+			Where("block_seq_no = ?", req.BlockID.SeqNo)
 	}
 
 	return q.Count(ctx)
 }
 
-func (r *Repository) FilterTransactions(ctx context.Context, f *filter.TransactionsReq) (*filter.TransactionsRes, error) {
+func (r *Repository) FilterTransactions(ctx context.Context, req *filter.TransactionsReq) (*filter.TransactionsRes, error) {
 	var (
 		res = new(filter.TransactionsRes)
 		err error
 	)
 
-	res.Rows, err = r.filterTx(ctx, f)
+	res.Rows, err = r.filterTx(ctx, req)
 	if err != nil {
 		return res, err
 	}
@@ -108,7 +108,7 @@ func (r *Repository) FilterTransactions(ctx context.Context, f *filter.Transacti
 		return res, nil
 	}
 
-	res.Total, err = r.countTx(ctx, f)
+	res.Total, err = r.countTx(ctx, req)
 	if err != nil {
 		return res, err
 	}

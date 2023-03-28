@@ -108,7 +108,7 @@ func (s *Service) getLatestAccount(ctx context.Context, a addr.Address, accountM
 
 	defer timeTrack(time.Now(), fmt.Sprintf("getLatestAccount(%s)", a.Base64()))
 
-	res, err := s.accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
+	res, err := s.accountRepo.FilterAccounts(ctx, &filter.AccountsReq{
 		Addresses:   []*addr.Address{&a},
 		LatestState: true,
 		WithData:    true,

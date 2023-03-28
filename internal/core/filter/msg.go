@@ -17,10 +17,11 @@ type MessagesReq struct {
 	DstAddresses []*addr.Address // `form:"dst_address"`
 
 	WithPayload    bool
-	SrcContracts   []string      `form:"src_contract"`
-	DstContracts   []string      `form:"dst_contract"`
-	OperationNames []string      `form:"operation_name"`
-	MinterAddress  *addr.Address // `form:"minter_address"`
+	SrcContracts   []string `form:"src_contract"`
+	DstContracts   []string `form:"dst_contract"`
+	OperationNames []string `form:"operation_name"`
+
+	MinterAddress *addr.Address // `form:"minter_address"`
 
 	Order string `form:"order"` // ASC, DESC
 

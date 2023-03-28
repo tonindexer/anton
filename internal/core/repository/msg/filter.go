@@ -11,97 +11,97 @@ import (
 	"github.com/iam047801/tonidx/internal/core/filter"
 )
 
-func (r *Repository) filterMsg(ctx context.Context, f *filter.MessagesReq) (ret []*core.Message, err error) {
+func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (ret []*core.Message, err error) {
 	q := r.pg.NewSelect()
-	if f.DBTx != nil {
-		q = f.DBTx.NewSelect()
+	if req.DBTx != nil {
+		q = req.DBTx.NewSelect()
 	}
 
 	q = q.Model(&ret)
 
-	if f.WithPayload {
+	if req.WithPayload {
 		q = q.Relation("Payload")
 	}
 
-	if len(f.Hash) > 0 {
-		q = q.Where("message.hash = ?", f.Hash)
+	if len(req.Hash) > 0 {
+		q = q.Where("message.hash = ?", req.Hash)
 	}
-	if len(f.SrcAddresses) > 0 {
-		q = q.Where("message.src_address in (?)", bun.In(f.SrcAddresses)).
+	if len(req.SrcAddresses) > 0 {
+		q = q.Where("message.src_address in (?)", bun.In(req.SrcAddresses)).
 			Where("length(message.src_address) > 0") // partial index
 	}
-	if len(f.DstAddresses) > 0 {
-		q = q.Where("message.dst_address in (?)", bun.In(f.DstAddresses)).
+	if len(req.DstAddresses) > 0 {
+		q = q.Where("message.dst_address in (?)", bun.In(req.DstAddresses)).
 			Where("length(message.dst_address) > 0") // partial index
 	}
 
-	if f.WithPayload {
-		if len(f.SrcContracts) > 0 {
-			q = q.Where("payload.src_contract IN (?)", bun.In(f.SrcContracts)).
+	if req.WithPayload {
+		if len(req.SrcContracts) > 0 {
+			q = q.Where("payload.src_contract IN (?)", bun.In(req.SrcContracts)).
 				Where("length(payload.src_contract) > 0") // partial index
 		}
-		if len(f.DstContracts) > 0 {
-			q = q.Where("payload.dst_contract IN (?)", bun.In(f.DstContracts)).
+		if len(req.DstContracts) > 0 {
+			q = q.Where("payload.dst_contract IN (?)", bun.In(req.DstContracts)).
 				Where("length(payload.dst_contract) > 0") // partial index
 		}
-		if len(f.OperationNames) > 0 {
-			q = q.Where("payload.operation_name IN (?)", bun.In(f.OperationNames))
+		if len(req.OperationNames) > 0 {
+			q = q.Where("payload.operation_name IN (?)", bun.In(req.OperationNames))
 		}
-		if f.MinterAddress != nil {
-			q = q.Where("payload.minter_address = ?", f.MinterAddress).
+		if req.MinterAddress != nil {
+			q = q.Where("payload.minter_address = ?", req.MinterAddress).
 				Where("length(payload.minter_address) > 0") // partial index
 		}
 	}
 
-	if f.AfterTxLT != nil {
-		if f.Order == "ASC" {
-			q = q.Where("message.created_lt > ?", f.AfterTxLT)
+	if req.AfterTxLT != nil {
+		if req.Order == "ASC" {
+			q = q.Where("message.created_lt > ?", req.AfterTxLT)
 		} else {
-			q = q.Where("message.created_lt < ?", f.AfterTxLT)
+			q = q.Where("message.created_lt < ?", req.AfterTxLT)
 		}
 	}
 
-	if f.Order != "" {
-		q = q.Order("message.created_lt " + strings.ToUpper(f.Order))
+	if req.Order != "" {
+		q = q.Order("message.created_lt " + strings.ToUpper(req.Order))
 	}
 
-	if f.Limit == 0 {
-		f.Limit = 3
+	if req.Limit == 0 {
+		req.Limit = 3
 	}
-	q = q.Limit(f.Limit)
+	q = q.Limit(req.Limit)
 
 	err = q.Scan(ctx)
 	return ret, err
 }
 
-func (r *Repository) countMsg(ctx context.Context, f *filter.MessagesReq) (int, error) {
+func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int, error) {
 	var payload bool // do we need to count account_data or account_states
 
 	q := r.ch.NewSelect()
 
-	if f.WithPayload {
-		if len(f.SrcContracts) > 0 {
-			q, payload = q.Where("src_contract IN (?)", ch.In(f.SrcContracts)), true
+	if req.WithPayload {
+		if len(req.SrcContracts) > 0 {
+			q, payload = q.Where("src_contract IN (?)", ch.In(req.SrcContracts)), true
 		}
-		if len(f.DstContracts) > 0 {
-			q, payload = q.Where("dst_contract IN (?)", ch.In(f.DstContracts)), true
+		if len(req.DstContracts) > 0 {
+			q, payload = q.Where("dst_contract IN (?)", ch.In(req.DstContracts)), true
 		}
-		if len(f.OperationNames) > 0 {
-			q, payload = q.Where("operation_name IN (?)", ch.In(f.OperationNames)), true
+		if len(req.OperationNames) > 0 {
+			q, payload = q.Where("operation_name IN (?)", ch.In(req.OperationNames)), true
 		}
-		if f.MinterAddress != nil {
-			q, payload = q.Where("minter_address = ?", f.MinterAddress), true
+		if req.MinterAddress != nil {
+			q, payload = q.Where("minter_address = ?", req.MinterAddress), true
 		}
 	}
 
-	if len(f.Hash) > 0 {
-		q = q.Where("hash = ?", f.Hash)
+	if len(req.Hash) > 0 {
+		q = q.Where("hash = ?", req.Hash)
 	}
-	if len(f.SrcAddresses) > 0 {
-		q = q.Where("src_address in (?)", ch.In(f.SrcAddresses))
+	if len(req.SrcAddresses) > 0 {
+		q = q.Where("src_address in (?)", ch.In(req.SrcAddresses))
 	}
-	if len(f.DstAddresses) > 0 {
-		q = q.Where("dst_address in (?)", ch.In(f.DstAddresses))
+	if len(req.DstAddresses) > 0 {
+		q = q.Where("dst_address in (?)", ch.In(req.DstAddresses))
 	}
 
 	if payload {
@@ -113,13 +113,13 @@ func (r *Repository) countMsg(ctx context.Context, f *filter.MessagesReq) (int, 
 	return q.Count(ctx)
 }
 
-func (r *Repository) FilterMessages(ctx context.Context, f *filter.MessagesReq) (*filter.MessagesRes, error) {
+func (r *Repository) FilterMessages(ctx context.Context, req *filter.MessagesReq) (*filter.MessagesRes, error) {
 	var (
 		res = new(filter.MessagesRes)
 		err error
 	)
 
-	res.Rows, err = r.filterMsg(ctx, f)
+	res.Rows, err = r.filterMsg(ctx, req)
 	if err != nil {
 		return res, err
 	}
@@ -127,7 +127,7 @@ func (r *Repository) FilterMessages(ctx context.Context, f *filter.MessagesReq) 
 		return res, nil
 	}
 
-	res.Total, err = r.countMsg(ctx, f)
+	res.Total, err = r.countMsg(ctx, req)
 	if err != nil {
 		return res, err
 	}

@@ -48,7 +48,7 @@ func joinLatestAccountData(q *bun.SelectQuery) *bun.SelectQuery {
 	return q
 }
 
-func addAccountDataFilter(q *bun.SelectQuery, f *filter.AccountStatesReq) *bun.SelectQuery {
+func addAccountDataFilter(q *bun.SelectQuery, f *filter.AccountsReq) *bun.SelectQuery {
 	if !f.WithData {
 		return q
 	}
@@ -73,7 +73,7 @@ func addAccountDataFilter(q *bun.SelectQuery, f *filter.AccountStatesReq) *bun.S
 	return q
 }
 
-func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountStatesReq) (ret []*core.AccountState, err error) {
+func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq) (ret []*core.AccountState, err error) {
 	var (
 		q           *bun.SelectQuery
 		statesTable string
@@ -132,7 +132,7 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountS
 	return ret, err
 }
 
-func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountStatesReq) (int, error) {
+func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsReq) (int, error) {
 	var data bool // do we need to count account_data or account_states
 
 	q := r.ch.NewSelect()
@@ -169,9 +169,9 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountSt
 	return r.ch.NewSelect().TableExpr("(?) as q", q).Count(ctx)
 }
 
-func (r *Repository) FilterAccountStates(ctx context.Context, f *filter.AccountStatesReq) (*filter.AccountStatesRes, error) {
+func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) (*filter.AccountsRes, error) {
 	var (
-		res = new(filter.AccountStatesRes)
+		res = new(filter.AccountsRes)
 		err error
 	)
 

@@ -99,3 +99,10 @@ func init() {
 		}
 	}
 }
+
+func GetAllWalletNames() (ret []ContractName) {
+	for v := range walletCodeHex {
+		ret = append(ret, v.Name())
+	}
+	return
+}

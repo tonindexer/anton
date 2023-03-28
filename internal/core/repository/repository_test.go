@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bunbig"
@@ -15,6 +16,7 @@ import (
 	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
 	"github.com/iam047801/tonidx/internal/core/aggregate"
+	"github.com/iam047801/tonidx/internal/core/aggregate/history"
 	"github.com/iam047801/tonidx/internal/core/filter"
 	"github.com/iam047801/tonidx/internal/core/repository"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
@@ -341,7 +343,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	accItem.Code, accItem.Data = nil, nil
 
 	t.Run("filter state by address", func(t *testing.T) {
-		results, err := accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
+		results, err := accountRepo.FilterAccounts(ctx, &filter.AccountsReq{
 			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: false,
 			WithData:    true,
@@ -365,7 +367,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	})
 
 	t.Run("filter latest state by address", func(t *testing.T) {
-		results, err := accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
+		results, err := accountRepo.FilterAccounts(ctx, &filter.AccountsReq{
 			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: true,
 			Order:       "DESC",
@@ -388,7 +390,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	})
 
 	t.Run("filter latest state by address", func(t *testing.T) {
-		results, err := accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
+		results, err := accountRepo.FilterAccounts(ctx, &filter.AccountsReq{
 			Addresses:   []*addr.Address{&accWallet.Address},
 			LatestState: true,
 			WithData:    true,
@@ -418,7 +420,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	})
 
 	t.Run("filter latest item account states by types", func(t *testing.T) {
-		results, err := accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
+		results, err := accountRepo.FilterAccounts(ctx, &filter.AccountsReq{
 			LatestState:   true,
 			WithData:      true,
 			ContractTypes: []abi.ContractName{abi.NFTItem},
@@ -445,7 +447,7 @@ func TestGraphFilterAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a lot 
 	})
 
 	t.Run("filter latest item account states by minter address", func(t *testing.T) {
-		results, err := accountRepo.FilterAccountStates(ctx, &filter.AccountStatesReq{
+		results, err := accountRepo.FilterAccounts(ctx, &filter.AccountsReq{
 			LatestState:   true,
 			WithData:      true,
 			MinterAddress: accDataItem.MinterAddress,
@@ -476,7 +478,7 @@ func TestGraphAggregateAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a l
 	initDB()
 
 	t.Run("aggregate nft collection", func(t *testing.T) {
-		res, err := accountRepo.AggregateAccountStates(ctx, &aggregate.AccountStatesReq{
+		res, err := accountRepo.AggregateAccounts(ctx, &aggregate.AccountsReq{
 			MinterAddress: accDataItem.MinterAddress,
 			Limit:         1000,
 		})
@@ -499,7 +501,7 @@ func TestGraphAggregateAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a l
 	})
 
 	t.Run("aggregate jetton wallets", func(t *testing.T) {
-		res, err := accountRepo.AggregateAccountStates(ctx, &aggregate.AccountStatesReq{
+		res, err := accountRepo.AggregateAccounts(ctx, &aggregate.AccountsReq{
 			MinterAddress: accDataItem.MinterAddress,
 			Limit:         1000,
 		})
@@ -519,38 +521,20 @@ func TestGraphAggregateAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a l
 	})
 }
 
-func TestGraphAggregateMessages(t *testing.T) {
+func TestGraphAggregateAccountsHistory(t *testing.T) { //nolint:gocognit,gocyclo // a lot of functions
 	initDB()
 
-	t.Run("aggregate sender and receivers", func(t *testing.T) {
-		res, err := msgRepo.AggregateMessages(ctx, &aggregate.MessagesReq{
-			Address: &accWallet.Address,
-			OrderBy: "count",
-			Limit:   25,
+	t.Run("count uniq wallet addresses", func(t *testing.T) {
+		res, err := accountRepo.AggregateAccountsHistory(ctx, &history.AccountsReq{
+			Metric:        history.UniqueAddresses,
+			ContractTypes: []abi.ContractName{"wallet"},
+			ReqParams:     history.ReqParams{Interval: time.Hour},
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if res.RecvCount != 1 {
-			t.Fatalf("expected: %d, got: %d", 1, res.RecvCount)
-		}
-		if res.RecvAmount.ToUInt64() != 0 {
-			t.Fatalf("expected: %d, got: %d", 0, res.RecvAmount.ToUInt64())
-		}
-		if res.SentAmount.ToUInt64() != msgOutWallet.Amount.ToUInt64() {
-			t.Fatalf("expected: %d, got: %d", msgOutWallet.Amount.ToUInt64(), res.SentAmount.ToUInt64())
-		}
-		if res.SentCount != 1 {
-			t.Fatalf("expected: %d, got: %d", 1, res.SentCount)
-		}
-
-		j, err := json.Marshal(res)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		t.Logf("%s", string(j))
+		t.Logf("%+v", res)
 	})
 }
 
@@ -621,6 +605,83 @@ func TestGraphFilterMessages(t *testing.T) {
 		if !reflect.DeepEqual(&msgIn, ret[0]) {
 			t.Fatalf("wrong msg, expected: %+v, got: %+v", msgIn, ret[0])
 		}
+	})
+}
+
+func TestGraphAggregateMessages(t *testing.T) {
+	initDB()
+
+	t.Run("aggregate sender and receivers", func(t *testing.T) {
+		res, err := msgRepo.AggregateMessages(ctx, &aggregate.MessagesReq{
+			Address: &accWallet.Address,
+			OrderBy: "count",
+			Limit:   25,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if res.RecvCount != 1 {
+			t.Fatalf("expected: %d, got: %d", 1, res.RecvCount)
+		}
+		if res.RecvAmount.ToUInt64() != 0 {
+			t.Fatalf("expected: %d, got: %d", 0, res.RecvAmount.ToUInt64())
+		}
+		if res.SentAmount.ToUInt64() != msgOutWallet.Amount.ToUInt64() {
+			t.Fatalf("expected: %d, got: %d", msgOutWallet.Amount.ToUInt64(), res.SentAmount.ToUInt64())
+		}
+		if res.SentCount != 1 {
+			t.Fatalf("expected: %d, got: %d", 1, res.SentCount)
+		}
+
+		j, err := json.Marshal(res)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Logf("%s", string(j))
+	})
+}
+
+func TestGraphAggregateMessagesHistory(t *testing.T) { //nolint:gocognit,gocyclo // a lot of functions
+	initDB()
+
+	t.Run("count nft item transfers", func(t *testing.T) {
+		res, err := msgRepo.AggregateMessagesHistory(ctx, &history.MessagesReq{
+			Metric:         history.MessageCount,
+			OperationNames: []string{"nft_item_transfer"},
+			ReqParams:      history.ReqParams{Interval: time.Hour},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Logf("%+v", res)
+	})
+
+	t.Run("sum message amount", func(t *testing.T) {
+		res, err := msgRepo.AggregateMessagesHistory(ctx, &history.MessagesReq{
+			Metric:         history.MessageAmountSum,
+			OperationNames: []string{"nft_item_transfer"},
+			ReqParams:      history.ReqParams{Interval: time.Hour},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Logf("%+v", res)
+	})
+
+	t.Run("count message state init", func(t *testing.T) {
+		res, err := msgRepo.AggregateMessagesHistory(ctx, &history.MessagesReq{
+			Metric:    history.MessageStateInitCount,
+			ReqParams: history.ReqParams{Interval: time.Hour},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Logf("%+v", res)
 	})
 }
 
@@ -723,6 +784,22 @@ func TestGraphFilterTransactions(t *testing.T) {
 		if !reflect.DeepEqual(&txIn, ret[0]) {
 			t.Fatalf("wrong tx, expected: %+v, got: %+v", txIn, ret[0])
 		}
+	})
+}
+
+func TestGraphAggregateTransactionsHistory(t *testing.T) { //nolint:gocognit,gocyclo // a lot of functions
+	initDB()
+
+	t.Run("count transactions", func(t *testing.T) {
+		res, err := txRepo.AggregateTransactionsHistory(ctx, &history.TransactionsReq{
+			Metric:    history.TransactionCount,
+			ReqParams: history.ReqParams{Interval: time.Hour},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Logf("%+v", res)
 	})
 }
 

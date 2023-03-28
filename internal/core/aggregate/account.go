@@ -8,13 +8,13 @@ import (
 	"github.com/iam047801/tonidx/internal/addr"
 )
 
-type AccountStatesReq struct {
+type AccountsReq struct {
 	MinterAddress *addr.Address // NFT or FT minter
 
 	Limit int `form:"limit"`
 }
 
-type AccountStatesRes struct {
+type AccountsRes struct {
 	// NFT minter
 	Items       int `json:"items,omitempty"`
 	OwnersCount int `json:"owners_count,omitempty"`
@@ -38,5 +38,5 @@ type AccountStatesRes struct {
 }
 
 type AccountRepository interface {
-	AggregateAccountStates(ctx context.Context, req *AccountStatesReq) (*AccountStatesRes, error)
+	AggregateAccounts(ctx context.Context, req *AccountsReq) (*AccountsRes, error)
 }

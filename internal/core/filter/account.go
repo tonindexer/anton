@@ -8,7 +8,7 @@ import (
 	"github.com/iam047801/tonidx/internal/core"
 )
 
-type AccountStatesReq struct {
+type AccountsReq struct {
 	Addresses   []*addr.Address // `form:"addresses"`
 	LatestState bool            `form:"latest"`
 
@@ -24,11 +24,11 @@ type AccountStatesReq struct {
 	Limit     int     `form:"limit"`
 }
 
-type AccountStatesRes struct {
+type AccountsRes struct {
 	Total int                  `json:"total"`
 	Rows  []*core.AccountState `json:"results"`
 }
 
 type AccountRepository interface {
-	FilterAccountStates(context.Context, *AccountStatesReq) (*AccountStatesRes, error)
+	FilterAccounts(context.Context, *AccountsReq) (*AccountsRes, error)
 }

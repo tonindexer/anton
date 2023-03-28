@@ -57,12 +57,12 @@ func (s *Service) FilterBlocks(ctx context.Context, req *filter.BlocksReq) (*fil
 	return s.blockRepo.FilterBlocks(ctx, req)
 }
 
-func (s *Service) FilterAccountStates(ctx context.Context, req *filter.AccountStatesReq) (*filter.AccountStatesRes, error) {
-	return s.accountRepo.FilterAccountStates(ctx, req)
+func (s *Service) FilterAccounts(ctx context.Context, req *filter.AccountsReq) (*filter.AccountsRes, error) {
+	return s.accountRepo.FilterAccounts(ctx, req)
 }
 
-func (s *Service) AggregateAccountStates(ctx context.Context, req *aggregate.AccountStatesReq) (*aggregate.AccountStatesRes, error) {
-	return s.accountRepo.AggregateAccountStates(ctx, req)
+func (s *Service) AggregateAccounts(ctx context.Context, req *aggregate.AccountsReq) (*aggregate.AccountsRes, error) {
+	return s.accountRepo.AggregateAccounts(ctx, req)
 }
 
 func (s *Service) FilterTransactions(ctx context.Context, req *filter.TransactionsReq) (*filter.TransactionsRes, error) {

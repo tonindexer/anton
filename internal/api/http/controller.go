@@ -240,10 +240,10 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 //  @Param			order				query	string		false	"order by last_tx_lt"						Enums(ASC, DESC) default(DESC)
 //  @Param   		after	     		query   int 		false	"start from this last_tx_lt"
 //  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
-//	@Success		200		{object}	filter.AccountStatesRes
+//	@Success		200		{object}	filter.AccountsRes
 //	@Router			/accounts [get]
 func (c *Controller) GetAccountStates(ctx *gin.Context) {
-	var req filter.AccountStatesReq
+	var req filter.AccountsReq
 
 	err := ctx.ShouldBindQuery(&req)
 	if err != nil {
@@ -279,7 +279,7 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 		return
 	}
 
-	ret, err := c.svc.FilterAccountStates(ctx, &req)
+	ret, err := c.svc.FilterAccounts(ctx, &req)
 	if err != nil {
 		internalErr(ctx, err)
 		return
@@ -296,10 +296,10 @@ func (c *Controller) GetAccountStates(ctx *gin.Context) {
 //	@Produce		json
 //  @Param   		minter_address		query	string  	true	"NFT collection or FT master address"
 //  @Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
-//	@Success		200		{object}	aggregate.AccountStatesRes
+//	@Success		200		{object}	aggregate.AccountsRes
 //	@Router			/accounts/aggregated [get]
 func (c *Controller) AggregateAccountStates(ctx *gin.Context) {
-	var req aggregate.AccountStatesReq
+	var req aggregate.AccountsReq
 
 	err := ctx.ShouldBindQuery(&req)
 	if err != nil {
@@ -317,7 +317,7 @@ func (c *Controller) AggregateAccountStates(ctx *gin.Context) {
 		return
 	}
 
-	ret, err := c.svc.AggregateAccountStates(ctx, &req)
+	ret, err := c.svc.AggregateAccounts(ctx, &req)
 	if err != nil {
 		internalErr(ctx, err)
 		return
