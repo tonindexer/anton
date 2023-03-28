@@ -521,7 +521,7 @@ func TestGraphAggregateAccounts(t *testing.T) { //nolint:gocognit,gocyclo // a l
 	})
 }
 
-func TestGraphAggregateAccountsHistory(t *testing.T) { //nolint:gocognit,gocyclo // a lot of functions
+func TestGraphAggregateAccountsHistory(t *testing.T) {
 	initDB()
 
 	t.Run("count uniq wallet addresses", func(t *testing.T) {
@@ -643,7 +643,7 @@ func TestGraphAggregateMessages(t *testing.T) {
 	})
 }
 
-func TestGraphAggregateMessagesHistory(t *testing.T) { //nolint:gocognit,gocyclo // a lot of functions
+func TestGraphAggregateMessagesHistory(t *testing.T) {
 	initDB()
 
 	t.Run("count nft item transfers", func(t *testing.T) {
@@ -787,7 +787,7 @@ func TestGraphFilterTransactions(t *testing.T) {
 	})
 }
 
-func TestGraphAggregateTransactionsHistory(t *testing.T) { //nolint:gocognit,gocyclo // a lot of functions
+func TestGraphAggregateTransactionsHistory(t *testing.T) {
 	initDB()
 
 	t.Run("count transactions", func(t *testing.T) {
