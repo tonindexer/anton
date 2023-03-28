@@ -34,9 +34,7 @@ If the operation id matches a known id, such as `0x5fcc3d14`, we attempt to pars
 
 Known contract interfaces are initialized in [abi/known.go](/abi/known.go).
 
-Go to [MODELS.md](/MODELS.md) for a more detailed description of models used in this project and contracts known to this project.
-
-Go to [msg_schema.json](/msg_schema.json) for an example of a message payload JSON schema.
+Go to [msg_schema.json](/docs/msg_schema.json) for an example of a message payload JSON schema.
 
 ### Project structure
 
@@ -99,11 +97,6 @@ nano .env
 
 ## Starting
 
-[//]: # (### docker)
-[//]: # (```shell)
-[//]: # (docker run -d -n indexer-service --env-file .env indexer:latest)
-[//]: # (```)
-
 ### docker-compose
 ```shell
 docker-compose up -d
@@ -125,9 +118,9 @@ docker-compose exec indexer tonidx addInterface               \
 ### Inserting contract operation
 
 ```shell
-docker-compose exec indexer tonidx addOperation   \ 
-    -name     [operation name]                    \
-    -contract [contract interface name]           \
-    -opid     [operation id, example: 0x5fcc3d14] \
+docker-compose exec indexer tonidx addOperation               \
+    -name     [operation name]                                \
+    -contract [contract interface name]                       \
+    -opid     [operation id, example: 0x5fcc3d14]             \
     -schema   [message body schema]
 ```
