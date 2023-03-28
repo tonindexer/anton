@@ -46,7 +46,7 @@ func GetRoundingFunction(interval time.Duration) (string, error) {
 
 	days := hour / 24
 	if days < 7 {
-		return fmt.Sprintf(funcFormat, "%s", hour, "day"), nil
+		return fmt.Sprintf(funcFormat, "%s", days, "day"), nil
 	}
 
 	return "", errors.Wrapf(core.ErrInvalidArg, "unsupported interval %d hours", days)
