@@ -98,7 +98,6 @@ Interfaces are determined by `get-methods`.
 But some contracts cannot be discovered only by `get-methods`.
 For example, [telemint](https://github.com/TelegramMessenger/telemint/tree/main/func) NFT collections has all get-methods
 identical to standard NFT collections, but they have some specific messages not seen in other collections.
-Or take, for example, usual wallets, which are used by ordinary users; we can find them only by looking into the contract code, as old wallets have no `get-methods`.
 That's why we also match contracts found in the network to interfaces by code hash or addresses.
 
 ### Endpoint: `/contract/interfaces`
