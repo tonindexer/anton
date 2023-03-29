@@ -540,7 +540,7 @@ curl -X GET 'https://anton.tools/api/v0/transactions?address=EQBl3gg6AAdjgjO2ZoN
 ## AggregateTransactionsHistory
 
 Returns time series for a given metric.
-The filter can be set by addresses or workchain
+The filter can be set by addresses or workchain.
 
 ### Endpoint: `/transactions/aggregated/history`
 
@@ -637,28 +637,132 @@ curl -X GET 'https://anton.tools/api/v0/messages?operation_name=jetton_transfer&
 }
 ```
 
-[//]: # (## AggregateMessages)
+## AggregateMessages
 
-[//]: # ()
-[//]: # (### Endpoint: `/messages/aggregated`)
+Returns statistics on messages on a given address. 
+It counts messages and sums amount received from and sent to each address.
 
-[//]: # ()
-[//]: # (### Request)
+### Endpoint: `/messages/aggregated`
 
-[//]: # ()
-[//]: # (### Response)
+### Request
 
-[//]: # ()
-[//]: # (## AggregateMessagesHistory)
+```shell
+curl -X GET 'https://anton.tools/api/v0/messages/aggregated?address=0%3A83dfd552e63729b472fcbcc8c45ebcc6691702558b68ec7527e1ba403a0f31a8&order_by=count&limit=3'
+```
 
-[//]: # ()
-[//]: # (### Endpoint: `/messages/aggregated/history`)
+### Response
 
-[//]: # ()
-[//]: # (### Request)
+```shell
+{
+  "received_count": 182,
+  "received_ton_amount": 14175360552821,
+  "sent_count": 54,
+  "sent_ton_amount": 14215521645679012,
+  "received_from_address": [
+    {
+      "sender": {
+        "hex": "0:0000000000000000000000000000000000000000000000000000000000000000",
+        "base64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "amount": 0,
+      "count": 54
+    },
+    {
+      "sender": {
+        "hex": "0:2260dd494a8a96d917807b6f0dfec864e07281295c36b93ed5017412c5022dd8",
+        "base64": "EQAiYN1JSoqW2ReAe28N_shk4HKBKVw2uT7VAXQSxQIt2DVO"
+      },
+      "amount": 61000000,
+      "count": 7
+    },
+    {
+      "sender": {
+        "hex": "0:04f89eb5fe2f355dd30a99384409ea2e07687e704a53c44d5b559442fdd67921",
+        "base64": "EQAE-J61_i81XdMKmThECeouB2h-cEpTxE1bVZRC_dZ5IbOA"
+      },
+      "amount": 60000,
+      "count": 6
+    }
+  ],
+  "sent_to_address": [
+    {
+      "receiver": {
+        "hex": "0:7e81a5f3a00f3b08ae10ab02a543c66aef565bce303580a6a817e4b8005fb2c2",
+        "base64": "EQB-gaXzoA87CK4QqwKlQ8Zq71ZbzjA1gKaoF-S4AF-ywjlJ"
+      },
+      "amount": 102600000000000,
+      "count": 9
+    },
+    {
+      "receiver": {
+        "hex": "0:314afa005f740b53d1e0c149615730d2e0400593829a02f34f4e8a4f573f6856",
+        "base64": "EQAxSvoAX3QLU9HgwUlhVzDS4EAFk4KaAvNPTopPVz9oVoFg"
+      },
+      "amount": 21100000000000,
+      "count": 4
+    },
+    {
+      "receiver": {
+        "hex": "0:c3f1da8ecda8f8cd42bace224ea3f1b6971eaa7f54c492d4d190527b4f573f7c",
+        "base64": "EQDD8dqOzaj4zUK6ziJOo_G2lx6qf1TEktTRkFJ7T1c_fPQb"
+      },
+      "amount": 159482000000000,
+      "count": 3
+    }
+  ]
+}
+```
 
-[//]: # ()
-[//]: # (### Response)
+Returns time series for a given metric.
+The filter is same as in message getter.
+
+## AggregateMessagesHistory
+
+### Endpoint: `/messages/aggregated/history`
+
+### Request
+
+```shell
+# count telegram NFT username transfers by each day
+curl -X GET 'https://anton.tools/api/v0/messages/aggregated/history?metric=message_count&operation_name=nft_item_transfer&minter_address=EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi&from=2023-03-01T00%3A00%3A00Z&to=2023-03-11T00%3A00%3A00Z&interval=24h'
+```
+
+### Response
+
+```json
+{
+  "count_results": [
+    {
+      "Value": 57,
+      "Timestamp": "2023-03-04T00:00:00Z"
+    },
+    {
+      "Value": 79,
+      "Timestamp": "2023-03-05T00:00:00Z"
+    },
+    {
+      "Value": 95,
+      "Timestamp": "2023-03-06T00:00:00Z"
+    },
+    {
+      "Value": 109,
+      "Timestamp": "2023-03-07T00:00:00Z"
+    },
+    {
+      "Value": 76,
+      "Timestamp": "2023-03-08T00:00:00Z"
+    },
+    {
+      "Value": 119,
+      "Timestamp": "2023-03-09T00:00:00Z"
+    },
+    {
+      "Value": 123,
+      "Timestamp": "2023-03-10T00:00:00Z"
+    }
+  ]
+}
+```
 
 ## GetBlocks
 
