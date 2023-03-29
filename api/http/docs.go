@@ -183,6 +183,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "NFT collection or FT master address",
+                        "name": "minter_address",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "from timestamp",
                         "name": "from",
                         "in": "query"
@@ -195,11 +201,11 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            "15m",
-                            "1h",
-                            "4h",
+                            "24h",
                             "8h",
-                            "24h"
+                            "4h",
+                            "1h",
+                            "15m"
                         ],
                         "type": "string",
                         "description": "group interval",
@@ -590,11 +596,11 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            "15m",
-                            "1h",
-                            "4h",
+                            "24h",
                             "8h",
-                            "24h"
+                            "4h",
+                            "1h",
+                            "15m"
                         ],
                         "type": "string",
                         "description": "group interval",
@@ -766,11 +772,11 @@ const docTemplate = `{
                     },
                     {
                         "enum": [
-                            "15m",
-                            "1h",
-                            "4h",
+                            "24h",
                             "8h",
-                            "24h"
+                            "4h",
+                            "1h",
+                            "15m"
                         ],
                         "type": "string",
                         "description": "group interval",
@@ -1437,6 +1443,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "data": {
+                    "description": "TODO: https://github.com/uptrace/go-clickhouse/issues/22",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -1736,7 +1743,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.0.1",
+	Version:          "0.1",
 	Host:             "anton.tools",
 	BasePath:         "/api/v0",
 	Schemes:          []string{"https"},

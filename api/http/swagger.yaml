@@ -430,6 +430,7 @@ definitions:
       created_lt:
         type: integer
       data:
+        description: 'TODO: https://github.com/uptrace/go-clickhouse/issues/22'
         items:
           type: integer
         type: array
@@ -631,7 +632,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: tonidx
-  version: 0.0.1
+  version: "0.1"
 paths:
   /accounts:
     get:
@@ -737,6 +738,10 @@ paths:
           type: string
         name: interface
         type: array
+      - description: NFT collection or FT master address
+        in: query
+        name: minter_address
+        type: string
       - description: from timestamp
         in: query
         name: from
@@ -747,11 +752,11 @@ paths:
         type: string
       - description: group interval
         enum:
-        - 15m
-        - 1h
-        - 4h
-        - 8h
         - 24h
+        - 8h
+        - 4h
+        - 1h
+        - 15m
         in: query
         name: interval
         required: true
@@ -1015,11 +1020,11 @@ paths:
         type: string
       - description: group interval
         enum:
-        - 15m
-        - 1h
-        - 4h
-        - 8h
         - 24h
+        - 8h
+        - 4h
+        - 1h
+        - 15m
         in: query
         name: interval
         required: true
@@ -1134,11 +1139,11 @@ paths:
         type: string
       - description: group interval
         enum:
-        - 15m
-        - 1h
-        - 4h
-        - 8h
         - 24h
+        - 8h
+        - 4h
+        - 1h
+        - 15m
         in: query
         name: interval
         required: true

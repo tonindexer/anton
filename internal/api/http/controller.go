@@ -335,7 +335,7 @@ func (c *Controller) AggregateAccounts(ctx *gin.Context) {
 //	@Produce		json
 //  @Param   		metric				query	string  	true	"metric to show"			Enums(active_addresses)
 //  @Param   		interface			query	[]string  	false	"filter by interfaces"
-//  @Param   		minter_address		query	string  	true	"NFT collection or FT master address"
+//  @Param   		minter_address		query	string  	false	"NFT collection or FT master address"
 //  @Param   		from				query	string  	false	"from timestamp"
 //  @Param   		to					query	string  	false	"to timestamp"
 //  @Param   		interval			query	string  	true	"group interval"			Enums(24h, 8h, 4h, 1h, 15m)

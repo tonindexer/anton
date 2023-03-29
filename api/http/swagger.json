@@ -14,7 +14,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.0.1"
+        "version": "0.1"
     },
     "host": "anton.tools",
     "basePath": "/api/v0",
@@ -180,6 +180,12 @@
                     },
                     {
                         "type": "string",
+                        "description": "NFT collection or FT master address",
+                        "name": "minter_address",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "from timestamp",
                         "name": "from",
                         "in": "query"
@@ -192,11 +198,11 @@
                     },
                     {
                         "enum": [
-                            "15m",
-                            "1h",
-                            "4h",
+                            "24h",
                             "8h",
-                            "24h"
+                            "4h",
+                            "1h",
+                            "15m"
                         ],
                         "type": "string",
                         "description": "group interval",
@@ -587,11 +593,11 @@
                     },
                     {
                         "enum": [
-                            "15m",
-                            "1h",
-                            "4h",
+                            "24h",
                             "8h",
-                            "24h"
+                            "4h",
+                            "1h",
+                            "15m"
                         ],
                         "type": "string",
                         "description": "group interval",
@@ -763,11 +769,11 @@
                     },
                     {
                         "enum": [
-                            "15m",
-                            "1h",
-                            "4h",
+                            "24h",
                             "8h",
-                            "24h"
+                            "4h",
+                            "1h",
+                            "15m"
                         ],
                         "type": "string",
                         "description": "group interval",
@@ -1434,6 +1440,7 @@
                     "type": "integer"
                 },
                 "data": {
+                    "description": "TODO: https://github.com/uptrace/go-clickhouse/issues/22",
                     "type": "array",
                     "items": {
                         "type": "integer"
