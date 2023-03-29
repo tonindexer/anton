@@ -33,7 +33,9 @@ func (s *Service) skipAccounts(_ *ton.BlockIDExt, a *address.Address) bool {
 	}
 }
 
-func (s *Service) processAccount(ctx context.Context, b *ton.BlockIDExt, a *address.Address) (*core.AccountState, *core.AccountData, error) {
+func (s *Service) processAccount(ctx context.Context, b *ton.BlockIDExt, tx *core.Transaction) (*core.AccountState, *core.AccountData, error) {
+	a := address.MustParseAddr(tx.Address.Base64())
+
 	if s.skipAccounts(b, a) {
 		return nil, nil, nil
 	}
@@ -50,6 +52,7 @@ func (s *Service) processAccount(ctx context.Context, b *ton.BlockIDExt, a *addr
 	}
 
 	acc := mapAccount(raw)
+	acc.UpdatedAt = tx.CreatedAt
 	if acc.Status == core.NonExist {
 		return nil, nil, nil
 	}
@@ -75,11 +78,9 @@ func (s *Service) processTxAccounts(
 	accountsData = make(map[addr.Address]*core.AccountData)
 
 	for _, tx := range transactions {
-		a := address.MustParseAddr(tx.Address.Base64())
-
-		acc, data, err := s.processAccount(ctx, b, a)
+		acc, data, err := s.processAccount(ctx, b, tx)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "process account (%s)", a.String())
+			return nil, nil, errors.Wrapf(err, "process account (%s)", tx.Address.Base64())
 		}
 
 		if acc != nil {

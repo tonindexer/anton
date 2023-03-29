@@ -18,14 +18,14 @@ func testService(t *testing.T) *query.Service {
 		return _testService
 	}
 
-	db, err := repository.ConnectDB(ctx,
+	bd, err := repository.ConnectDB(ctx,
 		"clickhouse://localhost:9000/default?sslmode=disable",
 		"postgres://user:pass@localhost:5432/default?sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	s, err := query.NewService(context.Background(), &app.QueryConfig{DB: db})
+	s, err := query.NewService(context.Background(), &app.QueryConfig{DB: bd})
 	if err != nil {
 		t.Fatal(err)
 	}

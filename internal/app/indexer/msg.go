@@ -13,6 +13,7 @@ import (
 
 	"github.com/iam047801/tonidx/internal/addr"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/filter"
 )
 
 func (s *Service) messageAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.Message, outMsgMap map[uint64]*core.Message) (bool, error) {
@@ -22,11 +23,11 @@ func (s *Service) messageAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.M
 		return true, nil
 	}
 
-	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash})
+	res, err := s.msgRepo.FilterMessages(ctx, &filter.MessagesReq{DBTx: &tx, Hash: in.Hash})
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
 	}
-	if len(res) == 1 {
+	if len(res.Rows) == 1 {
 		return true, nil
 	}
 
@@ -88,11 +89,11 @@ func (s *Service) messagePayloadAlreadyKnown(ctx context.Context, tx bun.Tx, in 
 		return true, nil
 	}
 
-	res, err := s.txRepo.GetMessages(ctx, &core.MessageFilter{DBTx: &tx, Hash: in.Hash, WithPayload: true})
+	res, err := s.msgRepo.FilterMessages(ctx, &filter.MessagesReq{DBTx: &tx, Hash: in.Hash, WithPayload: true})
 	if err != nil {
 		return false, errors.Wrap(err, "get messages")
 	}
-	if len(res) > 0 && res[0].Payload != nil {
+	if len(res.Rows) > 0 && res.Rows[0].Payload != nil {
 		return true, nil
 	}
 
@@ -107,7 +108,7 @@ func (s *Service) getLatestAccount(ctx context.Context, a addr.Address, accountM
 
 	defer timeTrack(time.Now(), fmt.Sprintf("getLatestAccount(%s)", a.Base64()))
 
-	state, err := s.accountRepo.GetAccountStates(ctx, &core.AccountStateFilter{
+	res, err := s.accountRepo.FilterAccounts(ctx, &filter.AccountsReq{
 		Addresses:   []*addr.Address{&a},
 		LatestState: true,
 		WithData:    true,
@@ -117,8 +118,8 @@ func (s *Service) getLatestAccount(ctx context.Context, a addr.Address, accountM
 	if err != nil {
 		return nil, errors.Wrap(err, "get account data")
 	}
-	if len(state) > 0 && state[0].StateData != nil {
-		return state[0].StateData, nil
+	if len(res.Rows) > 0 && res.Rows[0].StateData != nil {
+		return res.Rows[0].StateData, nil
 	}
 
 	return nil, errors.Wrap(core.ErrNotFound, "no account data found")

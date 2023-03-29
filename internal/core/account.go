@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bunbig"
@@ -39,7 +40,7 @@ type AccountState struct {
 	Balance  *bunbig.Int   `ch:"type:UInt256" bun:"type:numeric" json:"balance"`
 
 	LastTxLT   uint64 `ch:",pk" bun:"type:bigint,pk,notnull" json:"last_tx_lt"`
-	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"last_tx_hash"`
+	LastTxHash []byte `bun:"type:bytea,unique,notnull" json:"last_tx_hash"`
 
 	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:address=address,join:last_tx_lt=last_tx_lt" json:"state_data,omitempty"`
 
@@ -50,6 +51,8 @@ type AccountState struct {
 	DataHash  []byte `bun:"type:bytea" json:"data_hash,omitempty"`
 
 	GetMethodHashes []uint32 `ch:"type:Array(UInt32)" bun:",array" json:"get_method_hashes"`
+
+	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
 }
 
 type NFTCollectionData struct {
@@ -100,7 +103,7 @@ type AccountData struct {
 
 	Address    addr.Address `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
 	LastTxLT   uint64       `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
-	LastTxHash []byte       `ch:",pk" bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
+	LastTxHash []byte       `bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
 	Balance    *bunbig.Int  `ch:"type:UInt256" bun:"type:numeric" json:"balance"`
 
 	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types"`
@@ -118,26 +121,11 @@ type AccountData struct {
 	FTWalletData
 
 	Errors []string `json:"error,omitempty"`
-}
 
-type AccountStateFilter struct {
-	Addresses   []*addr.Address // `form:"addresses"`
-	LatestState bool            `form:"latest"`
-
-	// contract data filter
-	WithData      bool
-	ContractTypes []abi.ContractName `form:"interface"`
-	OwnerAddress  *addr.Address      // `form:"owner_address"`
-	MinterAddress *addr.Address      // `form:"minter_address"`
-
-	Order string `form:"order"` // ASC, DESC
-
-	AfterTxLT *uint64 `form:"after"`
-	Limit     int     `form:"limit"`
+	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
 }
 
 type AccountRepository interface {
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
 	AddAccountData(ctx context.Context, tx bun.Tx, data []*AccountData) error
-	GetAccountStates(ctx context.Context, filter *AccountStateFilter) ([]*AccountState, error)
 }

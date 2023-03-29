@@ -12,15 +12,23 @@ import (
 )
 
 type QueryController interface {
-	GetInterfaces(*gin.Context)
-	GetOperations(*gin.Context)
+	GetStatistics(*gin.Context)
 
 	GetBlocks(*gin.Context)
 
-	GetAccountStates(*gin.Context)
+	GetAccounts(*gin.Context)
+	AggregateAccounts(ctx *gin.Context)
+	AggregateAccountsHistory(ctx *gin.Context)
 
 	GetTransactions(*gin.Context)
+	AggregateTransactionsHistory(*gin.Context)
+
 	GetMessages(*gin.Context)
+	AggregateMessages(*gin.Context)
+	AggregateMessagesHistory(*gin.Context)
+
+	GetInterfaces(*gin.Context)
+	GetOperations(*gin.Context)
 }
 
 type Server struct {
@@ -35,15 +43,23 @@ func NewServer(host string) *Server {
 func (s *Server) RegisterRoutes(t QueryController) {
 	base := s.router.Group(basePath)
 
-	base.GET("/contract/interfaces", t.GetInterfaces)
-	base.GET("/contract/operations", t.GetOperations)
+	base.GET("/statistics", t.GetStatistics)
 
 	base.GET("/blocks", t.GetBlocks)
 
-	base.GET("/accounts", t.GetAccountStates)
+	base.GET("/accounts", t.GetAccounts)
+	base.GET("/accounts/aggregated", t.AggregateAccounts)
+	base.GET("/accounts/aggregated/history", t.AggregateAccountsHistory)
 
 	base.GET("/transactions", t.GetTransactions)
+	base.GET("/transactions/aggregated/history", t.AggregateTransactionsHistory)
+
 	base.GET("/messages", t.GetMessages)
+	base.GET("/messages/aggregated", t.AggregateMessages)
+	base.GET("/messages/aggregated/history", t.AggregateMessagesHistory)
+
+	base.GET("/contract/interfaces", t.GetInterfaces)
+	base.GET("/contract/operations", t.GetOperations)
 
 	base.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerFiles.Handler,

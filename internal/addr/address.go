@@ -129,6 +129,10 @@ func (x *Address) UnmarshalJSON(raw []byte) error {
 	return fmt.Errorf("cannot unmarshal %s to address", string(raw))
 }
 
+func (x *Address) UnmarshalText(data []byte) error {
+	return x.UnmarshalJSON(data)
+}
+
 func (x *Address) Value() (driver.Value, error) {
 	if x == nil {
 		return nil, nil

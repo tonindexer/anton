@@ -6,21 +6,21 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/repository"
 )
 
-var _ core.AccountRepository = (*Repository)(nil)
+var _ repository.Account = (*Repository)(nil)
 
 type Repository struct {
 	ch *ch.DB
 	pg *bun.DB
 }
 
-func NewRepository(_ch *ch.DB, _pg *bun.DB) *Repository {
-	return &Repository{ch: _ch, pg: _pg}
+func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
+	return &Repository{ch: ck, pg: pg}
 }
 
 func createIndexes(ctx context.Context, pgDB *bun.DB) error {
@@ -149,12 +149,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		return nil
 	}
 
-	_, err := r.ch.NewInsert().Model(&accounts).Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.NewInsert().Model(&accounts).Exec(ctx)
+	_, err := tx.NewInsert().Model(&accounts).Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "cannot insert new states")
 	}
@@ -174,6 +169,11 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		}
 	}
 
+	_, err = r.ch.NewInsert().Model(&accounts).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -181,95 +181,13 @@ func (r *Repository) AddAccountData(ctx context.Context, tx bun.Tx, data []*core
 	if len(data) == 0 {
 		return nil
 	}
-	_, err := r.ch.NewInsert().Model(&data).Exec(ctx)
+	_, err := tx.NewInsert().Model(&data).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = tx.NewInsert().Model(&data).Exec(ctx)
+	_, err = r.ch.NewInsert().Model(&data).Exec(ctx)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func addAccountDataFilter(q *bun.SelectQuery, f *core.AccountStateFilter) *bun.SelectQuery {
-	if !f.WithData {
-		return q
-	}
-
-	prefix := ""
-	if f.LatestState {
-		prefix = "account_state__"
-	}
-
-	if len(f.ContractTypes) > 0 {
-		q = q.Where(prefix+"state_data.types && ?", pgdialect.Array(f.ContractTypes))
-	}
-	if f.OwnerAddress != nil {
-		q = q.Where(prefix+"state_data.owner_address = ?", f.OwnerAddress)
-	}
-	if f.MinterAddress != nil {
-		q = q.Where(prefix+"state_data.minter_address = ?", f.MinterAddress)
-	}
-
-	return q
-}
-
-func (r *Repository) GetAccountStates(ctx context.Context, f *core.AccountStateFilter) (ret []*core.AccountState, err error) {
-	var (
-		q           *bun.SelectQuery
-		statesTable string
-		latest      []*core.LatestAccountState
-	)
-
-	// choose table to filter states by
-	// and optionally join account data
-	if f.LatestState {
-		q = r.pg.NewSelect().Model(&latest).Relation("AccountState", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.ExcludeColumn("code", "data") // TODO: optional
-		})
-		if f.WithData {
-			q = q.Relation("AccountState.StateData")
-		}
-		statesTable = "latest_account_state."
-	} else {
-		q = r.pg.NewSelect().Model(&ret).
-			ExcludeColumn("code", "data") // TODO: optional
-		if f.WithData {
-			q = q.Relation("StateData")
-		}
-		statesTable = "account_state."
-	}
-
-	if len(f.Addresses) > 0 {
-		q = q.Where(statesTable+"address in (?)", bun.In(f.Addresses))
-	}
-
-	q = addAccountDataFilter(q, f)
-
-	if f.AfterTxLT != nil {
-		if f.Order == "ASC" {
-			q = q.Where(statesTable+"last_tx_lt > ?", f.AfterTxLT)
-		} else {
-			q = q.Where(statesTable+"last_tx_lt < ?", f.AfterTxLT)
-		}
-	}
-	if f.Order != "" {
-		q = q.Order(statesTable + "last_tx_lt " + strings.ToUpper(f.Order))
-	}
-
-	if f.Limit == 0 {
-		f.Limit = 3
-	}
-	q = q.Limit(f.Limit)
-
-	err = q.Scan(ctx)
-
-	if f.LatestState {
-		for _, a := range latest {
-			ret = append(ret, a.AccountState)
-		}
-	}
-
-	return ret, err
 }

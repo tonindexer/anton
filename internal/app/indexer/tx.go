@@ -100,10 +100,10 @@ func (s *Service) processBlockTransactions(ctx context.Context, tx bun.Tx, shard
 	if err := s.accountRepo.AddAccountData(ctx, tx, accountData); err != nil {
 		return errors.Wrap(err, "add account data")
 	}
-	if err := s.txRepo.AddMessagePayloads(ctx, tx, payloads); err != nil {
+	if err := s.msgRepo.AddMessagePayloads(ctx, tx, payloads); err != nil {
 		return errors.Wrap(err, "add message payloads")
 	}
-	if err := s.txRepo.AddMessages(ctx, tx, messages); err != nil {
+	if err := s.msgRepo.AddMessages(ctx, tx, messages); err != nil {
 		return errors.Wrap(err, "add messages")
 	}
 	if err := s.txRepo.AddTransactions(ctx, tx, transactions); err != nil {

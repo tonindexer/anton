@@ -12,9 +12,11 @@ import (
 
 	"github.com/iam047801/tonidx/internal/app"
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/repository"
 	"github.com/iam047801/tonidx/internal/core/repository/account"
 	"github.com/iam047801/tonidx/internal/core/repository/block"
 	"github.com/iam047801/tonidx/internal/core/repository/contract"
+	"github.com/iam047801/tonidx/internal/core/repository/msg"
 	"github.com/iam047801/tonidx/internal/core/repository/tx"
 )
 
@@ -25,8 +27,9 @@ type Service struct {
 
 	abiRepo     core.ContractRepository
 	blockRepo   core.BlockRepository
-	txRepo      core.TxRepository
-	accountRepo core.AccountRepository
+	txRepo      core.TransactionRepository
+	msgRepo     repository.Message
+	accountRepo repository.Account
 
 	parser app.ParserService
 	api    *ton.APIClient
@@ -46,6 +49,7 @@ func NewService(_ context.Context, cfg *app.IndexerConfig) (*Service, error) {
 	s.abiRepo = contract.NewRepository(pg)
 	s.blockRepo = block.NewRepository(ch, pg)
 	s.txRepo = tx.NewRepository(ch, pg)
+	s.msgRepo = msg.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)
 
 	s.parser = cfg.Parser

@@ -4,6 +4,9 @@ import (
 	"context"
 
 	"github.com/iam047801/tonidx/internal/core"
+	"github.com/iam047801/tonidx/internal/core/aggregate"
+	"github.com/iam047801/tonidx/internal/core/aggregate/history"
+	"github.com/iam047801/tonidx/internal/core/filter"
 	"github.com/iam047801/tonidx/internal/core/repository"
 )
 
@@ -12,14 +15,20 @@ type QueryConfig struct {
 }
 
 type QueryService interface {
-	GetInterfaces(context.Context) ([]*core.ContractInterface, error)
+	GetStatistics(ctx context.Context) (*aggregate.Statistics, error)
+
+	GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error)
 	GetOperations(ctx context.Context) ([]*core.ContractOperation, error)
 
-	GetLastMasterBlock(ctx context.Context) (*core.Block, error)
-	GetBlocks(ctx context.Context, filter *core.BlockFilter) ([]*core.Block, error)
+	filter.BlockRepository
+	filter.AccountRepository
+	filter.TransactionRepository
+	filter.MessageRepository
 
-	GetAccountStates(ctx context.Context, filter *core.AccountStateFilter) ([]*core.AccountState, error)
+	aggregate.AccountRepository
+	aggregate.MessageRepository
 
-	GetTransactions(ctx context.Context, filter *core.TransactionFilter) ([]*core.Transaction, error)
-	GetMessages(ctx context.Context, filter *core.MessageFilter) ([]*core.Message, error)
+	history.AccountRepository
+	history.TransactionRepository
+	history.MessageRepository
 }
