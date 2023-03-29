@@ -1,4 +1,4 @@
-# JSON API Documentation
+# JSON API query examples
 
 This documentation provides the list of available endpoints in the TON indexer API. 
 Each endpoint accepts GET method requests and parameters in the URL query. The responses are in JSON format.

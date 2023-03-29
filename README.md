@@ -36,14 +36,22 @@ Known contract interfaces are initialized in [abi/known.go](/abi/known.go).
 
 Go to [msg_schema.json](/docs/msg_schema.json) for an example of a message payload JSON schema.
 
+Go to [API.md](/docs/API.md) to see working query examples.
+
 ### Project structure
 
 | Folder            | Description                                                                      |
 |-------------------|----------------------------------------------------------------------------------|
 | `abi`             | tlb cell parsing defined by json schema, known contract messages and get-methods |
 |                   |                                                                                  |
-| `core`            | contains project domain and all common interfaces                                |
-| `core/repository` | database repositories                                                            |
+| `api/http`        | JSON API documentation                                                           |
+| `docs`            | database schemas used in this project, API query examples                        |
+| `config`          | custom postgresql configuration                                                  |
+|                   |                                                                                  |
+| `core`            | contains project domain                                                          |
+| `core/filter`     | filters description for domain structures                                        |
+| `core/aggregate`  | aggregation requests and responses description for domain structures             |
+| `core/repository` | database repositories implementing filters and aggregation                       |
 |                   |                                                                                  |
 | `app`             | contains all services interfaces and theirs configs                              |
 | `app/parser`      | service to parse contract data and message payloads to known contracts           |
@@ -58,13 +66,6 @@ godoc -http=localhost:6060
 ```
 
 ## Installation
-
-[//]: # (### docker)
-[//]: # (```shell)
-[//]: # (git clone https://github.com/iam047801/tonidx)
-[//]: # (cd tonidx)
-[//]: # (docker build -t indexer:latest .)
-[//]: # (```)
 
 ### docker-compose
 ```shell
