@@ -11,13 +11,13 @@ Returns statistics on blocks, transactions, messages, and accounts.
 
 ### Endpoint: `/statistics`
 
-### Request:
+### Request
 
 ```shell
 curl -X GET 'https://anton.tools/api/v0/statistics'
 ```
 
-### Response:
+### Response
 
 ```json
 {
@@ -103,7 +103,7 @@ That's why we also match contracts found in the network to interfaces by code ha
 
 ### Endpoint: `/contract/interfaces`
 
-### Request:
+### Request
 
 ```shell
 curl -X GET 'https://anton.tools/api/v0/contract/interfaces'
@@ -159,13 +159,13 @@ Schemas of messages returned here is identical to what is defined in [msg_schema
 
 ### Endpoint: `/contract/operations`
 
-### Request:
+### Request
 
 ```shell
 curl -X GET 'https://anton.tools/api/v0/contract/operations'
 ```
 
-### Response:
+### Response
 
 ```json
 {
@@ -244,7 +244,7 @@ If `latest=true` parameter is set, it returns only the latest known account stat
 
 ### Endpoint: `/accounts`
 
-### Request:
+### Request
 
 ```shell
 curl -X GET 'https://anton.tools/api/v0/accounts?latest=true&interface=nft_collection&order=DESC&after=36418223000005&limit=1'
@@ -286,9 +286,10 @@ Returns statistics on account states.
 Currently, only minter address can be set.
 With NFT minter address set, it returns number of items, number of owners, counts items owned by each owner, counts number of unique owners for each item.
 With FT minter address set, it returns number of wallets, total supply and supply owned by each wallet owner.
+
 ### Endpoint: `/accounts/aggregated`
 
-### Request:
+### Request
 
 ```shell
 # get statistics on telegram usernames
@@ -398,6 +399,8 @@ curl -X GET 'https://anton.tools/api/v0/accounts/aggregated?minter_address=EQCSb
 Returns time series for a given metric.
 The filter can be set for an interface or minter address.
 
+### Endpoint: `/accounts/aggregated/history`
+
 ### Request
 
 ```shell
@@ -438,6 +441,225 @@ curl -X GET 'https://anton.tools/api/v0/accounts/aggregated/history?metric=activ
 }
 ```
 
+## GetTransactions
+
+Returns filtered transactions, account states, messages and parsed data for each transaction.
+The filter can be set by transaction address, hash, incoming message hash and workchain.
+
+### Endpoint: `/transactions`
+
+### Request
+
+```shell
+curl -X GET 'https://anton.tools/api/v0/transactions?address=EQBl3gg6AAdjgjO2ZoNU5Q5EzUIl8XMNZrix8Z5dJmkHUfxI&workchain=0&order=DESC&limit=1'
+```
+
+### Response
+
+```json
+{
+  "total": 50,
+  "results": [
+    {
+      "address": {
+        "hex": "0:65de083a0007638233b6668354e50e44cd4225f1730d66b8b1f19e5d26690751",
+        "base64": "EQBl3gg6AAdjgjO2ZoNU5Q5EzUIl8XMNZrix8Z5dJmkHUfxI"
+      },
+      "hash": "a6CrW7Dyk65NNRNi69psMZv0lNGN1ShzeMZf0FX++0U=",
+      "account": {
+        "is_active": true,
+        "status": "ACTIVE",
+        "balance": 240616906,
+        "last_tx_lt": 36001780000007,
+        "last_tx_hash": "a6CrW7Dyk65NNRNi69psMZv0lNGN1ShzeMZf0FX++0U=",
+        "state_data": {
+          "types": [
+            "jetton_minter"
+          ],
+          "content_name": "Lavandos",
+          "content_description": "This is a universal token for use in all areas of the decentralized Internet in the TON blockchain, web3, Telegram bots, TON sites. Issue of 4.6 billion coins. Telegram channels: Englishversion: @lave_eng Русскоязычная версия: @lavetoken, @lavefoundation, versión en español: @lave_esp, www.lavetoken.com",
+          "content_image": "https://i.ibb.co/Bj5KqK4/IMG-20221213-115545-207.png",
+          "total_supply": 4600000000000000000,
+          "mintable": true,
+          "admin_addr": {
+            "hex": "0:0000000000000000000000000000000000000000000000000000000000000000",
+            "base64": "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
+          }
+        },
+        "code_hash": "mg+Y3W+/Il7vgWXk5kQX7pMffuoABlNDnntdzcBkTNY=",
+        "data_hash": "Hoys/NBmNLvFGvdK/0GlzPZV2ZUjXBaKyrtFx+q/uwk=",
+        "get_method_hashes": [ 106029, 10, 103289 ],
+        "updated_at": "2023-03-12T23:40:07Z"
+      },
+      "block_workchain": 0,
+      "block_shard": -9223372036854776000,
+      "block_seq_no": 33606182,
+      "prev_tx_hash": "0JHX+bF9GP4QA+VPYDPBQwcc9D7i4uLw9Bext0tBUnc=",
+      "prev_tx_lt": 35368059000003,
+      "in_msg_hash": "J1plFWLNeyzVZnZUAC85sAJ+KYFb/gL21iVoyVzzxS8=",
+      "in_msg": {
+        "type": "INTERNAL",
+        "hash": "J1plFWLNeyzVZnZUAC85sAJ+KYFb/gL21iVoyVzzxS8=",
+        "src_address": {
+          "hex": "0:067f10d4354d3d02fe1911e9a3018a8c371e1d710b00f304b6b46af5e8aa2e77",
+          "base64": "EQAGfxDUNU09Av4ZEemjAYqMNx4dcQsA8wS2tGr16Koud43P"
+        },
+        "dst_address": {
+          "hex": "0:65de083a0007638233b6668354e50e44cd4225f1730d66b8b1f19e5d26690751",
+          "base64": "EQBl3gg6AAdjgjO2ZoNU5Q5EzUIl8XMNZrix8Z5dJmkHUfxI"
+        },
+        "source_tx_hash": "8/cBWTYy2E+UnIWwggmv7lJTegXt9q/Tr/rpCB6JRhA=",
+        "source_tx_lt": 36001780000005,
+        "bounce": false,
+        "bounced": false,
+        "amount": 4809163,
+        "ihr_disabled": true,
+        "ihr_fee": 0,
+        "fwd_fee": 666672,
+        "body": "te6cckEBAQEADgAAGNUydtsAAAAAAAAAAPfBmNw=",
+        "body_hash": "la37uGspaEdb70INRgaUtfLiBGlqXsrLMlKwhwvngQY=",
+        "operation_id": 3576854235,
+        "created_at": "2023-03-12T23:40:07Z",
+        "created_lt": 36001780000006
+      },
+      "in_amount": 4809163,
+      "out_msg_count": 0,
+      "out_amount": 0,
+      "total_fees": 3332042,
+      "state_update": "te6cckEBAQEAQwAAgnIt4Gk2psKI3LyTTJhHH5cPqoQEGzezoxTQbHRaElXfEagWHRG7gq6d1aaQJ1Z8EZ4Z8aq7zHvrhnDnbOMO8HIIHLFJnw==",
+      "description": "te6cckEBAgEAYAABGQzE0HaI0lhy0GPyvgkBAJxBAshLJAAAAf/+AAAAQQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABXYNxb",
+      "orig_status": "ACTIVE",
+      "end_status": "ACTIVE",
+      "created_at": "2023-03-12T23:40:07Z",
+      "created_lt": 36001780000007
+    }
+  ]
+}
+```
+
+## AggregateTransactionsHistory
+
+Returns time series for a given metric.
+The filter can be set by addresses or workchain
+
+### Endpoint: `/transactions/aggregated/history`
+
+### Request
+
+```shell
+# count transactions on telegram usernames collection on each day
+curl -X GET 'https://anton.tools/api/v0/transactions/aggregated/history?metric=transaction_count&address=EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi&interval=24h'
+```
+
+### Response
+
+```json
+{
+  "count_results": [
+    {
+      "Value": 283,
+      "Timestamp": "2022-11-19T00:00:00Z"
+    },
+    {
+      "Value": 427,
+      "Timestamp": "2022-11-20T00:00:00Z"
+    },
+    {
+      "Value": 223,
+      "Timestamp": "2022-11-21T00:00:00Z"
+    }
+  ]
+}
+```
+
+## GetMessages
+
+Returns filtered messages theirs parsed data.
+The filter can be set by addresses, minter address, contract interfaces and operation names.
+With minter address set, you can view all messages on all NFT items in a given NFT collection or all jetton wallets.
+
+### Endpoint: `/messages`
+
+### Request
+
+```shell
+# show all telegram username transfers
+curl -X GET 'https://anton.tools/api/v0/messages?operation_name=nft_item_transfer&minter_address=EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi&order=DESC&limit=1'
+# show all Lavandos jetton transfers
+curl -X GET 'https://anton.tools/api/v0/messages?operation_name=jetton_transfer&minter_address=EQBl3gg6AAdjgjO2ZoNU5Q5EzUIl8XMNZrix8Z5dJmkHUfxI&order=DESC&limit=1'
+```
+
+### Response
+
+```json
+{
+  "total": 4469,
+  "results": [
+    {
+      "type": "INTERNAL",
+      "hash": "bgghlVNjVIIxDeywW5BDHzyRARxm7Wy3ct41TzdMPFw=",
+      "src_address": {
+        "hex": "0:4503985e1bbcb8fe8f7fb4bde36b8124bf6e1dbb504f7d7d239002b5686370c6",
+        "base64": "EQBFA5heG7y4_o9_tL3ja4Ekv24du1BPfX0jkAK1aGNwxuIg"
+      },
+      "dst_address": {
+        "hex": "0:f0967a6cce456cf182b2b4c2ef5cf6674715a0c0023a50f8a431875db5e4a96a",
+        "base64": "EQDwlnpszkVs8YKytMLvXPZnRxWgwAI6UPikMYddteSpau3R"
+      },
+      "source_tx_hash": "FmewZ5DjjZMYWSxF8EBwvibssjDL984AK4UVHH3r9Ms=",
+      "source_tx_lt": 36415940000001,
+      "bounce": true,
+      "bounced": false,
+      "amount": 66844722,
+      "ihr_disabled": true,
+      "ihr_fee": 0,
+      "fwd_fee": 1173343,
+      "body": "te6cckEBAQEAVQAApV/MPRQAAAAAAAAAAIAFGLh2uaY6rfzuALJbmpcZTWR/gaXOoXn9krmJMF/UXrABFA5heG7y4/o9/tL3ja4Ekv24du1BPfX0jkAK1aGNwxhzEtAIrWp/+A==",
+      "body_hash": "ETsP1cVj0O7Wyq6echVZrSTOyqjNrzUpn8s404g2pns=",
+      "operation_id": 1607220500,
+      "payload": {
+        "dst_contract": "nft_item",
+        "operation_name": "nft_item_transfer",
+        "data": {
+          "NewOwner": "EQAoxcO1zTHVb-dwBZLc1LjKayP8DS51C8_slcxJgv6i9bSB",
+          "ForwardAmount": "10000000",
+          "ResponseDestination": "EQBFA5heG7y4_o9_tL3ja4Ekv24du1BPfX0jkAK1aGNwxuIg"
+        },
+        "minter_address": {
+          "hex": "0:80d78a35f955a14b679faa887ff4cd5bfc0f43b4a4eea2a7e6927f3701b273c2",
+          "base64": "EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi"
+        }
+      },
+      "created_at": "2023-03-29T00:26:22Z",
+      "created_lt": 36415940000003
+    }
+  ]
+}
+```
+
+[//]: # (## AggregateMessages)
+
+[//]: # ()
+[//]: # (### Endpoint: `/messages/aggregated`)
+
+[//]: # ()
+[//]: # (### Request)
+
+[//]: # ()
+[//]: # (### Response)
+
+[//]: # ()
+[//]: # (## AggregateMessagesHistory)
+
+[//]: # ()
+[//]: # (### Endpoint: `/messages/aggregated/history`)
+
+[//]: # ()
+[//]: # (### Request)
+
+[//]: # ()
+[//]: # (### Response)
+
 ## GetBlocks
 
 Returns filtered blocks. 
@@ -452,6 +674,8 @@ It can also return all transactions with account states, messages and parsed pay
 curl -X GET 'https://anton.tools/api/v0/blocks?workchain=-1&seq_no=27777772&with_transactions=true'
 curl -X GET 'https://anton.tools/api/v0/blocks?workchain=-1&with_transactions=true&order=DESC&limit=3'
 ```
+
+### Response
 
 ```json
 {
