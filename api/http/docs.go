@@ -164,7 +164,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "enum": [
-                            "unique_addresses"
+                            "active_addresses"
                         ],
                         "type": "string",
                         "description": "metric to show",

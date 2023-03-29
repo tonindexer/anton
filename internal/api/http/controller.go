@@ -19,7 +19,7 @@ import (
 )
 
 // @title      		tonidx
-// @version     	0.0.1
+// @version     	0.1
 // @description 	Project fetches data from TON blockchain.
 
 // @contact.name   	Dat Boi
@@ -333,11 +333,12 @@ func (c *Controller) AggregateAccounts(ctx *gin.Context) {
 //	@Tags			account
 //	@Accept			json
 //	@Produce		json
-//  @Param   		metric				query	string  	true	"metric to show"			Enums(unique_addresses)
+//  @Param   		metric				query	string  	true	"metric to show"			Enums(active_addresses)
 //  @Param   		interface			query	[]string  	false	"filter by interfaces"
+//  @Param   		minter_address		query	string  	true	"NFT collection or FT master address"
 //  @Param   		from				query	string  	false	"from timestamp"
 //  @Param   		to					query	string  	false	"to timestamp"
-//  @Param   		interval			query	string  	true	"group interval"			Enums(15m, 1h, 4h, 8h, 24h)
+//  @Param   		interval			query	string  	true	"group interval"			Enums(24h, 8h, 4h, 1h, 15m)
 //	@Success		200		{object}	history.AccountsRes
 //	@Router			/accounts/aggregated/history [get]
 func (c *Controller) AggregateAccountsHistory(ctx *gin.Context) {
@@ -346,6 +347,12 @@ func (c *Controller) AggregateAccountsHistory(ctx *gin.Context) {
 	err := ctx.ShouldBindQuery(&req)
 	if err != nil {
 		paramErr(ctx, "account_filter", err)
+		return
+	}
+
+	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
+	if err != nil {
+		paramErr(ctx, "minter_address", err)
 		return
 	}
 
@@ -433,7 +440,7 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 //  @Param   		workchain     		query  	int32  		false	"filter by workchain"
 //  @Param   		from				query	string  	false	"from timestamp"
 //  @Param   		to					query	string  	false	"to timestamp"
-//  @Param   		interval			query	string  	true	"group interval"			Enums(15m, 1h, 4h, 8h, 24h)
+//  @Param   		interval			query	string  	true	"group interval"			Enums(24h, 8h, 4h, 1h, 15m)
 //	@Success		200		{object}	history.TransactionsRes
 //	@Router			/transactions/aggregated/history [get]
 func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
@@ -589,7 +596,7 @@ func (c *Controller) AggregateMessages(ctx *gin.Context) {
 //  @Param   		minter_address		query	string  	false	"filter FT or NFT operations by minter address"
 //  @Param   		from				query	string  	false	"from timestamp"
 //  @Param   		to					query	string  	false	"to timestamp"
-//  @Param   		interval			query	string  	true	"group interval"								Enums(15m, 1h, 4h, 8h, 24h)
+//  @Param   		interval			query	string  	true	"group interval"								Enums(24h, 8h, 4h, 1h, 15m)
 //	@Success		200		{object}	history.MessagesRes
 //	@Router			/messages/aggregated/history [get]
 func (c *Controller) AggregateMessagesHistory(ctx *gin.Context) {

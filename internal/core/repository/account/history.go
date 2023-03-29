@@ -31,6 +31,9 @@ func (r *Repository) AggregateAccountsHistory(ctx context.Context, req *history.
 	if len(req.ContractTypes) > 0 {
 		q, data = q.Where("hasAny(types, [?])", ch.In(getContractTypes(req.ContractTypes))), true
 	}
+	if req.MinterAddress != nil {
+		q, data = q.Where("minter_address = ?", req.MinterAddress), true
+	}
 
 	if data {
 		q = q.Model((*core.AccountData)(nil))
@@ -39,7 +42,7 @@ func (r *Repository) AggregateAccountsHistory(ctx context.Context, req *history.
 	}
 
 	switch req.Metric {
-	case history.UniqueAddresses:
+	case history.ActiveAddresses:
 		q = q.ColumnExpr("uniq(address) as value")
 	default:
 		return nil, errors.Wrapf(core.ErrInvalidArg, "invalid account metric %s", req.Metric)

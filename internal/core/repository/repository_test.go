@@ -526,7 +526,7 @@ func TestGraphAggregateAccountsHistory(t *testing.T) {
 
 	t.Run("count uniq wallet addresses", func(t *testing.T) {
 		res, err := accountRepo.AggregateAccountsHistory(ctx, &history.AccountsReq{
-			Metric:        history.UniqueAddresses,
+			Metric:        history.ActiveAddresses,
 			ContractTypes: []abi.ContractName{"wallet"},
 			ReqParams:     history.ReqParams{Interval: time.Hour},
 		})

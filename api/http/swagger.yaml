@@ -726,7 +726,7 @@ paths:
       parameters:
       - description: metric to show
         enum:
-        - unique_addresses
+        - active_addresses
         in: query
         name: metric
         required: true

@@ -4,18 +4,20 @@ import (
 	"context"
 
 	"github.com/iam047801/tonidx/abi"
+	"github.com/iam047801/tonidx/internal/addr"
 )
 
 type AccountMetric string
 
 const (
-	UniqueAddresses AccountMetric = "unique_addresses"
+	ActiveAddresses AccountMetric = "active_addresses"
 )
 
 type AccountsReq struct {
 	Metric AccountMetric `form:"metric"`
 
 	ContractTypes []abi.ContractName `form:"interface"`
+	MinterAddress *addr.Address      // NFT or FT minter
 
 	ReqParams
 }
