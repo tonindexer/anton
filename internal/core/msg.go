@@ -80,7 +80,7 @@ type MessagePayload struct {
 	BodyHash      []byte          `bun:"type:bytea,notnull" json:"body_hash"`
 	OperationID   uint32          `bun:",notnull" json:"operation_id"`
 	OperationName string          `ch:",lc" bun:",notnull" json:"operation_name"`
-	DataJSON      json.RawMessage `ch:"type:String" bun:"type:jsonb" json:"data"`
+	DataJSON      json.RawMessage `ch:"-" bun:"type:jsonb" json:"data"` // TODO: https://github.com/uptrace/go-clickhouse/issues/22
 
 	// TODO: save fields from parsed data to payloads table
 

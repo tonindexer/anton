@@ -40,7 +40,7 @@ type AccountState struct {
 	Balance  *bunbig.Int   `ch:"type:UInt256" bun:"type:numeric" json:"balance"`
 
 	LastTxLT   uint64 `ch:",pk" bun:"type:bigint,pk,notnull" json:"last_tx_lt"`
-	LastTxHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"last_tx_hash"`
+	LastTxHash []byte `bun:"type:bytea,unique,notnull" json:"last_tx_hash"`
 
 	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:address=address,join:last_tx_lt=last_tx_lt" json:"state_data,omitempty"`
 
@@ -103,7 +103,7 @@ type AccountData struct {
 
 	Address    addr.Address `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
 	LastTxLT   uint64       `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
-	LastTxHash []byte       `ch:",pk" bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
+	LastTxHash []byte       `bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
 	Balance    *bunbig.Int  `ch:"type:UInt256" bun:"type:numeric" json:"balance"`
 
 	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types"`

@@ -21,8 +21,8 @@ type Block struct {
 	Shard     int64  `ch:",pk" bun:",pk,notnull" json:"shard"`
 	SeqNo     uint32 `ch:",pk" bun:",pk,notnull" json:"seq_no"`
 
-	FileHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"file_hash"`
-	RootHash []byte `ch:",pk" bun:"type:bytea,unique,notnull" json:"root_hash"`
+	FileHash []byte `bun:"type:bytea,unique,notnull" json:"file_hash"`
+	RootHash []byte `bun:"type:bytea,unique,notnull" json:"root_hash"`
 
 	MasterID *BlockID `ch:"-" bun:"embed:master_" json:"master,omitempty"`
 	Shards   []*Block `ch:"-" bun:"rel:has-many,join:workchain=master_workchain,join:shard=master_shard,join:seq_no=master_seq_no" json:"shards,omitempty"`
