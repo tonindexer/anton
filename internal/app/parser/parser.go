@@ -7,9 +7,9 @@ import (
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/ton"
 
-	"github.com/iam047801/tonidx/internal/app"
-	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository/contract"
+	"github.com/tonindexer/anton/internal/app"
+	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
 
 var _ app.ParserService = (*Service)(nil)
