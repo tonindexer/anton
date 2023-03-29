@@ -651,7 +651,7 @@ curl -X GET 'https://anton.tools/api/v0/messages/aggregated?address=0%3A83dfd552
 
 ### Response
 
-```shell
+```json
 {
   "received_count": 182,
   "received_ton_amount": 14175360552821,
