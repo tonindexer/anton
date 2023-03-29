@@ -522,7 +522,6 @@ const docTemplate = `{
                     {
                         "enum": [
                             "message_count",
-                            "state_init_count",
                             "message_amount_sum"
                         ],
                         "type": "string",

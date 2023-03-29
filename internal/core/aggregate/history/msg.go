@@ -9,9 +9,8 @@ import (
 type MessageMetric string
 
 var (
-	MessageCount          MessageMetric = "message_count"
-	MessageStateInitCount MessageMetric = "state_init_count"
-	MessageAmountSum      MessageMetric = "message_amount_sum"
+	MessageCount     MessageMetric = "message_count"
+	MessageAmountSum MessageMetric = "message_amount_sum"
 )
 
 type MessagesReq struct {

@@ -970,7 +970,6 @@ paths:
       - description: metric to show
         enum:
         - message_count
-        - state_init_count
         - message_amount_sum
         in: query
         name: metric

@@ -46,12 +46,6 @@ func (r *Repository) AggregateMessagesHistory(ctx context.Context, req *history.
 	switch req.Metric {
 	case history.MessageCount:
 		q = q.ColumnExpr("count() as value")
-	case history.MessageStateInitCount:
-		if payload {
-			return nil, errors.Wrap(core.ErrInvalidArg, "cannot count state init on account data")
-		}
-		q = q.ColumnExpr("count() as value").
-			Where("length(state_init_code) > 0 OR length(state_init_data) > 0")
 	case history.MessageAmountSum:
 		q, bigIntRes = q.ColumnExpr("sum(amount) as value"), true
 	default:

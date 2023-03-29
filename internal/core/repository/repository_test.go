@@ -671,18 +671,6 @@ func TestGraphAggregateMessagesHistory(t *testing.T) {
 
 		t.Logf("%+v", res)
 	})
-
-	t.Run("count message state init", func(t *testing.T) {
-		res, err := msgRepo.AggregateMessagesHistory(ctx, &history.MessagesReq{
-			Metric:    history.MessageStateInitCount,
-			ReqParams: history.ReqParams{Interval: time.Hour},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		t.Logf("%+v", res)
-	})
 }
 
 func TestGraphFilterTransactions(t *testing.T) {

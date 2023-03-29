@@ -587,7 +587,7 @@ func (c *Controller) AggregateMessages(ctx *gin.Context) {
 //	@Tags			transaction
 //	@Accept			json
 //	@Produce		json
-//  @Param   		metric				query	string  	true	"metric to show"								Enums(message_count, state_init_count, message_amount_sum)
+//  @Param   		metric				query	string  	true	"metric to show"								Enums(message_count, message_amount_sum)
 //  @Param   		src_address     	query   []string 	false   "source address"
 //  @Param   		dst_address     	query   []string 	false   "destination address"
 //  @Param   		src_contract		query	[]string  	false	"source contract interface"
