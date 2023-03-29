@@ -69,7 +69,7 @@ godoc -http=localhost:6060
 
 ### docker-compose
 ```shell
-git clone https://github.com/iam047801/tonidx
+git clone https://github.com/tonindexer/anton
 cd tonidx
 docker-compose build
 ```

@@ -9,9 +9,9 @@ import (
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/ton/nft"
 
-	"github.com/iam047801/tonidx/abi"
-	"github.com/iam047801/tonidx/internal/addr"
-	"github.com/iam047801/tonidx/internal/core"
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/internal/core"
 )
 
 func mapContentDataNFT(ret *core.AccountData, c nft.ContentAny) {

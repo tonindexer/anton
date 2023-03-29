@@ -3,7 +3,7 @@ package app
 import (
 	"time"
 
-	"github.com/iam047801/tonidx/internal/core/repository"
+	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 type IndexerConfig struct {

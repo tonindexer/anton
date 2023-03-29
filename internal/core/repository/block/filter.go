@@ -6,8 +6,8 @@ import (
 
 	"github.com/uptrace/bun"
 
-	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/filter"
+	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 )
 
 func loadTransactions(q *bun.SelectQuery, prefix string, f *filter.BlocksReq) *bun.SelectQuery {

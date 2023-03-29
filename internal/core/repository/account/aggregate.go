@@ -6,10 +6,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/uptrace/go-clickhouse/ch"
 
-	"github.com/iam047801/tonidx/abi"
-	"github.com/iam047801/tonidx/internal/addr"
-	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/aggregate"
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/aggregate"
 )
 
 func (r *Repository) makeLastItemStateQuery(minter *addr.Address) *ch.SelectQuery {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/xssnick/tonutils-go/address"
 
-	"github.com/iam047801/tonidx/abi"
+	"github.com/tonindexer/anton/abi"
 )
 
 type txTestCase struct {

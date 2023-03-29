@@ -3,8 +3,8 @@ package history
 import (
 	"context"
 
-	"github.com/iam047801/tonidx/abi"
-	"github.com/iam047801/tonidx/internal/addr"
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/internal/addr"
 )
 
 type AccountMetric string

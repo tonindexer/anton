@@ -9,10 +9,10 @@ import (
 	"github.com/allisson/go-env"
 	"github.com/rs/zerolog/log"
 
-	"github.com/iam047801/tonidx/internal/api/http"
-	"github.com/iam047801/tonidx/internal/app"
-	"github.com/iam047801/tonidx/internal/app/query"
-	"github.com/iam047801/tonidx/internal/core/repository"
+	"github.com/tonindexer/anton/internal/api/http"
+	"github.com/tonindexer/anton/internal/app"
+	"github.com/tonindexer/anton/internal/app/query"
+	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 func Run() {

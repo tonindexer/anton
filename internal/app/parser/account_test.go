@@ -5,9 +5,9 @@ import (
 
 	"github.com/xssnick/tonutils-go/address"
 
-	"github.com/iam047801/tonidx/abi"
-	"github.com/iam047801/tonidx/internal/addr"
-	"github.com/iam047801/tonidx/internal/core"
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/internal/core"
 )
 
 //nolint:gocognit // test account data parsing

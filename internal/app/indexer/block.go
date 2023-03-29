@@ -11,7 +11,7 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/xssnick/tonutils-go/ton"
 
-	"github.com/iam047801/tonidx/internal/core"
+	"github.com/tonindexer/anton/internal/core"
 )
 
 func (s *Service) getNotSeenShards(ctx context.Context, shard *ton.BlockIDExt) (ret []*ton.BlockIDExt, err error) {

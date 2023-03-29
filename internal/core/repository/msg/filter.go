@@ -7,8 +7,8 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
-	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/filter"
+	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 )
 
 func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (ret []*core.Message, err error) {

@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	_ "github.com/iam047801/tonidx/api/http"
+	_ "github.com/tonindexer/anton/api/http"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

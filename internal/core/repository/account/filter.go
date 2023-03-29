@@ -8,8 +8,8 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/go-clickhouse/ch"
 
-	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/filter"
+	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 )
 
 func joinLatestAccountData(q *bun.SelectQuery) *bun.SelectQuery {

@@ -11,7 +11,7 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
-	"github.com/iam047801/tonidx/internal/core"
+	"github.com/tonindexer/anton/internal/core"
 )
 
 func (s *Service) fetchBlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*tlb.Transaction, error) {

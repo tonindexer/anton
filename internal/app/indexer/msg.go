@@ -11,9 +11,9 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
-	"github.com/iam047801/tonidx/internal/addr"
-	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/filter"
+	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 )
 
 func (s *Service) messageAlreadyKnown(ctx context.Context, tx bun.Tx, in *core.Message, outMsgMap map[uint64]*core.Message) (bool, error) {

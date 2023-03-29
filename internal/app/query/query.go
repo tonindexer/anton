@@ -3,17 +3,17 @@ package query
 import (
 	"context"
 
-	"github.com/iam047801/tonidx/internal/app"
-	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/aggregate"
-	"github.com/iam047801/tonidx/internal/core/aggregate/history"
-	"github.com/iam047801/tonidx/internal/core/filter"
-	"github.com/iam047801/tonidx/internal/core/repository"
-	"github.com/iam047801/tonidx/internal/core/repository/account"
-	"github.com/iam047801/tonidx/internal/core/repository/block"
-	"github.com/iam047801/tonidx/internal/core/repository/contract"
-	"github.com/iam047801/tonidx/internal/core/repository/msg"
-	"github.com/iam047801/tonidx/internal/core/repository/tx"
+	"github.com/tonindexer/anton/internal/app"
+	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/aggregate"
+	"github.com/tonindexer/anton/internal/core/aggregate/history"
+	"github.com/tonindexer/anton/internal/core/filter"
+	"github.com/tonindexer/anton/internal/core/repository"
+	"github.com/tonindexer/anton/internal/core/repository/account"
+	"github.com/tonindexer/anton/internal/core/repository/block"
+	"github.com/tonindexer/anton/internal/core/repository/contract"
+	"github.com/tonindexer/anton/internal/core/repository/msg"
+	"github.com/tonindexer/anton/internal/core/repository/tx"
 )
 
 var _ app.QueryService = (*Service)(nil)

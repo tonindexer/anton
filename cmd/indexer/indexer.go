@@ -12,16 +12,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
-	"github.com/iam047801/tonidx/abi"
-	"github.com/iam047801/tonidx/internal/app"
-	"github.com/iam047801/tonidx/internal/app/indexer"
-	"github.com/iam047801/tonidx/internal/app/parser"
-	"github.com/iam047801/tonidx/internal/core/repository"
-	"github.com/iam047801/tonidx/internal/core/repository/account"
-	"github.com/iam047801/tonidx/internal/core/repository/block"
-	"github.com/iam047801/tonidx/internal/core/repository/contract"
-	"github.com/iam047801/tonidx/internal/core/repository/msg"
-	"github.com/iam047801/tonidx/internal/core/repository/tx"
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/internal/app"
+	"github.com/tonindexer/anton/internal/app/indexer"
+	"github.com/tonindexer/anton/internal/app/parser"
+	"github.com/tonindexer/anton/internal/core/repository"
+	"github.com/tonindexer/anton/internal/core/repository/account"
+	"github.com/tonindexer/anton/internal/core/repository/block"
+	"github.com/tonindexer/anton/internal/core/repository/contract"
+	"github.com/tonindexer/anton/internal/core/repository/msg"
+	"github.com/tonindexer/anton/internal/core/repository/tx"
 )
 
 func initDB(ctx context.Context, conn *repository.DB) error {

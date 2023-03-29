@@ -5,9 +5,9 @@ import (
 
 	"github.com/xssnick/tonutils-go/ton"
 
-	"github.com/iam047801/tonidx/abi"
-	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/repository"
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 type ServerAddr struct {

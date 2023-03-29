@@ -3,11 +3,11 @@ package app
 import (
 	"context"
 
-	"github.com/iam047801/tonidx/internal/core"
-	"github.com/iam047801/tonidx/internal/core/aggregate"
-	"github.com/iam047801/tonidx/internal/core/aggregate/history"
-	"github.com/iam047801/tonidx/internal/core/filter"
-	"github.com/iam047801/tonidx/internal/core/repository"
+	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/aggregate"
+	"github.com/tonindexer/anton/internal/core/aggregate/history"
+	"github.com/tonindexer/anton/internal/core/filter"
+	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 type QueryConfig struct {

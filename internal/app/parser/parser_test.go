@@ -10,8 +10,8 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 
-	"github.com/iam047801/tonidx/internal/app"
-	"github.com/iam047801/tonidx/internal/core/repository"
+	"github.com/tonindexer/anton/internal/app"
+	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 var _testService *Service

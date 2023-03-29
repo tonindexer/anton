@@ -1,4 +1,4 @@
-module github.com/iam047801/tonidx
+module github.com/tonindexer/anton
 
 go 1.18
 

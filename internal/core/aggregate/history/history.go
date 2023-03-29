@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun/extra/bunbig"
 
-	"github.com/iam047801/tonidx/internal/core"
+	"github.com/tonindexer/anton/internal/core"
 )
 
 type ReqParams struct {

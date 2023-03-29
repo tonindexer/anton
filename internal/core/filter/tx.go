@@ -3,8 +3,8 @@ package filter
 import (
 	"context"
 
-	"github.com/iam047801/tonidx/internal/addr"
-	"github.com/iam047801/tonidx/internal/core"
+	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/internal/core"
 )
 
 type TransactionsReq struct {

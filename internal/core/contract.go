@@ -7,8 +7,8 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
-	"github.com/iam047801/tonidx/abi"
-	"github.com/iam047801/tonidx/internal/addr"
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/internal/addr"
 )
 
 // TODO: contract addresses labels

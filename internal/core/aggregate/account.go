@@ -5,7 +5,7 @@ import (
 
 	"github.com/uptrace/bun/extra/bunbig"
 
-	"github.com/iam047801/tonidx/internal/addr"
+	"github.com/tonindexer/anton/internal/addr"
 )
 
 type AccountsReq struct {

@@ -8,7 +8,7 @@ import (
 	"github.com/uptrace/bun/extra/bunbig"
 	"github.com/uptrace/go-clickhouse/ch"
 
-	"github.com/iam047801/tonidx/internal/addr"
+	"github.com/tonindexer/anton/internal/addr"
 )
 
 type Transaction struct {

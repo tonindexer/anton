@@ -8,10 +8,10 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/iam047801/tonidx/cmd/archive"
-	"github.com/iam047801/tonidx/cmd/contract"
-	"github.com/iam047801/tonidx/cmd/indexer"
-	"github.com/iam047801/tonidx/cmd/query"
+	"github.com/tonindexer/anton/cmd/archive"
+	"github.com/tonindexer/anton/cmd/contract"
+	"github.com/tonindexer/anton/cmd/indexer"
+	"github.com/tonindexer/anton/cmd/query"
 )
 
 func init() {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/uptrace/bun"
 
-	"github.com/iam047801/tonidx/internal/addr"
-	"github.com/iam047801/tonidx/internal/core"
+	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/internal/core"
 )
 
 type MessagesReq struct {

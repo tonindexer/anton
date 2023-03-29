@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/iam047801/tonidx/internal/app"
-	"github.com/iam047801/tonidx/internal/app/query"
-	"github.com/iam047801/tonidx/internal/core/repository"
+	"github.com/tonindexer/anton/internal/app"
+	"github.com/tonindexer/anton/internal/app/query"
+	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 var _testService *query.Service
