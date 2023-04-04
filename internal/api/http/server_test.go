@@ -19,8 +19,8 @@ func testService(t *testing.T) *query.Service {
 	}
 
 	bd, err := repository.ConnectDB(ctx,
-		"clickhouse://localhost:9000/default?sslmode=disable",
-		"postgres://user:pass@localhost:5432/default?sslmode=disable")
+		"clickhouse://localhost:9000/postgres?sslmode=disable",
+		"postgres://user:pass@localhost:5432/postgres?sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
