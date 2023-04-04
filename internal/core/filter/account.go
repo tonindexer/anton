@@ -20,6 +20,8 @@ type AccountsReq struct {
 
 	Order string `form:"order"` // ASC, DESC
 
+	ExceptColumns []string
+
 	AfterTxLT *uint64 `form:"after"`
 	Limit     int     `form:"limit"`
 }
