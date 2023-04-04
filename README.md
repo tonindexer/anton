@@ -90,7 +90,7 @@ nano .env
 | Name          | Description                       | Default  | Example                                                           |
 |---------------|-----------------------------------|----------|-------------------------------------------------------------------|
 | `DB_NAME`     | Database name                     |          | idx                                                               |
-| `DB_USER`     | Database username                 |          | user                                                              |
+| `DB_USERNAME` | Database username                 |          | user                                                              |
 | `DB_PASSWORD` | Database password                 |          | pass                                                              |
 | `FROM_BLOCK`  | Master chain seq_no to start from | 22222022 | 23532000                                                          |
 | `LITESERVERS` | Lite servers to connect to        |          | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ= |

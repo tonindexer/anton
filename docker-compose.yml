@@ -12,7 +12,7 @@ services:
       - postgres
     environment:
       DB_CH_URL: "clickhouse://clickhouse:9000/${DB_NAME}?sslmode=disable"
-      DB_PG_URL: "postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
+      DB_PG_URL: "postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
       FROM_BLOCK: ${FROM_BLOCK}
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
@@ -33,7 +33,7 @@ services:
     command: query
     environment:
       DB_CH_URL: "clickhouse://clickhouse:9000/${DB_NAME}?sslmode=disable"
-      DB_PG_URL: "postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
+      DB_PG_URL: "postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
       GIN_MODE: "release"
   clickhouse:
     image: "yandex/clickhouse-server"
@@ -58,15 +58,16 @@ services:
     volumes:
       - idx_pg_data:/var/lib/postgresql/data
       - ./config/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
-      - ./log/postgresql:/var/lib/postgresql/data/log
+      - ./log/postgresql:/var/lib/postgresql/data/pgdata/log
     ports:
       - "5432:5432"
     expose:
       - "5432"
     shm_size: 64gb
     environment:
+      PGDATA: /var/lib/postgresql/data/pgdata/
       POSTGRES_DB: "${DB_NAME}"
-      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_USER: "${DB_USERNAME}"
       POSTGRES_PASSWORD: "${DB_PASSWORD}"
 
 networks:
