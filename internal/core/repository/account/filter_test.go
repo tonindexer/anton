@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/filter"
@@ -20,6 +21,9 @@ func TestFilterRepository(t *testing.T) {
 
 		// filter by latest
 		latestState *core.AccountState
+
+		// filter by contract type
+		specialState *core.AccountState
 	)
 
 	initdb(t)
@@ -36,24 +40,34 @@ func TestFilterRepository(t *testing.T) {
 	})
 
 	t.Run("insert test data", func(t *testing.T) {
-		var (
-			states []*core.AccountState
-			data   []*core.AccountData
-		)
-
 		tx, err := pg.Begin()
 		assert.Nil(t, err)
 
 		for i := 0; i < 10; i++ { // 10 account states on 100 addresses
-			states = randAccountStates(10)
+			var states []*core.AccountState
+
 			for j := 0; j < 10; j++ {
 				states = append(states, randAccountStates(10)...)
 			}
-			data = randAccountData(states)
+			data := randAccountData(states)
 
 			// filter by address
 			address = &states[len(states)-10].Address
 			addressStates = states[len(states)-10:]
+
+			err = repo.AddAccountData(ctx, tx, data)
+			assert.Nil(t, err)
+			err = repo.AddAccountStates(ctx, tx, states)
+			assert.Nil(t, err)
+		}
+
+		// filter by contract interfaces
+		for i := 0; i < 15; i++ { // add 15 addresses with 10 states and "special" contract type
+			states := randAccountStates(10)
+			data := randContractData(states, "special")
+
+			specialState = states[len(states)-1]
+			specialState.StateData = data[len(data)-1]
 
 			err = repo.AddAccountData(ctx, tx, data)
 			assert.Nil(t, err)
@@ -105,7 +119,7 @@ func TestFilterRepository(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			Addresses:     []*addr.Address{&latest.Address},
 			LatestState:   true,
-			ExceptColumns: []string{"code"}, Order: "ASC", Limit: 10,
+			ExceptColumns: []string{"code"},
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, results.Total)
@@ -119,11 +133,32 @@ func TestFilterRepository(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			Addresses:   []*addr.Address{&latest.Address},
 			LatestState: true, WithData: true,
-			ExceptColumns: []string{"code"}, Order: "ASC", Limit: 10,
+			ExceptColumns: []string{"code"},
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, results.Total)
 		assert.Equal(t, []*core.AccountState{&latest}, results.Rows)
+	})
+
+	t.Run("filter latest state with data by contract types", func(t *testing.T) {
+		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			ContractTypes: []abi.ContractName{"special"},
+			LatestState:   true, WithData: true,
+			Order: "DESC", Limit: 1,
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, 15, results.Total)
+		assert.Equal(t, []*core.AccountState{specialState}, results.Rows)
+	})
+
+	t.Run("filter states by minter", func(t *testing.T) {
+		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithData: true, MinterAddress: latestState.StateData.MinterAddress,
+			Order: "DESC", Limit: 1,
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, 60, results.Total)
+		assert.Equal(t, []*core.AccountState{latestState}, results.Rows)
 	})
 
 	t.Run("drop tables again", func(t *testing.T) {

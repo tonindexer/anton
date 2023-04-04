@@ -98,8 +98,11 @@ func randAccountStates(n int) (ret []*core.AccountState) {
 	return randAddressStates(randAddr(), n)
 }
 
-func randAccountData(states []*core.AccountState) (ret []*core.AccountData) {
+func randContractData(states []*core.AccountState, t abi.ContractName) (ret []*core.AccountData) {
 	for _, s := range states {
+		minter := s.Address
+		minter[16] = '\xde'
+
 		data := &core.AccountData{
 			Address:           s.Address,
 			LastTxLT:          s.LastTxLT,
@@ -107,7 +110,7 @@ func randAccountData(states []*core.AccountState) (ret []*core.AccountData) {
 			Balance:           s.Balance,
 			Types:             randInterfaces(&s.Address),
 			OwnerAddress:      randAddr(),
-			MinterAddress:     randAddr(),
+			MinterAddress:     &minter,
 			NFTCollectionData: core.NFTCollectionData{NextItemIndex: bunbig.FromUInt64(rand.Uint64())},
 			NFTRoyaltyData:    core.NFTRoyaltyData{RoyaltyAddress: randAddr()},
 			NFTContentData:    core.NFTContentData{ContentURI: randString(16), ContentImageData: randBytes(128)},
@@ -117,7 +120,14 @@ func randAccountData(states []*core.AccountState) (ret []*core.AccountData) {
 			Errors:            []string{randString(16)},
 			UpdatedAt:         s.UpdatedAt,
 		}
+		if t != "" {
+			data.Types = append(data.Types, t)
+		}
 		ret = append(ret, data)
 	}
 	return ret
+}
+
+func randAccountData(states []*core.AccountState) (ret []*core.AccountData) {
+	return randContractData(states, "")
 }
