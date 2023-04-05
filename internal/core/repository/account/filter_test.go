@@ -61,8 +61,16 @@ func TestFilterRepository(t *testing.T) {
 			assert.Nil(t, err)
 		}
 
+		err = tx.Commit()
+		assert.Nil(t, err)
+	})
+
+	t.Run("insert states with special contract type", func(t *testing.T) {
+		tx, err := pg.Begin()
+		assert.Nil(t, err)
+
 		// filter by contract interfaces
-		for i := 0; i < 15; i++ { // add 15 addresses with 10 states and "special" contract type
+		for i := 0; i < 15; i++ { // add 15 addresses with 10 states
 			states := randAccountStates(10)
 			data := randContractData(states, "special")
 
@@ -160,8 +168,94 @@ func TestFilterRepository(t *testing.T) {
 		assert.Equal(t, 60, results.Total)
 		assert.Equal(t, []*core.AccountState{latestState}, results.Rows)
 	})
+}
 
-	t.Run("drop tables again", func(t *testing.T) {
+func TestFilterRepository_Heavy(t *testing.T) {
+	const (
+		totalStates   = 1000000
+		specialStates = 100000
+	)
+
+	var (
+		address      *addr.Address
+		specialState *core.AccountState
+	)
+
+	initdb(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	defer cancel()
+
+	t.Run("drop tables", func(t *testing.T) {
 		dropTables(t)
+	})
+
+	t.Run("create tables", func(t *testing.T) {
+		createTables(t)
+	})
+
+	t.Run("insert test data", func(t *testing.T) {
+		tx, err := pg.Begin()
+		assert.Nil(t, err)
+
+		for i := 0; i < totalStates/100; i++ {
+			states := randAccountStates(100)
+			data := randAccountData(states)
+
+			err = repo.AddAccountData(ctx, tx, data)
+			assert.Nil(t, err)
+			err = repo.AddAccountStates(ctx, tx, states)
+			assert.Nil(t, err)
+
+			if i%100 == 0 {
+				t.Logf("%s: add %d states on %s address", time.Now().UTC(), 100*(i+1), states[0].Address.String())
+			}
+		}
+
+		err = tx.Commit()
+		assert.Nil(t, err)
+	})
+
+	t.Run("insert states with special contract type", func(t *testing.T) {
+		tx, err := pg.Begin()
+		assert.Nil(t, err)
+
+		address = randAddr()
+
+		for i := 0; i < specialStates/100; i++ {
+			states := randAddressStates(address, 100)
+			data := randContractData(states, "special")
+
+			specialState = states[len(states)-1]
+			specialState.StateData = data[len(data)-1]
+
+			err = repo.AddAccountData(ctx, tx, data)
+			assert.Nil(t, err)
+			err = repo.AddAccountStates(ctx, tx, states)
+			assert.Nil(t, err)
+
+			if i%100 == 0 {
+				t.Logf("%s: add %d special states", time.Now().UTC(), 100*(i+1))
+			}
+		}
+
+		err = tx.Commit()
+		assert.Nil(t, err)
+	})
+
+	t.Run("filter latest state with data by contract types", func(t *testing.T) {
+		start := time.Now()
+
+		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			ContractTypes: []abi.ContractName{"special"},
+			LatestState:   true, WithData: true,
+			Order: "DESC", Limit: 1,
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, 1, results.Total)
+		assert.Equal(t, []*core.AccountState{specialState}, results.Rows)
+
+		// no more than 1 second
+		t.Logf("filter account by special contract type took %s", time.Since(start))
 	})
 }

@@ -12,6 +12,10 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 func randString(n int) string {
 	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
 	b := make([]byte, n)
