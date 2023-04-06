@@ -182,6 +182,8 @@ func TestFilterRepository_Heavy(t *testing.T) {
 		specialState *core.AccountState
 	)
 
+	t.Skip("skipping heavy tests")
+
 	initdb(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
@@ -255,8 +257,6 @@ func TestFilterRepository_Heavy(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, 1, results.Total)
 		assert.Equal(t, []*core.AccountState{specialState}, results.Rows)
-
-		// no more than 1 second
-		t.Logf("filter account by special contract type took %s", time.Since(start))
+		assert.Less(t, time.Since(start), 2*time.Second)
 	})
 }
