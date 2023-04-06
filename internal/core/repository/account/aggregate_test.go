@@ -15,7 +15,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
-func TestAggregateRepository_NFTCollection(t *testing.T) {
+func TestRepository_AggregateAccounts_NFTCollection(t *testing.T) {
 	var (
 		itemCount = 15
 
@@ -80,7 +80,7 @@ func TestAggregateRepository_NFTCollection(t *testing.T) {
 	})
 }
 
-func TestAggregateRepository_JettonMinter(t *testing.T) {
+func TestRepository_AggregateAccounts_JettonMinter(t *testing.T) {
 	var (
 		walletsCount = 15
 

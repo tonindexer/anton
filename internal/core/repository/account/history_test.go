@@ -12,7 +12,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
-func TestHistoryRepository(t *testing.T) {
+func TestRepository_AggregateAccountsHistory(t *testing.T) {
 	initdb(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

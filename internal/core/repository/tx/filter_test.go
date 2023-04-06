@@ -13,7 +13,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
-func TestFilterRepository(t *testing.T) {
+func TestRepository_FilterTransactions(t *testing.T) {
 	initdb(t)
 
 	transactions := rndm.Transactions(10)

@@ -12,7 +12,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
-func TestHistoryRepository(t *testing.T) {
+func TestRepository_AggregateTransactionsHistory(t *testing.T) {
 	initdb(t)
 
 	transactions := rndm.BlockTransactions(rndm.BlockID(-1), 10)

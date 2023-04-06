@@ -60,7 +60,7 @@ func dropTables(t testing.TB) {
 	assert.Nil(t, err)
 }
 
-func TestCoreRepository(t *testing.T) {
+func TestRepository_AddTransactions(t *testing.T) {
 	initdb(t)
 
 	transactions := rndm.Transactions(10)

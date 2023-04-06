@@ -13,7 +13,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
-func TestAggregateRepository(t *testing.T) {
+func TestRepository_AggregateMessages(t *testing.T) {
 	var (
 		recvCount, sentCount   = 50, 100
 		recvAmount, sentAmount = new(bunbig.Int), new(bunbig.Int)

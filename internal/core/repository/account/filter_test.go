@@ -14,7 +14,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
-func TestFilterRepository(t *testing.T) {
+func TestRepository_FilterAccounts(t *testing.T) {
 	var (
 		// filter by address
 		address       *addr.Address
@@ -171,7 +171,7 @@ func TestFilterRepository(t *testing.T) {
 	})
 }
 
-func TestFilterRepository_Heavy(t *testing.T) {
+func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 	const (
 		totalStates   = 1000000
 		specialStates = 100000
@@ -182,6 +182,7 @@ func TestFilterRepository_Heavy(t *testing.T) {
 		specialState *core.AccountState
 	)
 
+	// uncomment it
 	t.Skip("skipping heavy tests")
 
 	initdb(t)

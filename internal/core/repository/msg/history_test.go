@@ -12,7 +12,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
-func TestHistoryRepository(t *testing.T) {
+func TestRepository_AggregateMessagesHistory(t *testing.T) {
 	var (
 		amountSum = new(bunbig.Int)
 	)

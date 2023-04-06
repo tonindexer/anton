@@ -62,7 +62,7 @@ func dropTables(t testing.TB) {
 	assert.Nil(t, err)
 }
 
-func TestCoreRepository(t *testing.T) {
+func TestRepository_AddBlocks(t *testing.T) {
 	initdb(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)

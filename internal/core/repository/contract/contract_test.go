@@ -55,7 +55,7 @@ func dropTables(t testing.TB) {
 	assert.Nil(t, err)
 }
 
-func TestCoreRepository(t *testing.T) {
+func TestRepository_AddContracts(t *testing.T) {
 	initdb(t)
 
 	i := &core.ContractInterface{

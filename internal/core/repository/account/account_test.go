@@ -73,7 +73,7 @@ func dropTables(t testing.TB) {
 	assert.Nil(t, err)
 }
 
-func TestCoreRepository(t *testing.T) {
+func TestRepository_AddAccounts(t *testing.T) {
 	initdb(t)
 
 	states := rndm.AccountStates(10)
@@ -132,7 +132,7 @@ func TestCoreRepository(t *testing.T) {
 	})
 }
 
-func BenchmarkCoreRepository(b *testing.B) {
+func BenchmarkRepository_AddAccounts(b *testing.B) {
 	ctx := context.Background()
 
 	initdb(b)
