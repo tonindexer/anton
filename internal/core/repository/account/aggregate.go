@@ -33,8 +33,10 @@ func (r *Repository) aggregateNFTMinter(ctx context.Context, req *aggregate.Acco
 		return errors.Wrap(err, "count nft items")
 	}
 
+	// TODO: owners include sale contracts
+
 	err = r.ch.NewSelect().
-		ColumnExpr("uniq(owner_address)").
+		ColumnExpr("uniqExact(owner_address)").
 		TableExpr("(?) as q", r.makeLastItemOwnerQuery(req.MinterAddress)).
 		Scan(ctx, &res.OwnersCount)
 	if err != nil {
@@ -44,7 +46,7 @@ func (r *Repository) aggregateNFTMinter(ctx context.Context, req *aggregate.Acco
 	err = r.ch.NewSelect().
 		Model((*core.AccountData)(nil)).
 		ColumnExpr("address AS item_address").
-		ColumnExpr("uniq(owner_address) AS owners_count").
+		ColumnExpr("uniqExact(owner_address) AS owners_count").
 		Where("minter_address = ?", req.MinterAddress).
 		Group("item_address").
 		Order("owners_count DESC").

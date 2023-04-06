@@ -72,7 +72,7 @@ func TestFilterRepository(t *testing.T) {
 		// filter by contract interfaces
 		for i := 0; i < 15; i++ { // add 15 addresses with 10 states
 			states := randAccountStates(10)
-			data := randContractData(states, "special")
+			data := randContractsData(states, "special", nil)
 
 			specialState = states[len(states)-1]
 			specialState.StateData = data[len(data)-1]
@@ -224,7 +224,7 @@ func TestFilterRepository_Heavy(t *testing.T) {
 
 		for i := 0; i < specialStates/100; i++ {
 			states := randAddressStates(address, 100)
-			data := randContractData(states, "special")
+			data := randContractsData(states, "special", nil)
 
 			specialState = states[len(states)-1]
 			specialState.StateData = data[len(data)-1]
