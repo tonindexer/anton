@@ -172,7 +172,7 @@ func TestInsertKnownInterfaces(t *testing.T) {
 	})
 
 	t.Run("insert known interfaces", func(t *testing.T) {
-		err := repository.InsertKnownInterfaces(ctx, _db.PG)
+		err := repository.InsertKnownInterfaces(ctx, abiRepo)
 		if err != nil {
 			t.Fatal(err)
 		}

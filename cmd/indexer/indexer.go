@@ -25,9 +25,9 @@ import (
 )
 
 func initDB(ctx context.Context, conn *repository.DB) error {
-	_, err := contract.NewRepository(conn.PG).
-		GetOperationByID(ctx,
-			[]abi.ContractName{abi.NFTItem}, false, 0x5fcc3d14)
+	abiRepo := contract.NewRepository(conn.PG)
+
+	_, err := abiRepo.GetOperationByID(ctx, []abi.ContractName{abi.NFTItem}, false, 0x5fcc3d14)
 	if err == nil {
 		return nil // tables exist
 	}
@@ -55,10 +55,11 @@ func initDB(ctx context.Context, conn *repository.DB) error {
 		return err
 	}
 
-	log.Info().Msg("inserting known contract interfaces")
-	if err := repository.InsertKnownInterfaces(ctx, conn.PG); err != nil {
+	if err := repository.InsertKnownInterfaces(ctx, abiRepo); err != nil {
 		return errors.Wrap(err, "cannot insert interfaces")
 	}
+
+	log.Info().Msg("inserted known contract interfaces")
 
 	return nil
 }

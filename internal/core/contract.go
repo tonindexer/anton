@@ -37,6 +37,9 @@ type ContractOperation struct {
 }
 
 type ContractRepository interface {
+	AddInterface(context.Context, *ContractInterface) error
+	AddOperation(context.Context, *ContractOperation) error
+
 	GetInterfaces(context.Context) ([]*ContractInterface, error)
 	GetOperations(context.Context) ([]*ContractOperation, error)
 	GetOperationByID(context.Context, []abi.ContractName, bool, uint32) (*ContractOperation, error)

@@ -2,25 +2,26 @@ package contract
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"os"
 
 	"github.com/allisson/go-env"
 	"github.com/rs/zerolog/log"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
+	"github.com/uptrace/bun/driver/pgdriver"
 
-	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/core"
-	"github.com/tonindexer/anton/internal/core/repository"
+	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
 
 func InsertOperation() {
-	var err error
-
 	op := new(core.ContractOperation)
 
 	f := flag.NewFlagSet(os.Args[1], flag.ExitOnError)
 	name := f.String("name", "", "Unique contract operation name (example: nft_item_transfer)")
-	contract := f.String("contract", "", "Contract name")
+	iface := f.String("contract", "", "Contract name")
 	opid := f.Uint64("opid", 0, "Operation ID")
 	schema := f.String("schema", "", "Message body schema")
 	_ = f.Parse(os.Args[2:])
@@ -28,7 +29,7 @@ func InsertOperation() {
 	if *name == "" {
 		log.Fatal().Msg("operation name must be set")
 	}
-	if *contract == "" {
+	if *iface == "" {
 		log.Fatal().Msg("contract name must be set")
 	}
 	if *opid == 0 {
@@ -38,20 +39,20 @@ func InsertOperation() {
 		log.Fatal().Msg("operation schema must be set")
 	}
 
-	op.Name = *name
-	op.ContractName = abi.ContractName(*contract)
-	op.OperationID = uint32(*opid)
-	op.Schema = []byte(*schema)
-
-	conn, err := repository.ConnectDB(context.Background(),
-		env.GetString("DB_CH_URL", ""),
-		env.GetString("DB_PG_URL", ""))
-	if err != nil {
-		log.Fatal().Err(err).Msg("cannot connect to a database")
+	pg := bun.NewDB(
+		sql.OpenDB(
+			pgdriver.NewConnector(
+				pgdriver.WithDSN(env.GetString("DB_PG_URL", "")),
+			),
+		),
+		pgdialect.New(),
+	)
+	if err := pg.Ping(); err != nil {
+		log.Fatal().Err(err).Msg("cannot ping postgresql")
 	}
-	_, err = conn.CH.NewInsert().Model(op).Exec(context.Background())
-	if err != nil {
-		log.Fatal().Err(err).Msg("cannot insert contract interface")
+
+	if err := contract.NewRepository(pg).AddOperation(context.Background(), op); err != nil {
+		log.Fatal().Err(err).Msg("cannot insert contract operation")
 	}
 
 	log.Info().
