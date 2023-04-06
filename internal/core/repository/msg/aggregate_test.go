@@ -51,6 +51,8 @@ func TestAggregateRepository(t *testing.T) {
 		tx, err := pg.Begin()
 		assert.Nil(t, err)
 
+		err = repo.AddMessages(ctx, tx, rndm.Messages(100))
+		assert.Nil(t, err)
 		err = repo.AddMessages(ctx, tx, messagesTo)
 		assert.Nil(t, err)
 		err = repo.AddMessages(ctx, tx, messagesFrom)

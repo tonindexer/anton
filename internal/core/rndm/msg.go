@@ -95,7 +95,7 @@ func Messages(n int) (ret []*core.Message) {
 	return
 }
 
-func ToContractPayload(msg *core.Message, to abi.ContractName) *core.MessagePayload {
+func MessageOperationToContract(msg *core.Message, op string, to abi.ContractName) *core.MessagePayload {
 	dataJSON, err := json.Marshal(&abi.NFTItemTransfer{})
 	if err != nil {
 		panic(err)
@@ -113,7 +113,7 @@ func ToContractPayload(msg *core.Message, to abi.ContractName) *core.MessagePayl
 		Amount:        msg.Amount,
 		BodyHash:      msg.BodyHash,
 		OperationID:   msg.OperationID,
-		OperationName: OperationName(),
+		OperationName: op,
 		DataJSON:      dataJSON,
 		MinterAddress: Address(),
 		CreatedAt:     msg.CreatedAt,
@@ -122,8 +122,19 @@ func ToContractPayload(msg *core.Message, to abi.ContractName) *core.MessagePayl
 	}
 }
 
+func MessageToContract(msg *core.Message, to abi.ContractName) *core.MessagePayload {
+	return MessageOperationToContract(msg, OperationName(), to)
+}
+
+func MessagesToContract(msg []*core.Message, to abi.ContractName) (ret []*core.MessagePayload) {
+	for _, m := range msg {
+		ret = append(ret, MessageOperationToContract(m, OperationName(), to))
+	}
+	return
+}
+
 func MessagePayload(msg *core.Message) *core.MessagePayload {
-	return ToContractPayload(msg, ContractNames(&msg.DstAddress)[0])
+	return MessageToContract(msg, ContractNames(&msg.DstAddress)[0])
 }
 
 func MessagePayloads(messages []*core.Message) (ret []*core.MessagePayload) {
