@@ -59,6 +59,9 @@ linters:
 linters-settings:
   gocyclo:
     min-complexity: 16
+  gosec:
+    excludes:
+      - G404
   gocritic:
     disabled-checks:
       - regexpMust

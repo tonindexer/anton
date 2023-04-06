@@ -49,7 +49,7 @@ func createTables(t testing.TB) {
 	}
 }
 
-func dropTables(t testing.TB) { //nolint:gocyclo // clean database
+func dropTables(t testing.TB) {
 	var err error
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)

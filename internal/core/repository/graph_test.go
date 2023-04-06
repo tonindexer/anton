@@ -159,7 +159,7 @@ var (
 		DataHash:  randBytes(32),
 
 		// Types: []abi.ContractName{"item"},
-		GetMethodHashes: []uint32{abi.MethodNameHash("get_item_data")},
+		GetMethodHashes: []int32{abi.MethodNameHash("get_item_data")},
 
 		UpdatedAt: time.Unix(randTs(), 0).UTC(),
 	}
@@ -183,7 +183,7 @@ var (
 		DataHash:  randBytes(32),
 
 		// Types: []abi.ContractName{"item"},
-		GetMethodHashes: []uint32{abi.MethodNameHash("get_collection_data")},
+		GetMethodHashes: []int32{abi.MethodNameHash("get_collection_data")},
 
 		UpdatedAt: time.Unix(randTs(), 0).UTC(),
 	}
@@ -214,7 +214,7 @@ var (
 		Addresses:       nil,
 		Code:            nil,
 		GetMethods:      []string{"get_item_data"},
-		GetMethodHashes: []uint32{abi.MethodNameHash("get_item_data")},
+		GetMethodHashes: []int32{abi.MethodNameHash("get_item_data")},
 	}
 
 	idx, _ = new(bunbig.Int).FromString(fmt.Sprintf("%d", 43)) // TODO: bunbig.Int.FromUint64
