@@ -69,6 +69,12 @@ func TestCoreRepository(t *testing.T) {
 	defer cancel()
 
 	master := rndm.MasterBlock()
+	shard := rndm.Block(0)
+	shard.MasterID = &core.BlockID{
+		Workchain: master.Workchain,
+		Shard:     master.Shard,
+		SeqNo:     master.SeqNo,
+	}
 
 	t.Run("drop tables", func(t *testing.T) {
 		dropTables(t)
@@ -82,8 +88,18 @@ func TestCoreRepository(t *testing.T) {
 		tx, err := pg.Begin()
 		assert.Nil(t, err)
 
-		err = repo.AddBlocks(ctx, tx, []*core.Block{master})
+		err = repo.AddBlocks(ctx, tx, []*core.Block{master, shard})
 		assert.Nil(t, err)
+
+		got := new(core.Block)
+
+		err = tx.NewSelect().Model(got).Where("workchain = 0").Scan(ctx)
+		assert.Nil(t, err)
+		assert.Equal(t, shard, got)
+
+		err = ck.NewSelect().Model(got).Where("workchain = 0").Scan(ctx)
+		assert.Nil(t, err)
+		assert.Equal(t, shard, got)
 
 		err = tx.Commit()
 		assert.Nil(t, err)
