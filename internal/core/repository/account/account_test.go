@@ -1,4 +1,4 @@
-package account
+package account_test
 
 import (
 	"context"
@@ -13,13 +13,14 @@ import (
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/repository/account"
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
 var (
 	ck   *ch.DB
 	pg   *bun.DB
-	repo *Repository
+	repo *account.Repository
 )
 
 func initdb(t testing.TB) {
@@ -39,11 +40,11 @@ func initdb(t testing.TB) {
 	err = pg.Ping()
 	assert.Nil(t, err)
 
-	repo = NewRepository(ck, pg)
+	repo = account.NewRepository(ck, pg)
 }
 
 func createTables(t testing.TB) {
-	err := CreateTables(context.Background(), ck, pg)
+	err := account.CreateTables(context.Background(), ck, pg)
 	if err != nil {
 		t.Fatal(err)
 	}
