@@ -57,5 +57,10 @@ func TestAddress_FromBase64(t *testing.T) {
 		addrGot, err := new(Address).FromString(addrStr)
 		assert.Nil(t, err)
 		assert.Equal(t, c.b64, addrGot.Base64())
+
+		addrTU, err := addrGot.ToTU()
+		assert.Nil(t, err)
+		addrFromTU := MustFromTU(addrTU)
+		assert.Equal(t, c.b64, addrFromTU.Base64())
 	}
 }
