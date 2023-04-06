@@ -130,10 +130,6 @@ func TestCoreRepository(t *testing.T) {
 		err := tx.Commit()
 		assert.Nil(t, err)
 	})
-
-	t.Run("drop tables again", func(t *testing.T) {
-		dropTables(t)
-	})
 }
 
 func BenchmarkCoreRepository(b *testing.B) {

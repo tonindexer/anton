@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/uptrace/bun/extra/bunbig"
+
 	"github.com/tonindexer/anton/internal/addr"
 )
 
@@ -33,4 +35,8 @@ func Address() *addr.Address {
 		panic(err)
 	}
 	return a
+}
+
+func BigInt() *bunbig.Int {
+	return bunbig.FromUInt64(rand.Uint64())
 }

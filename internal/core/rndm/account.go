@@ -45,30 +45,33 @@ func ContractNames(a *addr.Address) (ret []abi.ContractName) {
 	return
 }
 
-func AddressStates(a *addr.Address, n int) (ret []*core.AccountState) {
-	for i := 0; i < n; i++ {
-		lastTxLT++
-		timestamp = timestamp.Add(time.Minute)
+func AddressState(a *addr.Address) *core.AccountState {
+	lastTxLT++
+	timestamp = timestamp.Add(time.Minute)
 
-		s := &core.AccountState{
-			Address:         *a,
-			IsActive:        true,
-			Status:          core.Active,
-			Balance:         bunbig.FromUInt64(rand.Uint64()),
-			LastTxLT:        lastTxLT,
-			LastTxHash:      Bytes(32),
-			StateHash:       Bytes(32),
-			Code:            Bytes(32),
-			CodeHash:        Bytes(32),
-			Data:            Bytes(32),
-			DataHash:        Bytes(32),
-			GetMethodHashes: GetMethodHashes(),
-			UpdatedAt:       timestamp,
-		}
-
-		ret = append(ret, s)
+	s := &core.AccountState{
+		Address:         *a,
+		IsActive:        true,
+		Status:          core.Active,
+		Balance:         BigInt(),
+		LastTxLT:        lastTxLT,
+		LastTxHash:      Bytes(32),
+		StateHash:       Bytes(32),
+		Code:            Bytes(32),
+		CodeHash:        Bytes(32),
+		Data:            Bytes(32),
+		DataHash:        Bytes(32),
+		GetMethodHashes: GetMethodHashes(),
+		UpdatedAt:       timestamp,
 	}
 
+	return s
+}
+
+func AddressStates(a *addr.Address, n int) (ret []*core.AccountState) {
+	for i := 0; i < n; i++ {
+		ret = append(ret, AddressState(a))
+	}
 	return ret
 }
 
@@ -76,34 +79,40 @@ func AccountStates(n int) (ret []*core.AccountState) {
 	return AddressStates(Address(), n)
 }
 
+func ContractData(s *core.AccountState, t abi.ContractName, minter *addr.Address) *core.AccountData {
+	if minter == nil {
+		minter = new(addr.Address)
+		copy((*minter)[:], s.Address[:])
+		minter[16] = '\xde'
+	}
+
+	data := &core.AccountData{
+		Address:           s.Address,
+		LastTxLT:          s.LastTxLT,
+		LastTxHash:        s.LastTxHash,
+		Balance:           s.Balance,
+		Types:             ContractNames(&s.Address),
+		OwnerAddress:      Address(),
+		MinterAddress:     minter,
+		NFTCollectionData: core.NFTCollectionData{NextItemIndex: BigInt()},
+		NFTRoyaltyData:    core.NFTRoyaltyData{RoyaltyAddress: Address()},
+		NFTContentData:    core.NFTContentData{ContentURI: String(16), ContentImageData: Bytes(128)},
+		NFTItemData:       core.NFTItemData{ItemIndex: BigInt()},
+		FTMasterData:      core.FTMasterData{TotalSupply: BigInt()},
+		FTWalletData:      core.FTWalletData{JettonBalance: bunbig.FromUInt64(uint64(rand.Uint32()))},
+		Errors:            []string{String(16)},
+		UpdatedAt:         s.UpdatedAt,
+	}
+	if t != "" {
+		data.Types = append(data.Types, t)
+	}
+
+	return data
+}
+
 func ContractsData(states []*core.AccountState, t abi.ContractName, minter *addr.Address) (ret []*core.AccountData) {
 	for _, s := range states {
-		if minter == nil {
-			minter = new(addr.Address)
-			copy((*minter)[:], s.Address[:])
-			minter[16] = '\xde'
-		}
-		data := &core.AccountData{
-			Address:           s.Address,
-			LastTxLT:          s.LastTxLT,
-			LastTxHash:        s.LastTxHash,
-			Balance:           s.Balance,
-			Types:             ContractNames(&s.Address),
-			OwnerAddress:      Address(),
-			MinterAddress:     minter,
-			NFTCollectionData: core.NFTCollectionData{NextItemIndex: bunbig.FromUInt64(rand.Uint64())},
-			NFTRoyaltyData:    core.NFTRoyaltyData{RoyaltyAddress: Address()},
-			NFTContentData:    core.NFTContentData{ContentURI: String(16), ContentImageData: Bytes(128)},
-			NFTItemData:       core.NFTItemData{ItemIndex: bunbig.FromUInt64(rand.Uint64())},
-			FTMasterData:      core.FTMasterData{TotalSupply: bunbig.FromUInt64(rand.Uint64())},
-			FTWalletData:      core.FTWalletData{JettonBalance: bunbig.FromUInt64(uint64(rand.Uint32()))},
-			Errors:            []string{String(16)},
-			UpdatedAt:         s.UpdatedAt,
-		}
-		if t != "" {
-			data.Types = append(data.Types, t)
-		}
-		ret = append(ret, data)
+		ret = append(ret, ContractData(s, t, minter))
 	}
 	return ret
 }

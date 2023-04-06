@@ -75,6 +75,7 @@ func TestCoreRepository(t *testing.T) {
 		ContractName: abi.NFTItem,
 		Outgoing:     false,
 		OperationID:  0xdeadbeed,
+		Schema:       schema,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -94,10 +95,8 @@ func TestCoreRepository(t *testing.T) {
 	})
 
 	t.Run("insert operation", func(t *testing.T) {
-		op.Schema = schema
 		err := repo.AddOperation(ctx, op)
 		assert.Nil(t, err)
-		op.Schema = nil
 	})
 
 	t.Run("get interfaces", func(t *testing.T) {
@@ -111,7 +110,7 @@ func TestCoreRepository(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(ret))
 		assert.JSONEq(t, string(schema), string(ret[0].Schema))
-		ret[0].Schema = nil
+		ret[0].Schema = schema
 		assert.Equal(t, []*core.ContractOperation{op}, ret)
 	})
 
@@ -124,7 +123,7 @@ func TestCoreRepository(t *testing.T) {
 		)
 		assert.Nil(t, err)
 		assert.JSONEq(t, string(schema), string(ret.Schema))
-		ret.Schema = nil
+		ret.Schema = schema
 		assert.Equal(t, op, ret)
 	})
 }
