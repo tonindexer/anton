@@ -12,6 +12,7 @@ import (
 	"github.com/tonindexer/anton/internal/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
+	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
 func TestAggregateRepository_NFTCollection(t *testing.T) {
@@ -42,13 +43,13 @@ func TestAggregateRepository_NFTCollection(t *testing.T) {
 		tx, err := pg.Begin()
 		assert.Nil(t, err)
 
-		collectionStates = randAccountStates(100)
-		collectionData = randContractsData(collectionStates, abi.NFTCollection, nil)
+		collectionStates = rndm.AccountStates(100)
+		collectionData = rndm.ContractsData(collectionStates, abi.NFTCollection, nil)
 
 		for i := 0; i < itemCount; i++ {
-			itemStates := randAccountStates(100 / itemCount)
+			itemStates := rndm.AccountStates(100 / itemCount)
 			itemsStates = append(itemsStates, itemStates...)
-			itemsData = append(itemsData, randContractsData(itemStates, abi.NFTItem, &collectionStates[0].Address)...)
+			itemsData = append(itemsData, rndm.ContractsData(itemStates, abi.NFTItem, &collectionStates[0].Address)...)
 		}
 
 		err = repo.AddAccountData(ctx, tx, append(itemsData, collectionData...))
@@ -110,14 +111,14 @@ func TestAggregateRepository_JettonMinter(t *testing.T) {
 		tx, err := pg.Begin()
 		assert.Nil(t, err)
 
-		minterStates = randAccountStates(100)
-		minterData = randContractsData(minterStates, abi.JettonMinter, nil)
+		minterStates = rndm.AccountStates(100)
+		minterData = rndm.ContractsData(minterStates, abi.JettonMinter, nil)
 
 		for i := 0; i < walletsCount; i++ {
-			walletStates := randAccountStates(100 / walletsCount)
+			walletStates := rndm.AccountStates(100 / walletsCount)
 
 			walletsStates = append(walletsStates, walletStates...)
-			walletsData = append(walletsData, randContractsData(walletStates, abi.JettonWallet, &minterStates[0].Address)...)
+			walletsData = append(walletsData, rndm.ContractsData(walletStates, abi.JettonWallet, &minterStates[0].Address)...)
 
 			walletLatestData := walletsData[len(walletsData)-1]
 			totalSupply = totalSupply.Add(walletLatestData.JettonBalance)

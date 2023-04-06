@@ -11,6 +11,7 @@ import (
 	"github.com/tonindexer/anton/internal/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/filter"
+	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
 func TestFilterRepository(t *testing.T) {
@@ -47,9 +48,9 @@ func TestFilterRepository(t *testing.T) {
 			var states []*core.AccountState
 
 			for j := 0; j < 10; j++ {
-				states = append(states, randAccountStates(10)...)
+				states = append(states, rndm.AccountStates(10)...)
 			}
-			data := randAccountData(states)
+			data := rndm.AccountData(states)
 
 			// filter by address
 			address = &states[len(states)-10].Address
@@ -71,8 +72,8 @@ func TestFilterRepository(t *testing.T) {
 
 		// filter by contract interfaces
 		for i := 0; i < 15; i++ { // add 15 addresses with 10 states
-			states := randAccountStates(10)
-			data := randContractsData(states, "special", nil)
+			states := rndm.AccountStates(10)
+			data := rndm.ContractsData(states, "special", nil)
 
 			specialState = states[len(states)-1]
 			specialState.StateData = data[len(data)-1]
@@ -92,8 +93,8 @@ func TestFilterRepository(t *testing.T) {
 		assert.Nil(t, err)
 
 		for i := 0; i < 5; i++ { // 50 states on some address
-			states := randAddressStates(address, 10)
-			data := randAccountData(states)
+			states := rndm.AddressStates(address, 10)
+			data := rndm.AccountData(states)
 
 			// filter by latest state
 			latestState = states[len(states)-1]
@@ -199,8 +200,8 @@ func TestFilterRepository_Heavy(t *testing.T) {
 		assert.Nil(t, err)
 
 		for i := 0; i < totalStates/100; i++ {
-			states := randAccountStates(100)
-			data := randAccountData(states)
+			states := rndm.AccountStates(100)
+			data := rndm.AccountData(states)
 
 			err = repo.AddAccountData(ctx, tx, data)
 			assert.Nil(t, err)
@@ -220,11 +221,11 @@ func TestFilterRepository_Heavy(t *testing.T) {
 		tx, err := pg.Begin()
 		assert.Nil(t, err)
 
-		address = randAddr()
+		address = rndm.Address()
 
 		for i := 0; i < specialStates/100; i++ {
-			states := randAddressStates(address, 100)
-			data := randContractsData(states, "special", nil)
+			states := rndm.AddressStates(address, 100)
+			data := rndm.ContractsData(states, "special", nil)
 
 			specialState = states[len(states)-1]
 			specialState.StateData = data[len(data)-1]

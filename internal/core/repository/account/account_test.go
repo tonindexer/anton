@@ -13,6 +13,7 @@ import (
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
 var (
@@ -74,8 +75,8 @@ func dropTables(t testing.TB) { //nolint:gocyclo // clean database
 func TestCoreRepository(t *testing.T) {
 	initdb(t)
 
-	states := randAccountStates(10)
-	data := randAccountData(states)
+	states := rndm.AccountStates(10)
+	data := rndm.AccountData(states)
 	a := &states[0].Address
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -152,10 +153,10 @@ func BenchmarkCoreRepository(b *testing.B) {
 			tx, err := pg.Begin()
 			assert.Nil(b, err)
 
-			states := randAccountStates(30)
-			states = append(states, randAccountStates(30)...)
-			states = append(states, randAccountStates(30)...)
-			data := randAccountData(states)
+			states := rndm.AccountStates(30)
+			states = append(states, rndm.AccountStates(30)...)
+			states = append(states, rndm.AccountStates(30)...)
+			data := rndm.AccountData(states)
 
 			err = repo.AddAccountData(ctx, tx, data)
 			assert.Nil(b, err)
@@ -168,14 +169,14 @@ func BenchmarkCoreRepository(b *testing.B) {
 	})
 
 	b.Run("insert many states", func(b *testing.B) {
-		a := randAddr()
+		a := rndm.Address()
 
 		for i := 0; i < b.N; i++ {
 			tx, err := pg.Begin()
 			assert.Nil(b, err)
 
-			states := randAddressStates(a, 1)
-			data := randAccountData(states)
+			states := rndm.AddressStates(a, 1)
+			data := rndm.AccountData(states)
 
 			err = repo.AddAccountData(ctx, tx, data)
 			assert.Nil(b, err)
