@@ -70,7 +70,7 @@ godoc -http=localhost:6060
 
 ### docker-compose
 ```shell
-git clone https://github.com/tonindexer/anton
+git clone https://github.com/tonindexer/anton tonidx
 cd tonidx
 docker-compose build
 ```
@@ -80,9 +80,7 @@ docker-compose build
 ### docker-compose
 Docker compose installation requires some environment variables.
 ```shell
-# Create .env file
 cp .env.example .env
-# Configure env
 nano .env
 ```
 
