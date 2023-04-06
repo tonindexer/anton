@@ -14,6 +14,7 @@ import (
 var (
 	contractNames []abi.ContractName
 	lastTxLT      uint64
+	timestamp     = time.Now().UTC()
 )
 
 func initContractNames() {
@@ -47,6 +48,7 @@ func ContractNames(a *addr.Address) (ret []abi.ContractName) {
 func AddressStates(a *addr.Address, n int) (ret []*core.AccountState) {
 	for i := 0; i < n; i++ {
 		lastTxLT++
+		timestamp = timestamp.Add(time.Minute)
 
 		s := &core.AccountState{
 			Address:         *a,
@@ -61,7 +63,7 @@ func AddressStates(a *addr.Address, n int) (ret []*core.AccountState) {
 			Data:            Bytes(32),
 			DataHash:        Bytes(32),
 			GetMethodHashes: GetMethodHashes(),
-			UpdatedAt:       time.Now().UTC(),
+			UpdatedAt:       timestamp,
 		}
 
 		ret = append(ret, s)
@@ -72,10 +74,6 @@ func AddressStates(a *addr.Address, n int) (ret []*core.AccountState) {
 
 func AccountStates(n int) (ret []*core.AccountState) {
 	return AddressStates(Address(), n)
-}
-
-func AccountState() *core.AccountState {
-	return AddressStates(Address(), 1)[0]
 }
 
 func ContractsData(states []*core.AccountState, t abi.ContractName, minter *addr.Address) (ret []*core.AccountData) {
@@ -108,10 +106,6 @@ func ContractsData(states []*core.AccountState, t abi.ContractName, minter *addr
 		ret = append(ret, data)
 	}
 	return ret
-}
-
-func ContractData(state *core.AccountState, t abi.ContractName, minter *addr.Address) *core.AccountData {
-	return ContractsData([]*core.AccountState{state}, t, minter)[0]
 }
 
 func AccountData(states []*core.AccountState) (ret []*core.AccountData) {
