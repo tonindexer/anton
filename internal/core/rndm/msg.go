@@ -11,6 +11,7 @@ import (
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/internal/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
 
@@ -36,15 +37,15 @@ func OperationName() string {
 	return operationNames[int(rand.Uint32())%len(operationNames)]
 }
 
-func Message() *core.Message {
+func MessageFromTo(from, to *addr.Address) *core.Message {
 	msgLT++
 	msgTS = msgTS.Add(time.Minute)
 
 	return &core.Message{
 		Type:            core.Internal,
 		Hash:            Bytes(32),
-		SrcAddress:      *Address(),
-		DstAddress:      *Address(),
+		SrcAddress:      *from,
+		DstAddress:      *to,
 		SourceTxHash:    Bytes(32),
 		SourceTxLT:      msgLT,
 		Amount:          BigInt(),
@@ -59,6 +60,32 @@ func Message() *core.Message {
 		CreatedAt:       msgTS,
 		CreatedLT:       msgLT,
 	}
+}
+
+func MessageTo(to *addr.Address) *core.Message {
+	return MessageFromTo(Address(), to)
+}
+
+func MessageFrom(from *addr.Address) *core.Message {
+	return MessageFromTo(from, Address())
+}
+
+func Message() *core.Message {
+	return MessageFromTo(Address(), Address())
+}
+
+func MessagesFrom(from *addr.Address, n int) (ret []*core.Message) {
+	for i := 0; i < n; i++ {
+		ret = append(ret, MessageFrom(from))
+	}
+	return
+}
+
+func MessagesTo(to *addr.Address, n int) (ret []*core.Message) {
+	for i := 0; i < n; i++ {
+		ret = append(ret, MessageTo(to))
+	}
+	return
 }
 
 func Messages(n int) (ret []*core.Message) {
