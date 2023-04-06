@@ -4,6 +4,8 @@ import (
 	"database/sql/driver"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAddress_TypeKind(t *testing.T) {
@@ -11,28 +13,16 @@ func TestAddress_TypeKind(t *testing.T) {
 	v := reflect.ValueOf(a)
 	vt := v.Type()
 
-	if vt.Kind() != reflect.Pointer {
-		t.Fatal(vt.Kind())
-	}
-	if vt.Elem().Kind() != reflect.Array {
-		t.Fatal(vt.Elem().Kind())
-	}
-	if vt.Elem().Elem().Kind() != reflect.Uint8 {
-		t.Fatal(vt.Elem().Elem().Kind())
-	}
-
-	if !vt.Implements(reflect.TypeOf((*driver.Valuer)(nil)).Elem()) {
-		t.Fatal()
-	}
+	assert.Equal(t, reflect.Pointer, vt.Kind())
+	assert.Equal(t, reflect.Array, vt.Elem().Kind())
+	assert.Equal(t, reflect.Uint8, vt.Elem().Elem().Kind())
+	assert.True(t, vt.Implements(reflect.TypeOf((*driver.Valuer)(nil)).Elem()))
 
 	r, err := v.Interface().(driver.Valuer).Value()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
+
 	rb, ok := r.([]byte)
-	if !ok {
-		t.Fatal()
-	}
+	assert.True(t, ok)
 
 	t.Logf("%+v\n", rb)
 }
@@ -58,24 +48,14 @@ func TestAddress_FromBase64(t *testing.T) {
 		var addr Address
 
 		_, err := addr.FromBase64(c.b64)
-		if err != nil {
-			t.Fatal(c.b64, err)
-		}
+		assert.Nil(t, err)
 
 		addrStr := addr.String()
-		if addrStr != c.uf {
-			t.Fatal(c.uf, addr.String())
-		}
-		if addr.Base64() != c.b64 {
-			t.Fatal(c.b64, addr.Base64())
-		}
+		assert.Equal(t, c.uf, addrStr)
+		assert.Equal(t, c.b64, addr.Base64())
 
 		addrGot, err := new(Address).FromString(addrStr)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if addrGot.Base64() != addr.Base64() {
-			t.Fatal(addrGot.Base64(), addr.Base64())
-		}
+		assert.Nil(t, err)
+		assert.Equal(t, c.b64, addrGot.Base64())
 	}
 }
