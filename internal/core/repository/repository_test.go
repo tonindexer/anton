@@ -10,6 +10,7 @@ import (
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/addr"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/aggregate"
 	"github.com/tonindexer/anton/internal/core/filter"
 	"github.com/tonindexer/anton/internal/core/repository"
 	"github.com/tonindexer/anton/internal/core/repository/account"
@@ -294,14 +295,29 @@ func TestRelations(t *testing.T) {
 		assert.Equal(t, blocks[1:], res.Rows)
 	})
 
+	t.Run("get statistics", func(t *testing.T) {
+		stats, err := aggregate.GetStatistics(ctx, db.CH, db.PG)
+		assert.Nil(t, err)
+		assert.Equal(t, int(master.SeqNo), stats.FirstBlock)
+		assert.Equal(t, int(master.SeqNo), stats.LastBlock)
+		assert.Equal(t, 1, stats.BlockCount)
+		assert.Equal(t, 1, stats.AddressCount)
+		assert.Equal(t, 1, stats.ParsedAddressCount)
+		assert.Equal(t, 1, stats.AccountCount)
+		assert.Equal(t, 1, stats.ParsedAccountCount)
+		assert.Equal(t, 1, stats.TransactionCount)
+		assert.Equal(t, 2, stats.MessageCount)
+		assert.Equal(t, 1, stats.ParsedMessageCount)
+		assert.Equal(t, 1, len(stats.AccountStatusCount))
+		assert.Equal(t, core.Active, stats.AccountStatusCount[0].Status)
+		assert.Equal(t, 1, stats.AccountStatusCount[0].Count)
+		assert.Equal(t, data.Types, stats.AccountTypesCount[0].Interfaces)
+		assert.Equal(t, 1, stats.AccountTypesCount[0].Count)
+		assert.Equal(t, operation, stats.MessageTypesCount[0].Operation)
+		assert.Equal(t, 1, stats.MessageTypesCount[0].Count)
+	})
+
 	t.Run("drop tables again", func(t *testing.T) {
 		dropTables(t)
 	})
-}
-
-func TestGetStatistics(t *testing.T) {
-	initDB()
-
-	// stats, err := aggregate.GetStatistics(ctx, db.CH, db.PG)
-	// assert.Nil(t, err)
 }

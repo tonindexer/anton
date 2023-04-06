@@ -106,7 +106,7 @@ func TestRepository_AddTransactions(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("drop tables", func(t *testing.T) {
+	t.Run("drop tables again", func(t *testing.T) {
 		dropTables(t)
 	})
 }

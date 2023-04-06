@@ -91,7 +91,7 @@ func TestRepository_FilterTransactions(t *testing.T) {
 		assert.Equal(t, transactions, res.Rows)
 	})
 
-	t.Run("drop tables", func(t *testing.T) {
+	t.Run("drop tables again", func(t *testing.T) {
 		dropTables(t)
 	})
 }

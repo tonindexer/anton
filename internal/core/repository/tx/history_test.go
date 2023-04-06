@@ -77,7 +77,7 @@ func TestRepository_AggregateTransactionsHistory(t *testing.T) {
 		assert.Equal(t, 20, res.CountRes[0].Value)
 	})
 
-	t.Run("drop tables", func(t *testing.T) {
+	t.Run("drop tables again", func(t *testing.T) {
 		dropTables(t)
 	})
 }
