@@ -3,6 +3,7 @@ package tx_test
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,10 +45,12 @@ func initdb(t testing.TB) {
 }
 
 func createTables(t testing.TB) {
-	err := tx.CreateTables(context.Background(), ck, pg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	_, err := pg.ExecContext(context.Background(), "CREATE TYPE account_status AS ENUM (?, ?, ?, ?)",
+		core.Uninit, core.Active, core.Frozen, core.NonExist)
+	assert.False(t, err != nil && !strings.Contains(err.Error(), "already exists"))
+
+	err = tx.CreateTables(context.Background(), ck, pg)
+	assert.Nil(t, err)
 }
 
 func dropTables(t testing.TB) {
@@ -57,6 +60,9 @@ func dropTables(t testing.TB) {
 	_, err := ck.NewDropTable().Model((*core.Transaction)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.Transaction)(nil)).IfExists().Exec(ctx)
+	assert.Nil(t, err)
+
+	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS account_status")
 	assert.Nil(t, err)
 }
 

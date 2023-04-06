@@ -22,6 +22,8 @@ type TransactionsReq struct {
 	WithMessages        bool
 	WithMessagePayloads bool
 
+	ExcludeColumn []string // TODO: support relations
+
 	Order string `form:"order"` // ASC, DESC
 
 	AfterTxLT *uint64 `form:"after"`

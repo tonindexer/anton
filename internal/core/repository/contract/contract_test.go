@@ -38,18 +38,14 @@ func initdb(t testing.TB) {
 
 func createTables(t testing.TB) {
 	err := contract.CreateTables(context.Background(), pg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 }
 
 func dropTables(t testing.TB) {
-	var err error
-
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	_, err = pg.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
+	_, err := pg.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)

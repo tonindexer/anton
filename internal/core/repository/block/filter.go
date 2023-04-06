@@ -14,7 +14,10 @@ func loadTransactions(q *bun.SelectQuery, prefix string, f *filter.BlocksReq) *b
 	q = q.Relation(prefix + "Transactions")
 	if f.WithTransactionAccountState {
 		q = q.Relation(prefix+"Transactions.Account", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.ExcludeColumn("code", "data") // TODO: optional
+			if len(f.ExcludeColumn) > 0 {
+				return q.ExcludeColumn(f.ExcludeColumn...) // TODO: optional
+			}
+			return q
 		})
 		if f.WithTransactionAccountData {
 			q = q.Relation(prefix + "Transactions.Account.StateData")

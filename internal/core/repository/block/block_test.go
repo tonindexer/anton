@@ -45,18 +45,14 @@ func initdb(t testing.TB) {
 
 func createTables(t testing.TB) {
 	err := block.CreateTables(context.Background(), ck, pg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 }
 
 func dropTables(t testing.TB) {
-	var err error
-
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	_, err = ck.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
+	_, err := ck.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)

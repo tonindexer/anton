@@ -128,7 +128,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			Addresses:     []*addr.Address{&latest.Address},
 			LatestState:   true,
-			ExceptColumns: []string{"code"},
+			ExcludeColumn: []string{"code"},
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, results.Total)
@@ -142,7 +142,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			Addresses:   []*addr.Address{&latest.Address},
 			LatestState: true, WithData: true,
-			ExceptColumns: []string{"code"},
+			ExcludeColumn: []string{"code"},
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, results.Total)

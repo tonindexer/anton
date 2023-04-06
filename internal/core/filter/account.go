@@ -18,9 +18,9 @@ type AccountsReq struct {
 	OwnerAddress  *addr.Address      // `form:"owner_address"`
 	MinterAddress *addr.Address      // `form:"minter_address"`
 
-	Order string `form:"order"` // ASC, DESC
+	ExcludeColumn []string // TODO: support relations
 
-	ExceptColumns []string
+	Order string `form:"order"` // ASC, DESC
 
 	AfterTxLT *uint64 `form:"after"`
 	Limit     int     `form:"limit"`

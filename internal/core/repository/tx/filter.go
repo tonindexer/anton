@@ -16,7 +16,10 @@ func (r *Repository) filterTx(ctx context.Context, f *filter.TransactionsReq) (r
 
 	if f.WithAccountState {
 		q = q.Relation("Account", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.ExcludeColumn("code", "data") // TODO: optional
+			if len(f.ExcludeColumn) > 0 {
+				q = q.ExcludeColumn(f.ExcludeColumn...)
+			}
+			return q
 		})
 		if f.WithAccountData {
 			q = q.Relation("Account.StateData")
