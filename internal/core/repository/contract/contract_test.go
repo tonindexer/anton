@@ -1,4 +1,4 @@
-package contract
+package contract_test
 
 import (
 	"context"
@@ -14,12 +14,13 @@ import (
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/addr"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/repository/contract"
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
 var (
 	pg   *bun.DB
-	repo *Repository
+	repo *contract.Repository
 )
 
 func initdb(t testing.TB) {
@@ -32,11 +33,11 @@ func initdb(t testing.TB) {
 	err = pg.Ping()
 	assert.Nil(t, err)
 
-	repo = NewRepository(pg)
+	repo = contract.NewRepository(pg)
 }
 
 func createTables(t testing.TB) {
-	err := CreateTables(context.Background(), pg)
+	err := contract.CreateTables(context.Background(), pg)
 	if err != nil {
 		t.Fatal(err)
 	}
