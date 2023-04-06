@@ -68,7 +68,7 @@ func Messages(n int) (ret []*core.Message) {
 	return
 }
 
-func MessagePayload(msg *core.Message) *core.MessagePayload {
+func ToContractPayload(msg *core.Message, to abi.ContractName) *core.MessagePayload {
 	dataJSON, err := json.Marshal(&abi.NFTItemTransfer{})
 	if err != nil {
 		panic(err)
@@ -82,7 +82,7 @@ func MessagePayload(msg *core.Message) *core.MessagePayload {
 		SrcAddress:    msg.SrcAddress,
 		SrcContract:   ContractNames(&msg.SrcAddress)[0],
 		DstAddress:    msg.DstAddress,
-		DstContract:   ContractNames(&msg.DstAddress)[0],
+		DstContract:   to,
 		Amount:        msg.Amount,
 		BodyHash:      msg.BodyHash,
 		OperationID:   msg.OperationID,
@@ -93,6 +93,10 @@ func MessagePayload(msg *core.Message) *core.MessagePayload {
 		CreatedLT:     msg.CreatedLT,
 		Error:         String(42),
 	}
+}
+
+func MessagePayload(msg *core.Message) *core.MessagePayload {
+	return ToContractPayload(msg, ContractNames(&msg.DstAddress)[0])
 }
 
 func MessagePayloads(messages []*core.Message) (ret []*core.MessagePayload) {
