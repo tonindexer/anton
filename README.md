@@ -1,6 +1,7 @@
 # tonidx
 
-The project fetches data from the TON blockchain and puts it in PostgreSQL and ClickHouse databases. 
+This project is an open-source tool that extracts and organizes data from the TON blockchain, 
+efficiently storing it in PostgreSQL and ClickHouse databases. 
 
 ## Overview
 
