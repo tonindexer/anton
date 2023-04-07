@@ -25,7 +25,7 @@ func String(n int) string {
 
 func Bytes(l int) []byte {
 	token := make([]byte, l)
-	rand.Read(token) // nolint
+	rand.Read(token)
 	return token
 }
 

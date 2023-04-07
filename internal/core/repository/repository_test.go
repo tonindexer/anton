@@ -48,7 +48,7 @@ func initDB() {
 	msgRepo = msg.NewRepository(db.CH, db.PG)
 }
 
-func dropTables(t *testing.T) {
+func dropTables(t testing.TB) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
@@ -99,7 +99,7 @@ func dropTables(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func createTables(t *testing.T) {
+func createTables(t testing.TB) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 

@@ -11,14 +11,12 @@ run:
 linters:
   disable-all: true
   enable:
-    - deadcode
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
     - unused
-    - varcheck
     - asciicheck
     - asciicheck
     - bidichk
@@ -42,7 +40,6 @@ linters:
     - goheader
     - gosec
     - grouper
-    - ifshort
     - importas
     - ireturn
     - maintidx

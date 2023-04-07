@@ -109,9 +109,8 @@ func Run() {
 		panic(err)
 	}
 
-	c := make(chan os.Signal)
-	done := make(chan struct{})
-	//nolint
+	c := make(chan os.Signal, 1)
+	done := make(chan struct{}, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-c
