@@ -73,6 +73,9 @@ docker-compose build
 ### Running tests
 
 ```shell
+# run tests on abi package
+go test -p 1 $(go list ./... | grep /abi) -covermode=count
+
 # start databases up
 docker-compose up -d postgres clickhouse
 # run repositories tests
