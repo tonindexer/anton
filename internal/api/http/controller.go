@@ -111,6 +111,7 @@ func getAddresses(ctx *gin.Context, name string) ([]*addr.Address, error) {
 }
 
 // GetStatistics godoc
+//
 //	@Summary		statistics on all tables
 //	@Description	Returns statistics on blocks, transactions, messages and accounts
 //	@Tags			statistics
@@ -133,6 +134,7 @@ type GetInterfacesRes struct {
 }
 
 // GetInterfaces godoc
+//
 //	@Summary		contract interfaces
 //	@Description	Returns known contract interfaces
 //	@Tags			contract
@@ -155,6 +157,7 @@ type GetOperationsRes struct {
 }
 
 // GetOperations godoc
+//
 //	@Summary		contract operations
 //	@Description	Returns known contract message payloads schema
 //	@Tags			contract
@@ -172,18 +175,19 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 }
 
 // GetBlocks godoc
+//
 //	@Summary		block info
 //	@Description	Returns filtered blocks
 //	@Tags			block
 //	@Accept			json
 //	@Produce		json
-//  @Param   		workchain     		query   int 	false   "workchain"					default(-1)
-//  @Param   		shard	     		query   int64 	false   "shard"
-//  @Param   		seq_no	     		query   int 	false   "seq_no"
-//  @Param   		with_transactions	query	bool  	false	"include transactions"		default(false)
-//  @Param			order				query	string	false	"order by seq_no"			Enums(ASC, DESC) default(DESC)
-//  @Param   		after	     		query   int 	false	"start from this seq_no"
-//  @Param   		limit	     		query   int 	false	"limit"						default(3) maximum(100)
+//	@Param   		workchain     		query   int 	false   "workchain"					default(-1)
+//	@Param   		shard	     		query   int64 	false   "shard"
+//	@Param   		seq_no	     		query   int 	false   "seq_no"
+//	@Param   		with_transactions	query	bool  	false	"include transactions"		default(false)
+//	@Param			order				query	string	false	"order by seq_no"			Enums(ASC, DESC) default(DESC)
+//	@Param   		after	     		query   int 	false	"start from this seq_no"
+//	@Param   		limit	     		query   int 	false	"limit"						default(3) maximum(100)
 //	@Success		200		{object}	filter.BlocksRes
 //	@Router			/blocks [get]
 func (c *Controller) GetBlocks(ctx *gin.Context) {
@@ -228,19 +232,20 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 }
 
 // GetAccounts godoc
+//
 //	@Summary		account data
 //	@Description	Returns account states and its parsed data
 //	@Tags			account
 //	@Accept			json
 //	@Produce		json
-//  @Param   		address     		query   []string 	false   "only given addresses"
-//  @Param   		latest				query	bool  		false	"only latest account states"
-//  @Param   		interface			query	[]string  	false	"filter by interfaces"
-//  @Param   		owner_address		query	string  	false	"filter FT wallets or NFT items by owner address"
-//  @Param   		minter_address		query	string  	false	"filter FT wallets or NFT items by minter address"
-//  @Param			order				query	string		false	"order by last_tx_lt"						Enums(ASC, DESC) default(DESC)
-//  @Param   		after	     		query   int 		false	"start from this last_tx_lt"
-//  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
+//	@Param   		address     		query   []string 	false   "only given addresses"
+//	@Param   		latest				query	bool  		false	"only latest account states"
+//	@Param   		interface			query	[]string  	false	"filter by interfaces"
+//	@Param   		owner_address		query	string  	false	"filter FT wallets or NFT items by owner address"
+//	@Param   		minter_address		query	string  	false	"filter FT wallets or NFT items by minter address"
+//	@Param			order				query	string		false	"order by last_tx_lt"						Enums(ASC, DESC) default(DESC)
+//	@Param   		after	     		query   int 		false	"start from this last_tx_lt"
+//	@Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
 //	@Success		200		{object}	filter.AccountsRes
 //	@Router			/accounts [get]
 func (c *Controller) GetAccounts(ctx *gin.Context) {
@@ -290,13 +295,14 @@ func (c *Controller) GetAccounts(ctx *gin.Context) {
 }
 
 // AggregateAccounts godoc
+//
 //	@Summary		aggregated account data
 //	@Description	Aggregates FT or NFT data filtered by minter address
 //	@Tags			account
 //	@Accept			json
 //	@Produce		json
-//  @Param   		minter_address		query	string  	true	"NFT collection or FT master address"
-//  @Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
+//	@Param   		minter_address		query	string  	true	"NFT collection or FT master address"
+//	@Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
 //	@Success		200		{object}	aggregate.AccountsRes
 //	@Router			/accounts/aggregated [get]
 func (c *Controller) AggregateAccounts(ctx *gin.Context) {
@@ -328,17 +334,18 @@ func (c *Controller) AggregateAccounts(ctx *gin.Context) {
 }
 
 // AggregateAccountsHistory godoc
+//
 //	@Summary		aggregated accounts grouped by timestamp
 //	@Description	Counts accounts
 //	@Tags			account
 //	@Accept			json
 //	@Produce		json
-//  @Param   		metric				query	string  	true	"metric to show"			Enums(active_addresses)
-//  @Param   		interface			query	[]string  	false	"filter by interfaces"
-//  @Param   		minter_address		query	string  	false	"NFT collection or FT master address"
-//  @Param   		from				query	string  	false	"from timestamp"
-//  @Param   		to					query	string  	false	"to timestamp"
-//  @Param   		interval			query	string  	true	"group interval"			Enums(24h, 8h, 4h, 1h, 15m)
+//	@Param   		metric				query	string  	true	"metric to show"			Enums(active_addresses)
+//	@Param   		interface			query	[]string  	false	"filter by interfaces"
+//	@Param   		minter_address		query	string  	false	"NFT collection or FT master address"
+//	@Param   		from				query	string  	false	"from timestamp"
+//	@Param   		to					query	string  	false	"to timestamp"
+//	@Param   		interval			query	string  	true	"group interval"			Enums(24h, 8h, 4h, 1h, 15m)
 //	@Success		200		{object}	history.AccountsRes
 //	@Router			/accounts/aggregated/history [get]
 func (c *Controller) AggregateAccountsHistory(ctx *gin.Context) {
@@ -366,18 +373,19 @@ func (c *Controller) AggregateAccountsHistory(ctx *gin.Context) {
 }
 
 // GetTransactions godoc
+//
 //	@Summary		transactions data
 //	@Description	Returns transactions, states and messages
 //	@Tags			transaction
 //	@Accept			json
 //	@Produce		json
-//  @Param   		address     		query   []string 	false   "only given addresses"
-//  @Param   		hash				query	string  	false	"search by tx hash"
-//  @Param   		in_msg_hash			query	string  	false	"search by incoming message hash"
-//  @Param   		workchain			query	int32  		false	"filter by workchain"
-//  @Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
-//  @Param   		after	     		query   int 		false	"start from this created_lt"
-//  @Param   		limit	     		query   int 		false	"limit"							default(3) maximum(10000)
+//	@Param   		address     		query   []string 	false   "only given addresses"
+//	@Param   		hash				query	string  	false	"search by tx hash"
+//	@Param   		in_msg_hash			query	string  	false	"search by incoming message hash"
+//	@Param   		workchain			query	int32  		false	"filter by workchain"
+//	@Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
+//	@Param   		after	     		query   int 		false	"start from this created_lt"
+//	@Param   		limit	     		query   int 		false	"limit"							default(3) maximum(10000)
 //	@Success		200		{object}	filter.TransactionsRes
 //	@Router			/transactions [get]
 func (c *Controller) GetTransactions(ctx *gin.Context) {
@@ -430,17 +438,18 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 }
 
 // AggregateTransactionsHistory godoc
+//
 //	@Summary		aggregated transactions grouped by timestamp
 //	@Description	Counts transactions
 //	@Tags			transaction
 //	@Accept			json
 //	@Produce		json
-//  @Param   		metric				query	string  	true	"metric to show"			Enums(transaction_count)
-//  @Param   		address     		query   []string 	false   "tx address"
-//  @Param   		workchain     		query  	int32  		false	"filter by workchain"
-//  @Param   		from				query	string  	false	"from timestamp"
-//  @Param   		to					query	string  	false	"to timestamp"
-//  @Param   		interval			query	string  	true	"group interval"			Enums(24h, 8h, 4h, 1h, 15m)
+//	@Param   		metric				query	string  	true	"metric to show"			Enums(transaction_count)
+//	@Param   		address     		query   []string 	false   "tx address"
+//	@Param   		workchain     		query  	int32  		false	"filter by workchain"
+//	@Param   		from				query	string  	false	"from timestamp"
+//	@Param   		to					query	string  	false	"to timestamp"
+//	@Param   		interval			query	string  	true	"group interval"			Enums(24h, 8h, 4h, 1h, 15m)
 //	@Success		200		{object}	history.TransactionsRes
 //	@Router			/transactions/aggregated/history [get]
 func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
@@ -468,21 +477,22 @@ func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
 }
 
 // GetMessages godoc
+//
 //	@Summary		transaction messages
 //	@Description	Returns filtered messages
 //	@Tags			transaction
 //	@Accept			json
 //	@Produce		json
-//  @Param   		hash				query	string  	false	"msg hash"
-//  @Param   		src_address     	query   []string 	false   "source address"
-//  @Param   		dst_address     	query   []string 	false   "destination address"
-//  @Param   		src_contract		query	[]string  	false	"source contract interface"
-//  @Param   		dst_contract		query	[]string  	false	"destination contract interface"
-//  @Param   		operation_name		query	[]string  	false	"filter by contract operation names"
-//  @Param   		minter_address		query	string  	false	"filter FT or NFT operations by minter address"
-//  @Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
-//  @Param   		after	     		query   int 		false	"start from this created_lt"
-//  @Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
+//	@Param   		hash				query	string  	false	"msg hash"
+//	@Param   		src_address     	query   []string 	false   "source address"
+//	@Param   		dst_address     	query   []string 	false   "destination address"
+//	@Param   		src_contract		query	[]string  	false	"source contract interface"
+//	@Param   		dst_contract		query	[]string  	false	"destination contract interface"
+//	@Param   		operation_name		query	[]string  	false	"filter by contract operation names"
+//	@Param   		minter_address		query	string  	false	"filter FT or NFT operations by minter address"
+//	@Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
+//	@Param   		after	     		query   int 		false	"start from this created_lt"
+//	@Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
 //	@Success		200		{object}	filter.MessagesRes
 //	@Router			/messages [get]
 func (c *Controller) GetMessages(ctx *gin.Context) {
@@ -536,14 +546,15 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 }
 
 // AggregateMessages godoc
+//
 //	@Summary		aggregated messages
 //	@Description	Aggregates receivers and senders
 //	@Tags			transaction
 //	@Accept			json
 //	@Produce		json
-//  @Param   		address				query	string  	true	"address to aggregate by"
-//  @Param   		order_by	     	query   string 		true	"order aggregated by amount or message count"	Enums(amount, count)	default(amount)
-//  @Param   		limit	     		query   int 		false	"limit"											default(25) maximum(1000000)
+//	@Param   		address				query	string  	true	"address to aggregate by"
+//	@Param   		order_by	     	query   string 		true	"order aggregated by amount or message count"	Enums(amount, count)	default(amount)
+//	@Param   		limit	     		query   int 		false	"limit"											default(25) maximum(1000000)
 //	@Success		200		{object}	aggregate.MessagesRes
 //	@Router			/messages/aggregated [get]
 func (c *Controller) AggregateMessages(ctx *gin.Context) {
@@ -582,21 +593,22 @@ func (c *Controller) AggregateMessages(ctx *gin.Context) {
 }
 
 // AggregateMessagesHistory godoc
+//
 //	@Summary		aggregated messages grouped by timestamp
 //	@Description	Counts messages or sums amount
 //	@Tags			transaction
 //	@Accept			json
 //	@Produce		json
-//  @Param   		metric				query	string  	true	"metric to show"								Enums(message_count, message_amount_sum)
-//  @Param   		src_address     	query   []string 	false   "source address"
-//  @Param   		dst_address     	query   []string 	false   "destination address"
-//  @Param   		src_contract		query	[]string  	false	"source contract interface"
-//  @Param   		dst_contract		query	[]string  	false	"destination contract interface"
-//  @Param   		operation_name		query	[]string  	false	"filter by contract operation names"
-//  @Param   		minter_address		query	string  	false	"filter FT or NFT operations by minter address"
-//  @Param   		from				query	string  	false	"from timestamp"
-//  @Param   		to					query	string  	false	"to timestamp"
-//  @Param   		interval			query	string  	true	"group interval"								Enums(24h, 8h, 4h, 1h, 15m)
+//	@Param   		metric				query	string  	true	"metric to show"								Enums(message_count, message_amount_sum)
+//	@Param   		src_address     	query   []string 	false   "source address"
+//	@Param   		dst_address     	query   []string 	false   "destination address"
+//	@Param   		src_contract		query	[]string  	false	"source contract interface"
+//	@Param   		dst_contract		query	[]string  	false	"destination contract interface"
+//	@Param   		operation_name		query	[]string  	false	"filter by contract operation names"
+//	@Param   		minter_address		query	string  	false	"filter FT or NFT operations by minter address"
+//	@Param   		from				query	string  	false	"from timestamp"
+//	@Param   		to					query	string  	false	"to timestamp"
+//	@Param   		interval			query	string  	true	"group interval"								Enums(24h, 8h, 4h, 1h, 15m)
 //	@Success		200		{object}	history.MessagesRes
 //	@Router			/messages/aggregated/history [get]
 func (c *Controller) AggregateMessagesHistory(ctx *gin.Context) {
