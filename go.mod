@@ -4,8 +4,6 @@ go 1.18
 
 replace github.com/uptrace/go-clickhouse v0.3.0 => github.com/iam047801/go-clickhouse v0.0.0-20230302135744-fc217d428c55 // branch with go-clickhouse dirty fixes
 
-replace github.com/uptrace/bun/extra/bunbig v1.1.12 => github.com/iam047801/bun/extra/bunbig v0.0.0-20230301151223-7ddabb8c667f // branch with json marshaller for big.Int
-
 require (
 	github.com/allisson/go-env v0.3.0
 	github.com/gin-gonic/gin v1.9.0
@@ -20,7 +18,7 @@ require (
 	github.com/uptrace/bun v1.1.12
 	github.com/uptrace/bun/dialect/pgdialect v1.1.12
 	github.com/uptrace/bun/driver/pgdriver v1.1.12
-	github.com/uptrace/bun/extra/bunbig v1.1.12
+	github.com/uptrace/bun/extra/bunbig v1.1.13-0.20230308071428-7cd855e64a02
 	github.com/uptrace/go-clickhouse v0.3.0
 	github.com/xssnick/tonutils-go v1.6.2
 )
