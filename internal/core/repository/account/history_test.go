@@ -69,4 +69,8 @@ func TestRepository_AggregateAccountsHistory(t *testing.T) {
 			assert.Equal(t, 10, c.Value)
 		}
 	})
+
+	t.Run("drop tables again", func(t *testing.T) {
+		dropTables(t)
+	})
 }

@@ -78,6 +78,10 @@ func TestRepository_AggregateAccounts_NFTCollection(t *testing.T) {
 			assert.Equal(t, 100/itemCount, c.OwnersCount)
 		}
 	})
+
+	t.Run("drop tables again", func(t *testing.T) {
+		dropTables(t)
+	})
 }
 
 func TestRepository_AggregateAccounts_JettonMinter(t *testing.T) {
@@ -146,5 +150,9 @@ func TestRepository_AggregateAccounts_JettonMinter(t *testing.T) {
 		for _, b := range res.OwnedBalance {
 			assert.Equal(t, ownedBalance[*b.OwnerAddress], b.Balance)
 		}
+	})
+
+	t.Run("drop tables again", func(t *testing.T) {
+		dropTables(t)
 	})
 }

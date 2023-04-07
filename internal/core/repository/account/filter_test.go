@@ -169,6 +169,10 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		assert.Equal(t, 60, results.Total)
 		assert.Equal(t, []*core.AccountState{latestState}, results.Rows)
 	})
+
+	t.Run("drop tables again", func(t *testing.T) {
+		dropTables(t)
+	})
 }
 
 func TestRepository_FilterAccounts_Heavy(t *testing.T) {
@@ -259,5 +263,9 @@ func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 		assert.Equal(t, 1, results.Total)
 		assert.Equal(t, []*core.AccountState{specialState}, results.Rows)
 		assert.Less(t, time.Since(start), 2*time.Second)
+	})
+
+	t.Run("drop tables again", func(t *testing.T) {
+		dropTables(t)
 	})
 }

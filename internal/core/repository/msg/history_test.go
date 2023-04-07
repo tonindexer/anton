@@ -60,7 +60,7 @@ func TestRepository_AggregateMessagesHistory(t *testing.T) {
 			DstContracts: []string{"special"},
 			ReqParams: history.ReqParams{
 				From:     time.Now().Add(-time.Minute),
-				Interval: 8 * time.Hour,
+				Interval: 24 * time.Hour,
 			},
 		})
 		assert.Nil(t, err)
@@ -74,11 +74,15 @@ func TestRepository_AggregateMessagesHistory(t *testing.T) {
 			DstContracts: []string{"special"},
 			ReqParams: history.ReqParams{
 				From:     time.Now().Add(-time.Minute),
-				Interval: 8 * time.Hour,
+				Interval: 24 * time.Hour,
 			},
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(res.BigIntRes))
 		assert.Equal(t, amountSum, res.BigIntRes[0].Value)
+	})
+
+	t.Run("drop tables again", func(t *testing.T) {
+		dropTables(t)
 	})
 }

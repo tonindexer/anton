@@ -126,6 +126,10 @@ func TestRepository_AddAccounts(t *testing.T) {
 		err := tx.Commit()
 		assert.Nil(t, err)
 	})
+
+	t.Run("drop tables again", func(t *testing.T) {
+		dropTables(t)
+	})
 }
 
 func BenchmarkRepository_AddAccounts(b *testing.B) {
