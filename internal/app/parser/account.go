@@ -47,7 +47,7 @@ func matchByCode(acc *core.AccountState, code, codeHash []byte) bool {
 	return bytes.Equal(accCodeCell.Hash(), codeHash)
 }
 
-func matchByGetMethods(acc *core.AccountState, getMethodHashes []uint32) bool {
+func matchByGetMethods(acc *core.AccountState, getMethodHashes []int32) bool {
 	if len(acc.GetMethodHashes) == 0 || len(getMethodHashes) == 0 {
 		return false
 	}

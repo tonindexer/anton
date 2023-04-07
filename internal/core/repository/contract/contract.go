@@ -45,6 +45,22 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 	return nil
 }
 
+func (r *Repository) AddInterface(ctx context.Context, i *core.ContractInterface) error {
+	_, err := r.pg.NewInsert().Model(i).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Repository) AddOperation(ctx context.Context, op *core.ContractOperation) error {
+	_, err := r.pg.NewInsert().Model(op).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
 	var ret []*core.ContractInterface
 

@@ -84,7 +84,7 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 	// and optionally join account data
 	if f.LatestState {
 		q = r.pg.NewSelect().Model(&latest).Relation("AccountState", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.ExcludeColumn("code", "data") // TODO: optional
+			return q.ExcludeColumn(f.ExcludeColumn...)
 		})
 		if f.WithData {
 			q = joinLatestAccountData(q)
@@ -92,7 +92,7 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 		statesTable = "latest_account_state."
 	} else {
 		q = r.pg.NewSelect().Model(&ret).
-			ExcludeColumn("code", "data") // TODO: optional
+			ExcludeColumn(f.ExcludeColumn...)
 		if f.WithData {
 			q = q.Relation("StateData")
 		}

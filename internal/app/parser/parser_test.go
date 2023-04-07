@@ -2,10 +2,10 @@ package parser
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
@@ -24,20 +24,16 @@ func testService(t *testing.T) *Service {
 	}
 
 	bd, err := repository.ConnectDB(ctx,
-		"clickhouse://localhost:9000/default?sslmode=disable",
-		"postgres://user:pass@localhost:5432/default?sslmode=disable")
-	if err != nil {
-		t.Fatal(err)
-	}
+		"clickhouse://localhost:9000/testing?sslmode=disable",
+		"postgres://user:pass@localhost:5432/postgres?sslmode=disable")
+	assert.Nil(t, err)
 
 	server := app.ServerAddr{
 		IPPort:    "135.181.177.59:53312",
 		PubKeyB64: "aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=",
 	}
 	s, err := NewService(context.Background(), &app.ParserConfig{DB: bd, Servers: []*app.ServerAddr{&server}})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	_testService = s
 	return _testService
@@ -47,25 +43,18 @@ func getCurrentMaster(t *testing.T) *ton.BlockIDExt {
 	s := testService(t)
 
 	master, err := s.api.GetMasterchainInfo(ctx)
-	if err != nil {
-		t.Fatal(errors.Wrap(err, "cannot get masterchain info"))
-	}
+	assert.Nil(t, errors.Wrap(err, "cannot get masterchain info"))
+
 	master, err = s.api.LookupBlock(ctx, master.Workchain, master.Shard, master.SeqNo)
-	if err != nil {
-		t.Fatal(errors.Wrap(err, "lookup block"))
-	}
+	assert.Nil(t, errors.Wrap(err, "lookup block"))
 
 	return master
 }
 
 func getTransactionOnce(t *testing.T, addr *address.Address, lt uint64, txHash []byte) *tlb.Transaction {
 	transactions, err := testService(t).api.ListTransactions(ctx, addr, 1, lt, txHash)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(transactions) == 0 {
-		t.Fatal(fmt.Errorf("no transactions"))
-	}
+	assert.Nil(t, err)
+	assert.NotEqual(t, 0, len(transactions))
 	return transactions[0]
 }
 

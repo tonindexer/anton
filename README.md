@@ -1,6 +1,7 @@
 # tonidx
 
-The project fetches data from the TON blockchain and puts it in PostgreSQL and ClickHouse databases. 
+This project is an open-source tool that extracts and organizes data from the TON blockchain, 
+efficiently storing it in PostgreSQL and ClickHouse databases. 
 
 ## Overview
 
@@ -40,7 +41,7 @@ Go to [API.md](/docs/API.md) to see working query examples.
 
 ### Project structure
 
-| Folder            | Description                                                                      |
+| Folder            | Description                                                                      | 
 |-------------------|----------------------------------------------------------------------------------|
 | `abi`             | tlb cell parsing defined by json schema, known contract messages and get-methods |
 |                   |                                                                                  |
@@ -49,56 +50,67 @@ Go to [API.md](/docs/API.md) to see working query examples.
 | `config`          | custom postgresql configuration                                                  |
 |                   |                                                                                  |
 | `core`            | contains project domain                                                          |
-| `core/filter`     | filters description for domain structures                                        |
-| `core/aggregate`  | aggregation requests and responses description for domain structures             |
+| `core/rndm`       | generation of random domain structures                                           |
+| `core/filter`     | filters description                                                              |
+| `core/aggregate`  | aggregation metrics description                                                  |
 | `core/repository` | database repositories implementing filters and aggregation                       |
 |                   |                                                                                  |
 | `app`             | contains all services interfaces and theirs configs                              |
-| `app/parser`      | service to parse contract data and message payloads to known contracts           |
+| `app/parser`      | service to parse contract data and message payloads to known contracts           | 
 | `app/indexer`     | a service to scan blocks and save data from `parser` to a database               |
 |                   |                                                                                  |
 | `cmd`             | command line application and env parsers                                         |
 
-### Reading docs
-```shell
-go install golang.org/x/tools/cmd/godoc
-godoc -http=localhost:6060
-```
+## Starting it up
 
-## Installation
+### Cloning repository
 
-### docker-compose
 ```shell
-git clone https://github.com/tonindexer/anton
+git clone https://github.com/tonindexer/anton tonidx
 cd tonidx
 docker-compose build
 ```
 
-## Configuration
+### Running tests
 
-### docker-compose
-Docker compose installation requires some environment variables.
 ```shell
-# Create .env file
-cp .env.example .env
-# Configure env
-nano .env
+# run tests on abi package
+go test -p 1 $(go list ./... | grep /abi) -covermode=count
+
+# start databases up
+docker-compose up -d postgres clickhouse
+# run repositories tests
+go test -p 1 $(go list ./... | grep /internal/core) -covermode=count
 ```
 
-### env
+### Running linter
+
+Firstly, install [`golangci-lint`](https://golangci-lint.run/usage/install/).
+
+```shell
+golangci-lint run 
+```
+
+### Configuration
+
+Installation requires some environment variables.
+
+```shell
+cp .env.example .env
+nano .env
+```
 
 | Name          | Description                       | Default  | Example                                                           |
 |---------------|-----------------------------------|----------|-------------------------------------------------------------------|
 | `DB_NAME`     | Database name                     |          | idx                                                               |
-| `DB_USER`     | Database username                 |          | user                                                              |
+| `DB_USERNAME` | Database username                 |          | user                                                              |
 | `DB_PASSWORD` | Database password                 |          | pass                                                              |
 | `FROM_BLOCK`  | Master chain seq_no to start from | 22222022 | 23532000                                                          |
 | `LITESERVERS` | Lite servers to connect to        |          | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ= |
 | `DEBUG_LOGS`  | Debug logs enabled                | false    | true                                                              |
 
-## Starting
+### Running indexer and API
 
-### docker-compose
 ```shell
 docker-compose up -d
 docker-compose logs -f # reading logs

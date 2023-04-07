@@ -3,14 +3,15 @@ package parser
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
 
-//nolint:gocognit // test account data parsing
 func TestService_ParseAccount(t *testing.T) {
 	s := testService(t)
 	master := getCurrentMaster(t)
@@ -18,7 +19,7 @@ func TestService_ParseAccount(t *testing.T) {
 	type testCase struct {
 		addr           *address.Address
 		contract       abi.ContractName
-		status         core.AccountStatus
+		status         tlb.AccountStatus
 		contentURI     string
 		collectionAddr string
 	}
@@ -27,51 +28,49 @@ func TestService_ParseAccount(t *testing.T) {
 		{
 			addr:     address.MustParseAddr("EQA-IU8sn_aSCxCpufZtjTm1uxOyCe3LAYEJlH09e8nElCnp"),
 			contract: "wallet_v3r1",
-			status:   core.Active,
+			status:   tlb.AccountStatusActive,
 		},
 		{
 			addr:     address.MustParseAddr("EQC6KV4zs8TJtSZapOrRFmqSkxzpq-oSCoxekQRKElf4nC1I"),
 			contract: abi.NFTItem,
-			status:   core.Active,
+			status:   tlb.AccountStatusActive,
 		},
 		{
 			addr:       address.MustParseAddr("EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N"),
 			contract:   abi.NFTCollection,
-			status:     core.Active,
+			status:     tlb.AccountStatusActive,
 			contentURI: "https://nft.fragment.com/numbers.json",
 		},
 		{
 			addr:           address.MustParseAddr("EQBu6eCK84PxTdjEKyY7z8TQGhN3dbzx-935nj-Lx4FCKPaF"),
 			contract:       abi.NFTItem,
-			status:         core.Active,
+			status:         tlb.AccountStatusActive,
 			contentURI:     "https://nft.fragment.com/number/88809696960.json",
 			collectionAddr: "EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N",
 		},
 		{
 			addr:       address.MustParseAddr("EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi"),
 			contract:   abi.NFTCollection,
-			status:     core.Active,
+			status:     tlb.AccountStatusActive,
 			contentURI: "https://nft.fragment.com/usernames.json",
 		},
 		{
 			addr:           address.MustParseAddr("EQDOZIib-2DZPCKPir1tT5KtOYWzwoDGM404m9NxXeKVEDpC"),
 			contract:       abi.NFTItem, // username
-			status:         core.Active,
+			status:         tlb.AccountStatusActive,
 			contentURI:     "https://nft.fragment.com/username/datboi420.json",
 			collectionAddr: "EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi",
 		},
 		{
 			addr:     address.MustParseAddr("EQB2NJFK0H5OxJTgyQbej0fy5zuicZAXk2vFZEDrqbQ_n5YW"),
 			contract: abi.NFTItem,
-			status:   core.Active,
+			status:   tlb.AccountStatusActive,
 		},
 	}
 
 	for _, c := range cases {
 		acc, err := s.api.GetAccount(ctx, master, c.addr)
-		if err != nil {
-			t.Fatal(c.addr.String(), err)
-		}
+		assert.Nil(t, err)
 
 		st := &core.AccountState{
 			Address:    *addr.MustFromBase64(c.addr.String()),
@@ -82,14 +81,10 @@ func TestService_ParseAccount(t *testing.T) {
 			Code:       acc.Code.ToBOC(),
 		}
 		st.GetMethodHashes, err = abi.GetMethodHashes(acc.Code)
-		if err != nil {
-			t.Logf("%s: %s", c.addr.String(), err)
-		}
+		assert.Nil(t, err)
 
 		types, err := s.DetermineInterfaces(ctx, st)
-		if err != nil {
-			t.Logf(c.addr.String(), err)
-		}
+		assert.Nil(t, err)
 
 		found := false
 		for _, t := range types {
@@ -98,26 +93,18 @@ func TestService_ParseAccount(t *testing.T) {
 				break
 			}
 		}
-		if !found {
-			t.Fatalf("[%s] expected: %s, got: %v", c.addr, c.contract, types)
-		}
-		if core.AccountStatus(acc.State.Status) != c.status {
-			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.status, acc.State.Status)
-		}
+		assert.True(t, found)
+		assert.Equal(t, c.status, acc.State.Status)
 
 		if c.contract != abi.NFTCollection && c.contract != abi.NFTItem {
 			continue
 		}
 
 		data, err := s.ParseAccountData(ctx, master, st, types)
-		if err != nil {
-			t.Fatal(c.addr.String(), err)
-		}
-		if c.contentURI != "" && c.contentURI != data.ContentURI {
-			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.contentURI, data.ContentURI)
-		}
-		if c.collectionAddr != "" && c.collectionAddr != data.MinterAddress.Base64() {
-			t.Fatalf("[%s] expected: %s, got: %s", c.addr, c.collectionAddr, data.MinterAddress.Base64())
+		assert.Nil(t, err)
+		assert.Equal(t, c.contentURI, data.ContentURI)
+		if c.collectionAddr != "" {
+			assert.Equal(t, c.collectionAddr, data.MinterAddress.Base64())
 		}
 	}
 }

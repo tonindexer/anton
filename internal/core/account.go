@@ -50,7 +50,7 @@ type AccountState struct {
 	Data      []byte `bun:"type:bytea" json:"data,omitempty"`
 	DataHash  []byte `bun:"type:bytea" json:"data_hash,omitempty"`
 
-	GetMethodHashes []uint32 `ch:"type:Array(UInt32)" bun:",array" json:"get_method_hashes"`
+	GetMethodHashes []int32 `ch:"type:Array(UInt32)" bun:"type:integer[]" json:"get_method_hashes"`
 
 	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
 }

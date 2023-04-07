@@ -43,7 +43,7 @@ func (r *Repository) AggregateAccountsHistory(ctx context.Context, req *history.
 
 	switch req.Metric {
 	case history.ActiveAddresses:
-		q = q.ColumnExpr("uniq(address) as value")
+		q = q.ColumnExpr("uniqExact(address) as value")
 	default:
 		return nil, errors.Wrapf(core.ErrInvalidArg, "invalid account metric %s", req.Metric)
 	}

@@ -6,14 +6,13 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
-	"github.com/uptrace/bun"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
 
-func insertKnownInterfaces(ctx context.Context, db *bun.DB) error {
+func insertKnownInterfaces(ctx context.Context, repo core.ContractRepository) error {
 	for n, get := range abi.KnownContractMethods {
 		row := core.ContractInterface{
 			Name:       n,
@@ -22,8 +21,8 @@ func insertKnownInterfaces(ctx context.Context, db *bun.DB) error {
 		for _, g := range row.GetMethods {
 			row.GetMethodHashes = append(row.GetMethodHashes, abi.MethodNameHash(g))
 		}
-		_, err := db.NewInsert().Model(&row).Exec(ctx)
-		if err != nil {
+
+		if err := repo.AddInterface(ctx, &row); err != nil {
 			return errors.Wrapf(err, "%s [%v]", n, get)
 		}
 	}
@@ -34,8 +33,7 @@ func insertKnownInterfaces(ctx context.Context, db *bun.DB) error {
 			Code:     code.ToBOC(),
 			CodeHash: code.Hash(),
 		}
-		_, err := db.NewInsert().Model(&row).Exec(ctx)
-		if err != nil {
+		if err := repo.AddInterface(ctx, &row); err != nil {
 			return errors.Wrapf(err, "wallet code %s", row.Name)
 		}
 	}
@@ -43,7 +41,7 @@ func insertKnownInterfaces(ctx context.Context, db *bun.DB) error {
 	return nil
 }
 
-func insertKnownOperations(ctx context.Context, db *bun.DB) error {
+func insertKnownOperations(ctx context.Context, repo core.ContractRepository) error {
 	for n, m := range abi.KnownContractOperations {
 		for out, messages := range m {
 			for _, msg := range messages {
@@ -64,8 +62,7 @@ func insertKnownOperations(ctx context.Context, db *bun.DB) error {
 					OperationID:  opID,
 					Schema:       schema,
 				}
-				_, err = db.NewInsert().Model(&row).Exec(ctx)
-				if err != nil {
+				if err := repo.AddOperation(ctx, &row); err != nil {
 					return errors.Wrapf(err, "%s/%s", row.ContractName, row.Name)
 				}
 			}
@@ -75,7 +72,7 @@ func insertKnownOperations(ctx context.Context, db *bun.DB) error {
 	return nil
 }
 
-func insertKnownAddresses(ctx context.Context, db *bun.DB) error {
+func insertKnownAddresses(ctx context.Context, repo core.ContractRepository) error {
 	var addrMap = make(map[string]abi.ContractName)
 
 	// res, err := http.Get("https://raw.githubusercontent.com/menschee/tonscanplus/main/data.json")
@@ -103,8 +100,7 @@ func insertKnownAddresses(ctx context.Context, db *bun.DB) error {
 		knownAddr[n].Addresses = append(knownAddr[n].Addresses, addr.MustFromBase64(a))
 	}
 	for n, iface := range knownAddr {
-		_, err := db.NewInsert().Model(iface).Exec(ctx)
-		if err != nil {
+		if err := repo.AddInterface(ctx, iface); err != nil {
 			return errors.Wrapf(err, "%s [%v]", n, iface.Addresses)
 		}
 	}
@@ -112,16 +108,16 @@ func insertKnownAddresses(ctx context.Context, db *bun.DB) error {
 	return nil
 }
 
-func InsertKnownInterfaces(ctx context.Context, db *bun.DB) error {
-	if err := insertKnownInterfaces(ctx, db); err != nil {
+func InsertKnownInterfaces(ctx context.Context, repo core.ContractRepository) error {
+	if err := insertKnownInterfaces(ctx, repo); err != nil {
 		return err
 	}
 
-	if err := insertKnownOperations(ctx, db); err != nil {
+	if err := insertKnownOperations(ctx, repo); err != nil {
 		return err
 	}
 
-	if err := insertKnownAddresses(ctx, db); err != nil {
+	if err := insertKnownAddresses(ctx, repo); err != nil {
 		return err
 	}
 

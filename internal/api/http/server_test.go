@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/app/query"
 	"github.com/tonindexer/anton/internal/core/repository"
@@ -19,16 +21,12 @@ func testService(t *testing.T) *query.Service {
 	}
 
 	bd, err := repository.ConnectDB(ctx,
-		"clickhouse://localhost:9000/default?sslmode=disable",
-		"postgres://user:pass@localhost:5432/default?sslmode=disable")
-	if err != nil {
-		t.Fatal(err)
-	}
+		"clickhouse://localhost:9000/postgres?sslmode=disable",
+		"postgres://user:pass@localhost:5432/postgres?sslmode=disable")
+	assert.Nil(t, err)
 
 	s, err := query.NewService(context.Background(), &app.QueryConfig{DB: bd})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	_testService = s
 	return _testService
@@ -41,5 +39,5 @@ func TestServer_Start(t *testing.T) {
 
 	s.RegisterRoutes(c)
 
-	t.Fatal(s.Run())
+	assert.Nil(t, s.Run())
 }

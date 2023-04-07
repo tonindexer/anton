@@ -22,7 +22,7 @@ type ContractInterface struct {
 	Code            []byte           `ch:"type:String" bun:"type:bytea,unique" json:"code"`
 	CodeHash        []byte           `ch:"type:String" bun:"type:bytea,unique" json:"code_hash"` // TODO: match by code hash
 	GetMethods      []string         `ch:"type:Array(String)" bun:",unique,array" json:"get_methods"`
-	GetMethodHashes []uint32         `ch:"type:Array(UInt32)" bun:",unique,array" json:"get_method_hashes"`
+	GetMethodHashes []int32          `ch:"type:Array(UInt32)" bun:"type:integer[],unique" json:"get_method_hashes"`
 }
 
 type ContractOperation struct {
@@ -37,6 +37,9 @@ type ContractOperation struct {
 }
 
 type ContractRepository interface {
+	AddInterface(context.Context, *ContractInterface) error
+	AddOperation(context.Context, *ContractOperation) error
+
 	GetInterfaces(context.Context) ([]*ContractInterface, error)
 	GetOperations(context.Context) ([]*ContractOperation, error)
 	GetOperationByID(context.Context, []abi.ContractName, bool, uint32) (*ContractOperation, error)

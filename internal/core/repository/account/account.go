@@ -8,6 +8,7 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
+	"github.com/tonindexer/anton/internal/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository"
 )
@@ -154,18 +155,25 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		return errors.Wrap(err, "cannot insert new states")
 	}
 
+	addrTxLT := make(map[addr.Address]uint64)
 	for _, a := range accounts {
+		if addrTxLT[a.Address] < a.LastTxLT {
+			addrTxLT[a.Address] = a.LastTxLT
+		}
+	}
+
+	for a, lt := range addrTxLT {
 		_, err = tx.NewInsert().
 			Model(&core.LatestAccountState{
-				Address:  a.Address,
-				LastTxLT: a.LastTxLT,
+				Address:  a,
+				LastTxLT: lt,
 			}).
 			On("CONFLICT (address) DO UPDATE").
-			Where("latest_account_state.last_tx_lt < ?", a.LastTxLT).
+			Where("latest_account_state.last_tx_lt < ?", lt).
 			Set("last_tx_lt = EXCLUDED.last_tx_lt").
 			Exec(ctx)
 		if err != nil {
-			return errors.Wrapf(err, "cannot set latest state for %s", &a.Address)
+			return errors.Wrapf(err, "cannot set latest state for %s", &a)
 		}
 	}
 

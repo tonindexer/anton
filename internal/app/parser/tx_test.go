@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/xssnick/tonutils-go/address"
 
 	"github.com/tonindexer/anton/abi"
@@ -53,28 +54,16 @@ func TestService_ParseOperationID(t *testing.T) {
 			payload := tx.IO.In.Msg.Payload().ToBOC()
 
 			opID, comment, err := abi.ParseOperationID(payload)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if opID != c.opId {
-				t.Fatalf("expected: %d, got: %d", c.opId, opID)
-			}
-			if comment != c.comment {
-				t.Fatalf("expected: %s, got: %s", c.comment, comment)
-			}
+			assert.Nil(t, err)
+			assert.Equal(t, c.opId, opID)
+			assert.Equal(t, c.comment, comment)
 		}
 		for _, out := range tx.IO.Out {
 			payload := out.Msg.Payload().ToBOC()
 			opID, comment, err := abi.ParseOperationID(payload)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if opID != c.opIdOut {
-				t.Fatalf("expected: %d, got: %d", c.opIdOut, opID)
-			}
-			if comment != c.commentOut {
-				t.Fatalf("expected: %s, got: %s", c.commentOut, comment)
-			}
+			assert.Nil(t, err)
+			assert.Equal(t, c.opIdOut, opID)
+			assert.Equal(t, c.commentOut, comment)
 		}
 	}
 }
