@@ -170,6 +170,27 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		assert.Equal(t, []*core.AccountState{latestState}, results.Rows)
 	})
 
+	t.Run("filter states by owner", func(t *testing.T) {
+		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithData: true, OwnerAddress: latestState.StateData.OwnerAddress,
+			Order: "DESC", Limit: 1,
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, 1, results.Total)
+		assert.Equal(t, []*core.AccountState{latestState}, results.Rows)
+	})
+
+	t.Run("filter latest states by owner", func(t *testing.T) {
+		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			LatestState: true,
+			WithData:    true, OwnerAddress: latestState.StateData.OwnerAddress,
+			Order: "DESC", Limit: 1,
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, 1, results.Total)
+		assert.Equal(t, []*core.AccountState{latestState}, results.Rows)
+	})
+
 	t.Run("drop tables again", func(t *testing.T) {
 		dropTables(t)
 	})

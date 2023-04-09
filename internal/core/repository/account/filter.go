@@ -142,7 +142,7 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 			q, data = q.Where("hasAny(types, [?])", ch.In(f.ContractTypes)), true
 		}
 		if f.OwnerAddress != nil {
-			q, data = q.Where("owner_address = ?", f.OwnerAddress), true
+			data = true
 		}
 		if f.MinterAddress != nil {
 			q, data = q.Where("minter_address = ?", f.MinterAddress), true
@@ -160,13 +160,23 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 	}
 
 	if f.LatestState {
-		q = q.ColumnExpr("argMax(address, last_tx_lt)").
-			Group("address")
+		q = q.ColumnExpr("argMax(address, last_tx_lt)")
+		if data && f.OwnerAddress != nil {
+			q = q.ColumnExpr("argMax(owner_address, last_tx_lt) as owner_address")
+		}
+		q = q.Group("address")
 	} else {
-		q = q.ColumnExpr("address")
+		q = q.Column("address")
+		if data && f.OwnerAddress != nil {
+			q = q.Column("owner_address")
+		}
 	}
 
-	return r.ch.NewSelect().TableExpr("(?) as q", q).Count(ctx)
+	qCount := r.ch.NewSelect().TableExpr("(?) as q", q)
+	if data && f.OwnerAddress != nil { // that's because owner address can change
+		qCount = qCount.Where("owner_address = ?", f.OwnerAddress)
+	}
+	return qCount.Count(ctx)
 }
 
 func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) (*filter.AccountsRes, error) {
