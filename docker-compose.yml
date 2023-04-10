@@ -1,6 +1,7 @@
 version: "3.5"
 services:
   indexer:
+    image: "${IMAGE_NAME:-anton}:${IMAGE_TAG:-latest}"
     build: .
     networks:
       - indexer_network
@@ -17,6 +18,7 @@ services:
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
   query:
+    image: "${IMAGE_NAME:-anton}:${IMAGE_TAG:-latest}"
     build: .
     networks:
       - indexer_network
