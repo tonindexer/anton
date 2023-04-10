@@ -54,7 +54,6 @@ services:
         hard: 262144
   postgres:
     image: "postgres:15"
-    command: ["postgres", "-c", "log_min_duration_statement=1000", "-c", "logging_collector=on"]
     networks:
       - indexer_network
     volumes:
