@@ -38,7 +38,7 @@ services:
       DB_PG_URL: "postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
       GIN_MODE: "release"
   clickhouse:
-    image: "yandex/clickhouse-server"
+    image: "yandex/clickhouse-server:22"
     networks:
       - indexer_network
     volumes:
