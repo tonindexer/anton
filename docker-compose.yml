@@ -58,7 +58,6 @@ services:
     volumes:
       - idx_pg_data:/var/lib/postgresql/data
       - ./config/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
-      - ./log/postgresql:/var/lib/postgresql/data/pgdata/log
     ports:
       - "5432:5432"
     expose:

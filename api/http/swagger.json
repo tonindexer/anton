@@ -5,7 +5,7 @@
     "swagger": "2.0",
     "info": {
         "description": "Project fetches data from TON blockchain.",
-        "title": "tonidx",
+        "title": "Anton",
         "contact": {
             "name": "Dat Boi",
             "url": "https://anton.tools"

@@ -18,7 +18,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/filter"
 )
 
-// @title      		tonidx
+// @title      		Anton
 // @version     	0.1
 // @description 	Project fetches data from TON blockchain.
 

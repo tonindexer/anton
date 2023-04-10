@@ -1746,7 +1746,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "anton.tools",
 	BasePath:         "/api/v0",
 	Schemes:          []string{"https"},
-	Title:            "tonidx",
+	Title:            "Anton",
 	Description:      "Project fetches data from TON blockchain.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

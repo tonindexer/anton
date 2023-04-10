@@ -23,7 +23,7 @@ RUN swag init \
     --parseDependency --parseInternal
 
 # compile application
-RUN go build -o /tonidx /go/src/github.com/tonindexer/anton
+RUN go build -o /anton /go/src/github.com/tonindexer/anton
 
 
 # application
@@ -31,12 +31,12 @@ FROM alpine:3
 
 ENV LISTEN=0.0.0.0:8080
 
-RUN addgroup -S tonidx && adduser -S tonidx -G tonidx
+RUN addgroup -S anton && adduser -S anton -G anton
 WORKDIR /app
 RUN apk add --no-cache tzdata
-COPY --from=build /tonidx /usr/bin/tonidx
+COPY --from=build /anton /usr/bin/anton
 
-USER tonidx:tonidx
+USER anton:anton
 EXPOSE 8080
-ENTRYPOINT ["/usr/bin/tonidx"]
+ENTRYPOINT ["/usr/bin/anton"]
 CMD ["indexer"]

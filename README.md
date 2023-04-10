@@ -1,4 +1,4 @@
-# tonidx
+# anton
 
 This project is an open-source tool that extracts and organizes data from the TON blockchain, 
 efficiently storing it in PostgreSQL and ClickHouse databases. 
@@ -66,8 +66,8 @@ Go to [API.md](/docs/API.md) to see working query examples.
 ### Cloning repository
 
 ```shell
-git clone https://github.com/tonindexer/anton tonidx
-cd tonidx
+git clone https://github.com/tonindexer/anton anton
+cd anton
 docker-compose build
 ```
 
@@ -121,7 +121,7 @@ docker-compose logs -f # reading logs
 ### Inserting contract interface
 
 ```shell
-docker-compose exec indexer tonidx addInterface               \ 
+docker-compose exec indexer anton addInterface               \ 
     -name       [unique contract name]                        \
     -address    [optional contract address]                   \
     -code       [optional contract code]                      \
@@ -131,7 +131,7 @@ docker-compose exec indexer tonidx addInterface               \
 ### Inserting contract operation
 
 ```shell
-docker-compose exec indexer tonidx addOperation               \
+docker-compose exec indexer anton addOperation               \
     -name     [operation name]                                \
     -contract [contract interface name]                       \
     -opid     [operation id, example: 0x5fcc3d14]             \
