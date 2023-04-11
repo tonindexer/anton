@@ -18,11 +18,9 @@ COPY abi /go/src/github.com/tonindexer/anton/abi
 COPY main.go /go/src/github.com/tonindexer/anton
 
 RUN swag init \
-    --output api/http --generalInfo internal/api/http/controller.go \
-    --parseDependency --parseInternal
-
-# compile application
-RUN go build -o /anton /go/src/github.com/tonindexer/anton
+        --output api/http --generalInfo internal/api/http/controller.go \
+        --parseDependency --parseInternal && \
+    go build -o /anton /go/src/github.com/tonindexer/anton
 
 
 # application
