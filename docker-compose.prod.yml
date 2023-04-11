@@ -1,0 +1,6 @@
+version: "3.5"
+services:
+  postgres:
+    shm_size: 64gb
+    volumes:
+      - ./config/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
