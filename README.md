@@ -112,7 +112,7 @@ nano .env
 ### Running indexer and API
 
 ```shell
-docker-compose up -d
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 docker-compose logs -f # reading logs
 ```
 
