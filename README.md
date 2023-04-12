@@ -100,14 +100,16 @@ cp .env.example .env
 nano .env
 ```
 
-| Name          | Description                       | Default  | Example                                                           |
-|---------------|-----------------------------------|----------|-------------------------------------------------------------------|
-| `DB_NAME`     | Database name                     |          | idx                                                               |
-| `DB_USERNAME` | Database username                 |          | user                                                              |
-| `DB_PASSWORD` | Database password                 |          | pass                                                              |
-| `FROM_BLOCK`  | Master chain seq_no to start from | 22222022 | 23532000                                                          |
-| `LITESERVERS` | Lite servers to connect to        |          | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ= |
-| `DEBUG_LOGS`  | Debug logs enabled                | false    | true                                                              |
+| Name          | Description                       | Default  | Example                                                            |
+|---------------|-----------------------------------|----------|--------------------------------------------------------------------|
+| `DB_NAME`     | Database name                     |          | idx                                                                |
+| `DB_USERNAME` | Database username                 |          | user                                                               |
+| `DB_PASSWORD` | Database password                 |          | pass                                                               |
+| `DB_CH_URL`   | Clickhouse URL to connect to      |          | clickhouse://clickhouse:9000/db_name?sslmode=disable               |
+| `DB_PG_URL`   | PostgreSQL URL to connect to      |          | postgres://username:password@postgres:5432/db_name?sslmode=disable |
+| `FROM_BLOCK`  | Master chain seq_no to start from | 22222022 | 23532000                                                           |
+| `LITESERVERS` | Lite servers to connect to        |          | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=  |
+| `DEBUG_LOGS`  | Debug logs enabled                | false    | true                                                               |
 
 ### Running indexer and API
 
@@ -118,22 +120,33 @@ docker-compose logs -f # reading logs
 
 ## Using
 
-### Inserting contract interface
+### Show archive nodes from global config
 
 ```shell
-docker-compose exec indexer anton addInterface               \ 
-    -name       [unique contract name]                        \
-    -address    [optional contract address]                   \
-    -code       [optional contract code]                      \
-    -getmethods [optional get methods separated with commas]
+go run . archiveNodes [--testnet]
 ```
 
-### Inserting contract operation
+### Insert contract interface
+
+It is not very usable right now.
 
 ```shell
-docker-compose exec indexer anton addOperation               \
-    -name     [operation name]                                \
-    -contract [contract interface name]                       \
-    -opid     [operation id, example: 0x5fcc3d14]             \
-    -schema   [message body schema]
+docker-compose exec indexer anton addInterface        \ 
+    --contract      [unique contract name]            \
+    --address       [optional contract addresses]     \
+    --code          [optional contract code]          \
+    --get           [optional get methods]
+```
+
+### Insert contract operation
+
+It is not very usable right now too.
+
+```shell
+docker-compose exec indexer anton addOperation        \
+    --contract      [contract interface name]         \
+    --operation     [operation name]                  \
+    --operationId   [operation name]                  \
+    --outgoing      [operation id]                    \
+    --schema        [message body schema]
 ```
