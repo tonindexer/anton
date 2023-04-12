@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/allisson/go-env"
+	"github.com/urfave/cli/v2"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -26,51 +28,20 @@ func init() {
 	log.Logger = log.With().Caller().Logger().Level(level)
 }
 
-var availableCommands = map[string]struct {
-	Description string
-	Run         func()
-}{
-	"indexer": {
-		Description: "Background task to scan new blocks",
-		Run:         indexer.Run,
-	},
-	"query": {
-		Description: "HTTP API",
-		Run:         query.Run,
-	},
-	"archiveNodes": {
-		Description: "Returns archive nodes found from config",
-		Run:         archive.Run,
-	},
-	"addInterface": {
-		Description: "Inserts new contract interface to a database",
-		Run:         contract.InsertInterface,
-	},
-	"addOperation": {
-		Description: "Inserts new contract operation to a database",
-		Run:         contract.InsertOperation,
-	},
-}
-
-func printHelp() {
-	println("available commands:")
-	for cmd, v := range availableCommands {
-		println("*", cmd, "--", v.Description)
-	}
-}
-
 func main() {
-	if len(os.Args) < 2 {
-		printHelp()
+	app := &cli.App{
+		Name:  "anton",
+		Usage: "an indexing project",
+		Commands: []*cli.Command{
+			indexer.Command,
+			query.Command,
+			archive.Command,
+			contract.InterfaceCommand,
+			contract.OperationCommand,
+		},
+	}
+	if err := app.Run(os.Args); err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	cmd, ok := availableCommands[os.Args[1]]
-	if !ok {
-		println("[!] unknown command", os.Args[1])
-		printHelp()
-		os.Exit(1)
-	}
-
-	cmd.Run()
 }

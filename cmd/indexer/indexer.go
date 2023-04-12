@@ -11,6 +11,7 @@ import (
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	"github.com/urfave/cli/v2"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/app"
@@ -64,59 +65,67 @@ func initDB(ctx context.Context, conn *repository.DB) error {
 	return nil
 }
 
-func Run() {
-	chURL := env.GetString("DB_CH_URL", "")
-	pgURL := env.GetString("DB_PG_URL", "")
+var Command = &cli.Command{
+	Name:  "indexer",
+	Usage: "Scans new blocks",
 
-	conn, err := repository.ConnectDB(context.Background(), chURL, pgURL)
-	if err != nil {
-		log.Fatal().Err(err).Msg("cannot connect to a database")
-	}
-	if err := initDB(context.Background(), conn); err != nil {
-		log.Fatal().Err(err).Msg("")
-	}
+	Action: func(ctx *cli.Context) error {
+		var liteservers []*app.ServerAddr
 
-	var liteservers []*app.ServerAddr
-	for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
-		splitted := strings.Split(addr, "|")
-		if len(splitted) != 2 {
-			log.Fatal().Err(err).Msg("wrong server address format")
+		chURL := env.GetString("DB_CH_URL", "")
+		pgURL := env.GetString("DB_PG_URL", "")
+
+		conn, err := repository.ConnectDB(ctx.Context, chURL, pgURL)
+		if err != nil {
+			return errors.Wrap(err, "cannot connect to a database")
 		}
-		liteservers = append(liteservers, &app.ServerAddr{
-			IPPort:    splitted[0],
-			PubKeyB64: splitted[1],
+		if err := initDB(ctx.Context, conn); err != nil {
+			return err
+		}
+
+		for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
+			split := strings.Split(addr, "|")
+			if len(split) != 2 {
+				return errors.Wrapf(err, "wrong server address format '%s'", addr)
+			}
+			liteservers = append(liteservers, &app.ServerAddr{
+				IPPort:    split[0],
+				PubKeyB64: split[1],
+			})
+		}
+
+		p, err := parser.NewService(ctx.Context, &app.ParserConfig{
+			DB:      conn,
+			Servers: liteservers,
 		})
-	}
+		if err != nil {
+			return errors.Wrap(err, "new parser service")
+		}
 
-	p, err := parser.NewService(context.Background(), &app.ParserConfig{
-		DB:      conn,
-		Servers: liteservers,
-	})
-	if err != nil {
-		panic(err)
-	}
+		s, err := indexer.NewService(ctx.Context, &app.IndexerConfig{
+			DB:               conn,
+			Parser:           p,
+			FromBlock:        uint32(env.GetInt32("FROM_BLOCK", 22222022)),
+			FetchBlockPeriod: 1 * time.Millisecond,
+		})
+		if err != nil {
+			return err
+		}
+		if err = s.Start(); err != nil {
+			return err
+		}
 
-	s, err := indexer.NewService(context.Background(), &app.IndexerConfig{
-		DB:               conn,
-		Parser:           p,
-		FromBlock:        uint32(env.GetInt32("FROM_BLOCK", 22222022)),
-		FetchBlockPeriod: 1 * time.Millisecond,
-	})
-	if err != nil {
-		panic(err)
-	}
-	if err = s.Start(); err != nil {
-		panic(err)
-	}
+		c := make(chan os.Signal, 1)
+		done := make(chan struct{}, 1)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+		go func() {
+			<-c
+			s.Stop()
+			done <- struct{}{}
+		}()
 
-	c := make(chan os.Signal, 1)
-	done := make(chan struct{}, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-c
-		s.Stop()
-		done <- struct{}{}
-	}()
+		<-done
 
-	<-done
+		return nil
+	},
 }

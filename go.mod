@@ -2,7 +2,7 @@ module github.com/tonindexer/anton
 
 go 1.18
 
-replace github.com/uptrace/go-clickhouse v0.3.0 => github.com/iam047801/go-clickhouse v0.0.0-20230302135744-fc217d428c55 // branch with go-clickhouse dirty fixes
+replace github.com/uptrace/go-clickhouse v0.3.0 => github.com/iam047801/go-clickhouse v0.0.0-20230302135744-fc217d428c55 // go-clickhouse branch with dirty fixes
 
 require (
 	github.com/allisson/go-env v0.3.0
@@ -30,6 +30,7 @@ require (
 	github.com/bytedance/sonic v1.8.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/codemodus/kace v0.5.1 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
@@ -54,11 +55,14 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.9 // indirect
+	github.com/urfave/cli/v2 v2.25.1 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
+	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.opentelemetry.io/otel v1.13.0 // indirect
 	go.opentelemetry.io/otel/trace v1.13.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
