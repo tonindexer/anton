@@ -1,0 +1,1 @@
+ALTER TABLE account_data DROP COLUMN wallet_seq_no;

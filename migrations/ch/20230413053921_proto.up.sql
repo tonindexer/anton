@@ -2,22 +2,7 @@
 -- Clickhouse SHOW CREATE TABLE
 --
 
-
-CREATE TABLE block_info
-(
-    workchain Int32,
-    shard Int64,
-    seq_no UInt32,
-    file_hash String,
-    root_hash String
-)
-ENGINE = ReplacingMergeTree
-PARTITION BY workchain
-ORDER BY (workchain, shard, seq_no);
-
-
-CREATE TABLE account_data
-(
+CREATE TABLE account_data (
     address String,
     last_tx_lt UInt64,
     last_tx_hash String,
@@ -49,6 +34,9 @@ PARTITION BY types
 ORDER BY (address, last_tx_lt);
 
 
+--migration:split
+
+
 CREATE TABLE account_states
 (
     address String,
@@ -70,6 +58,9 @@ PARTITION BY status
 ORDER BY (address, last_tx_lt);
 
 
+--migration:split
+
+
 CREATE TABLE message_payloads
 (
     type LowCardinality(String),
@@ -89,7 +80,11 @@ CREATE TABLE message_payloads
 )
 ENGINE = ReplacingMergeTree
 PARTITION BY toYYYYMM(created_at)
-ORDER BY hash;
+ORDER BY hash
+SETTINGS index_granularity = 8192;
+
+
+--migration:split
 
 
 CREATE TABLE messages
@@ -117,13 +112,17 @@ CREATE TABLE messages
 )
 ENGINE = ReplacingMergeTree
 PARTITION BY toYYYYMM(created_at)
-ORDER BY hash;
+ORDER BY hash
+SETTINGS index_granularity = 8192;
+
+
+--migration:split
 
 
 CREATE TABLE transactions
 (
-    hash String,
     address String,
+    hash String,
     block_workchain Int32,
     block_shard Int64,
     block_seq_no UInt32,
@@ -144,3 +143,19 @@ CREATE TABLE transactions
 ENGINE = ReplacingMergeTree
 PARTITION BY toYYYYMM(created_at)
 ORDER BY (address, hash);
+
+
+--migration:split
+
+
+CREATE TABLE block_info
+(
+    workchain Int32,
+    shard Int64,
+    seq_no UInt32,
+    file_hash String,
+    root_hash String
+)
+ENGINE = ReplacingMergeTree
+PARTITION BY workchain
+ORDER BY (workchain, shard, seq_no);
