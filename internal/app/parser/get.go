@@ -157,6 +157,6 @@ func (s *Service) getAccountDataWallet(ctx context.Context, b *ton.BlockIDExt, a
 			continue
 		}
 
-		ret.SeqNo = seqNo
+		ret.WalletSeqNo = seqNo
 	}
 }

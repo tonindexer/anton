@@ -19,6 +19,7 @@ func joinLatestAccountData(q *bun.SelectQuery) *bun.SelectQuery {
 			"\"account_state__state_data\".\"last_tx_hash\" AS \"account_state__state_data__last_tx_hash\", " +
 			"\"account_state__state_data\".\"balance\" AS \"account_state__state_data__balance\", " +
 			"\"account_state__state_data\".\"types\" AS \"account_state__state_data__types\", " +
+			"\"account_state__state_data\".\"wallet_seq_no\" AS \"account_state__state_data__wallet_seq_no\", " +
 			"\"account_state__state_data\".\"owner_address\" AS \"account_state__state_data__owner_address\", " +
 			"\"account_state__state_data\".\"minter_address\" AS \"account_state__state_data__minter_address\", " +
 			"\"account_state__state_data\".\"next_item_index\" AS \"account_state__state_data__next_item_index\", " +
