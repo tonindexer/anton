@@ -1,4 +1,4 @@
-package query
+package web
 
 import (
 	"os"
@@ -16,7 +16,7 @@ import (
 )
 
 var Command = &cli.Command{
-	Name:  "query",
+	Name:  "web",
 	Usage: "HTTP JSON API",
 
 	Action: func(ctx *cli.Context) error {

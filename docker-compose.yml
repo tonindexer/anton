@@ -16,7 +16,7 @@ services:
       FROM_BLOCK: ${FROM_BLOCK}
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
-  query:
+  web:
     build: .
     networks:
       - indexer_network
@@ -30,7 +30,7 @@ services:
     depends_on:
       - clickhouse
       - postgres
-    command: query
+    command: web
     environment:
       DB_CH_URL: "clickhouse://clickhouse:9000/${DB_NAME}?sslmode=disable"
       DB_PG_URL: "postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"

@@ -20,7 +20,7 @@ func intToIP4(ipInt int64) string {
 
 var Command = &cli.Command{
 	Name:  "archive",
-	Usage: "Returns archive nodes found from config",
+	Usage: "Prints archive nodes found from config",
 
 	Flags: []cli.Flag{
 		&cli.BoolFlag{

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/allisson/go-env"
@@ -12,8 +11,9 @@ import (
 
 	"github.com/tonindexer/anton/cmd/archive"
 	"github.com/tonindexer/anton/cmd/contract"
+	"github.com/tonindexer/anton/cmd/db"
 	"github.com/tonindexer/anton/cmd/indexer"
-	"github.com/tonindexer/anton/cmd/query"
+	"github.com/tonindexer/anton/cmd/web"
 )
 
 func init() {
@@ -33,15 +33,15 @@ func main() {
 		Name:  "anton",
 		Usage: "an indexing project",
 		Commands: []*cli.Command{
+			db.Command,
 			indexer.Command,
-			query.Command,
+			web.Command,
 			archive.Command,
 			contract.InterfaceCommand,
 			contract.OperationCommand,
 		},
 	}
 	if err := app.Run(os.Args); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal().Err(err).Msg("")
 	}
 }

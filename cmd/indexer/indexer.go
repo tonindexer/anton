@@ -18,42 +18,15 @@ import (
 	"github.com/tonindexer/anton/internal/app/indexer"
 	"github.com/tonindexer/anton/internal/app/parser"
 	"github.com/tonindexer/anton/internal/core/repository"
-	"github.com/tonindexer/anton/internal/core/repository/account"
-	"github.com/tonindexer/anton/internal/core/repository/block"
 	"github.com/tonindexer/anton/internal/core/repository/contract"
-	"github.com/tonindexer/anton/internal/core/repository/msg"
-	"github.com/tonindexer/anton/internal/core/repository/tx"
 )
 
-func initDB(ctx context.Context, conn *repository.DB) error {
+func initKnown(ctx context.Context, conn *repository.DB) error {
 	abiRepo := contract.NewRepository(conn.PG)
 
 	_, err := abiRepo.GetOperationByID(ctx, []abi.ContractName{abi.NFTItem}, false, 0x5fcc3d14)
 	if err == nil {
 		return nil // tables exist
-	}
-
-	log.Info().Msg("creating tables")
-
-	err = block.CreateTables(ctx, conn.CH, conn.PG)
-	if err != nil {
-		return err
-	}
-	err = account.CreateTables(ctx, conn.CH, conn.PG)
-	if err != nil {
-		return err
-	}
-	err = tx.CreateTables(ctx, conn.CH, conn.PG)
-	if err != nil {
-		return err
-	}
-	err = msg.CreateTables(ctx, conn.CH, conn.PG)
-	if err != nil {
-		return err
-	}
-	err = contract.CreateTables(ctx, conn.PG)
-	if err != nil {
-		return err
 	}
 
 	if err := repository.InsertKnownInterfaces(ctx, abiRepo); err != nil {
@@ -66,8 +39,9 @@ func initDB(ctx context.Context, conn *repository.DB) error {
 }
 
 var Command = &cli.Command{
-	Name:  "indexer",
-	Usage: "Scans new blocks",
+	Name:    "indexer",
+	Aliases: []string{"idx"},
+	Usage:   "Scans new blocks",
 
 	Action: func(ctx *cli.Context) error {
 		var liteservers []*app.ServerAddr
@@ -79,7 +53,7 @@ var Command = &cli.Command{
 		if err != nil {
 			return errors.Wrap(err, "cannot connect to a database")
 		}
-		if err := initDB(ctx.Context, conn); err != nil {
+		if err := initKnown(ctx.Context, conn); err != nil {
 			return err
 		}
 

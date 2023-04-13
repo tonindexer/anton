@@ -12,10 +12,10 @@ COPY go.mod go.sum /go/src/github.com/tonindexer/anton/
 RUN go mod download
 
 # copy application code
-COPY internal /go/src/github.com/tonindexer/anton/internal
+COPY migrations /go/src/github.com/tonindexer/anton/migrations
 COPY cmd /go/src/github.com/tonindexer/anton/cmd
-#COPY api /go/src/github.com/tonindexer/anton/api
 COPY abi /go/src/github.com/tonindexer/anton/abi
+COPY internal /go/src/github.com/tonindexer/anton/internal
 COPY main.go /go/src/github.com/tonindexer/anton
 
 RUN swag init \
