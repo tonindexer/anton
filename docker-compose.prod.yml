@@ -1,0 +1,7 @@
+version: "3.5"
+services:
+  postgres:
+    shm_size: 64gb
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    volumes:
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
