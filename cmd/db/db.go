@@ -13,8 +13,9 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/tonindexer/anton/internal/core/repository"
-	"github.com/tonindexer/anton/migrations/ch"
-	"github.com/tonindexer/anton/migrations/pg"
+
+	"github.com/tonindexer/anton/migrations/chmigrations"
+	"github.com/tonindexer/anton/migrations/pgmigrations"
 )
 
 func newMigrators() (pg *migrate.Migrator, ch *chmigrate.Migrator, err error) {
