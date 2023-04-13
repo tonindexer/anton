@@ -132,7 +132,7 @@ docker-compose build
 # starting up databases
 docker-compose up -d postgres clickhouse
 
-# exporting connection to databases
+# exporting connection to the databases
 export DB_CH_URL=clickhouse://localhost:9000/default?sslmode=disable
 export DB_PG_URL=postgres://user:pass@localhost:5432/default?sslmode=disable
 
