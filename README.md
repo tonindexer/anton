@@ -123,7 +123,7 @@ nano .env
 go build -o anton .
 
 # building in docker
-docker-compose build
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
 ```
 
 ### Initializing the database
