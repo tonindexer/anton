@@ -3,7 +3,6 @@ FROM golang:1.18-alpine AS build
 
 #prepare env
 WORKDIR /go/src/github.com/tonindexer/anton
-RUN apk add --no-cache gcc musl-dev linux-headers
 
 RUN go install github.com/swaggo/swag/cmd/swag@v1.8.10
 
@@ -19,11 +18,9 @@ COPY internal /go/src/github.com/tonindexer/anton/internal
 COPY main.go /go/src/github.com/tonindexer/anton
 
 RUN swag init \
-    --output api/http --generalInfo internal/api/http/controller.go \
-    --parseDependency --parseInternal
-
-# compile application
-RUN go build -o /anton /go/src/github.com/tonindexer/anton
+        --output api/http --generalInfo internal/api/http/controller.go \
+        --parseDependency --parseInternal && \
+    go build -o /anton /go/src/github.com/tonindexer/anton
 
 
 # application
@@ -33,7 +30,6 @@ ENV LISTEN=0.0.0.0:8080
 
 RUN addgroup -S anton && adduser -S anton -G anton
 WORKDIR /app
-RUN apk add --no-cache tzdata
 COPY --from=build /anton /usr/bin/anton
 
 USER anton:anton

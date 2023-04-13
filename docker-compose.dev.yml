@@ -1,0 +1,12 @@
+version: "3.5"
+services:
+  indexer:
+    build: .
+  query:
+    build: .
+  clickhouse:
+    ports:
+      - "9000:9000"
+  postgres:
+    ports:
+      - "5432:5432"

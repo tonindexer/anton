@@ -130,7 +130,7 @@ docker-compose build
 
 ```shell
 # starting up databases
-docker-compose up -d postgres clickhouse
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres clickhouse
 
 # exporting connection to the databases
 export DB_CH_URL=clickhouse://localhost:9000/default?sslmode=disable
@@ -146,7 +146,7 @@ export DB_PG_URL=postgres://user:pass@localhost:5432/default?sslmode=disable
 ### Running indexer and API
 
 ```shell
-docker-compose up -d indexer web
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d indexer web
 ```
 
 ### Reading logs

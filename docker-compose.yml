@@ -1,48 +1,43 @@
 version: "3.5"
+
+x-anton-service: &anton-service
+  image: "${IMAGE_NAME:-anton}:${IMAGE_TAG:-latest}"
+  networks:
+    - indexer_network
+  depends_on:
+    - clickhouse
+    - postgres
+  links:
+    - clickhouse
+    - postgres
+  environment: &anton-env
+    DB_CH_URL: "clickhouse://clickhouse:9000/${DB_NAME}?sslmode=disable"
+    DB_PG_URL: "postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
+
 services:
   indexer:
-    build: .
-    networks:
-      - indexer_network
-    links:
-      - clickhouse
-      - postgres
-    depends_on:
-      - clickhouse
-      - postgres
+    <<: *anton-service
     environment:
-      DB_CH_URL: "clickhouse://clickhouse:9000/${DB_NAME}?sslmode=disable"
-      DB_PG_URL: "postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
+      <<: *anton-env
       FROM_BLOCK: ${FROM_BLOCK}
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
   web:
-    build: .
-    networks:
-      - indexer_network
+    <<: *anton-service
     ports:
       - "8080:8080"
     expose:
       - "8080"
-    links:
-      - clickhouse
-      - postgres
-    depends_on:
-      - clickhouse
-      - postgres
     command: web
     environment:
-      DB_CH_URL: "clickhouse://clickhouse:9000/${DB_NAME}?sslmode=disable"
-      DB_PG_URL: "postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
+      <<: *anton-env
       GIN_MODE: "release"
   clickhouse:
-    image: "yandex/clickhouse-server"
+    image: "yandex/clickhouse-server:22"
     networks:
       - indexer_network
     volumes:
       - idx_ch_data:/var/lib/clickhouse
-    ports:
-      - "9000:9000"
     expose:
       - "9000"
     ulimits:
@@ -52,17 +47,12 @@ services:
         hard: 262144
   postgres:
     image: "postgres:15"
-    command: ["postgres", "-c", "log_min_duration_statement=1000", "-c", "logging_collector=on"]
     networks:
       - indexer_network
     volumes:
       - idx_pg_data:/var/lib/postgresql/data
-      - ./config/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
-    ports:
-      - "5432:5432"
     expose:
       - "5432"
-    shm_size: 64gb
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata/
       POSTGRES_DB: "${DB_NAME}"
