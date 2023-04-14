@@ -155,6 +155,27 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d indexer web
 docker-compose logs -f
 ```
 
+### Migrating database
+
+```shell
+# create backup directories
+mkdir backups backups/pg backups/ch
+
+# stop indexer
+docker-compose stop indexer
+
+# backing up postgres
+docker-compose exec postgres pg_dump -U user db_name | gzip > backups/pg/1.pg.backup.gz
+
+# backing up clickhouse (available only with docker-compose.prod.yml)
+## connect to the clickhouse
+docker-compose exec clickhouse clickhouse-client
+## execute backup command
+# :) BACKUP DATABASE default TO File('/backups/1/');
+
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.prod.yml exec web anton migrate up
+```
+
 ## Using
 
 ### Show archive nodes from global config
