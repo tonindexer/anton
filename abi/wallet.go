@@ -1,9 +1,12 @@
 package abi
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 
+	"github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
@@ -17,7 +20,6 @@ const (
 	V2R2         WalletVersion = 22
 	V3R1         WalletVersion = 31
 	V3R2         WalletVersion = 32
-	V3                         = V3R2
 	V4R1         WalletVersion = 41
 	V4R2         WalletVersion = 42
 	HighloadV2R2 WalletVersion = 122
@@ -105,4 +107,18 @@ func GetAllWalletNames() (ret []ContractName) {
 		ret = append(ret, v.Name())
 	}
 	return
+}
+
+func GetWalletSeqNo(ctx context.Context, api *ton.APIClient, b *ton.BlockIDExt, addr *address.Address) (uint64, error) {
+	resp, err := api.RunGetMethod(ctx, b, addr, "seqno")
+	if err != nil {
+		return 0, fmt.Errorf("failed to run seqno method: %w", err)
+	}
+
+	iSeq, err := resp.Int(0)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse seqno: %w", err)
+	}
+
+	return iSeq.Uint64(), nil
 }

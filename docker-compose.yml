@@ -22,13 +22,13 @@ services:
       FROM_BLOCK: ${FROM_BLOCK}
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
-  query:
+  web:
     <<: *anton-service
     ports:
       - "8080:8080"
     expose:
       - "8080"
-    command: query
+    command: web
     environment:
       <<: *anton-env
       GIN_MODE: "release"

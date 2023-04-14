@@ -4,14 +4,16 @@ import (
 	"os"
 
 	"github.com/allisson/go-env"
+	"github.com/urfave/cli/v2"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/tonindexer/anton/cmd/archive"
 	"github.com/tonindexer/anton/cmd/contract"
+	"github.com/tonindexer/anton/cmd/db"
 	"github.com/tonindexer/anton/cmd/indexer"
-	"github.com/tonindexer/anton/cmd/query"
+	"github.com/tonindexer/anton/cmd/web"
 )
 
 func init() {
@@ -26,51 +28,20 @@ func init() {
 	log.Logger = log.With().Caller().Logger().Level(level)
 }
 
-var availableCommands = map[string]struct {
-	Description string
-	Run         func()
-}{
-	"indexer": {
-		Description: "Background task to scan new blocks",
-		Run:         indexer.Run,
-	},
-	"query": {
-		Description: "HTTP API",
-		Run:         query.Run,
-	},
-	"archiveNodes": {
-		Description: "Returns archive nodes found from config",
-		Run:         archive.Run,
-	},
-	"addInterface": {
-		Description: "Inserts new contract interface to a database",
-		Run:         contract.InsertInterface,
-	},
-	"addOperation": {
-		Description: "Inserts new contract operation to a database",
-		Run:         contract.InsertOperation,
-	},
-}
-
-func printHelp() {
-	println("available commands:")
-	for cmd, v := range availableCommands {
-		println("*", cmd, "--", v.Description)
-	}
-}
-
 func main() {
-	if len(os.Args) < 2 {
-		printHelp()
-		os.Exit(1)
+	app := &cli.App{
+		Name:  "anton",
+		Usage: "an indexing project",
+		Commands: []*cli.Command{
+			db.Command,
+			indexer.Command,
+			web.Command,
+			archive.Command,
+			contract.InterfaceCommand,
+			contract.OperationCommand,
+		},
 	}
-
-	cmd, ok := availableCommands[os.Args[1]]
-	if !ok {
-		println("[!] unknown command", os.Args[1])
-		printHelp()
-		os.Exit(1)
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal().Err(err).Msg("")
 	}
-
-	cmd.Run()
 }

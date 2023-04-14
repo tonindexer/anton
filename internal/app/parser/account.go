@@ -95,8 +95,6 @@ func (s *Service) DetermineInterfaces(ctx context.Context, acc *core.AccountStat
 }
 
 func (s *Service) ParseAccountData(ctx context.Context, b *ton.BlockIDExt, acc *core.AccountState, types []abi.ContractName) (*core.AccountData, error) {
-	var unknown int
-
 	if len(types) == 0 {
 		return nil, errors.Wrap(core.ErrNotAvailable, "unknown contract interfaces")
 	}
@@ -114,19 +112,18 @@ func (s *Service) ParseAccountData(ctx context.Context, b *ton.BlockIDExt, acc *
 	data.Types = types
 	data.UpdatedAt = acc.UpdatedAt
 
-	getters := []func(context.Context, *ton.BlockIDExt, *address.Address, []abi.ContractName, *core.AccountData) bool{
+	getters := []func(context.Context, *ton.BlockIDExt, *address.Address, []abi.ContractName, *core.AccountData){
 		s.getAccountDataNFT,
 		s.getAccountDataFT,
+		s.getAccountDataWallet,
 	}
 	for _, getter := range getters {
-		if !getter(ctx, b, a, types, data) {
-			unknown++
-			continue
-		}
+		getter(ctx, b, a, types, data)
 	}
 
 	if data.Errors != nil {
 		log.Warn().Str("address", acc.Address.Base64()).Strs("errors", data.Errors).Msg("parse account data")
 	}
+
 	return data, nil
 }

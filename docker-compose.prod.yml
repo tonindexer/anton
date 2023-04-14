@@ -5,3 +5,7 @@ services:
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
     volumes:
       - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+  clickhouse:
+    volumes:
+      - ./config/clickhouse_backup_disk.xml:/etc/clickhouse-server/config.d/backup_disk.xml
+      - ./backups/ch:/backups

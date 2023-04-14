@@ -2,6 +2,7 @@ package parser
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun/extra/bunbig"
@@ -66,9 +67,7 @@ func mapEditorDataNFT(ret *core.AccountData, data *abi.NFTEditableData) {
 	ret.EditorAddress, _ = new(addr.Address).FromTU(data.Editor)
 }
 
-func (s *Service) getAccountDataNFT(ctx context.Context, b *ton.BlockIDExt, a *address.Address, types []abi.ContractName, ret *core.AccountData) (ok bool) {
-	var unknown int
-
+func (s *Service) getAccountDataNFT(ctx context.Context, b *ton.BlockIDExt, a *address.Address, types []abi.ContractName, ret *core.AccountData) {
 	for _, t := range types {
 		switch t {
 		case abi.NFTCollection:
@@ -102,18 +101,11 @@ func (s *Service) getAccountDataNFT(ctx context.Context, b *ton.BlockIDExt, a *a
 				continue
 			}
 			mapEditorDataNFT(ret, data)
-
-		default:
-			unknown++
 		}
 	}
-
-	return unknown != len(types)
 }
 
-func (s *Service) getAccountDataFT(ctx context.Context, b *ton.BlockIDExt, a *address.Address, types []abi.ContractName, ret *core.AccountData) (ok bool) {
-	var unknown int
-
+func (s *Service) getAccountDataFT(ctx context.Context, b *ton.BlockIDExt, a *address.Address, types []abi.ContractName, ret *core.AccountData) {
 	for _, t := range types {
 		switch t {
 		case abi.JettonMinter:
@@ -149,11 +141,22 @@ func (s *Service) getAccountDataFT(ctx context.Context, b *ton.BlockIDExt, a *ad
 			if err != nil {
 				ret.Errors = append(ret.Errors, errors.Wrap(err, "jetton wallet master addr from TU").Error())
 			}
-
-		default:
-			unknown++
 		}
 	}
+}
 
-	return unknown != len(types)
+func (s *Service) getAccountDataWallet(ctx context.Context, b *ton.BlockIDExt, a *address.Address, types []abi.ContractName, ret *core.AccountData) {
+	for _, t := range types {
+		if !strings.HasPrefix(string(t), "wallet") {
+			continue
+		}
+
+		seqNo, err := abi.GetWalletSeqNo(ctx, s.api, b, a)
+		if err != nil {
+			ret.Errors = append(ret.Errors, errors.Wrap(err, "get wallet seqNo").Error())
+			continue
+		}
+
+		ret.WalletSeqNo = seqNo
+	}
 }

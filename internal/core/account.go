@@ -108,6 +108,8 @@ type AccountData struct {
 
 	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types"`
 
+	WalletSeqNo uint64 `json:"wallet_seq_no,omitempty"`
+
 	// common fields for FT and NFT
 	OwnerAddress  *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
 	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`

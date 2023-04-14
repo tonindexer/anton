@@ -33,11 +33,10 @@ If an arbitrary contract has a `get_nft_data` method, we can parse the operation
 If the operation id matches a known id, such as `0x5fcc3d14`, we attempt to parse the message data using the known schema
 (new owner of NFT in the given example).
 
-Known contract interfaces are initialized in [abi/known.go](/abi/known.go).
-
+Go to [abi/known.go](/abi/known.go) to see contract interfaces known to this project.
 Go to [msg_schema.json](/docs/msg_schema.json) for an example of a message payload JSON schema.
-
 Go to [API.md](/docs/API.md) to see working query examples.
+Go to [migrations](/migrations) to see database schemas.
 
 ### Project structure
 
@@ -46,7 +45,7 @@ Go to [API.md](/docs/API.md) to see working query examples.
 | `abi`             | tlb cell parsing defined by json schema, known contract messages and get-methods |
 |                   |                                                                                  |
 | `api/http`        | JSON API documentation                                                           |
-| `docs`            | database schemas used in this project, API query examples                        |
+| `docs`            | only API query examples for now                                                  |
 | `config`          | custom postgresql configuration                                                  |
 |                   |                                                                                  |
 | `core`            | contains project domain                                                          |
@@ -59,6 +58,8 @@ Go to [API.md](/docs/API.md) to see working query examples.
 | `app/parser`      | service to parse contract data and message payloads to known contracts           | 
 | `app/indexer`     | a service to scan blocks and save data from `parser` to a database               |
 |                   |                                                                                  |
+| `migrations`      | database migrations                                                              |
+|                   |                                                                                  |
 | `cmd`             | command line application and env parsers                                         |
 
 ## Starting it up
@@ -66,20 +67,24 @@ Go to [API.md](/docs/API.md) to see working query examples.
 ### Cloning repository
 
 ```shell
-git clone https://github.com/tonindexer/anton anton
+git clone https://github.com/tonindexer/anton
 cd anton
-docker-compose build
 ```
 
 ### Running tests
 
-```shell
-# run tests on abi package
-go test -p 1 $(go list ./... | grep /abi) -covermode=count
+Run tests on abi package:
 
+```shell
+go test -p 1 $(go list ./... | grep /abi) -covermode=count
+```
+
+Run repositories tests:
+
+```shell
 # start databases up
 docker-compose up -d postgres clickhouse
-# run repositories tests
+
 go test -p 1 $(go list ./... | grep /internal/core) -covermode=count
 ```
 
@@ -100,40 +105,121 @@ cp .env.example .env
 nano .env
 ```
 
-| Name          | Description                       | Default  | Example                                                           |
-|---------------|-----------------------------------|----------|-------------------------------------------------------------------|
-| `DB_NAME`     | Database name                     |          | idx                                                               |
-| `DB_USERNAME` | Database username                 |          | user                                                              |
-| `DB_PASSWORD` | Database password                 |          | pass                                                              |
-| `FROM_BLOCK`  | Master chain seq_no to start from | 22222022 | 23532000                                                          |
-| `LITESERVERS` | Lite servers to connect to        |          | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ= |
-| `DEBUG_LOGS`  | Debug logs enabled                | false    | true                                                              |
+| Name          | Description                       | Default  | Example                                                            |
+|---------------|-----------------------------------|----------|--------------------------------------------------------------------|
+| `DB_NAME`     | Database name                     |          | idx                                                                |
+| `DB_USERNAME` | Database username                 |          | user                                                               |
+| `DB_PASSWORD` | Database password                 |          | pass                                                               |
+| `DB_CH_URL`   | Clickhouse URL to connect to      |          | clickhouse://clickhouse:9000/db_name?sslmode=disable               |
+| `DB_PG_URL`   | PostgreSQL URL to connect to      |          | postgres://username:password@postgres:5432/db_name?sslmode=disable |
+| `FROM_BLOCK`  | Master chain seq_no to start from | 22222022 | 23532000                                                           |
+| `LITESERVERS` | Lite servers to connect to        |          | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=  |
+| `DEBUG_LOGS`  | Debug logs enabled                | false    | true                                                               |
+
+### Building
+
+```shell
+# building it locally
+go build -o anton .
+
+# building in docker
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
+```
+
+### Initializing the database
+
+```shell
+# starting up databases
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres clickhouse
+
+# exporting connection to the databases
+export DB_CH_URL=clickhouse://localhost:9000/default?sslmode=disable
+export DB_PG_URL=postgres://user:pass@localhost:5432/default?sslmode=disable
+
+# initializing migration tables
+./anton migrate init
+
+# migrating the database
+./anton migrate up
+```
 
 ### Running indexer and API
 
 ```shell
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-docker-compose logs -f # reading logs
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d indexer web
+```
+
+### Reading logs
+
+```shell
+docker-compose logs -f
+```
+
+### Migrating database
+
+```shell
+# starting up databases and API service
+docker-compose                      \
+    -f docker-compose.yml           \
+    -f docker-compose.dev.yml       \
+    -f docker-compose.prod.yml      \
+        up -d postgres clickhouse web
+
+# stop indexer
+docker-compose stop indexer
+
+# create backup directories
+mkdir backups backups/pg backups/ch
+
+# backing up postgres
+docker-compose exec postgres pg_dump -U user db_name | gzip > backups/pg/1.pg.backup.gz
+
+# backing up clickhouse (available only with docker-compose.prod.yml)
+## connect to the clickhouse
+docker-compose exec clickhouse clickhouse-client
+## execute backup command
+# :) BACKUP DATABASE default TO File('/backups/1/');
+
+# execute migrations through API service
+docker-compose exec web anton migrate up
+
+# start up indexer
+docker-compose                      \
+    -f docker-compose.yml           \
+    -f docker-compose.dev.yml       \
+    -f docker-compose.prod.yml      \
+        up -d indexer
 ```
 
 ## Using
 
-### Inserting contract interface
+### Show archive nodes from global config
 
 ```shell
-docker-compose exec indexer anton addInterface               \ 
-    -name       [unique contract name]                        \
-    -address    [optional contract address]                   \
-    -code       [optional contract code]                      \
-    -getmethods [optional get methods separated with commas]
+go run . archiveNodes [--testnet]
 ```
 
-### Inserting contract operation
+### Insert contract interface
+
+It is not very usable right now.
 
 ```shell
-docker-compose exec indexer anton addOperation               \
-    -name     [operation name]                                \
-    -contract [contract interface name]                       \
-    -opid     [operation id, example: 0x5fcc3d14]             \
-    -schema   [message body schema]
+docker-compose exec indexer anton addInterface        \ 
+    --contract      [unique contract name]            \
+    --address       [optional contract addresses]     \
+    --code          [optional contract code]          \
+    --get           [optional get methods]
+```
+
+### Insert contract operation
+
+It is not very usable right now too.
+
+```shell
+docker-compose exec indexer anton addOperation        \
+    --contract      [contract interface name]         \
+    --operation     [operation name]                  \
+    --operationId   [operation name]                  \
+    --outgoing      [operation id]                    \
+    --schema        [message body schema]
 ```

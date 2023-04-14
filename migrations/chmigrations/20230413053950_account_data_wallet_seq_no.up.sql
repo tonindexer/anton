@@ -1,0 +1,1 @@
+ALTER TABLE account_data ADD COLUMN wallet_seq_no UInt64;

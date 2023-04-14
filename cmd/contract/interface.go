@@ -1,19 +1,17 @@
 package contract
 
 import (
-	"context"
 	"database/sql"
 	"encoding/hex"
-	"flag"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/allisson/go-env"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
+	"github.com/urfave/cli/v2"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
@@ -22,66 +20,98 @@ import (
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
 
-func InsertInterface() {
-	i := new(core.ContractInterface)
+var InterfaceCommand = &cli.Command{
+	Name:     "addInterface",
+	Usage:    "Adds contract interface to the database",
+	Category: "abi",
 
-	f := flag.NewFlagSet(os.Args[1], flag.ExitOnError)
-	name := f.String("name", "", "Unique contract name (example: getgems_nft_sale)")
-	address := f.String("address", "", "Contract address")
-	code := f.String("code", "", "Contract code encoded to hex")
-	getMethods := f.String("getmethods", "", "Contract get methods separated with commas")
-	_ = f.Parse(os.Args[2:])
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "contract",
+			Required: true,
+			Aliases:  []string{"n"},
+			Usage:    "Unique contract name (example: getgems_nft_sale)",
+		},
+		&cli.StringSliceFlag{
+			Name:    "address",
+			Aliases: []string{"a"},
+			Usage:   "Contract addresses",
+		},
+		&cli.StringFlag{
+			Name:    "code",
+			Aliases: []string{"c"},
+			Usage:   "Contract code BoC encoded to hex",
+		},
+		&cli.StringSliceFlag{
+			Name:    "get",
+			Aliases: []string{"g"},
+			Usage:   "Contract get methods",
+		},
+	},
 
-	if *name == "" {
-		log.Fatal().Msg("contract name must be set")
-	}
-	if *address == "" && *code == "" && *getMethods == "" {
-		log.Fatal().Msg("contract address or code or get methods must be set")
-	}
+	Action: func(ctx *cli.Context) error {
+		var i core.ContractInterface
 
-	i.Name = abi.ContractName(*name)
-	if *address != "" {
-		i.Addresses = []*addr.Address{addr.MustFromBase64(*address)}
-	}
-	if *code != "" {
-		dec, err := hex.DecodeString(*code)
-		if err != nil {
-			log.Fatal().Err(err).Msg("cannot parse contract code")
+		addresses := ctx.StringSlice("address")
+		codeStr := ctx.String("code")
+		getMethods := ctx.StringSlice("get")
+
+		if addresses == nil && codeStr == "" && getMethods == nil {
+			return errors.New("contract addresses or code or get methods must be set")
 		}
-		codeCell, err := cell.FromBOC(dec)
-		if err != nil {
-			log.Fatal().Err(err).Msg("cannot get contract code cell from boc")
-		}
-		i.Code = codeCell.ToBOC()
-		i.CodeHash = codeCell.Hash()
-	}
-	if *getMethods != "" {
-		i.GetMethods = strings.Split(*getMethods, ",")
-	}
-	for _, get := range i.GetMethods {
-		i.GetMethodHashes = append(i.GetMethodHashes, abi.MethodNameHash(get))
-	}
 
-	pg := bun.NewDB(
-		sql.OpenDB(
-			pgdriver.NewConnector(
-				pgdriver.WithDSN(env.GetString("DB_PG_URL", "")),
+		i.Name = abi.ContractName(ctx.String("contract"))
+
+		for _, addrStr := range addresses {
+			a, err := new(addr.Address).FromString(addrStr)
+			if err != nil {
+				return errors.Wrapf(err, "parse %s", addrStr)
+			}
+			i.Addresses = append(i.Addresses, a)
+		}
+
+		if codeStr != "" {
+			dec, err := hex.DecodeString(codeStr)
+			if err != nil {
+				return errors.Wrapf(err, "cannot parse contract code")
+			}
+			codeCell, err := cell.FromBOC(dec)
+			if err != nil {
+				return errors.Wrapf(err, "cannot get contract code cell from boc")
+			}
+			i.Code = codeCell.ToBOC()
+			i.CodeHash = codeCell.Hash()
+		}
+
+		i.GetMethods = getMethods
+		for _, get := range i.GetMethods {
+			i.GetMethodHashes = append(i.GetMethodHashes, abi.MethodNameHash(get))
+		}
+
+		pg := bun.NewDB(
+			sql.OpenDB(
+				pgdriver.NewConnector(
+					pgdriver.WithDSN(env.GetString("DB_PG_URL", "")),
+				),
 			),
-		),
-		pgdialect.New(),
-	)
-	if err := pg.Ping(); err != nil {
-		log.Fatal().Err(err).Msg("cannot ping postgresql")
-	}
+			pgdialect.New(),
+		)
+		if err := pg.Ping(); err != nil {
+			return errors.Wrapf(err, "cannot ping postgresql")
+		}
 
-	if err := contract.NewRepository(pg).AddInterface(context.Background(), i); err != nil {
-		log.Fatal().Err(err).Msg("cannot insert contract interface")
-	}
+		if err := contract.NewRepository(pg).AddInterface(ctx.Context, &i); err != nil {
+			return errors.Wrapf(err, "cannot insert contract interface")
+		}
 
-	log.Info().
-		Str("name", string(i.Name)).
-		Str("address", i.Addresses[0].Base64()).
-		Str("get_methods", fmt.Sprintf("%+v", i.GetMethods)).
-		Str("code", hex.EncodeToString(i.Code)).
-		Msg("inserted new contract interface")
+		log.Info().
+			Str("name", string(i.Name)).
+			Str("address", i.Addresses[0].Base64()).
+			Str("code", hex.EncodeToString(i.Code)).
+			Str("get_methods", fmt.Sprintf("%+v", i.GetMethods)).
+			Str("get_method_hashes", fmt.Sprintf("%+v", i.GetMethodHashes)).
+			Msg("inserted new contract interface")
+
+		return nil
+	},
 }

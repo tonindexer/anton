@@ -32,7 +32,7 @@ func NewService(ctx context.Context, cfg *app.ParserConfig) (*Service, error) {
 	client := liteclient.NewConnectionPool()
 	for _, n := range cfg.Servers {
 		if err := client.AddConnection(ctx, n.IPPort, n.PubKeyB64); err != nil {
-			return nil, errors.Wrap(err, "cannot add connection")
+			return nil, errors.Wrapf(err, "cannot add connection (host = '%s', key = '%s')", n.IPPort, n.PubKeyB64)
 		}
 	}
 
