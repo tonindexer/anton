@@ -158,11 +158,18 @@ docker-compose logs -f
 ### Migrating database
 
 ```shell
-# create backup directories
-mkdir backups backups/pg backups/ch
+# starting up databases and API service
+docker-compose                      \
+    -f docker-compose.yml           \
+    -f docker-compose.dev.yml       \
+    -f docker-compose.prod.yml      \
+        up -d postgres clickhouse web
 
 # stop indexer
 docker-compose stop indexer
+
+# create backup directories
+mkdir backups backups/pg backups/ch
 
 # backing up postgres
 docker-compose exec postgres pg_dump -U user db_name | gzip > backups/pg/1.pg.backup.gz
@@ -173,7 +180,15 @@ docker-compose exec clickhouse clickhouse-client
 ## execute backup command
 # :) BACKUP DATABASE default TO File('/backups/1/');
 
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.prod.yml exec web anton migrate up
+# execute migrations through API service
+docker-compose exec web anton migrate up
+
+# start up indexer
+docker-compose                      \
+    -f docker-compose.yml           \
+    -f docker-compose.dev.yml       \
+    -f docker-compose.prod.yml      \
+        up -d indexer
 ```
 
 ## Using
