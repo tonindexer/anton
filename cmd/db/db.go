@@ -103,10 +103,27 @@ var Command = &cli.Command{
 		{
 			Name:  "up",
 			Usage: "Migrates database",
+			Flags: []cli.Flag{
+				&cli.BoolFlag{
+					Name:    "init",
+					Aliases: []string{"i"},
+					Value:   false,
+					Usage:   "create migration tables",
+				},
+			},
 			Action: func(c *cli.Context) error {
 				mpg, mch, err := newMigrators()
 				if err != nil {
 					return err
+				}
+
+				if c.Bool("init") {
+					if err := mpg.Init(c.Context); err != nil {
+						return err
+					}
+					if err := mch.Init(c.Context); err != nil {
+						return err
+					}
 				}
 
 				// postgresql
