@@ -5,8 +5,10 @@ x-anton-service: &anton-service
   networks:
     - indexer_network
   depends_on:
-    - clickhouse
-    - postgres
+    clickhouse:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
   links:
     - clickhouse
     - postgres
@@ -34,6 +36,12 @@ services:
       GIN_MODE: "release"
   clickhouse:
     image: "yandex/clickhouse-server:22"
+    healthcheck:
+      test: wget --spider --no-verbose --tries=1 localhost:8123/ping || exit 1
+      interval: 30s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
     networks:
       - indexer_network
     volumes:
@@ -47,6 +55,12 @@ services:
         hard: 262144
   postgres:
     image: "postgres:15"
+    healthcheck:
+      test: pg_isready -U "${DB_USERNAME}" -d "${DB_NAME}" || exit 1
+      interval: 30s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
     networks:
       - indexer_network
     volumes:
