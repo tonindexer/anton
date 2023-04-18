@@ -121,6 +121,14 @@ nano .env
 ```shell
 # building it locally
 go build -o anton .
+
+# build local docker container via docker cli
+docker build -t anton:latest .
+# or via compose
+IMAGE_NAME=anton docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
+
+# pull public images
+docker-compose pull
 ```
 
 ### Initializing the database
