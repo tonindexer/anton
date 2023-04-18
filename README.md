@@ -125,45 +125,43 @@ go build -o anton .
 # build local docker container via docker cli
 docker build -t anton:latest .
 # or via compose
-IMAGE_NAME=anton docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
 
 # pull public images
 docker-compose pull
 ```
 
-### Initializing the database
+### Running
 
+We have several options for compose run via [override files](https://docs.docker.com/compose/extends/#multiple-compose-files):
+* base (docker-compose.yml) - allows to run services with near default configuration;
+* dev (docker-compose.dev.yml) - allows to rebuld anton image locally and exposes databases ports;
+* prod (docker-compose.prod.yml) - allows to configure and backup databases, requires at least 64GB RAM.
+
+You can combine it by your own. Also there are optional [profiles](https://docs.docker.com/compose/profiles/):
+* migrate - runs optional migrations service.
+
+Take a look at the following run examples:
 ```shell
-# starting up databases
-docker-compose up -d postgres clickhouse
+# run base compose with migrations (recommended way)
+docker-compose --profile migrate up -d
 
-# exporting connection to the databases
-export DB_CH_URL=clickhouse://clickhouse:9000/default?sslmode=disable
-export DB_PG_URL=postgres://user:pass@postgres:5432/default?sslmode=disable
+# run base compose without migrations
+docker-compose up -d
 
-# initializing migration tables
-docker run \
-    --rm \
-    --network anton_indexer_network \
-    -e "DB_CH_URL=$DB_CH_URL" \
-    -e "DB_PG_URL=$DB_PG_URL" \
-    tonindexer/anton \
-    migrate init
+# run dev compose with migrations
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml --profile migrate up -d
 
-# migrating the database
-docker run \
-    --rm \
-    --network anton_indexer_network \
-    -e "DB_CH_URL=$DB_CH_URL" \
-    -e "DB_PG_URL=$DB_PG_URL" \
-    tonindexer/anton \
-    migrate up
+# run prod compose without migrations
+# WARNING: requires at least 64GB RAM
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
-### Running indexer and API
+### Schema migration
 
 ```shell
-docker-compose up -d indexer web
+# run optional migrations service on running compose
+docker-compose run migrations
 ```
 
 ### Reading logs
@@ -172,7 +170,7 @@ docker-compose up -d indexer web
 docker-compose logs -f
 ```
 
-### Migrating database
+### Taking a backup
 
 ```shell
 # starting up databases and API service
