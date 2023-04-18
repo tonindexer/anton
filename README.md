@@ -122,31 +122,48 @@ nano .env
 # building it locally
 go build -o anton .
 
-# building in docker
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
+# build local docker container via docker cli
+docker build -t anton:latest .
+# or via compose
+IMAGE_NAME=anton docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
+
+# pull public images
+docker-compose pull
 ```
 
 ### Initializing the database
 
 ```shell
 # starting up databases
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres clickhouse
+docker-compose up -d postgres clickhouse
 
 # exporting connection to the databases
-export DB_CH_URL=clickhouse://localhost:9000/default?sslmode=disable
-export DB_PG_URL=postgres://user:pass@localhost:5432/default?sslmode=disable
+export DB_CH_URL=clickhouse://clickhouse:9000/default?sslmode=disable
+export DB_PG_URL=postgres://user:pass@postgres:5432/default?sslmode=disable
 
 # initializing migration tables
-./anton migrate init
+docker run \
+    --rm \
+    --network anton_indexer_network \
+    -e "DB_CH_URL=$DB_CH_URL" \
+    -e "DB_PG_URL=$DB_PG_URL" \
+    tonindexer/anton \
+    migrate init
 
 # migrating the database
-./anton migrate up
+docker run \
+    --rm \
+    --network anton_indexer_network \
+    -e "DB_CH_URL=$DB_CH_URL" \
+    -e "DB_PG_URL=$DB_PG_URL" \
+    tonindexer/anton \
+    migrate up
 ```
 
 ### Running indexer and API
 
 ```shell
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d indexer web
+docker-compose up -d indexer web
 ```
 
 ### Reading logs
@@ -161,7 +178,6 @@ docker-compose logs -f
 # starting up databases and API service
 docker-compose                      \
     -f docker-compose.yml           \
-    -f docker-compose.dev.yml       \
     -f docker-compose.prod.yml      \
         up -d postgres clickhouse web
 
@@ -186,7 +202,6 @@ docker-compose exec web anton migrate up
 # start up indexer
 docker-compose                      \
     -f docker-compose.yml           \
-    -f docker-compose.dev.yml       \
     -f docker-compose.prod.yml      \
         up -d indexer
 ```
