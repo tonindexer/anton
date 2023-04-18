@@ -125,7 +125,7 @@ go build -o anton .
 # build local docker container via docker cli
 docker build -t anton:latest .
 # or via compose
-IMAGE_NAME=anton docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
 
 # pull public images
 docker-compose pull
@@ -150,7 +150,7 @@ docker-compose --profile migrate up -d
 docker-compose up -d
 
 # run dev compose with migrations
-IMAGE_NAME=anton docker-compose -f docker-compose.yml -f docker-compose.dev.yml --profile migrate up -d
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml --profile migrate up -d
 
 # run prod compose without migrations
 # WARNING: requires at least 64GB RAM
