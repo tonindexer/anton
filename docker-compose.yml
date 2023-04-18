@@ -48,7 +48,7 @@ services:
       - migrate
     command: ["migrate", "up", "--init"]
   clickhouse:
-    image: "yandex/clickhouse-server:22"
+    image: "clickhouse/clickhouse-server:22"
     healthcheck:
       test: wget --spider --no-verbose --tries=1 localhost:8123/ping || exit 1
       interval: 30s
