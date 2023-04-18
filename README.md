@@ -170,7 +170,7 @@ docker-compose run migrations
 docker-compose logs -f
 ```
 
-### Migrating database
+### Taking a backup
 
 ```shell
 # starting up databases and API service
