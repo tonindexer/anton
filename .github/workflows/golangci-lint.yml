@@ -1,17 +1,19 @@
 # https://github.com/golangci/golangci-lint-action
 
 name: golangci-lint
+
 on:
   push:
     tags:
       - v*
     branches:
-      - master
       - main
   pull_request:
+
 permissions:
   contents: read
   pull-requests: read
+
 jobs:
   golangci:
     name: lint
