@@ -17,6 +17,7 @@ x-anton-service: &anton-service
 services:
   indexer:
     <<: *anton-service
+    command: idx
     environment:
       <<: *anton-env
       FROM_BLOCK: ${FROM_BLOCK}

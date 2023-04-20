@@ -35,4 +35,3 @@ COPY --from=build /anton /usr/bin/anton
 USER anton:anton
 EXPOSE 8080
 ENTRYPOINT ["/usr/bin/anton"]
-CMD ["indexer"]
