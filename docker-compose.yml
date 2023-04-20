@@ -1,12 +1,14 @@
 version: "3.5"
 
 x-anton-service: &anton-service
-  image: "${IMAGE_NAME:-anton}:${IMAGE_TAG:-latest}"
+  image: "${IMAGE_NAME:-tonindexer/anton}:${IMAGE_TAG:-latest}"
   networks:
     - indexer_network
-  depends_on:
-    - clickhouse
-    - postgres
+  depends_on: &anton-deps
+    clickhouse:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
   links:
     - clickhouse
     - postgres
@@ -17,6 +19,10 @@ x-anton-service: &anton-service
 services:
   indexer:
     <<: *anton-service
+    depends_on:
+      <<: *anton-deps
+      migrations:
+        condition: service_completed_successfully
     command: idx
     environment:
       <<: *anton-env
@@ -25,6 +31,10 @@ services:
       DEBUG_LOGS: ${DEBUG_LOGS}
   web:
     <<: *anton-service
+    depends_on:
+      <<: *anton-deps
+      migrations:
+        condition: service_completed_successfully
     ports:
       - "8080:8080"
     expose:
@@ -33,8 +43,19 @@ services:
     environment:
       <<: *anton-env
       GIN_MODE: "release"
+  migrations:
+    <<: *anton-service
+    profiles:
+      - migrate
+    command: ["migrate", "up", "--init"]
   clickhouse:
-    image: "yandex/clickhouse-server:22"
+    image: "clickhouse/clickhouse-server:22"
+    healthcheck:
+      test: wget --spider --no-verbose --tries=1 localhost:8123/ping || exit 1
+      interval: 30s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
     networks:
       - indexer_network
     volumes:
@@ -48,6 +69,12 @@ services:
         hard: 262144
   postgres:
     image: "postgres:15"
+    healthcheck:
+      test: pg_isready -U "${DB_USERNAME}" -d "${DB_NAME}" || exit 1
+      interval: 30s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
     networks:
       - indexer_network
     volumes:

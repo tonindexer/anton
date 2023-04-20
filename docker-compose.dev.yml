@@ -1,9 +1,16 @@
 version: "3.5"
+
+x-anton-rewrites: &anton-rewrites
+  build: .
+  image: "${IMAGE_NAME:-anton}:${IMAGE_TAG:-latest}"
+
 services:
   indexer:
-    build: .
+    <<: *anton-rewrites
   web:
-    build: .
+    <<: *anton-rewrites
+  migrations:
+    <<: *anton-rewrites
   clickhouse:
     ports:
       - "9000:9000"

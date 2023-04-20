@@ -122,31 +122,46 @@ nano .env
 # building it locally
 go build -o anton .
 
-# building in docker
+# build local docker container via docker cli
+docker build -t anton:latest .
+# or via compose
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
+
+# pull public images
+docker-compose pull
 ```
 
-### Initializing the database
+### Running
 
+We have several options for compose run via [override files](https://docs.docker.com/compose/extends/#multiple-compose-files):
+* base (docker-compose.yml) - allows to run services with near default configuration;
+* dev (docker-compose.dev.yml) - allows to rebuld anton image locally and exposes databases ports;
+* prod (docker-compose.prod.yml) - allows to configure and backup databases, requires at least 64GB RAM.
+
+You can combine it by your own. Also there are optional [profiles](https://docs.docker.com/compose/profiles/):
+* migrate - runs optional migrations service.
+
+Take a look at the following run examples:
 ```shell
-# starting up databases
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres clickhouse
+# run base compose with migrations (recommended way)
+docker-compose --profile migrate up -d
 
-# exporting connection to the databases
-export DB_CH_URL=clickhouse://localhost:9000/default?sslmode=disable
-export DB_PG_URL=postgres://user:pass@localhost:5432/default?sslmode=disable
+# run base compose without migrations
+docker-compose up -d
 
-# initializing migration tables
-./anton migrate init
+# run dev compose with migrations
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml --profile migrate up -d
 
-# migrating the database
-./anton migrate up
+# run prod compose without migrations
+# WARNING: requires at least 64GB RAM
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
-### Running indexer and API
+### Schema migration
 
 ```shell
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d indexer web
+# run optional migrations service on running compose
+docker-compose run migrations
 ```
 
 ### Reading logs
@@ -155,13 +170,12 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d indexer web
 docker-compose logs -f
 ```
 
-### Migrating database
+### Taking a backup
 
 ```shell
 # starting up databases and API service
 docker-compose                      \
     -f docker-compose.yml           \
-    -f docker-compose.dev.yml       \
     -f docker-compose.prod.yml      \
         up -d postgres clickhouse web
 
@@ -186,7 +200,6 @@ docker-compose exec web anton migrate up
 # start up indexer
 docker-compose                      \
     -f docker-compose.yml           \
-    -f docker-compose.dev.yml       \
     -f docker-compose.prod.yml      \
         up -d indexer
 ```
