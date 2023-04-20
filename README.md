@@ -83,7 +83,7 @@ Run repositories tests:
 
 ```shell
 # start databases up
-docker-compose up -d postgres clickhouse
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres clickhouse
 
 go test -p 1 $(go list ./... | grep /internal/core) -covermode=count
 ```
@@ -143,11 +143,11 @@ You can combine it by your own. Also there are optional [profiles](https://docs.
 
 Take a look at the following run examples:
 ```shell
-# run base compose with migrations (recommended way)
-docker-compose --profile migrate up -d
-
 # run base compose without migrations
 docker-compose up -d
+
+# run base compose with migrations (recommended way)
+docker-compose --profile migrate up -d
 
 # run dev compose with migrations
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml --profile migrate up -d
