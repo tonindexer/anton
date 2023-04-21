@@ -16,6 +16,7 @@ you should define contract addresses in the network or a contract code BoC.
    "interface": "",    // name of the contract
    "addresses": [],    // optional known addresses
    "code_boc": "",     // optional contract code
+   "definitions": {},  // map from definition name to cell schema
    "im_messages": [],  // possible incoming messages schema
    "out_messages": [], // possible outgoing messages schema
    "get_methods": [],  // get-method names, return values and arguments
@@ -89,3 +90,46 @@ Accepted Go types:
 8. `coins` - varInt 16, maps into `big.Int` wrapper
 9. `addr` - TON address, maps into [`address.Address`](https://github.com/xssnick/tonutils-go/blob/master/address/addr.go#L21) wrapper
 10. `telemintText` - variable length string with [this](https://github.com/TelegramMessenger/telemint/blob/main/telemint.tlb#L25) TL-B constructor
+
+### Shared TL-B constructors
+
+You can define some cell schema in contract interface `definitions` field and use it later in messages or contract data schemas.
+
+```json
+[
+  {
+    "interface": "telemint_nft_collection",
+    "addresses": [
+      "EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N",
+      "EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi"
+    ],
+    "definitions": {
+      "auction_config": [
+        {
+          "name": "beneficiary_address",
+          "go_type": "addr",
+          "tlb_type": "addr"
+        }
+      ]
+    },
+    "im_messages": [
+      {
+        "op_name": "teleitem_start_auction",
+        "op_code": "0x487a8e81",
+        "body": [
+          {
+            "name": "query_id",
+            "go_type": "uint64",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "auction_config",
+            "go_type": "auction_config",
+            "tlb_type": "^"
+          }
+        ]
+      }
+    ]
+  }
+]
+```
