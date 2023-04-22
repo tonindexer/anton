@@ -160,7 +160,7 @@ Each get-method consists of name (which is then used to get `method_id`), argume
       },
       {
          "name": "get_jetton_data",
-         "arguments": [
+         "return_values": [
             {
                "name": "total_supply",
                "go_type": "bigInt",
