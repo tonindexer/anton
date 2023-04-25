@@ -51,6 +51,7 @@ Also, it is possible to define similarly described embedded structures in the fi
                "tlb_type": "addr"
             }
          ]
+         // TODO: add omitempty flag (example, it's needed for the forward payload)
       }
    ]
 }
