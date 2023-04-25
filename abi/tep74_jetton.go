@@ -13,7 +13,7 @@ import (
 )
 
 // https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md
-// https://github.com/ton-blockchain/token-contract/tree/main/ft)
+// https://github.com/ton-blockchain/token-contract/tree/main/ft
 
 type (
 	JettonData       jetton.Data

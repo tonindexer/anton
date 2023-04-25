@@ -12,7 +12,7 @@ import (
 )
 
 // https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md
-// https://github.com/ton-blockchain/token-contract/tree/main/nft)
+// https://github.com/ton-blockchain/token-contract/tree/main/nft
 
 // NFTCollection
 type (
