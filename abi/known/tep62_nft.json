@@ -1,0 +1,142 @@
+[
+  {
+    "interface": "nft_item",
+    "get_methods": [
+      {
+        "name": "get_nft_data",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "init",
+            "go_type": "bool",
+            "func_type": "int"
+          },
+          {
+            "name": "index",
+            "go_type": "bigInt",
+            "func_type": "int"
+          },
+          {
+            "name": "collection_address",
+            "go_type": "addr",
+            "func_type": "addr_slice"
+          },
+          {
+            "name": "owner_address",
+            "go_type": "addr",
+            "func_type": "addr_slice"
+          },
+          {
+            "name": "individual_content",
+            "go_type": "cell",
+            "func_type": "cell"
+          }
+        ]
+      }
+    ],
+    "in_messages": [
+      {
+        "op_name": "transfer",
+        "op_code": "0x5fcc3d14",
+        "body": [
+          {
+            "name": "query_id",
+            "go_type": "uint64",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "new_owner",
+            "go_type": "addr",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "response_destination",
+            "go_type": "addr",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "custom_payload",
+            "go_type": "cell",
+            "tlb_type": "maybe ^"
+          },
+          {
+            "name": "forward_amount",
+            "go_type": "coins",
+            "tlb_type": "."
+          },
+          {
+            "name": "forward_payload",
+            "go_type": "cell",
+            "tlb_type": "either . ^"
+          }
+        ]
+      },
+      {
+        "op_name": "get_static_data",
+        "op_code": "0x2fcb26a2",
+        "body": [
+          {
+            "name": "query_id",
+            "go_type": "uint64",
+            "tlb_type": "## 64"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "ownership_assigned",
+        "op_code": "0x05138d91",
+        "body": [
+          {
+            "name": "query_id",
+            "go_type": "uint64",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "prev_owner",
+            "go_type": "addr",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "go_type": "cell",
+            "tlb_type": "either . ^"
+          }
+        ]
+      },
+      {
+        "op_name": "excesses",
+        "op_code": "0xd53276db",
+        "body": [
+          {
+            "name": "query_id",
+            "go_type": "uint64",
+            "tlb_type": "## 64"
+          }
+        ]
+      },
+      {
+        "op_name": "report_static_data",
+        "op_code": "0x8b771735",
+        "body": [
+          {
+            "name": "query_id",
+            "go_type": "uint64",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "index",
+            "go_type": "bigInt",
+            "tlb_type": "## 256"
+          },
+          {
+            "name": "collection",
+            "go_type": "addr",
+            "tlb_type": "addr"
+          }
+        ]
+      }
+    ]
+  }
+]
