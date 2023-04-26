@@ -1,11 +1,20 @@
-package abi
+package abi_test
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xssnick/tonutils-go/tvm/cell"
+
+	"github.com/tonindexer/anton/abi"
 )
+
+func mustBase64(t *testing.T, str string) []byte {
+	ret, err := base64.StdEncoding.DecodeString(str)
+	assert.Nil(t, err)
+	return ret
+}
 
 func TestHasGetMethod(t *testing.T) {
 	// https://ton.cx/address/EQAiZupbLhdE7UWQgnTirCbIJRg6yxfmkvTDjxsFh33Cu5rM
@@ -14,9 +23,9 @@ func TestHasGetMethod(t *testing.T) {
 	code, err := cell.FromBOC(codeBOC)
 	assert.Nil(t, err)
 
-	h := MethodNameHash("get_nft_data")
+	h := abi.MethodNameHash("get_nft_data")
 	assert.Equal(t, int32(0x18fcf), h)
-	assert.True(t, HasGetMethod(code, "get_nft_data"))
+	assert.True(t, abi.HasGetMethod(code, "get_nft_data"))
 }
 
 func TestGetMethodHashes(t *testing.T) {
@@ -26,7 +35,7 @@ func TestGetMethodHashes(t *testing.T) {
 	code, err := cell.FromBOC(codeBOC)
 	assert.Nil(t, err)
 
-	hashes, err := GetMethodHashes(code)
+	hashes, err := abi.GetMethodHashes(code)
 	assert.Nil(t, err)
 	assert.Equal(t, []int32{0x18fcf}, hashes)
 }

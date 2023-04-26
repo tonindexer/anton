@@ -1,50 +1,27 @@
-package abi
+package abi_test
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/tvm/cell"
+
+	"github.com/tonindexer/anton/abi"
 )
 
-func mustBase64(t *testing.T, str string) []byte {
-	ret, err := base64.StdEncoding.DecodeString(str)
-	assert.Nil(t, err)
-	return ret
-}
-
-func testMarshalSchema(t *testing.T, structT any, expected string) {
-	raw, err := MarshalSchema(structT)
-	assert.Nil(t, err)
-	assert.Equal(t, expected, string(raw))
-
-	got, err := UnmarshalSchema(raw)
+func makeOperationDesc(t *testing.T, x any) string {
+	d, err := abi.NewOperationDesc(x)
 	assert.Nil(t, err)
 
-	gotRaw, err := MarshalSchema(got)
-	assert.Nil(t, err)
-	assert.Equal(t, raw, gotRaw)
-}
-
-func testUnmarshalSchema(t *testing.T, boc, schema, expect []byte) {
-	payloadCell, err := cell.FromBOC(boc)
-	assert.Nil(t, err)
-	payloadSlice := payloadCell.BeginParse()
-
-	s, err := UnmarshalSchema(schema)
+	n, err := d.New()
 	assert.Nil(t, err)
 
-	schemaGot, err := MarshalSchema(s)
+	nd, err := abi.NewOperationDesc(n)
 	assert.Nil(t, err)
-	assert.Equal(t, schema, schemaGot)
+	assert.Equal(t, d, nd)
 
-	err = tlb.LoadFromCell(s, payloadSlice)
+	j, err := json.Marshal(nd)
 	assert.Nil(t, err)
 
-	raw, err := json.Marshal(s)
-	assert.Nil(t, err)
-	assert.Equal(t, expect, raw)
+	return string(j)
 }

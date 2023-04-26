@@ -54,8 +54,8 @@ var (
 	KnownContractOperations = map[ContractName]map[bool][]any{
 		NFTCollection: {
 			false: []any{
-				(*NFTCollectionItemMint)(nil), (*NFTCollectionItemMintBatch)(nil),
-				(*NFTCollectionChangeOwner)(nil), (*NFTCollectionChangeContent)(nil),
+				// (*NFTCollectionItemMint)(nil), (*NFTCollectionItemMintBatch)(nil),
+				// (*NFTCollectionChangeOwner)(nil), (*NFTCollectionChangeContent)(nil),
 			},
 		},
 

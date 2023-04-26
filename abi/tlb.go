@@ -1,7 +1,6 @@
 package abi
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -10,181 +9,30 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/address"
+
+	"github.com/iancoleman/strcase"
+
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-type structField struct {
-	Name         string         `json:"name,omitempty"`
-	Type         string         `json:"type"`
-	Tag          string         `json:"tag,omitempty"`
-	StructFields []*structField `json:"struct_fields,omitempty"` // Type = "struct"
+type TLBFieldDesc struct {
+	Name   string        `json:"name"`
+	Type   string        `json:"tlb_type"`
+	MapTo  string        `json:"map_to"`
+	Fields TLBFieldsDesc `json:"struct_fields,omitempty"` // MapTo = "struct"
 }
 
-type TelemintText struct {
-	Len  uint8  // ## 8
-	Text string // bits (len * 8)
+type TLBFieldsDesc []*TLBFieldDesc
+
+type OperationDesc struct {
+	Name string        `json:"op_name"`
+	Code string        `json:"op_code"`
+	Body TLBFieldsDesc `json:"body"`
 }
 
-func (x *TelemintText) LoadFromCell(loader *cell.Slice) error {
-	l, err := loader.LoadUInt(8)
-	if err != nil {
-		return errors.Wrap(err, "load len uint8")
-	}
-
-	t, err := loader.LoadSlice(8 * uint(l))
-	if err != nil {
-		return errors.Wrap(err, "load text slice")
-	}
-
-	x.Len = uint8(l)
-	x.Text = string(t)
-
-	return nil
-}
-
-var (
-	structTypeName = "struct"
-	typeNameRMap   = map[reflect.Type]string{
-		reflect.TypeOf([]uint8{}): "bytes",
-	}
-	typeNameMap = map[string]reflect.Type{
-		"bool":         reflect.TypeOf(false),
-		"uint8":        reflect.TypeOf(uint8(0)),
-		"uint16":       reflect.TypeOf(uint16(0)),
-		"uint32":       reflect.TypeOf(uint32(0)),
-		"uint64":       reflect.TypeOf(uint64(0)),
-		"bytes":        reflect.TypeOf([]byte{}),
-		"bigInt":       reflect.TypeOf(big.NewInt(0)),
-		"cell":         reflect.TypeOf((*cell.Cell)(nil)),
-		"magic":        reflect.TypeOf(tlb.Magic{}),
-		"coins":        reflect.TypeOf(tlb.Coins{}),
-		"address":      reflect.TypeOf((*address.Address)(nil)),
-		"telemintText": reflect.TypeOf((*TelemintText)(nil)),
-	}
-)
-
-func init() {
-	for t, n := range typeNameMap {
-		typeNameRMap[n] = t
-	}
-}
-
-func structToFields(t reflect.Type) (ret []*structField, err error) {
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
-		ft, ok := typeNameRMap[f.Type]
-
-		schema := &structField{
-			Name: f.Name,
-			Tag:  string(f.Tag),
-		}
-
-		switch {
-		case ok:
-			schema.Type = ft
-
-		case f.Type.Kind() == reflect.Pointer && f.Type.Elem().Kind() == reflect.Struct:
-			schema.Type = structTypeName
-			schema.StructFields, err = structToFields(f.Type.Elem())
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", f.Name, err)
-			}
-
-		case f.Type.Kind() == reflect.Struct:
-			schema.Type = structTypeName
-			schema.StructFields, err = structToFields(f.Type)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", f.Name, err)
-			}
-
-		default:
-			return nil, fmt.Errorf("%s: unknown structField type %s", f.Name, f.Type)
-		}
-
-		if schema.Name == "_" && schema.Type == "magic" {
-			schema.Name = "Op"
-		}
-		ret = append(ret, schema)
-	}
-
-	return ret, nil
-}
-
-func fieldsToStruct(schema []*structField) (reflect.Type, error) {
-	var fields []reflect.StructField
-	var err error
-
-	for _, field := range schema {
-		f := reflect.StructField{
-			Name: field.Name,
-			Tag:  reflect.StructTag(field.Tag),
-		}
-		ft, ok := typeNameMap[field.Type]
-
-		switch {
-		case !ok && field.Type == structTypeName:
-			ft, err = fieldsToStruct(field.StructFields)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", f.Name, err)
-			}
-
-		case !ok:
-			return nil, fmt.Errorf("cannot unmarshal type %s", f.Type)
-		}
-
-		if strings.HasPrefix(f.Tag.Get("tlb"), "maybe") && ft.Kind() != reflect.Pointer {
-			f.Type = reflect.PointerTo(ft)
-		} else {
-			f.Type = ft
-		}
-		fields = append(fields, f)
-	}
-
-	return reflect.StructOf(fields), nil
-}
-
-func MarshalSchema(x any) ([]byte, error) {
-	rv := reflect.ValueOf(x)
-
-	if rv.Kind() != reflect.Pointer {
-		return nil, fmt.Errorf("x should be a pointer")
-	}
-
-	fields, err := structToFields(rv.Type().Elem())
-	if err != nil {
-		return nil, err
-	}
-
-	return json.Marshal(fields)
-}
-
-func UnmarshalSchema(raw []byte) (any, error) {
-	var schema []*structField
-
-	if err := json.Unmarshal(raw, &schema); err != nil {
-		return nil, err
-	}
-
-	t, err := fieldsToStruct(schema)
-	if err != nil {
-		return nil, err
-	}
-
-	return reflect.New(t).Interface(), nil
-}
-
-func OperationID(x any) (uint32, error) {
-	if reflect.TypeOf(x).Kind() != reflect.Pointer {
-		return 0, fmt.Errorf("x should be a pointer")
-	}
-
-	s := reflect.TypeOf(x).Elem()
-	if s.NumField() < 1 {
-		return 0, fmt.Errorf("no struct fields")
-	}
-
-	op := s.Field(0)
+func operationID(t reflect.Type) (uint32, error) {
+	op := t.Field(0)
 	if op.Type != reflect.TypeOf(tlb.Magic{}) {
 		return 0, fmt.Errorf("no magic type in first struct field")
 	}
@@ -202,26 +50,221 @@ func OperationID(x any) (uint32, error) {
 	return uint32(opValue), nil
 }
 
-func ParseOperationID(body []byte) (opId uint32, comment string, err error) {
-	payload, err := cell.FromBOC(body)
+func tlbMakeDesc(t reflect.Type) (ret TLBFieldsDesc, err error) {
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+
+		schema := &TLBFieldDesc{
+			Name: strcase.ToSnake(f.Name),
+			Type: f.Tag.Get("tlb"),
+		}
+
+		if schema.Name == "_" && f.Type == reflect.TypeOf(tlb.Magic{}) {
+			continue // skip tlb constructor tag as it has to be inside OperationDesc
+		}
+
+		ft, ok := typeNameRMap[f.Type]
+		switch {
+		case ok:
+			schema.MapTo = ft
+
+		case f.Type.Kind() == reflect.Pointer && f.Type.Elem().Kind() == reflect.Struct:
+			schema.MapTo = structTypeName
+			schema.Fields, err = tlbMakeDesc(f.Type.Elem())
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", f.Name, err)
+			}
+
+		case f.Type.Kind() == reflect.Struct:
+			schema.MapTo = structTypeName
+			schema.Fields, err = tlbMakeDesc(f.Type)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", f.Name, err)
+			}
+
+		default:
+			return nil, fmt.Errorf("%s: unknown structField type %s", f.Name, f.Type)
+		}
+
+		ret = append(ret, schema)
+	}
+
+	return ret, nil
+}
+
+func NewTLBDesc(x any) (TLBFieldsDesc, error) {
+	rv := reflect.ValueOf(x)
+	if rv.Kind() != reflect.Pointer {
+		return nil, fmt.Errorf("x should be a pointer")
+	}
+	return tlbMakeDesc(rv.Type().Elem())
+}
+
+func opMakeDesc(t reflect.Type) (*OperationDesc, error) {
+	var ret OperationDesc
+
+	ret.Name = t.Name()
+
+	opCode, err := operationID(t)
 	if err != nil {
-		return 0, "", errors.Wrap(err, "msg body from boc")
+		return nil, errors.Wrap(err, "lookup operation id")
 	}
-	slice := payload.BeginParse()
+	ret.Code = fmt.Sprintf("0x%x", opCode)
 
-	op, err := slice.LoadUInt(32)
+	ret.Body, err = tlbMakeDesc(t)
 	if err != nil {
-		return 0, "", errors.Wrap(err, "load uint")
+		return nil, errors.Wrap(err, "make tlb schema")
 	}
 
-	if opId = uint32(op); opId != 0 {
-		return opId, "", nil
+	return &ret, nil
+}
+
+func NewOperationDesc(x any) (*OperationDesc, error) {
+	rv := reflect.ValueOf(x)
+	if rv.Kind() != reflect.Pointer {
+		return nil, fmt.Errorf("x should be a pointer")
+	}
+	return opMakeDesc(rv.Type().Elem())
+}
+
+// tlbParseSettings automatically determines go type to map field into (copy from tlb.LoadFromCell)
+// ## N - means integer with N bits, if size <= 64 it loads to uint of any size, if > 64 it loads to *big.Int
+// ^ - loads ref and calls recursively, if field type is *cell.Cell, it loads without parsing
+// . - calls recursively to continue load from current loader (inner struct)
+// [^]dict N [-> array [^]] - loads dictionary with key size N, transformation '->' can be applied to convert dict to array, example: 'dict 256 -> array ^' will give you array of deserialized refs (^) of values
+// bits N - loads bit slice N len to []byte
+// bool - loads 1 bit boolean
+// addr - loads ton address
+// maybe - reads 1 bit, and loads rest if its 1, can be used in combination with others only
+// either X Y - reads 1 bit, if its 0 - loads X, if 1 - loads Y
+// Some tags can be combined, for example "dict 256", "maybe ^"
+func tlbParseSettings(tag string) (reflect.Type, error) {
+	tag = strings.TrimSpace(tag)
+	if tag == "-" {
+		return nil, nil
+	}
+	settings := strings.Split(tag, " ")
+
+	if len(settings) == 0 {
+		return nil, nil
 	}
 
-	// simple transfer with comment
-	if comment, err = slice.LoadStringSnake(); err != nil {
-		return 0, "", errors.Wrap(err, "load transfer comment")
+	if settings[0] == "maybe" {
+		return reflect.TypeOf((*cell.Cell)(nil)), nil
 	}
 
-	return opId, comment, nil
+	if settings[0] == "either" {
+		if len(settings) < 3 {
+			return nil, errors.New("either tag should have 2 args")
+		}
+		return reflect.TypeOf((*cell.Cell)(nil)), nil
+	}
+
+	// bits
+	if settings[0] == "##" {
+		num, err := strconv.ParseUint(settings[1], 10, 64)
+		if err != nil {
+			return nil, errors.New("corrupted num bits in ## tag")
+		}
+		switch {
+		case num <= 8:
+			return reflect.TypeOf(uint8(0)), nil
+		case num <= 16:
+			return reflect.TypeOf(uint16(0)), nil
+		case num <= 32:
+			return reflect.TypeOf(uint32(0)), nil
+		case num <= 64:
+			return reflect.TypeOf(uint64(0)), nil
+		case num <= 256:
+			return reflect.TypeOf((*big.Int)(nil)), nil
+		}
+	}
+
+	if settings[0] == "addr" {
+		return reflect.TypeOf((*address.Address)(nil)), nil
+	}
+	if settings[0] == "bool" {
+		return reflect.TypeOf(false), nil
+	}
+	if settings[0] == "bits" {
+		return reflect.TypeOf([]byte(nil)), nil
+	}
+
+	if settings[0] == "^" || settings[0] == "." {
+		return reflect.TypeOf((*cell.Cell)(nil)), nil
+	}
+
+	if settings[0] == "dict" {
+		_, err := strconv.ParseUint(settings[1], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("cannot deserialize field as dict, bad size '%s'", settings[1])
+		}
+		if len(settings) >= 4 {
+			// transformation
+			return nil, errors.New("dict transformation is not supported")
+		}
+		return reflect.TypeOf((*cell.Dictionary)(nil)), nil
+	}
+
+	return nil, fmt.Errorf("cannot deserialize field as tag '%s'", tag)
+}
+
+func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc) (reflect.Type, error) {
+	var (
+		err error
+		ok  bool
+	)
+
+	for _, field := range schema {
+		var f = reflect.StructField{
+			Name: strcase.ToCamel(field.Name),
+			Tag:  reflect.StructTag(fmt.Sprintf("tlb:\"%s\" json:\"%s\"", field.Type, strcase.ToSnake(field.Name))),
+		}
+
+		// get type from map_to field
+		f.Type, ok = typeNameMap[field.MapTo]
+		if !ok {
+			// parse tlb tag and get default type
+			f.Type, err = tlbParseSettings(f.Tag.Get("tlb"))
+			if f.Type == nil || err != nil {
+				return nil, fmt.Errorf("%s (tag = %s) parse tlb settings: %w", f.Name, f.Tag.Get("tlb"), err)
+			}
+		}
+
+		// make new struct
+		if len(field.Fields) > 0 {
+			f.Type, err = tlbParseDesc(nil, field.Fields)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", f.Name, err)
+			}
+			f.Type = reflect.PointerTo(f.Type)
+		}
+
+		fields = append(fields, f)
+	}
+
+	return reflect.StructOf(fields), nil
+}
+
+func (d TLBFieldsDesc) New() (any, error) {
+	t, err := tlbParseDesc(nil, d)
+	if err != nil {
+		return nil, err
+	}
+	return reflect.New(t).Interface(), nil
+}
+
+func (d *OperationDesc) New() (any, error) {
+	var fields = []reflect.StructField{
+		{
+			Name: "Op",
+			Tag:  reflect.StructTag(fmt.Sprintf("tlb:\"#%x\"", strings.ReplaceAll(d.Code, "0x", ""))),
+			Type: reflect.TypeOf(tlb.Magic{}),
+		},
+	}
+	t, err := tlbParseDesc(fields, d.Body)
+	if err != nil {
+		return nil, err
+	}
+	return reflect.New(t).Interface(), nil
 }

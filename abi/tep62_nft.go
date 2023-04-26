@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
@@ -11,26 +12,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-// https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md
-// https://github.com/ton-blockchain/token-contract/tree/main/nft
-
-// NFTCollection
-type (
-	NFTCollectionData nft.CollectionData
-
-	NFTCollectionItemMint      nft.ItemMintPayload
-	NFTCollectionItemMintBatch struct {
-		_       tlb.Magic `tlb:"#00000002"`
-		QueryID uint64    `tlb:"## 64"`
-		// TODO: content dictionary
-	}
-	NFTCollectionChangeOwner   nft.CollectionChangeOwner
-	NFTCollectionChangeContent struct {
-		_       tlb.Magic `tlb:"#00000004"`
-		QueryID uint64    `tlb:"## 64"`
-		// TODO: content
-	}
-)
+type NFTCollectionData nft.CollectionData
 
 // NFTRoyalty
 type (
