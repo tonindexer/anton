@@ -3,7 +3,7 @@
 ## Overview
 
 You can define messages schema going to and from contract, contract get-methods and account data in just one JSON schema.
-Those schemas are used in Anton, it looks for contracts in the network, which fit interfaces it knows. 
+Those schemas are used in Anton, it looks for contracts in the network, which fit interfaces it knows.
 
 ### Contract interface
 
@@ -13,14 +13,14 @@ you should define contract addresses in the network or a contract code BoC.
 
 ```json5
 {
-   "interface": "",    // name of the contract
-   "addresses": [],    // optional known addresses
-   "code_boc": "",     // optional contract code
-   "definitions": {},  // map from definition name to cell schema
-   "in_messages": [],  // possible incoming messages schema
-   "out_messages": [], // possible outgoing messages schema
-   "get_methods": [],  // get-method names, return values and arguments
-   "contract_data": [] // contract state data cell schema
+   "interface_name": "",  // name of the contract
+   "addresses": [],       // optional known addresses
+   "code_boc": "",        // optional contract code
+   "definitions": {},     // map from definition name to cell schema
+   "in_messages": [],     // possible incoming messages schema
+   "out_messages": [],    // possible outgoing messages schema
+   "get_methods": [],     // get-method names, return values and arguments
+   "contract_data": []    // contract state data cell schema
 }
 ```
 
@@ -38,7 +38,7 @@ Also, it is possible to define similarly described embedded structures in the fi
       {                             // fields definitions
          "name": "query_id",        // field name
          "tlb_type": "## 64",       // describes how we should parse the field
-         "go_type": "uint64"        // describes in what golang type should we map the given field
+         "map_to": "uint64"         // [optional] describes in what golang type should we map the given field
       }, 
       {
          "name": "auction_config",
@@ -48,7 +48,7 @@ Also, it is possible to define similarly described embedded structures in the fi
             {
                "name": "beneficiary_address",
                "go_type": "addr",
-               "tlb_type": "addr"
+               "map_to": "addr"
             }
          ]
          // TODO: add omitempty flag (example, it's needed for the forward payload)
@@ -66,21 +66,21 @@ Contract data schema has the structure same as each message body schema, as it h
 While parsing TL-B cells by fields description, we are trying to parse data according to TL-B type and map it into some Golang type or structure.
 Each TL-B type used in schemas has value equal to the structure tags in [tonutils-go](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tlb/loader.go#L24).
 If it is not possible to parse the field using `tlb.LoadFromCell`, 
-you can define your custom type with `LoadFromCell` method in `abi` package (example, `TelemintText`) and register it in `tlb.go`.
+you can define your custom type with `LoadFromCell` method in `abi` package (example, `TelemintText`) and register it in `tlb_types.go`.
 
-Accepted TL-B types:
-1. `## N` - integer with N bits
-2. `^` - data is stored in the referenced cell
-3. `.` - inner struct
-4. `[^]dict N [-> array [^]]` - dictionary with key size `N`, transformation `->` can be applied to convert dict to array. 
+Accepted TL-B types in `tlb_type`:
+1. `## N` - integer with N bits; by default maps to `uintX` or `big.Int`
+2. `^` - data is stored in the referenced cell; by default maps to `cell.Cell` or to custom struct, if `struct_fields` is defined
+3. `.` - inner struct; by default maps to `cell.Cell` or to custom struct, if `struct_fields` is defined
+4. [TODO] `[^]dict N [-> array [^]]` - dictionary with key size `N`, transformation `->` can be applied to convert dict to array. 
    Example: `dict 256 -> array ^` will give you array of deserialized refs of values
-5. `bits N` - bit slice N len to []byte
-6. `bool` - 1 bit boolean
-7. `addr` - ton address
-8. `maybe` - reads 1 bit, and loads rest if its 1, can be used in combination with others only
-9. `either X Y` - reads 1 bit, if its 0 - loads X, if 1 - loads Y
+5. `bits N` - bit slice N len; by default maps to `[]byte`
+6. `bool` - 1 bit boolean; by default maps to `bool`
+7. `addr` - ton address; by default maps to `addr.Address`
+8. `maybe` - reads 1 bit, and loads rest if its 1, can be used in combination with others only; by default maps to `cell.Cell` or to custom struct, if `struct_fields` is defined
+9. `either X Y` - reads 1 bit, if its 0 - loads X, if 1 - loads Y; by default maps to `cell.Cell` or to custom struct, if `struct_fields` is defined
 
-Accepted Go types:
+Accepted Go types in `map_to`:
 1. `struct` - embed structure, maps into structure described by `struct_fields`
 2. `bytes` - byte slice, maps into `[]byte`
 3. `bool` - boolean
@@ -99,7 +99,7 @@ You can define some cell schema in contract interface `definitions` field and us
 
 ```json
 {
-   "interface": "telemint_nft_collection",
+   "interface_name": "telemint_nft_collection",
    "addresses": [
       "EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N",
       "EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi"
@@ -108,7 +108,6 @@ You can define some cell schema in contract interface `definitions` field and us
       "auction_config": [
          {
             "name": "beneficiary_address",
-            "go_type": "addr",
             "tlb_type": "addr"
          }
       ]
@@ -120,13 +119,12 @@ You can define some cell schema in contract interface `definitions` field and us
          "body": [
             {
                "name": "query_id",
-               "go_type": "uint64",
                "tlb_type": "## 64"
             },
             {
                "name": "auction_config",
-               "go_type": "auction_config",
-               "tlb_type": "^"
+               "tlb_type": "^",
+               "map_to": "auction_config"
             }
          ]
       }
@@ -140,7 +138,7 @@ Each get-method consists of name (which is then used to get `method_id`), argume
 
 ```json5
 {
-   "interface": "jetton_minter",
+   "interface_name": "jetton_minter",
    "get_methods": [
       {
          "name": "get_wallet_address",          // get-method name
@@ -204,3 +202,11 @@ Accepted Go types:
 3. `uint8`, `uint16`, `uint32`, `uint64` - map int to an unsigned integer
 4. `bigInt` - map integer bigger than 64 bits
 5. `string` - load string snake from cell
+
+## Known contracts
+
+1. TEP-62 NFT Standard: [interfaces](/abi/known/tep62_nft.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md), [contract code](https://github.com/ton-blockchain/token-contract/tree/main/nft)
+2. TEP-74 Fungible tokens (Jettons) standard: [interfaces](/abi/known/tep74_jetton.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md), [contract code](https://github.com/ton-blockchain/token-contract/tree/main/ft)
+3. TEP-81 DNS contracts: [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md)
+4. TEP-85 NFT SBT tokens: [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0085-sbt-standard.md)
+5. Getgems contracts: [contract code](https://github.com/getgems-io/nft-contracts/blob/main/packages/contracts/sources)
