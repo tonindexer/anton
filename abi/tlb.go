@@ -39,7 +39,7 @@ func operationID(t reflect.Type) (uint32, error) {
 
 	opValueStr, ok := op.Tag.Lookup("tlb")
 	if !ok || len(opValueStr) != 9 || opValueStr[0] != '#' {
-		return 0, fmt.Errorf("wrong tlb tag format")
+		return 0, fmt.Errorf("wrong tlb tag format (%s)", opValueStr)
 	}
 
 	opValue, err := strconv.ParseUint(opValueStr[1:], 16, 32)
@@ -59,7 +59,7 @@ func tlbMakeDesc(t reflect.Type) (ret TLBFieldsDesc, err error) {
 			Type: f.Tag.Get("tlb"),
 		}
 
-		if schema.Name == "_" && f.Type == reflect.TypeOf(tlb.Magic{}) {
+		if i == 0 && f.Type == reflect.TypeOf(tlb.Magic{}) {
 			continue // skip tlb constructor tag as it has to be inside OperationDesc
 		}
 
@@ -103,7 +103,7 @@ func NewTLBDesc(x any) (TLBFieldsDesc, error) {
 func opMakeDesc(t reflect.Type) (*OperationDesc, error) {
 	var ret OperationDesc
 
-	ret.Name = t.Name()
+	ret.Name = strcase.ToSnake(t.Name())
 
 	opCode, err := operationID(t)
 	if err != nil {
@@ -258,7 +258,7 @@ func (d *OperationDesc) New() (any, error) {
 	var fields = []reflect.StructField{
 		{
 			Name: "Op",
-			Tag:  reflect.StructTag(fmt.Sprintf("tlb:\"#%x\"", strings.ReplaceAll(d.Code, "0x", ""))),
+			Tag:  reflect.StructTag(fmt.Sprintf("tlb:\"#%08s\"", strings.ReplaceAll(d.Code, "0x", ""))),
 			Type: reflect.TypeOf(tlb.Magic{}),
 		},
 	}

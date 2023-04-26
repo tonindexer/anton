@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/ton/nft"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
@@ -19,7 +18,7 @@ type (
 		TonAmount tlb.Coins `tlb:"."`
 		Content   struct {
 			Owner   *address.Address `tlb:"addr"`
-			Content nft.ContentAny   `tlb:"^"`
+			Content *cell.Cell       `tlb:"^"`
 			// Editor   *address.Address `tlb:"addr"` // TODO: optional
 		} `tlb:"^"`
 	}
@@ -47,16 +46,16 @@ func TestNewOperationDesc_NFTCollection(t *testing.T) {
 	}{
 		{
 			structType: (*NFTCollectionItemMint)(nil),
-			expected:   ``,
+			expected:   `{"op_name":"nft_collection_item_mint","op_code":"0x1","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"},{"name":"index","tlb_type":"## 64","map_to":"bigInt"},{"name":"ton_amount","tlb_type":".","map_to":"coins"},{"name":"content","tlb_type":"^","map_to":"struct","struct_fields":[{"name":"owner","tlb_type":"addr","map_to":"addr"},{"name":"content","tlb_type":"^","map_to":"cell"}]}]}`,
 		}, {
 			structType: (*NFTCollectionItemMintBatch)(nil),
-			expected:   ``,
+			expected:   `{"op_name":"nft_collection_item_mint_batch","op_code":"0x2","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"},{"name":"deploy_list","tlb_type":"dict 64","map_to":"dict"}]}`,
 		}, {
 			structType: (*NFTCollectionChangeOwner)(nil),
-			expected:   ``,
+			expected:   `{"op_name":"nft_collection_change_owner","op_code":"0x3","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"},{"name":"new_owner","tlb_type":"addr","map_to":"addr"}]}`,
 		}, {
 			structType: (*NFTCollectionChangeContent)(nil),
-			expected:   ``,
+			expected:   `{"op_name":"nft_collection_change_content","op_code":"0x4","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"},{"name":"content","tlb_type":"^","map_to":"cell"}]}`,
 		},
 	}
 
@@ -65,64 +64,3 @@ func TestNewOperationDesc_NFTCollection(t *testing.T) {
 		assert.Equal(t, test.expected, got)
 	}
 }
-
-// func TestNFTMarshalSchema(t *testing.T) {
-// 	var testCases = []*struct {
-// 		structType any
-// 		expected   string
-// 	}{
-// 		// nft collection
-// 		{
-// 			structType: (*NFTCollectionItemMint)(nil),
-// 			expected:   `[{"name":"Op","type":"magic","tag":"tlb:\"#00000001\""},{"name":"QueryID","type":"uint64","tag":"tlb:\"## 64\""},{"name":"Index","type":"bigInt","tag":"tlb:\"## 64\""},{"name":"TonAmount","type":"coins","tag":"tlb:\".\""},{"name":"Content","type":"cell","tag":"tlb:\"^\""}]`,
-// 		}, {
-// 			structType: (*NFTCollectionChangeOwner)(nil),
-// 			expected:   `[{"name":"Op","type":"magic","tag":"tlb:\"#00000003\""},{"name":"QueryID","type":"uint64","tag":"tlb:\"## 64\""},{"name":"NewOwner","type":"address","tag":"tlb:\"addr\""}]`,
-// 		},
-// 		// nft item
-// 		{
-// 			structType: (*NFTItemTransfer)(nil),
-// 			expected:   `[{"name":"Op","type":"magic","tag":"tlb:\"#5fcc3d14\""},{"name":"QueryID","type":"uint64","tag":"tlb:\"## 64\""},{"name":"NewOwner","type":"address","tag":"tlb:\"addr\""},{"name":"ResponseDestination","type":"address","tag":"tlb:\"addr\""},{"name":"CustomPayload","type":"cell","tag":"tlb:\"maybe ^\""},{"name":"ForwardAmount","type":"coins","tag":"tlb:\".\""},{"name":"ForwardPayload","type":"cell","tag":"tlb:\"either . ^\""}]`,
-// 		}, {
-// 			structType: (*NFTEdit)(nil),
-// 			expected:   `[{"name":"Op","type":"magic","tag":"tlb:\"#1a0b9d51\""},{"name":"QueryID","type":"uint64","tag":"tlb:\"## 64\""},{"name":"Content","type":"cell","tag":"tlb:\"^\""}]`,
-// 		},
-// 		// jetton minter
-// 		{
-// 			structType: (*JettonMint)(nil),
-// 			expected:   `[{"name":"Op","type":"magic","tag":"tlb:\"#00000001\""},{"name":"QueryID","type":"uint64","tag":"tlb:\"## 64\""},{"name":"Index","type":"uint64","tag":"tlb:\"## 64\""},{"name":"TonAmount","type":"coins","tag":"tlb:\".\""},{"name":"Content","type":"cell","tag":"tlb:\"^\""}]`,
-// 		},
-// 		// jetton wallet
-// 		{
-// 			structType: (*JettonTransfer)(nil),
-// 			expected:   `[{"name":"Op","type":"magic","tag":"tlb:\"#0f8a7ea5\""},{"name":"QueryID","type":"uint64","tag":"tlb:\"## 64\""},{"name":"Amount","type":"coins","tag":"tlb:\".\""},{"name":"Destination","type":"address","tag":"tlb:\"addr\""},{"name":"ResponseDestination","type":"address","tag":"tlb:\"addr\""},{"name":"CustomPayload","type":"cell","tag":"tlb:\"maybe ^\""},{"name":"ForwardTONAmount","type":"coins","tag":"tlb:\".\""},{"name":"ForwardPayload","type":"cell","tag":"tlb:\"either . ^\""}]`,
-// 		}, {
-// 			structType: (*JettonBurn)(nil),
-// 			expected:   `[{"name":"Op","type":"magic","tag":"tlb:\"#595f07bc\""},{"name":"QueryID","type":"uint64","tag":"tlb:\"## 64\""},{"name":"Amount","type":"coins","tag":"tlb:\".\""},{"name":"ResponseDestination","type":"address","tag":"tlb:\"addr\""},{"name":"CustomPayload","type":"cell","tag":"tlb:\"maybe ^\""}]`,
-// 		},
-// 	}
-//
-// 	for _, test := range testCases {
-// 		testMarshalSchema(t, test.structType, test.expected)
-// 	}
-// }
-//
-// func TestNFTUnmarshalSchema(t *testing.T) {
-// 	var testCases = []*struct {
-// 		schema     []byte
-// 		payloadBOC []byte
-// 		expected   []byte
-// 	}{
-// 		{
-// 			// nft item transfer
-// 			// https://ton.cx/tx/35447977000003:JH9pr5my6TDD5q4YivuMTQaNmXWAAyfxEb04iCkdz84=:EQAiZupbLhdE7UWQgnTirCbIJRg6yxfmkvTDjxsFh33Cu5rM
-// 			schema:     []byte(`[{"name":"Op","type":"magic","tag":"tlb:\"#5fcc3d14\""},{"name":"QueryID","type":"uint64","tag":"tlb:\"## 64\""},{"name":"NewOwner","type":"address","tag":"tlb:\"addr\""},{"name":"ResponseDestination","type":"address","tag":"tlb:\"addr\""},{"name":"CustomPayload","type":"cell","tag":"tlb:\"maybe ^\""},{"name":"ForwardAmount","type":"coins","tag":"tlb:\".\""},{"name":"ForwardPayload","type":"cell","tag":"tlb:\"either . ^\""}]`),
-// 			payloadBOC: mustBase64(t, "te6cckEBAQEAVgAAp1/MPRQAAAAAAAAAAIAcBFOrOsuVgqBQaiEMi9EgdejAvDwScckxQey2WToQIDADqCJitJw/6R85JCMxuBEjulzVWrYz5gWeqFkMS5xCV6yAJiWgCPhXYXQ="),
-// 			expected:   []byte(`{"Op":{},"QueryID":0,"NewOwner":"EQDgIp1Z1lysFQKDUQhkXokDr0YF4eCTjkmKD2WyydCBAcnZ","ResponseDestination":"EQDqCJitJw_6R85JCMxuBEjulzVWrYz5gWeqFkMS5xCV6w3N","CustomPayload":null,"ForwardAmount":"20000000","ForwardPayload":{}}`),
-// 		},
-// 	}
-//
-// 	for _, test := range testCases {
-// 		testUnmarshalSchema(t, test.payloadBOC, test.schema, test.expected)
-// 	}
-// }

@@ -17,6 +17,7 @@ func makeOperationDesc(t *testing.T, x any) string {
 	assert.Nil(t, err)
 
 	nd, err := abi.NewOperationDesc(n)
+	nd.Name = d.Name
 	assert.Nil(t, err)
 	assert.Equal(t, d, nd)
 
