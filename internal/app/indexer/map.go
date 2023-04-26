@@ -8,6 +8,7 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/addr"
@@ -130,6 +131,30 @@ func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg *tlb.M
 	return nil
 }
 
+func parseOperationID(body []byte) (opId uint32, comment string, err error) {
+	payload, err := cell.FromBOC(body)
+	if err != nil {
+		return 0, "", errors.Wrap(err, "msg body from boc")
+	}
+	slice := payload.BeginParse()
+
+	op, err := slice.LoadUInt(32)
+	if err != nil {
+		return 0, "", errors.Wrap(err, "load uint")
+	}
+
+	if opId = uint32(op); opId != 0 {
+		return opId, "", nil
+	}
+
+	// simple transfer with comment
+	if comment, err = slice.LoadStringSnake(); err != nil {
+		return 0, "", errors.Wrap(err, "load transfer comment")
+	}
+
+	return opId, comment, nil
+}
+
 func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error) {
 	var (
 		msg = new(core.Message)
@@ -157,7 +182,7 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 		return msg, nil
 	}
 
-	msg.OperationID, msg.TransferComment, _ = abi.ParseOperationID(msg.Body)
+	msg.OperationID, msg.TransferComment, _ = parseOperationID(msg.Body)
 
 	return msg, nil
 }
