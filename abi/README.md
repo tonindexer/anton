@@ -83,15 +83,16 @@ Accepted TL-B types in `tlb_type`:
 Accepted Go types in `map_to`:
 1. `struct` - embed structure, maps into structure described by `struct_fields`
 2. `bytes` - byte slice, maps into `[]byte`
-3. `bool` - boolean
+3. `bool` - boolean (can be used only on `tlb_type = bool`)
 4. `uint8`, `uint16`, `uint32`, `uint64` - unsigned integers
 5. `bigInt` - integer with more than 64 bits, maps into `big.Int` wrapper
 6. `cell` - TL-B cell, maps into [`cell.Cell`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/cell.go#L11)
 7. `magic` - TL-B constructor prefix, must not be used
 8. `coins` - varInt 16, maps into `big.Int` wrapper
 9. `addr` - TON address, maps into [`address.Address`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/address/addr.go#L21) wrapper
-10. `string_cell` - [string snake](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/builder.go#L317) is stored in the cell 
-11. `telemintText` - variable length string with [this](https://github.com/TelegramMessenger/telemint/blob/main/telemint.tlb#L25) TL-B constructor
+10. `content_cell` - token data as in [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md), [implementation](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
+11. `string_cell` - [string snake](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/builder.go#L317) is stored in the cell 
+12. `telemintText` - variable length string with [this](https://github.com/TelegramMessenger/telemint/blob/main/telemint.tlb#L25) TL-B constructor
 
 ### Shared TL-B constructors
 
