@@ -194,11 +194,11 @@ Accepted func return values types:
 1. `int` - integer; by default maps into `big.Int`
 2. `cell` - map to BoC
 3. `slice` - load slice
-4. `tuple` - TODO ...
+4. `tuple` - TODO :(
  
 Accepted types to map from or into:
 
-1. `addr` - address
+1. `addr` - MsgAddress slice type
 2. `bool` - map int to boolean
 3. `uint8`, `uint16`, `uint32`, `uint64` - map int to an unsigned integer
 4. `bigInt` - map integer bigger than 64 bits

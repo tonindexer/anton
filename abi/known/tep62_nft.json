@@ -214,6 +214,62 @@
           }
         ]
       }
+    ],
+    "get_methods": [
+      {
+        "name": "get_collection_data",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "next_item_index",
+            "func_type": "int"
+          },
+          {
+            "name": "collection_content",
+            "func_type": "cell"
+          },
+          {
+            "name": "owner_address",
+            "func_type": "slice",
+            "map_type": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_nft_address_by_index",
+        "arguments": [
+          {
+            "name": "index",
+            "func_type": "int"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "address",
+            "func_type": "slice",
+            "map_type": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_nft_content",
+        "arguments": [
+          {
+            "name": "index",
+            "func_type": "int"
+          },
+          {
+            "name": "individual_content",
+            "func_type": "cell"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "full_content",
+            "func_type": "cell"
+          }
+        ]
+      }
     ]
   },
   {
@@ -250,6 +306,27 @@
             "name": "destination",
             "tlb_type": "addr",
             "map_to": "addr"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "royalty_params",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "numerator",
+            "func_type": "int"
+          },
+          {
+            "name": "denominator",
+            "func_type": "int"
+          },
+          {
+            "name": "destination",
+            "func_type": "slice",
+            "map_type": "addr"
           }
         ]
       }
@@ -328,6 +405,19 @@
             "name": "forward_payload",
             "tlb_type": "either . ^",
             "map_to": "cell"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_editor",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "editor",
+            "func_type": "slice",
+            "map_type": "addr"
           }
         ]
       }
