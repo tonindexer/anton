@@ -1,7 +1,6 @@
 package abi_test
 
 import (
-	"encoding/base64"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,12 +8,6 @@ import (
 
 	"github.com/tonindexer/anton/abi"
 )
-
-func mustBase64(t *testing.T, str string) []byte {
-	ret, err := base64.StdEncoding.DecodeString(str)
-	assert.Nil(t, err)
-	return ret
-}
 
 func TestHasGetMethod(t *testing.T) {
 	// https://ton.cx/address/EQAiZupbLhdE7UWQgnTirCbIJRg6yxfmkvTDjxsFh33Cu5rM

@@ -258,7 +258,7 @@ func (d *OperationDesc) New() (any, error) {
 	var fields = []reflect.StructField{
 		{
 			Name: "Op",
-			Tag:  reflect.StructTag(fmt.Sprintf("tlb:\"#%08s\"", strings.ReplaceAll(d.Code, "0x", ""))),
+			Tag:  reflect.StructTag(fmt.Sprintf("tlb:\"#%08s\" json:\"-\"", strings.ReplaceAll(d.Code, "0x", ""))),
 			Type: reflect.TypeOf(tlb.Magic{}),
 		},
 	}
