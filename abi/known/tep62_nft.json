@@ -143,7 +143,7 @@
     "interface_name": "nft_collection",
     "in_messages": [
       {
-        "op_name": "nft_collection_item_mint",
+        "op_name": "item_mint",
         "op_code": "0x1",
         "body": [
           {
@@ -181,7 +181,7 @@
         ]
       },
       {
-        "op_name": "nft_collection_item_mint_batch",
+        "op_name": "item_mint_batch",
         "op_code": "0x2",
         "body": [
           {
@@ -197,7 +197,7 @@
         ]
       },
       {
-        "op_name": "nft_collection_change_owner",
+        "op_name": "change_owner",
         "op_code": "0x3",
         "body": [
           {
@@ -213,7 +213,7 @@
         ]
       },
       {
-        "op_name": "nft_collection_change_content",
+        "op_name": "change_content",
         "op_code": "0x4",
         "body": [
           {
@@ -224,6 +224,123 @@
           {
             "name": "content",
             "tlb_type": "^",
+            "map_to": "cell"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "nft_royalty",
+    "in_messages": [
+      {
+        "op_name": "get_royalty_params",
+        "op_code": "0x693d3950",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "map_to": "uint64"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "report_royalty_params",
+        "op_code": "0xa8cb00ad",
+        "body": [
+          {
+            "name": "numerator",
+            "tlb_type": "## 16",
+            "map_to": "uint16"
+          },
+          {
+            "name": "denominator",
+            "tlb_type": "## 16",
+            "map_to": "uint16"
+          },
+          {
+            "name": "destination",
+            "tlb_type": "addr",
+            "map_to": "addr"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "nft_editable",
+    "in_messages": [
+      {
+        "op_name": "edit_content",
+        "op_code": "0x1a0b9d51",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "map_to": "uint64"
+          },
+          {
+            "name": "content",
+            "tlb_type": "^",
+            "map_to": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "transfer_editorship",
+        "op_code": "0x1c04412a",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "map_to": "uint64"
+          },
+          {
+            "name": "new_editor",
+            "tlb_type": "addr",
+            "map_to": "addr"
+          },
+          {
+            "name": "response_destination",
+            "tlb_type": "addr",
+            "map_to": "addr"
+          },
+          {
+            "name": "custom_payload",
+            "tlb_type": "maybe ^",
+            "map_to": "cell"
+          },
+          {
+            "name": "forward_amount",
+            "tlb_type": ".",
+            "map_to": "coins"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "map_to": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "editorship_assigned",
+        "op_code": "0x511a4463",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "map_to": "uint64"
+          },
+          {
+            "name": "prev_editor",
+            "tlb_type": "addr",
+            "map_to": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
             "map_to": "cell"
           }
         ]
