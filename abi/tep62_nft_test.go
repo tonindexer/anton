@@ -1,7 +1,6 @@
 package abi_test
 
 import (
-	"encoding/json"
 	"math/big"
 	"testing"
 
@@ -9,10 +8,7 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
-	"github.com/tonindexer/anton/abi"
-
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type (
@@ -100,23 +96,147 @@ func TestLoadOperation_NFTCollection(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		var d abi.OperationDesc
+		j := loadOperation(t, test.schema, test.boc)
+		assert.Equal(t, j, test.expected)
+	}
+}
 
-		err := json.Unmarshal([]byte(test.schema), &d)
-		require.Nil(t, err)
+type (
+	NFTGetRoyaltyParams struct {
+		_       tlb.Magic `tlb:"#693d3950"`
+		QueryID uint64    `tlb:"## 64"`
+	}
+	NFTReportRoyaltyParams struct {
+		_           tlb.Magic        `tlb:"#a8cb00ad"`
+		Numerator   uint16           `tlb:"## 16"`
+		Denominator uint16           `tlb:"## 16"`
+		Destination *address.Address `tlb:"addr"`
+	}
+)
 
-		op, err := d.New()
-		require.Nil(t, err)
+func TestNewOperationDesc_NFTRoyalty(t *testing.T) {
+	var testCases = []*struct {
+		structType any
+		expected   string
+	}{
+		{
+			structType: (*NFTGetRoyaltyParams)(nil),
+			expected:   `{"op_name":"nft_get_royalty_params","op_code":"0x693d3950","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"}]}`,
+		}, {
+			structType: (*NFTReportRoyaltyParams)(nil),
+			expected:   `{"op_name":"nft_report_royalty_params","op_code":"0xa8cb00ad","body":[{"name":"numerator","tlb_type":"## 16","map_to":"uint16"},{"name":"denominator","tlb_type":"## 16","map_to":"uint16"},{"name":"destination","tlb_type":"addr","map_to":"addr"}]}`,
+		},
+	}
 
-		c, err := cell.FromBOC(mustBase64(t, test.boc))
-		require.Nil(t, err)
+	for _, test := range testCases {
+		got := makeOperationDesc(t, test.structType)
+		assert.Equal(t, test.expected, got)
+	}
+}
 
-		err = tlb.LoadFromCell(op, c.BeginParse())
-		require.Nil(t, err)
+type (
+	NFTItemTransfer struct {
+		_                   tlb.Magic        `tlb:"#5fcc3d14"`
+		QueryID             uint64           `tlb:"## 64"`
+		NewOwner            *address.Address `tlb:"addr"`
+		ResponseDestination *address.Address `tlb:"addr"`
+		CustomPayload       *cell.Cell       `tlb:"maybe ^"`
+		ForwardAmount       tlb.Coins        `tlb:"."`
+		ForwardPayload      *cell.Cell       `tlb:"either . ^"`
+	}
+	NFTItemOwnershipAssigned struct {
+		_              tlb.Magic        `tlb:"#05138d91"`
+		QueryID        uint64           `tlb:"## 64"`
+		PrevOwner      *address.Address `tlb:"addr"`
+		ForwardPayload *cell.Cell       `tlb:"either . ^"`
+	}
+	NFTItemGetStaticData struct {
+		_       tlb.Magic `tlb:"#2fcb26a2"`
+		QueryID uint64    `tlb:"## 64"`
+	}
+	NFTItemReportStaticData struct {
+		_          tlb.Magic        `tlb:"#8b771735"`
+		QueryID    uint64           `tlb:"## 64"`
+		Index      *big.Int         `tlb:"## 256"`
+		Collection *address.Address `tlb:"addr"`
+	}
+	Excesses struct {
+		_       tlb.Magic `tlb:"#d53276db"`
+		QueryID uint64    `tlb:"## 64"`
+	}
+)
 
-		j, err := json.Marshal(op)
-		require.Nil(t, err)
+func TestNewOperationDesc_NFTItem(t *testing.T) {
+	var testCases = []*struct {
+		structType any
+		expected   string
+	}{
+		{
+			structType: (*NFTItemTransfer)(nil),
+			expected:   `{"op_name":"nft_item_transfer","op_code":"0x5fcc3d14","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"},{"name":"new_owner","tlb_type":"addr","map_to":"addr"},{"name":"response_destination","tlb_type":"addr","map_to":"addr"},{"name":"custom_payload","tlb_type":"maybe ^","map_to":"cell"},{"name":"forward_amount","tlb_type":".","map_to":"coins"},{"name":"forward_payload","tlb_type":"either . ^","map_to":"cell"}]}`,
+		}, {
+			structType: (*NFTItemOwnershipAssigned)(nil),
+			expected:   `{"op_name":"nft_item_ownership_assigned","op_code":"0x5138d91","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"},{"name":"prev_owner","tlb_type":"addr","map_to":"addr"},{"name":"forward_payload","tlb_type":"either . ^","map_to":"cell"}]}`,
+		}, {
+			structType: (*NFTItemGetStaticData)(nil),
+			expected:   `{"op_name":"nft_item_get_static_data","op_code":"0x2fcb26a2","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"}]}`,
+		}, {
+			structType: (*NFTItemReportStaticData)(nil),
+			expected:   `{"op_name":"nft_item_report_static_data","op_code":"0x8b771735","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"},{"name":"index","tlb_type":"## 256","map_to":"bigInt"},{"name":"collection","tlb_type":"addr","map_to":"addr"}]}`,
+		}, {
+			structType: (*Excesses)(nil),
+			expected:   `{"op_name":"excesses","op_code":"0xd53276db","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"}]}`,
+		},
+	}
 
-		assert.Equal(t, string(j), test.expected)
+	for _, test := range testCases {
+		got := makeOperationDesc(t, test.structType)
+		assert.Equal(t, test.expected, got)
+	}
+}
+
+type (
+	NFTEditContent struct {
+		_       tlb.Magic  `tlb:"#1a0b9d51"`
+		QueryID uint64     `tlb:"## 64"`
+		Content *cell.Cell `tlb:"^"`
+	}
+	NFTTransferEditorship struct {
+		_                   tlb.Magic        `tlb:"#1c04412a"`
+		QueryID             uint64           `tlb:"## 64"`
+		NewEditor           *address.Address `tlb:"addr"`
+		ResponseDestination *address.Address `tlb:"addr"`
+		CustomPayload       *cell.Cell       `tlb:"maybe ^"`
+		ForwardAmount       tlb.Coins        `tlb:"."`
+		ForwardPayload      *cell.Cell       `tlb:"either . ^"`
+	}
+	NFTEditorshipAssigned struct {
+		_              tlb.Magic        `tlb:"#511a4463"`
+		QueryID        uint64           `tlb:"## 64"`
+		PrevEditor     *address.Address `tlb:"addr"`
+		ForwardPayload *cell.Cell       `tlb:"either . ^"`
+	}
+)
+
+func TestNewOperationDesc_NFTEditable(t *testing.T) {
+	var testCases = []*struct {
+		structType any
+		expected   string
+	}{
+		{
+			structType: (*NFTEditContent)(nil),
+			expected:   `{"op_name":"nft_edit_content","op_code":"0x1a0b9d51","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"},{"name":"content","tlb_type":"^","map_to":"cell"}]}`,
+		}, {
+			structType: (*NFTTransferEditorship)(nil),
+			expected:   `{"op_name":"nft_transfer_editorship","op_code":"0x1c04412a","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"},{"name":"new_editor","tlb_type":"addr","map_to":"addr"},{"name":"response_destination","tlb_type":"addr","map_to":"addr"},{"name":"custom_payload","tlb_type":"maybe ^","map_to":"cell"},{"name":"forward_amount","tlb_type":".","map_to":"coins"},{"name":"forward_payload","tlb_type":"either . ^","map_to":"cell"}]}`,
+		}, {
+			structType: (*NFTEditorshipAssigned)(nil),
+			expected:   `{"op_name":"nft_editorship_assigned","op_code":"0x511a4463","body":[{"name":"query_id","tlb_type":"## 64","map_to":"uint64"},{"name":"prev_editor","tlb_type":"addr","map_to":"addr"},{"name":"forward_payload","tlb_type":"either . ^","map_to":"cell"}]}`,
+		},
+	}
+
+	for _, test := range testCases {
+		got := makeOperationDesc(t, test.structType)
+		assert.Equal(t, test.expected, got)
 	}
 }

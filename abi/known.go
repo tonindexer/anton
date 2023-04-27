@@ -61,31 +61,31 @@ var (
 
 		NFTRoyalty: {
 			false: []any{
-				(*NFTGetRoyaltyParams)(nil),
+				// (*NFTGetRoyaltyParams)(nil),
 			},
 			true: []any{
-				(*NFTReportRoyaltyParams)(nil),
+				// (*NFTReportRoyaltyParams)(nil),
 			},
 		},
 
 		NFTEditable: {
 			false: []any{
-				(*NFTEdit)(nil), (*NFTTransferEditorship)(nil),
+				// (*NFTEdit)(nil), (*NFTTransferEditorship)(nil),
 			},
 			true: []any{
-				(*NFTEditorshipAssigned)(nil),
+				// (*NFTEditorshipAssigned)(nil),
 			},
 		},
 
 		NFTItem: {
 			false: []any{
-				(*NFTItemTransfer)(nil),
-				(*NFTItemGetStaticData)(nil),
+				// (*NFTItemTransfer)(nil),
+				// (*NFTItemGetStaticData)(nil),
 			},
 			true: []any{
-				(*NFTItemOwnershipAssigned)(nil),
-				(*Excesses)(nil),
-				(*NFTItemReportStaticData)(nil),
+				// (*NFTItemOwnershipAssigned)(nil),
+				// (*Excesses)(nil),
+				// (*NFTItemReportStaticData)(nil),
 			},
 		},
 

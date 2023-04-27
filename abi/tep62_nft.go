@@ -6,69 +6,18 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/ton/nft"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type NFTCollectionData nft.CollectionData
 
-// NFTRoyalty
-type (
-	NFTRoyaltyData nft.CollectionRoyaltyParams
+type NFTRoyaltyData nft.CollectionRoyaltyParams
 
-	NFTGetRoyaltyParams struct {
-		_ tlb.Magic `tlb:"#693d3950"`
-	}
-	NFTReportRoyaltyParams struct {
-		_ tlb.Magic `tlb:"#a8cb00ad"`
-	}
-)
+type NFTItemData nft.ItemData
 
-// NFTItem
-type (
-	NFTItemData nft.ItemData
-
-	NFTItemTransfer      nft.TransferPayload
-	NFTItemGetStaticData struct {
-		_ tlb.Magic `tlb:"#2fcb26a2"`
-	}
-	NFTItemOwnershipAssigned struct {
-		_       tlb.Magic `tlb:"#05138d91"`
-		QueryID uint64    `tlb:"## 64"`
-	}
-	NFTItemReportStaticData struct {
-		_       tlb.Magic `tlb:"#8b771735"`
-		QueryID uint64    `tlb:"## 64"`
-	}
-)
-
-// NFTEditable
-type (
-	NFTEditableData struct {
-		Editor *address.Address
-	}
-
-	NFTEdit               nft.ItemEditPayload
-	NFTTransferEditorship struct {
-		_                   tlb.Magic        `tlb:"#1c04412a"`
-		QueryID             uint64           `tlb:"## 64"`
-		NewOwner            *address.Address `tlb:"addr"`
-		ResponseDestination *address.Address `tlb:"addr"`
-		CustomPayload       *cell.Cell       `tlb:"maybe ^"`
-		ForwardAmount       tlb.Coins        `tlb:"."`
-		ForwardPayload      *cell.Cell       `tlb:"either . ^"`
-	}
-	NFTEditorshipAssigned struct {
-		_       tlb.Magic `tlb:"#511a4463"`
-		QueryID uint64    `tlb:"## 64"`
-	}
-)
-
-type Excesses struct {
-	_       tlb.Magic `tlb:"#d53276db"`
-	QueryID uint64    `tlb:"## 64"`
+type NFTEditableData struct {
+	Editor *address.Address
 }
 
 func GetNFTCollectionData(ctx context.Context, api *ton.APIClient, b *ton.BlockIDExt, addr *address.Address) (*NFTCollectionData, error) {
