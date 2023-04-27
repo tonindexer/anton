@@ -43,11 +43,11 @@ Also, it is possible to define similarly described embedded structures in the fi
       {
          "name": "auction_config",
          "tlb_type": "^",
-         "go_type": "struct",
+         "map_to": "struct",
          "struct_fields": [         // fields of inner structure
             {
                "name": "beneficiary_address",
-               "go_type": "addr",
+               "tlb_type": "addr",
                "map_to": "addr"
             }
          ]
@@ -147,15 +147,15 @@ Each get-method consists of name (which is then used to get `method_id`), argume
          "arguments": [
             {
                "name": "owner_address",         // argument name
-               "go_type": "addr",               // from what type we map
-               "func_type": "addr_slice"        // in what type we map
+               "func_type": "slice",            // type we are trying to load
+               "map_type": "addr"               // type we map into
             }
          ],
          "return_values": [
             {
                "name": "jetton_wallet_address", // return value name
-               "go_type": "addr",               // in what type we parse
-               "func_type": "addr_slice"        // what type we load
+               "func_type": "slice",            // type we load
+               "map_type": "addr"               // type we parse into
             }
          ]
       },
@@ -164,18 +164,18 @@ Each get-method consists of name (which is then used to get `method_id`), argume
          "return_values": [
             {
                "name": "total_supply",
-               "go_type": "bigInt",
-               "func_type": "int"
+               "func_type": "int",
+               "map_type": "bigInt"
             },
             {
                "name": "mintable",
-               "go_type": "bool",
-               "func_type": "int"
+               "func_type": "int",
+               "map_type": "bool"
             },
             {
                "name": "admin_address",
-               "go_type": "addr",
-               "func_type": "addr_slice"
+               "func_type": "slice",
+               "map_type": "addr"
             }
          ]
       }
@@ -185,19 +185,18 @@ Each get-method consists of name (which is then used to get `method_id`), argume
 
 Accepted func argument types:
 
-1. `int` - integer
+1. `int` - integer; by default maps from `big.Int`
 2. `cell` - map from BoC
-3. `addr_slice` - address stored in slice
+3. `slice` - cell slice
 
 Accepted func return values types:
 
-1. `int` - integer
+1. `int` - integer; by default maps into `big.Int`
 2. `cell` - map to BoC
-3. `addr_slice` - load address from slice
-4. `string_cell` - load string snake from cell
-5. `tuple` - TODO ...
+3. `slice` - load slice
+4. `tuple` - TODO ...
  
-Accepted Go types:
+Accepted types to map from or into:
 
 1. `addr` - address
 2. `bool` - map int to boolean

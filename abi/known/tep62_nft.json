@@ -8,33 +8,29 @@
         "body": [
           {
             "name": "query_id",
-            "go_type": "uint64",
             "tlb_type": "## 64"
           },
           {
             "name": "new_owner",
-            "go_type": "addr",
             "tlb_type": "addr"
           },
           {
             "name": "response_destination",
-            "go_type": "addr",
             "tlb_type": "addr"
           },
           {
             "name": "custom_payload",
-            "go_type": "cell",
             "tlb_type": "maybe ^"
           },
           {
             "name": "forward_amount",
-            "go_type": "coins",
-            "tlb_type": "."
+            "tlb_type": ".",
+            "map_to": "coins"
           },
           {
             "name": "forward_payload",
-            "go_type": "cell",
-            "tlb_type": "either . ^"
+            "tlb_type": "either . ^",
+            "map_to": "cell"
           }
         ]
       },
@@ -44,7 +40,6 @@
         "body": [
           {
             "name": "query_id",
-            "go_type": "uint64",
             "tlb_type": "## 64"
           }
         ]
@@ -57,17 +52,14 @@
         "body": [
           {
             "name": "query_id",
-            "go_type": "uint64",
             "tlb_type": "## 64"
           },
           {
             "name": "prev_owner",
-            "go_type": "addr",
             "tlb_type": "addr"
           },
           {
             "name": "forward_payload",
-            "go_type": "cell",
             "tlb_type": "either . ^"
           }
         ]
@@ -78,7 +70,6 @@
         "body": [
           {
             "name": "query_id",
-            "go_type": "uint64",
             "tlb_type": "## 64"
           }
         ]
@@ -89,17 +80,14 @@
         "body": [
           {
             "name": "query_id",
-            "go_type": "uint64",
             "tlb_type": "## 64"
           },
           {
             "name": "index",
-            "go_type": "bigInt",
             "tlb_type": "## 256"
           },
           {
             "name": "collection",
-            "go_type": "addr",
             "tlb_type": "addr"
           }
         ]
@@ -112,27 +100,25 @@
         "return_values": [
           {
             "name": "init",
-            "go_type": "bool",
-            "func_type": "int"
+            "func_type": "int",
+            "map_type": "bool"
           },
           {
             "name": "index",
-            "go_type": "bigInt",
             "func_type": "int"
           },
           {
             "name": "collection_address",
-            "go_type": "addr",
-            "func_type": "addr_slice"
+            "func_type": "slice",
+            "map_type": "addr"
           },
           {
             "name": "owner_address",
-            "go_type": "addr",
-            "func_type": "addr_slice"
+            "func_type": "slice",
+            "map_type": "addr"
           },
           {
             "name": "individual_content",
-            "go_type": "cell",
             "func_type": "cell"
           }
         ]
