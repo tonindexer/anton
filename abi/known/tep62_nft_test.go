@@ -1,4 +1,4 @@
-package abi_test
+package known_test
 
 import (
 	"math/big"
