@@ -212,3 +212,6 @@ Accepted types to map from or into in `format` field:
 4. TEP-85 NFT SBT tokens: [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0085-sbt-standard.md)
 5. Getgems contracts: [contract code](https://github.com/getgems-io/nft-contracts/blob/main/packages/contracts/sources)
 6. Wallets: [tonweb](https://github.com/toncenter/tonweb/tree/0a5effd36a3f342f4aacabab728b1f9747085ad1/src/contract/wallet)
+7. [STON.fi](https://ston.fi) DEX: [architecture](https://docs.ston.fi/docs/developer-section/architecture), [contract code](https://github.com/ston-fi/dex-core)
+8. [Megaton.fi](https://megaton.fi) DEX: [architecture](https://docs.megaton.fi/developers/contract)
+9. [Tonpay](https://thetonpay.app): [go-sdk](https://github.com/TheTonpay/tonpay-go-sdk), [js-sdk](https://github.com/TheTonpay/tonpay-js-sdk) 
