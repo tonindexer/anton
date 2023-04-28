@@ -25,12 +25,12 @@
           {
             "name": "forward_amount",
             "tlb_type": ".",
-            "map_to": "coins"
+            "format": "coins"
           },
           {
             "name": "forward_payload",
             "tlb_type": "either . ^",
-            "map_to": "cell"
+            "format": "cell"
           }
         ]
       },
@@ -101,7 +101,7 @@
           {
             "name": "init",
             "func_type": "int",
-            "map_type": "bool"
+            "format": "bool"
           },
           {
             "name": "index",
@@ -110,12 +110,12 @@
           {
             "name": "collection_address",
             "func_type": "slice",
-            "map_type": "addr"
+            "format": "addr"
           },
           {
             "name": "owner_address",
             "func_type": "slice",
-            "map_type": "addr"
+            "format": "addr"
           },
           {
             "name": "individual_content",
@@ -135,32 +135,32 @@
           {
             "name": "query_id",
             "tlb_type": "## 64",
-            "map_to": "uint64"
+            "format": "uint64"
           },
           {
             "name": "index",
             "tlb_type": "## 64",
-            "map_to": "bigInt"
+            "format": "bigInt"
           },
           {
             "name": "ton_amount",
             "tlb_type": ".",
-            "map_to": "coins"
+            "format": "coins"
           },
           {
             "name": "content",
             "tlb_type": "^",
-            "map_to": "struct",
+            "format": "struct",
             "struct_fields": [
               {
                 "name": "owner",
                 "tlb_type": "addr",
-                "map_to": "addr"
+                "format": "addr"
               },
               {
                 "name": "content",
                 "tlb_type": "^",
-                "map_to": "cell"
+                "format": "cell"
               }
             ]
           }
@@ -173,12 +173,12 @@
           {
             "name": "query_id",
             "tlb_type": "## 64",
-            "map_to": "uint64"
+            "format": "uint64"
           },
           {
             "name": "deploy_list",
             "tlb_type": "dict 64",
-            "map_to": "dict"
+            "format": "dict"
           }
         ]
       },
@@ -189,12 +189,12 @@
           {
             "name": "query_id",
             "tlb_type": "## 64",
-            "map_to": "uint64"
+            "format": "uint64"
           },
           {
             "name": "new_owner",
             "tlb_type": "addr",
-            "map_to": "addr"
+            "format": "addr"
           }
         ]
       },
@@ -205,12 +205,12 @@
           {
             "name": "query_id",
             "tlb_type": "## 64",
-            "map_to": "uint64"
+            "format": "uint64"
           },
           {
             "name": "content",
             "tlb_type": "^",
-            "map_to": "cell"
+            "format": "cell"
           }
         ]
       }
@@ -231,7 +231,7 @@
           {
             "name": "owner_address",
             "func_type": "slice",
-            "map_type": "addr"
+            "format": "addr"
           }
         ]
       },
@@ -247,7 +247,7 @@
           {
             "name": "address",
             "func_type": "slice",
-            "map_type": "addr"
+            "format": "addr"
           }
         ]
       },
@@ -282,7 +282,7 @@
           {
             "name": "query_id",
             "tlb_type": "## 64",
-            "map_to": "uint64"
+            "format": "uint64"
           }
         ]
       }
@@ -295,17 +295,17 @@
           {
             "name": "numerator",
             "tlb_type": "## 16",
-            "map_to": "uint16"
+            "format": "uint16"
           },
           {
             "name": "denominator",
             "tlb_type": "## 16",
-            "map_to": "uint16"
+            "format": "uint16"
           },
           {
             "name": "destination",
             "tlb_type": "addr",
-            "map_to": "addr"
+            "format": "addr"
           }
         ]
       }
@@ -326,7 +326,7 @@
           {
             "name": "destination",
             "func_type": "slice",
-            "map_type": "addr"
+            "format": "addr"
           }
         ]
       }
@@ -342,12 +342,12 @@
           {
             "name": "query_id",
             "tlb_type": "## 64",
-            "map_to": "uint64"
+            "format": "uint64"
           },
           {
             "name": "content",
             "tlb_type": "^",
-            "map_to": "cell"
+            "format": "cell"
           }
         ]
       },
@@ -358,32 +358,32 @@
           {
             "name": "query_id",
             "tlb_type": "## 64",
-            "map_to": "uint64"
+            "format": "uint64"
           },
           {
             "name": "new_editor",
             "tlb_type": "addr",
-            "map_to": "addr"
+            "format": "addr"
           },
           {
             "name": "response_destination",
             "tlb_type": "addr",
-            "map_to": "addr"
+            "format": "addr"
           },
           {
             "name": "custom_payload",
             "tlb_type": "maybe ^",
-            "map_to": "cell"
+            "format": "cell"
           },
           {
             "name": "forward_amount",
             "tlb_type": ".",
-            "map_to": "coins"
+            "format": "coins"
           },
           {
             "name": "forward_payload",
             "tlb_type": "either . ^",
-            "map_to": "cell"
+            "format": "cell"
           }
         ]
       },
@@ -394,17 +394,17 @@
           {
             "name": "query_id",
             "tlb_type": "## 64",
-            "map_to": "uint64"
+            "format": "uint64"
           },
           {
             "name": "prev_editor",
             "tlb_type": "addr",
-            "map_to": "addr"
+            "format": "addr"
           },
           {
             "name": "forward_payload",
             "tlb_type": "either . ^",
-            "map_to": "cell"
+            "format": "cell"
           }
         ]
       }
@@ -417,7 +417,7 @@
           {
             "name": "editor",
             "func_type": "slice",
-            "map_type": "addr"
+            "format": "addr"
           }
         ]
       }

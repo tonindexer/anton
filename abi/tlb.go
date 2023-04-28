@@ -19,8 +19,8 @@ import (
 type TLBFieldDesc struct {
 	Name   string        `json:"name"`
 	Type   string        `json:"tlb_type"`
-	MapTo  string        `json:"map_to"`
-	Fields TLBFieldsDesc `json:"struct_fields,omitempty"` // MapTo = "struct"
+	Format string        `json:"format"`
+	Fields TLBFieldsDesc `json:"struct_fields,omitempty"` // Format = "struct"
 }
 
 type TLBFieldsDesc []*TLBFieldDesc
@@ -66,17 +66,17 @@ func tlbMakeDesc(t reflect.Type) (ret TLBFieldsDesc, err error) {
 		ft, ok := typeNameRMap[f.Type]
 		switch {
 		case ok:
-			schema.MapTo = ft
+			schema.Format = ft
 
 		case f.Type.Kind() == reflect.Pointer && f.Type.Elem().Kind() == reflect.Struct:
-			schema.MapTo = structTypeName
+			schema.Format = structTypeName
 			schema.Fields, err = tlbMakeDesc(f.Type.Elem())
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", f.Name, err)
 			}
 
 		case f.Type.Kind() == reflect.Struct:
-			schema.MapTo = structTypeName
+			schema.Format = structTypeName
 			schema.Fields, err = tlbMakeDesc(f.Type)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", f.Name, err)
@@ -221,8 +221,8 @@ func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc) (reflect.T
 			Tag:  reflect.StructTag(fmt.Sprintf("tlb:\"%s\" json:\"%s\"", field.Type, strcase.ToSnake(field.Name))),
 		}
 
-		// get type from map_to field
-		f.Type, ok = typeNameMap[field.MapTo]
+		// get type from `format` field
+		f.Type, ok = typeNameMap[field.Format]
 		if !ok {
 			// parse tlb tag and get default type
 			f.Type, err = tlbParseSettings(f.Tag.Get("tlb"))

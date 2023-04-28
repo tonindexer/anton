@@ -11,6 +11,18 @@ import (
 
 const getMethodsDictKeySz = 19
 
+type FuncValueDesc struct {
+	Name     string `json:"name"`
+	GoType   string `json:"go_type"`
+	FuncType string `json:"func_type"`
+}
+
+type GetMethodDesc struct {
+	Name         string           `json:"name"`
+	Arguments    []*FuncValueDesc `json:"arguments"`
+	ReturnValues []*FuncValueDesc `json:"return_values"`
+}
+
 func MethodNameHash(name string) int32 {
 	// https://github.com/ton-blockchain/ton/blob/24dc184a2ea67f9c47042b4104bbb4d82289fac1/crypto/smc-envelope/SmartContract.h#L75
 	return int32(crc16.Checksum([]byte(name), crc16.MakeTable(crc16.CRC16_XMODEM))) | 0x10000

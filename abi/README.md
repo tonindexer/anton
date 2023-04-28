@@ -38,17 +38,17 @@ Also, it is possible to define similarly described embedded structures in the fi
       {                             // fields definitions
          "name": "query_id",        // field name
          "tlb_type": "## 64",       // describes how we should parse the field
-         "map_to": "uint64"         // [optional] describes in what golang type should we map the given field
+         "format": "uint64"         // [optional] describes in what golang type should we map the given field
       }, 
       {
          "name": "auction_config",
          "tlb_type": "^",
-         "map_to": "struct",
+         "format": "struct",
          "struct_fields": [         // fields of inner structure
             {
                "name": "beneficiary_address",
                "tlb_type": "addr",
-               "map_to": "addr"
+               "format": "addr"
             }
          ]
          // TODO: add omitempty flag (example, it's needed for the forward payload)
@@ -80,7 +80,7 @@ Accepted TL-B types in `tlb_type`:
 8. `maybe` - reads 1 bit, and loads rest if its 1, can be used in combination with others only; by default maps to `cell.Cell` or to custom struct, if `struct_fields` is defined
 9. `either X Y` - reads 1 bit, if its 0 - loads X, if 1 - loads Y; by default maps to `cell.Cell` or to custom struct, if `struct_fields` is defined
 
-Accepted Go types in `map_to`:
+Accepted types of `format`:
 1. `struct` - embed structure, maps into structure described by `struct_fields`
 2. `bytes` - byte slice, maps into `[]byte`
 3. `bool` - boolean (can be used only on `tlb_type = bool`)
@@ -126,7 +126,7 @@ You can define some cell schema in contract interface `definitions` field and us
             {
                "name": "auction_config",
                "tlb_type": "^",
-               "map_to": "auction_config"
+               "format": "auction_config"
             }
          ]
       }
@@ -148,14 +148,14 @@ Each get-method consists of name (which is then used to get `method_id`), argume
             {
                "name": "owner_address",         // argument name
                "func_type": "slice",            // type we are trying to load
-               "map_type": "addr"               // type we map into
+               "format": "addr"               // type we map into
             }
          ],
          "return_values": [
             {
                "name": "jetton_wallet_address", // return value name
                "func_type": "slice",            // type we load
-               "map_type": "addr"               // type we parse into
+               "format": "addr"               // type we parse into
             }
          ]
       },
@@ -165,17 +165,17 @@ Each get-method consists of name (which is then used to get `method_id`), argume
             {
                "name": "total_supply",
                "func_type": "int",
-               "map_type": "bigInt"
+               "format": "bigInt"
             },
             {
                "name": "mintable",
                "func_type": "int",
-               "map_type": "bool"
+               "format": "bool"
             },
             {
                "name": "admin_address",
                "func_type": "slice",
-               "map_type": "addr"
+               "format": "addr"
             }
          ]
       }
@@ -196,7 +196,7 @@ Accepted func return values types:
 3. `slice` - load slice
 4. `tuple` - TODO :(
  
-Accepted types to map from or into:
+Accepted types to map from or into in `format` field:
 
 1. `addr` - MsgAddress slice type
 2. `bool` - map int to boolean
