@@ -1,0 +1,316 @@
+[
+  {
+    "interface_name": "jetton_minter",
+    "in_messages": [
+      {
+        "op_name": "jetton_mint",
+        "op_code": "0x15",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "to_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "master_msg",
+            "tlb_type": "^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "op_code",
+                "tlb_type": "## 32",
+                "format": "uint32"
+              },
+              {
+                "name": "query_id",
+                "tlb_type": "## 64",
+                "format": "uint64"
+              },
+              {
+                "name": "jetton_amount",
+                "tlb_type": ".",
+                "format": "coins"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op_name": "jetton_burn_notification",
+        "op_code": "0x7bdd97de",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "jetton_amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "from_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "response_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "op_name": "jetton_change_admin",
+        "op_code": "0x3",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_admin_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "op_name": "jetton_change_content",
+        "op_code": "0x4",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "content",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_jetton_data",
+        "arguments": [
+          {
+            "name": "total_supply",
+            "func_type": "int"
+          },
+          {
+            "name": "mintable",
+            "func_type": "int",
+            "format": "bool"
+          },
+          {
+            "name": "admin_address",
+            "func_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "content",
+            "func_type": "cell",
+            "format": "content"
+          },
+          {
+            "name": "wallet_code",
+            "func_type": "cell"
+          }
+        ]
+      },
+      {
+        "name": "get_wallet_address",
+        "arguments": [
+          {
+            "name": "owner_address",
+            "func_type": "slice",
+            "format": "addr"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "wallet_address",
+            "func_type": "slice",
+            "format": "addr"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "jetton_wallet",
+    "in_messages": [
+      {
+        "op_name": "jetton_transfer",
+        "op_code": "0xf8a7ea5",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "destination",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "response_destination",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "custom_payload",
+            "tlb_type": "maybe ^",
+            "format": "cell"
+          },
+          {
+            "name": "forward_ton_amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "jetton_burn",
+        "op_code": "0x595f07bc",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "response_destination",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "custom_payload",
+            "tlb_type": "maybe ^",
+            "format": "cell"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "jetton_internal_transfer",
+        "op_code": "0x178d4519",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "from",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "response_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "forward_ton_amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "jetton_transfer_notification",
+        "op_code": "0x7362d09c",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "sender",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "cell"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_wallet_data",
+        "return_values": [
+          {
+            "name": "balance",
+            "func_type": "int"
+          },
+          {
+            "name": "owner_address",
+            "func_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "jetton_master_address",
+            "func_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "jetton_wallet_code",
+            "func_type": "cell"
+          }
+        ]
+      }
+    ]
+  }
+]
