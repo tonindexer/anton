@@ -107,7 +107,7 @@
     "get_methods": [
       {
         "name": "get_jetton_data",
-        "arguments": [
+        "return_values": [
           {
             "name": "total_supply",
             "func_type": "int"
