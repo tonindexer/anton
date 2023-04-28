@@ -101,7 +101,7 @@ You can define some cell schema in contract interface `definitions` field and us
 
 ```json
 {
-   "interface_name": "telemint_nft_collection",
+   "interface_name": "telemint_nft_item",
    "addresses": [
       "EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N",
       "EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi"

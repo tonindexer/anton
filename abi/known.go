@@ -108,19 +108,19 @@ var (
 
 		TelemintNFTCollection: {
 			false: {
-				(*TelemintMsgDeploy)(nil), (*TelemintMsgDeployV2)(nil),
+				// (*TelemintMsgDeploy)(nil), (*TelemintMsgDeployV2)(nil),
 			},
 			true: {
-				(*TeleitemMsgDeploy)(nil),
+				// (*TeleitemMsgDeploy)(nil),
 			},
 		},
 		TelemintNFTItem: {
 			false: {
 				// (*TeleitemMsgDeploy)(nil),
-				(*TeleitemStartAuction)(nil), (*TeleitemCancelAuction)(nil),
+				// (*TeleitemStartAuction)(nil), (*TeleitemCancelAuction)(nil),
 			},
 			true: {
-				(*TeleitemOK)(nil), (*TeleitemOutbidNotification)(nil),
+				// (*TeleitemOK)(nil), (*TeleitemOutbidNotification)(nil),
 			},
 		},
 	}
