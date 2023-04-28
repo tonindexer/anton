@@ -1,0 +1,157 @@
+[
+  {
+    "interface_name": "nft_item_sbt",
+    "in_messages": [
+      {
+        "op_name": "prove_ownership",
+        "op_code": "0x04ded148",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "destination",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "^"
+          },
+          {
+            "name": "with_content",
+            "tlb_type": "bool"
+          }
+        ]
+      },
+      {
+        "op_name": "request_owner",
+        "op_code": "0xd0c3bfea",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "destination",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "^"
+          },
+          {
+            "name": "with_content",
+            "tlb_type": "bool"
+          }
+        ]
+      },
+      {
+        "op_name": "destroy",
+        "op_code": "0x1f04537a",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          }
+        ]
+      },
+      {
+        "op_name": "revoke",
+        "op_code": "0x6f89f5e3",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "ownership_proof",
+        "op_code": "0x0524c7ae",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "item_id",
+            "tlb_type": "## 256"
+          },
+          {
+            "name": "owner",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "data",
+            "tlb_type": "^"
+          },
+          {
+            "name": "revoked_at",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "content",
+            "tlb_type": "maybe ^"
+          }
+        ]
+      },
+      {
+        "op_name": "owner_info",
+        "op_code": "0x0dd607e3",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "item_id",
+            "tlb_type": "## 256"
+          },
+          {
+            "name": "initiator",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "owner",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "data",
+            "tlb_type": "^"
+          },
+          {
+            "name": "revoked_at",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "content",
+            "tlb_type": "maybe ^"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_authority_address",
+        "return_values": [
+          {
+            "name": "authority_address",
+            "func_type": "slice"
+          }
+        ]
+      },
+      {
+        "name": "get_revoked_time",
+        "return_values": [
+          {
+            "name": "revoked_at",
+            "func_type": "int"
+          }
+        ]
+      }
+    ]
+  }
+]
