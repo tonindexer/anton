@@ -13,13 +13,13 @@ const getMethodsDictKeySz = 19
 
 type FuncValueDesc struct {
 	Name     string `json:"name"`
-	GoType   string `json:"go_type"`
 	FuncType string `json:"func_type"`
+	Format   string `json:"format"`
 }
 
 type GetMethodDesc struct {
 	Name         string           `json:"name"`
-	Arguments    []*FuncValueDesc `json:"arguments"`
+	Arguments    []*FuncValueDesc `json:"arguments,omitempty"`
 	ReturnValues []*FuncValueDesc `json:"return_values"`
 }
 

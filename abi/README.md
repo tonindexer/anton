@@ -211,3 +211,4 @@ Accepted types to map from or into in `format` field:
 3. TEP-81 DNS contracts: [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md)
 4. TEP-85 NFT SBT tokens: [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0085-sbt-standard.md)
 5. Getgems contracts: [contract code](https://github.com/getgems-io/nft-contracts/blob/main/packages/contracts/sources)
+6. Wallets: [tonweb](https://github.com/toncenter/tonweb/tree/0a5effd36a3f342f4aacabab728b1f9747085ad1/src/contract/wallet)

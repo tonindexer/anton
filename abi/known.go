@@ -1,7 +1,5 @@
 package abi
 
-type ContractName string
-
 const (
 	Wallet     = "wallet"
 	WalletV4R2 = "wallet_v4r2_interface"
