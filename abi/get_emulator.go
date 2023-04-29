@@ -175,7 +175,11 @@ func mapToVmValue(v tlb.VmStackValue, d VmValueDesc) (any, error) {
 		}
 
 	case "cell":
-		if v.SumType != "VmStkCell" {
+		switch v.SumType {
+		case "VmStkNull":
+			return (*cell.Cell)(nil), nil
+		case "VmStkCell":
+		default:
 			return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.FuncType, v.SumType)
 		}
 
@@ -202,7 +206,11 @@ func mapToVmValue(v tlb.VmStackValue, d VmValueDesc) (any, error) {
 		}
 
 	case "slice":
-		if v.SumType != "VmStkSlice" {
+		switch v.SumType {
+		case "VmStkNull":
+			return (*cell.Slice)(nil), nil
+		case "VmStkSlice":
+		default:
 			return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.FuncType, v.SumType)
 		}
 

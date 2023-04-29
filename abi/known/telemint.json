@@ -144,7 +144,8 @@
           },
           {
             "name": "bid",
-            "tlb_type": "."
+            "tlb_type": ".",
+            "format": "coins"
           },
           {
             "name": "info",

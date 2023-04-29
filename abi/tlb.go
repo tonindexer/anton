@@ -224,6 +224,9 @@ func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc) (reflect.T
 		// get type from `format` field
 		f.Type, ok = typeNameMap[field.Format]
 		if !ok {
+			if field.Format != "" && field.Format != "struct" {
+				return nil, fmt.Errorf("unknown format '%s'", field.Format)
+			}
 			// parse tlb tag and get default type
 			f.Type, err = tlbParseSettings(f.Tag.Get("tlb"))
 			if f.Type == nil || err != nil {
