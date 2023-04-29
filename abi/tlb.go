@@ -23,7 +23,7 @@ type TLBFieldDesc struct {
 	Fields TLBFieldsDesc `json:"struct_fields,omitempty"` // Format = "struct"
 }
 
-type TLBFieldsDesc []*TLBFieldDesc
+type TLBFieldsDesc []TLBFieldDesc
 
 type OperationDesc struct {
 	Name string        `json:"op_name"`
@@ -54,7 +54,7 @@ func tlbMakeDesc(t reflect.Type) (ret TLBFieldsDesc, err error) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 
-		schema := &TLBFieldDesc{
+		schema := TLBFieldDesc{
 			Name: strcase.ToSnake(f.Name),
 			Type: f.Tag.Get("tlb"),
 		}

@@ -9,8 +9,8 @@ type InterfaceDesc struct {
 	Addresses     []*address.Address       `json:"addresses,omitempty"`
 	CodeBoc       string                   `json:"code_boc,omitempty"`
 	Definitions   map[string]TLBFieldsDesc `json:"definitions,omitempty"`
-	InMessages    []*OperationDesc         `json:"in_messages,omitempty"`
-	OutMessages   []*OperationDesc         `json:"out_messages,omitempty"`
-	GetMethods    []*GetMethodDesc         `json:"get_methods,omitempty"`
+	InMessages    []OperationDesc          `json:"in_messages,omitempty"`
+	OutMessages   []OperationDesc          `json:"out_messages,omitempty"`
+	GetMethods    []GetMethodDesc          `json:"get_methods,omitempty"`
 	ContractData  TLBFieldsDesc            `json:"contract_data,omitempty"`
 }

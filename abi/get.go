@@ -11,16 +11,23 @@ import (
 
 const getMethodsDictKeySz = 19
 
-type FuncValueDesc struct {
+type VmValueDesc struct {
 	Name     string `json:"name"`
 	FuncType string `json:"func_type"`
 	Format   string `json:"format"`
 }
 
+type VmValue struct {
+	VmValueDesc
+	Payload any
+}
+
+type VmStack []VmValue
+
 type GetMethodDesc struct {
-	Name         string           `json:"name"`
-	Arguments    []*FuncValueDesc `json:"arguments,omitempty"`
-	ReturnValues []*FuncValueDesc `json:"return_values"`
+	Name         string        `json:"name"`
+	Arguments    []VmValueDesc `json:"arguments,omitempty"`
+	ReturnValues []VmValueDesc `json:"return_values"`
 }
 
 func MethodNameHash(name string) int32 {
