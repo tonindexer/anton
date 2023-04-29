@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
 

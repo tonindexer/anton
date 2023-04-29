@@ -12,7 +12,7 @@ import (
 	"github.com/uptrace/bun/driver/pgdriver"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 	"github.com/tonindexer/anton/internal/core/rndm"

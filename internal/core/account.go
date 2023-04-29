@@ -10,7 +10,7 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 )
 
 type AccountStatus string

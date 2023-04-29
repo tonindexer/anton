@@ -15,7 +15,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
@@ -63,7 +63,7 @@ var InterfaceCommand = &cli.Command{
 		i.Name = abi.ContractName(ctx.String("contract"))
 
 		for _, addrStr := range addresses {
-			a, err := new(addr.Address).FromString(addrStr)
+			a, err := addr.FromString(addrStr)
 			if err != nil {
 				return errors.Wrapf(err, "parse %s", addrStr)
 			}

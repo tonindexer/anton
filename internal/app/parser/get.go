@@ -11,7 +11,7 @@ import (
 	"github.com/xssnick/tonutils-go/ton/nft"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
 
@@ -37,13 +37,13 @@ func mapContentDataNFT(ret *core.AccountData, c nft.ContentAny) {
 
 func mapCollectionDataNFT(ret *core.AccountData, data *abi.NFTCollectionData) {
 	ret.NextItemIndex = bunbig.FromMathBig(data.NextItemIndex)
-	ret.OwnerAddress, _ = new(addr.Address).FromTU(data.OwnerAddress)
+	ret.OwnerAddress, _ = addr.FromTonutils(data.OwnerAddress)
 	mapContentDataNFT(ret, data.Content)
 }
 
 func mapRoyaltyDataNFT(ret *core.AccountData, params *abi.NFTRoyaltyData) {
 	var err error
-	ret.RoyaltyAddress, err = new(addr.Address).FromTU(params.Address)
+	ret.RoyaltyAddress, err = addr.FromTonutils(params.Address)
 	if err != nil {
 		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft royalty address from TU").Error())
 	}
@@ -55,16 +55,16 @@ func mapItemDataNFT(ret *core.AccountData, data *abi.NFTItemData) {
 	var err error
 	ret.Initialized = data.Initialized
 	ret.ItemIndex = bunbig.FromMathBig(data.Index)
-	ret.MinterAddress, err = new(addr.Address).FromTU(data.CollectionAddress)
+	ret.MinterAddress, err = addr.FromTonutils(data.CollectionAddress)
 	if err != nil {
 		ret.Errors = append(ret.Errors, errors.Wrap(err, "nft item collection_address from TU").Error())
 	}
-	ret.OwnerAddress, _ = new(addr.Address).FromTU(data.OwnerAddress)
+	ret.OwnerAddress, _ = addr.FromTonutils(data.OwnerAddress)
 	mapContentDataNFT(ret, data.Content)
 }
 
 func mapEditorDataNFT(ret *core.AccountData, data *abi.NFTEditableData) {
-	ret.EditorAddress, _ = new(addr.Address).FromTU(data.Editor)
+	ret.EditorAddress, _ = addr.FromTonutils(data.Editor)
 }
 
 func (s *Service) getAccountDataNFT(ctx context.Context, b *ton.BlockIDExt, a *address.Address, types []abi.ContractName, ret *core.AccountData) {
@@ -118,7 +118,7 @@ func (s *Service) getAccountDataFT(ctx context.Context, b *ton.BlockIDExt, a *ad
 				ret.TotalSupply = bunbig.FromMathBig(data.TotalSupply)
 			}
 			ret.Mintable = data.Mintable
-			ret.AdminAddress, err = new(addr.Address).FromTU(data.AdminAddr)
+			ret.AdminAddress, err = addr.FromTonutils(data.AdminAddr)
 			if err != nil {
 				ret.Errors = append(ret.Errors, errors.Wrap(err, "jetton minter admin addr from TU").Error())
 			}
@@ -133,11 +133,11 @@ func (s *Service) getAccountDataFT(ctx context.Context, b *ton.BlockIDExt, a *ad
 			if data.Balance != nil {
 				ret.JettonBalance = bunbig.FromMathBig(data.Balance)
 			}
-			ret.OwnerAddress, err = new(addr.Address).FromTU(data.OwnerAddress)
+			ret.OwnerAddress, err = addr.FromTonutils(data.OwnerAddress)
 			if err != nil {
 				ret.Errors = append(ret.Errors, errors.Wrap(err, "jetton wallet owner addr from TU").Error())
 			}
-			ret.MinterAddress, err = new(addr.Address).FromTU(data.MasterAddress)
+			ret.MinterAddress, err = addr.FromTonutils(data.MasterAddress)
 			if err != nil {
 				ret.Errors = append(ret.Errors, errors.Wrap(err, "jetton wallet master addr from TU").Error())
 			}

@@ -7,7 +7,7 @@ import (
 
 	"github.com/uptrace/bun/extra/bunbig"
 
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 )
 
 func init() {
@@ -30,7 +30,7 @@ func Bytes(l int) []byte {
 }
 
 func Address() *addr.Address {
-	a, err := new(addr.Address).FromString(fmt.Sprintf("0:%x", Bytes(32)))
+	a, err := addr.FromString(fmt.Sprintf("0:%x", Bytes(32)))
 	if err != nil {
 		panic(err)
 	}

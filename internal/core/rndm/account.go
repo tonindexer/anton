@@ -7,7 +7,7 @@ import (
 	"github.com/uptrace/bun/extra/bunbig"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
 

@@ -11,7 +11,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
 
@@ -42,11 +42,11 @@ func getMsgHash(msg *tlb.Message) ([]byte, error) {
 func mapMessageInternal(msg *core.Message, raw *tlb.InternalMessage) error {
 	msg.Type = core.Internal
 
-	src, err := new(addr.Address).FromTU(raw.SrcAddr)
+	src, err := addr.FromTonutils(raw.SrcAddr)
 	if err != nil {
 		return errors.Wrapf(err, "src addr from tu %s", raw.SrcAddr)
 	}
-	dst, err := new(addr.Address).FromTU(raw.DstAddr)
+	dst, err := addr.FromTonutils(raw.DstAddr)
 	if err != nil {
 		return errors.Wrapf(err, "dst addr from tu %s", raw.DstAddr)
 	}
@@ -83,7 +83,7 @@ func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg *tlb.M
 	case *tlb.ExternalMessage:
 		msg.Type = core.ExternalIn
 
-		dst, err := new(addr.Address).FromTU(raw.DstAddr)
+		dst, err := addr.FromTonutils(raw.DstAddr)
 		if err != nil {
 			return errors.Wrapf(err, "dst addr from tu %s", raw.DstAddr)
 		}
@@ -105,7 +105,7 @@ func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg *tlb.M
 	case *tlb.ExternalMessageOut:
 		msg.Type = core.ExternalOut
 
-		src, err := new(addr.Address).FromTU(raw.SrcAddr)
+		src, err := addr.FromTonutils(raw.SrcAddr)
 		if err != nil {
 			return errors.Wrapf(err, "src addr from tu %s", raw.SrcAddr)
 		}
@@ -194,7 +194,7 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 	ret.Status = core.NonExist
 	if acc.State != nil {
 		if acc.State.Address != nil {
-			ret.Address = *addr.MustFromTU(acc.State.Address)
+			ret.Address = *addr.MustFromTonutils(acc.State.Address)
 		}
 		ret.Status = core.AccountStatus(acc.State.Status)
 		ret.Balance = bunbig.FromMathBig(acc.State.Balance.NanoTON())
@@ -238,7 +238,7 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 		CreatedAt: time.Unix(int64(raw.Now), 0),
 	}
 	if b != nil {
-		tx.Address = *addr.MustFromTU(address.NewAddress(0, byte(b.Workchain), raw.AccountAddr))
+		tx.Address = *addr.MustFromTonutils(address.NewAddress(0, byte(b.Workchain), raw.AccountAddr))
 		tx.BlockWorkchain = b.Workchain
 		tx.BlockShard = b.Shard
 		tx.BlockSeqNo = b.SeqNo
