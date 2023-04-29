@@ -7,24 +7,16 @@ import (
 	"github.com/uptrace/bun/extra/bunbig"
 
 	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/abi/known"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
 
 var (
-	contractNames []abi.ContractName
+	contractNames = []abi.ContractName{known.NFTCollection, known.NFTItem, known.JettonMinter, known.JettonWallet, "wallet_v3r1", "wallet_v4r2"}
 	lastTxLT      uint64
 	timestamp     = time.Now().UTC()
 )
-
-func initContractNames() {
-	for n := range abi.KnownContractMethods {
-		contractNames = append(contractNames, n)
-	}
-	for v := range abi.WalletCode {
-		contractNames = append(contractNames, v.Name())
-	}
-}
 
 func GetMethodHashes() (ret []int32) {
 	for i := 0; i < 1+rand.Int()%16; i++ {
@@ -35,10 +27,6 @@ func GetMethodHashes() (ret []int32) {
 
 func ContractNames(a *addr.Address) (ret []abi.ContractName) {
 	seed := int(a[30])<<8 + int(a[31])
-
-	if contractNames == nil {
-		initContractNames()
-	}
 	for i := 0; i < 1+seed%16; i++ {
 		ret = append(ret, contractNames[(seed+i)%len(contractNames)])
 	}

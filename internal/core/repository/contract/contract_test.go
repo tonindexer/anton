@@ -12,6 +12,7 @@ import (
 	"github.com/uptrace/bun/driver/pgdriver"
 
 	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/abi/known"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository/contract"
@@ -55,7 +56,7 @@ func TestRepository_AddContracts(t *testing.T) {
 	initdb(t)
 
 	i := &core.ContractInterface{
-		Name:            abi.NFTItem,
+		Name:            known.NFTItem,
 		Addresses:       []*addr.Address{rndm.Address()},
 		Code:            rndm.Bytes(128),
 		CodeHash:        rndm.Bytes(32),
@@ -63,15 +64,45 @@ func TestRepository_AddContracts(t *testing.T) {
 		GetMethodHashes: rndm.GetMethodHashes(),
 	}
 
-	schema, err := abi.MarshalSchema((*abi.NFTItemTransfer)(nil))
-	assert.Nil(t, err)
+	schema := `{
+        "op_name": "transfer",
+        "op_code": "0x5fcc3d14",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "new_owner",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "response_destination",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "custom_payload",
+            "tlb_type": "maybe ^"
+          },
+          {
+            "name": "forward_amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "cell"
+          }
+        ]
+      }`
 
 	op := &core.ContractOperation{
 		Name:         "nft_item_transfer",
-		ContractName: abi.NFTItem,
+		ContractName: known.NFTItem,
 		Outgoing:     false,
 		OperationID:  0xdeadbeed,
-		Schema:       schema,
+		Schema:       []byte(schema),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -105,8 +136,8 @@ func TestRepository_AddContracts(t *testing.T) {
 		ret, err := repo.GetOperations(ctx)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(ret))
-		assert.JSONEq(t, string(schema), string(ret[0].Schema))
-		ret[0].Schema = schema
+		assert.JSONEq(t, schema, string(ret[0].Schema))
+		ret[0].Schema = []byte(schema)
 		assert.Equal(t, []*core.ContractOperation{op}, ret)
 	})
 
@@ -118,8 +149,8 @@ func TestRepository_AddContracts(t *testing.T) {
 			op.OperationID,
 		)
 		assert.Nil(t, err)
-		assert.JSONEq(t, string(schema), string(ret.Schema))
-		ret.Schema = schema
+		assert.JSONEq(t, schema, string(ret.Schema))
+		ret.Schema = []byte(schema)
 		assert.Equal(t, op, ret)
 	})
 }

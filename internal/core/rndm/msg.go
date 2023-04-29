@@ -3,10 +3,8 @@ package rndm
 import (
 	"encoding/json"
 	"math/rand"
-	"reflect"
 	"time"
 
-	"github.com/iancoleman/strcase"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
@@ -16,24 +14,12 @@ import (
 )
 
 var (
-	operationNames []string
+	operationNames        = []string{"nft_item_transfer", "nft_collection_item_mint"}
 	msgLT          uint64 = 1000
 	msgTS                 = time.Now().UTC()
 )
 
-func initOperationNames() {
-	operations := []any{
-		(*abi.NFTItemTransfer)(nil), (*abi.NFTCollectionItemMint)(nil),
-	}
-	for _, op := range operations {
-		operationNames = append(operationNames, strcase.ToSnake(reflect.TypeOf(op).Elem().Name()))
-	}
-}
-
 func OperationName() string {
-	if operationNames == nil {
-		initOperationNames()
-	}
 	return operationNames[int(rand.Uint32())%len(operationNames)]
 }
 
@@ -96,11 +82,6 @@ func Messages(n int) (ret []*core.Message) {
 }
 
 func MessageOperationToContract(msg *core.Message, op string, to abi.ContractName) *core.MessagePayload {
-	dataJSON, err := json.Marshal(&abi.NFTItemTransfer{})
-	if err != nil {
-		panic(err)
-	}
-
 	return &core.MessagePayload{
 		CHModel:       ch.CHModel{},
 		BaseModel:     bun.BaseModel{},
@@ -114,7 +95,7 @@ func MessageOperationToContract(msg *core.Message, op string, to abi.ContractNam
 		BodyHash:      msg.BodyHash,
 		OperationID:   msg.OperationID,
 		OperationName: op,
-		DataJSON:      dataJSON,
+		DataJSON:      json.RawMessage(`{}`),
 		MinterAddress: Address(),
 		CreatedAt:     msg.CreatedAt,
 		CreatedLT:     msg.CreatedLT,

@@ -7,6 +7,7 @@ import (
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/abi/known"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
@@ -125,12 +126,12 @@ func (r *Repository) AggregateAccounts(ctx context.Context, req *aggregate.Accou
 
 	for _, t := range interfaces {
 		switch t {
-		case abi.NFTCollection:
+		case known.NFTCollection:
 			if err := r.aggregateNFTMinter(ctx, req, &res); err != nil {
 				return nil, err
 			}
 
-		case abi.JettonMinter:
+		case known.JettonMinter:
 			if err := r.aggregateFTMinter(ctx, req, &res); err != nil {
 				return nil, err
 			}
