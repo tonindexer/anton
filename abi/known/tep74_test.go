@@ -1,7 +1,8 @@
-package known
+package known_test
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -133,5 +134,44 @@ func TestNewOperationDesc_JettonWallet(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		assert.Equal(t, test.expected, string(got))
+	}
+}
+
+func TestOperationDesc_JettonMinter(t *testing.T) {
+	var (
+		interfaces []*abi.InterfaceDesc
+		i          *abi.InterfaceDesc
+	)
+
+	j, err := os.ReadFile("tep74_jetton.json")
+	require.Nil(t, err)
+
+	err = json.Unmarshal(j, &interfaces)
+	require.Nil(t, err)
+
+	for _, i = range interfaces {
+		if i.Name == "jetton_minter" {
+			err := i.RegisterDefinitions()
+			require.Nil(t, err)
+			break
+		}
+	}
+
+	var testCases = []*struct {
+		name     string
+		boc      string
+		expected string
+	}{
+		{
+			// tx hash e5782dd2b1e2186038c1f92db2cdb709bd12eba25a295ec4db9561aa3928c317
+			name:     "jetton_mint",
+			boc:      `te6cckECBgEAAY4AAWMAAAAVpRNS/gQ80YGAFSIq9XSS6um704WS4suGgdULW5b13fha77/GRjN77mgoZVPxAQEBbReNRRmlE1L+BDzRgUHc1lACADvjYKkD7+YYy/VvGEAr2NDd0ROzABirjBhcbeEorNtYoX14QAYCAZdJKpgbgBB56R97rZGAXZwg4u1afeJ934d0DPUZtObWsRZvvxY00AHfGwVIH38wxl+reMIBXsaG7oidmADFXGDC428JRWbaxQF9eEAgAwJf0zuweeADvjYKkD7+YYy/VvGEAr2NDd0ROzABirjBhcbeEorNtYqCVrO8SiAvrwgEBQQAl6iXCtCADvjYKkD7+YYy/VvGEAr2NDd0ROzABirjBhcbeEorNtYwAd8bBUgffzDGX6t4wgFexobuiJ2YAMVcYMLjbwlFZtrFAJiWgCAAl+kWu++ADvjYKkD7+YYy/VvGEAr2NDd0ROzABirjBhcbeEorNtYwAd8bBUgffzDGX6t4wgFexobuiJ2YAMVcYMLjbwlFZtrFAJiWgCAnWbE8`,
+			expected: `{"query_id":11894942291761877377,"to_address":"EQCpEVerpJdXTd6cLJcWXDQOqFrct67vwtd9_jIxm99zQZV6","amount":"850000000","master_msg":{"op_code":395134233,"query_id":11894942291761877377,"jetton_amount":"500000000"}}`,
+		},
+	}
+
+	for _, test := range testCases {
+		j := loadOperation(t, i, test.name, test.boc)
+		assert.Equal(t, test.expected, j)
 	}
 }
