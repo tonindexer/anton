@@ -153,16 +153,13 @@ func TestNewEmulator_RunGetMethod(t *testing.T) {
 			{
 				Name:     "full_content",
 				FuncType: "cell",
+				Format:   "content",
 			},
 		},
 	)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(ret))
-	contentCell, ok := ret[0].(*cell.Cell)
-	require.True(t, ok)
-	content, err := nft.ContentFromCell(contentCell)
-	require.Nil(t, err)
-	contentOffChain, ok := content.(*nft.ContentOffchain)
+	contentOffChain, ok := ret[0].(*nft.ContentOffchain)
 	require.True(t, ok)
 	require.Equal(t, "https://loton.fun/nft/100.json", contentOffChain.URI)
 }

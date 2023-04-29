@@ -266,7 +266,8 @@
         "return_values": [
           {
             "name": "full_content",
-            "func_type": "cell"
+            "func_type": "cell",
+            "format": "content"
           }
         ]
       }

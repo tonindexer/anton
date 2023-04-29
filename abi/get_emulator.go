@@ -1,5 +1,11 @@
 package abi
 
+// #cgo darwin LDFLAGS: -L ./lib/darwin/ -Wl,-rpath,./lib/darwin/ -l emulator
+// #cgo linux LDFLAGS: -L ./lib/linux/ -Wl,-rpath,./lib/linux/ -l emulator
+// #include "./lib/emulator-extern.h"
+// #include <stdlib.h>
+// #include <stdbool.h>
+import "C"
 import (
 	"context"
 	"encoding/base64"
@@ -8,12 +14,14 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"github.com/tonkeeper/tongo"
 	"github.com/tonkeeper/tongo/boc"
 	"github.com/tonkeeper/tongo/tlb"
 	"github.com/tonkeeper/tongo/tvm"
 
 	"github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/ton/nft"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
@@ -208,6 +216,12 @@ func mapToVmValue(v tlb.VmStackValue, d VmValueDesc) (any, error) {
 				return nil, errors.Wrap(err, "load string snake")
 			}
 			return s, nil
+		case "content":
+			content, err := nft.ContentFromCell(c)
+			if err != nil {
+				return nil, errors.Wrap(err, "load content from cell")
+			}
+			return content, nil
 		default:
 			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.FuncType)
 		}
