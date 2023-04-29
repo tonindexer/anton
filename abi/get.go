@@ -17,13 +17,6 @@ type VmValueDesc struct {
 	Format   string `json:"format"`
 }
 
-type VmValue struct {
-	VmValueDesc
-	Payload any
-}
-
-type VmStack []VmValue
-
 type GetMethodDesc struct {
 	Name         string        `json:"name"`
 	Arguments    []VmValueDesc `json:"arguments,omitempty"`

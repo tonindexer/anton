@@ -17,12 +17,19 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
+type VmValue struct {
+	VmValueDesc
+	Payload any
+}
+
+type VmStack []VmValue
+
+var ErrWrongValueFormat = errors.New("wrong value for this format")
+
 type Emulator struct {
 	Emulator  *tvm.Emulator
 	AccountID tongo.AccountID
 }
-
-var ErrWrongValueFormat = errors.New("wrong value for this format")
 
 func NewEmulator(addr *address.Address, code, data, cfg *cell.Cell) (*Emulator, error) {
 	e, err := tvm.NewEmulatorFromBOCsBase64(
