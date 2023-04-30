@@ -29,7 +29,7 @@ FROM --platform=linux/amd64 debian
 
 ENV LISTEN=0.0.0.0:8080
 
-RUN addgroup --system anton && adduser --system anton
+RUN adduser --system --group anton
 WORKDIR /app
 COPY --from=build /go/pkg/mod/github.com/tonkeeper/tongo@v1.0.14/lib/linux/libemulator.so /lib
 COPY --from=build /anton /usr/bin/anton
