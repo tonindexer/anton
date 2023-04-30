@@ -9,7 +9,6 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
-	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/core"
 )
 
@@ -37,9 +36,9 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountDat
 		ret.DstContract = operation.ContractName
 	}
 
-	parsed, err := abi.UnmarshalSchema(operation.Schema)
+	msgParsed, err := operation.Schema.New()
 	if err != nil {
-		return errors.Wrapf(err, "unmarshal %s %s schema", operation.ContractName, operation.Name)
+		return errors.Wrapf(err, "creating struct from %s/%s schema", operation.ContractName, operation.Name)
 	}
 
 	payloadCell, err := cell.FromBOC(message.Body)
@@ -48,12 +47,11 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountDat
 	}
 	payloadSlice := payloadCell.BeginParse()
 
-	if err = tlb.LoadFromCell(parsed, payloadSlice); err != nil {
-		// return errors.Wrapf(core.ErrNotAvailable, "load from cell (%s)", err.Error())
+	if err = tlb.LoadFromCell(msgParsed, payloadSlice); err != nil {
 		return errors.Wrap(err, "load from cell")
 	}
 
-	ret.DataJSON, err = json.Marshal(parsed)
+	ret.DataJSON, err = json.Marshal(msgParsed)
 	if err != nil {
 		return errors.Wrap(err, "json marshal parsed payload")
 	}
