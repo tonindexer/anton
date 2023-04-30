@@ -69,6 +69,7 @@ func TestNewOperationDesc_JettonMinter(t *testing.T) {
 		d, err := abi.NewOperationDesc(test.structType)
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
+		require.Nil(t, err)
 		assert.Equal(t, test.expected, string(got))
 	}
 }
@@ -133,6 +134,7 @@ func TestNewOperationDesc_JettonWallet(t *testing.T) {
 		d, err := abi.NewOperationDesc(test.structType)
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
+		require.Nil(t, err)
 		assert.Equal(t, test.expected, string(got))
 	}
 }

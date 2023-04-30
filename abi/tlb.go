@@ -215,35 +215,37 @@ func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc) (reflect.T
 		ok  bool
 	)
 
-	for _, field := range schema {
-		var f = reflect.StructField{
-			Name: strcase.ToCamel(field.Name),
-			Tag:  reflect.StructTag(fmt.Sprintf("tlb:\"%s\" json:\"%s\"", field.Type, strcase.ToSnake(field.Name))),
+	for i := range schema {
+		f := &schema[i]
+
+		var sf = reflect.StructField{
+			Name: strcase.ToCamel(f.Name),
+			Tag:  reflect.StructTag(fmt.Sprintf("tlb:%q json:%q", f.Type, strcase.ToSnake(f.Name))),
 		}
 
 		// get type from `format` field
-		f.Type, ok = typeNameMap[field.Format]
+		sf.Type, ok = typeNameMap[f.Format]
 		if !ok {
-			if field.Format != "" && field.Format != "struct" {
-				return nil, fmt.Errorf("unknown format '%s'", field.Format)
+			if f.Format != "" && f.Format != "struct" {
+				return nil, fmt.Errorf("unknown format '%s'", f.Format)
 			}
 			// parse tlb tag and get default type
-			f.Type, err = tlbParseSettings(f.Tag.Get("tlb"))
-			if f.Type == nil || err != nil {
-				return nil, fmt.Errorf("%s (tag = %s) parse tlb settings: %w", f.Name, f.Tag.Get("tlb"), err)
+			sf.Type, err = tlbParseSettings(sf.Tag.Get("tlb"))
+			if sf.Type == nil || err != nil {
+				return nil, fmt.Errorf("%s (tag = %s) parse tlb settings: %w", sf.Name, sf.Tag.Get("tlb"), err)
 			}
 		}
 
 		// make new struct
-		if len(field.Fields) > 0 {
-			f.Type, err = tlbParseDesc(nil, field.Fields)
+		if len(f.Fields) > 0 {
+			sf.Type, err = tlbParseDesc(nil, f.Fields)
 			if err != nil {
-				return nil, fmt.Errorf("%s: %w", f.Name, err)
+				return nil, fmt.Errorf("%s: %w", sf.Name, err)
 			}
-			f.Type = reflect.PointerTo(f.Type)
+			sf.Type = reflect.PointerTo(sf.Type)
 		}
 
-		fields = append(fields, f)
+		fields = append(fields, sf)
 	}
 
 	return reflect.StructOf(fields), nil

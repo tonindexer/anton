@@ -110,7 +110,7 @@ func parseVmValue(v VmValue) (ret tlb.VmStackValue, _ error) {
 		}
 
 		ret, err = tlb.TlbStructToVmCell(tgc)
-		return ret, nil
+		return ret, err
 
 	case "slice":
 		var s *cell.Slice
@@ -149,10 +149,9 @@ func parseVmValue(v VmValue) (ret tlb.VmStackValue, _ error) {
 	default:
 		return ret, fmt.Errorf("unsupported '%s' type", v.FuncType)
 	}
-
 }
 
-func mapToVmValue(v tlb.VmStackValue, d VmValueDesc) (any, error) {
+func mapToVmValue(v *tlb.VmStackValue, d VmValueDesc) (any, error) {
 	switch d.FuncType {
 	case "int":
 		var bi *big.Int
@@ -279,7 +278,7 @@ func (e *Emulator) RunGetMethod(ctx context.Context, method string, args VmStack
 	}
 
 	for i := range retDesc {
-		r, err := mapToVmValue(stk[i], retDesc[i])
+		r, err := mapToVmValue(&stk[i], retDesc[i])
 		if err != nil {
 			return nil, err
 		}

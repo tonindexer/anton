@@ -69,6 +69,7 @@ func TestNewOperationDesc_NFTCollection(t *testing.T) {
 		d, err := abi.NewOperationDesc(test.structType)
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
+		require.Nil(t, err)
 		assert.Equal(t, test.expected, string(got))
 	}
 }
@@ -157,6 +158,7 @@ func TestNewOperationDesc_NFTRoyalty(t *testing.T) {
 		d, err := abi.NewOperationDesc(test.structType)
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
+		require.Nil(t, err)
 		assert.Equal(t, test.expected, string(got))
 	}
 }
@@ -220,6 +222,7 @@ func TestNewOperationDesc_NFTItem(t *testing.T) {
 		d, err := abi.NewOperationDesc(test.structType)
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
+		require.Nil(t, err)
 		assert.Equal(t, test.expected, string(got))
 	}
 }
@@ -268,6 +271,7 @@ func TestNewOperationDesc_NFTEditable(t *testing.T) {
 		d, err := abi.NewOperationDesc(test.structType)
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
+		require.Nil(t, err)
 		assert.Equal(t, test.expected, string(got))
 	}
 }
