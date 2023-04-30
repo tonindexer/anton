@@ -1,5 +1,8 @@
 package abi
 
+// copied from tongo library
+// TODO: remove hardcoded libs
+
 // #cgo darwin LDFLAGS: -L ./lib/darwin/ -Wl,-rpath,./lib/darwin/ -l emulator
 // #cgo linux LDFLAGS: -L ./lib/linux/ -Wl,-rpath,./lib/linux/ -l emulator
 // #include "./lib/emulator-extern.h"
