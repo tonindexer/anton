@@ -1,7 +1,6 @@
 package indexer
 
 import (
-	"context"
 	"os"
 	"os/signal"
 	"strings"
@@ -10,33 +9,14 @@ import (
 
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 
-	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/app/indexer"
 	"github.com/tonindexer/anton/internal/app/parser"
 	"github.com/tonindexer/anton/internal/core/repository"
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
-
-func initKnown(ctx context.Context, conn *repository.DB) error {
-	abiRepo := contract.NewRepository(conn.PG)
-
-	_, err := abiRepo.GetOperationByID(ctx, []abi.ContractName{abi.NFTItem}, false, 0x5fcc3d14)
-	if err == nil {
-		return nil // tables exist
-	}
-
-	if err := repository.InsertKnownInterfaces(ctx, abiRepo); err != nil {
-		return errors.Wrap(err, "cannot insert interfaces")
-	}
-
-	log.Info().Msg("inserted known contract interfaces")
-
-	return nil
-}
 
 var Command = &cli.Command{
 	Name:    "indexer",
@@ -53,8 +33,13 @@ var Command = &cli.Command{
 		if err != nil {
 			return errors.Wrap(err, "cannot connect to a database")
 		}
-		if err := initKnown(ctx.Context, conn); err != nil {
-			return err
+
+		interfaces, err := contract.NewRepository(conn.PG).GetInterfaces(ctx.Context)
+		if err != nil {
+			return errors.Wrap(err, "get interfaces")
+		}
+		if len(interfaces) == 0 {
+			return errors.Wrap(err, "no contract interfaces")
 		}
 
 		for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
