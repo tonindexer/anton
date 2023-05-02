@@ -226,7 +226,8 @@
           },
           {
             "name": "collection_content",
-            "func_type": "cell"
+            "func_type": "cell",
+            "format": "content"
           },
           {
             "name": "owner_address",
@@ -318,11 +319,13 @@
         "return_values": [
           {
             "name": "numerator",
-            "func_type": "int"
+            "func_type": "int",
+            "format": "uint16"
           },
           {
             "name": "denominator",
-            "func_type": "int"
+            "func_type": "int",
+            "format": "uint16"
           },
           {
             "name": "destination",
