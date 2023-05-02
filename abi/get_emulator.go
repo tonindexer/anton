@@ -255,7 +255,7 @@ func mapToVmValue(v *tlb.VmStackValue, d VmValueDesc) (any, error) {
 	}
 }
 
-func (e *Emulator) RunGetMethod(ctx context.Context, method string, args VmStack, retDesc []VmValueDesc) (ret []any, err error) {
+func (e *Emulator) RunGetMethod(ctx context.Context, method string, args VmStack, retDesc []VmValueDesc) (ret VmStack, err error) {
 	var params tlb.VmStack
 
 	for _, a := range args {
@@ -282,7 +282,7 @@ func (e *Emulator) RunGetMethod(ctx context.Context, method string, args VmStack
 		if err != nil {
 			return nil, err
 		}
-		ret = append(ret, r)
+		ret = append(ret, VmValue{VmValueDesc: retDesc[i], Payload: r})
 	}
 
 	return ret, nil

@@ -73,7 +73,7 @@ func getMethodDescByName(d *abi.InterfaceDesc, name string) *abi.GetMethodDesc {
 	return nil
 }
 
-func execGetMethod(t *testing.T, i *abi.InterfaceDesc, addr *address.Address, methodName, codeB64, dataB64 string) []any {
+func execGetMethod(t *testing.T, i *abi.InterfaceDesc, addr *address.Address, methodName, codeB64, dataB64 string) (ret []any) {
 	dp := getMethodDescByName(i, methodName)
 	require.NotNil(t, dp)
 	require.Equal(t, 0, len(dp.Arguments))
@@ -91,8 +91,11 @@ func execGetMethod(t *testing.T, i *abi.InterfaceDesc, addr *address.Address, me
 	e, err := abi.NewEmulator(addr, codeCell[0], dataCell[0], configCell)
 	require.Nil(t, err)
 
-	ret, err := e.RunGetMethod(context.Background(), methodName, nil, dp.ReturnValues)
+	stack, err := e.RunGetMethod(context.Background(), methodName, nil, dp.ReturnValues)
 	require.Nil(t, err)
 
+	for it := range stack {
+		ret = append(ret, stack[it].Payload)
+	}
 	return ret
 }
