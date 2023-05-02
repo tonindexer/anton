@@ -68,7 +68,7 @@ func (s *Service) getMethodCall(ctx context.Context, d *abi.GetMethodDesc, acc *
 }
 
 // TODO: map automatically by field names with reflect
-// TODO: check return values descriptors
+// TODO: check return values descriptors, do not panic on wrong type assertions
 
 func (s *Service) getMethodCallNoArgs(ctx context.Context, i *core.ContractInterface, gmName string, acc *core.AccountState) (abi.VmStack, error) {
 	gm := getMethodByName(i, gmName)
@@ -119,9 +119,9 @@ func (s *Service) getAccountDataNFT(ctx context.Context, acc *core.AccountState,
 				continue
 			}
 
-			ret.NFTCollectionData.NextItemIndex = bunbig.FromMathBig(stack[0].Payload.(*big.Int))
-			mapContentDataNFT(ret, stack[1].Payload.(nft.ContentAny))
-			ret.OwnerAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address))
+			ret.NFTCollectionData.NextItemIndex = bunbig.FromMathBig(stack[0].Payload.(*big.Int)) //nolint:forcetypeassert // panic on wrong interface
+			mapContentDataNFT(ret, stack[1].Payload.(nft.ContentAny))                             //nolint:forcetypeassert // panic on wrong interface
+			ret.OwnerAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address))         //nolint:forcetypeassert // panic on wrong interface
 
 		case known.NFTRoyalty:
 			stack, err := s.getMethodCallNoArgs(ctx, i, "royalty_params", acc)
@@ -130,9 +130,9 @@ func (s *Service) getAccountDataNFT(ctx context.Context, acc *core.AccountState,
 				continue
 			}
 
-			ret.NFTRoyaltyData.RoyaltyBase = stack[0].Payload.(uint16)
-			ret.NFTRoyaltyData.RoyaltyFactor = stack[1].Payload.(uint16)
-			ret.NFTRoyaltyData.RoyaltyAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address))
+			ret.NFTRoyaltyData.RoyaltyBase = stack[0].Payload.(uint16)                                     //nolint:forcetypeassert // panic on wrong interface
+			ret.NFTRoyaltyData.RoyaltyFactor = stack[1].Payload.(uint16)                                   //nolint:forcetypeassert // panic on wrong interface
+			ret.NFTRoyaltyData.RoyaltyAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
 
 		case known.NFTItem:
 			stack, err := s.getMethodCallNoArgs(ctx, i, "get_nft_data", acc)
@@ -141,10 +141,10 @@ func (s *Service) getAccountDataNFT(ctx context.Context, acc *core.AccountState,
 				continue
 			}
 
-			ret.NFTItemData.Initialized = stack[0].Payload.(bool)
-			ret.NFTItemData.ItemIndex = bunbig.FromMathBig(stack[1].Payload.(*big.Int))
-			ret.MinterAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address))
-			ret.OwnerAddress = addr.MustFromTonutils(stack[3].Payload.(*address.Address))
+			ret.NFTItemData.Initialized = stack[0].Payload.(bool)                          //nolint:forcetypeassert // panic on wrong interface
+			ret.NFTItemData.ItemIndex = bunbig.FromMathBig(stack[1].Payload.(*big.Int))    //nolint:forcetypeassert // panic on wrong interface
+			ret.MinterAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+			ret.OwnerAddress = addr.MustFromTonutils(stack[3].Payload.(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
 
 			// TODO: get nft collection account state and full nft content
 			// individualContent := stack[4].Payload.(*cell.Cell)
@@ -156,7 +156,7 @@ func (s *Service) getAccountDataNFT(ctx context.Context, acc *core.AccountState,
 				continue
 			}
 
-			ret.NFTEditable.EditorAddress = addr.MustFromTonutils(stack[0].Payload.(*address.Address))
+			ret.NFTEditable.EditorAddress = addr.MustFromTonutils(stack[0].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
 		}
 	}
 }
@@ -171,10 +171,10 @@ func (s *Service) getAccountDataFT(ctx context.Context, acc *core.AccountState, 
 				continue
 			}
 
-			ret.FTMasterData.TotalSupply = bunbig.FromMathBig(stack[0].Payload.(*big.Int))
-			ret.FTMasterData.Mintable = stack[1].Payload.(bool)
-			ret.FTMasterData.AdminAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address))
-			mapContentDataNFT(ret, stack[3].Payload.(nft.ContentAny))
+			ret.FTMasterData.TotalSupply = bunbig.FromMathBig(stack[0].Payload.(*big.Int))             //nolint:forcetypeassert // panic on wrong interface
+			ret.FTMasterData.Mintable = stack[1].Payload.(bool)                                        //nolint:forcetypeassert // panic on wrong interface
+			ret.FTMasterData.AdminAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+			mapContentDataNFT(ret, stack[3].Payload.(nft.ContentAny))                                  //nolint:forcetypeassert // panic on wrong interface
 
 		case known.JettonWallet:
 			stack, err := s.getMethodCallNoArgs(ctx, i, "get_wallet_data", acc)
@@ -183,9 +183,9 @@ func (s *Service) getAccountDataFT(ctx context.Context, acc *core.AccountState, 
 				continue
 			}
 
-			ret.FTWalletData.JettonBalance = bunbig.FromMathBig(stack[0].Payload.(*big.Int))
-			ret.OwnerAddress = addr.MustFromTonutils(stack[1].Payload.(*address.Address))
-			ret.MinterAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address))
+			ret.FTWalletData.JettonBalance = bunbig.FromMathBig(stack[0].Payload.(*big.Int)) //nolint:forcetypeassert // panic on wrong interface
+			ret.OwnerAddress = addr.MustFromTonutils(stack[1].Payload.(*address.Address))    //nolint:forcetypeassert // panic on wrong interface
+			ret.MinterAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address))   //nolint:forcetypeassert // panic on wrong interface
 		}
 	}
 }
@@ -206,6 +206,6 @@ func (s *Service) getAccountDataWallet(ctx context.Context, acc *core.AccountSta
 			panic(fmt.Errorf("wrong wallet `seqno` get-method description"))
 		}
 
-		ret.WalletSeqNo = stack[0].Payload.(uint64)
+		ret.WalletSeqNo = stack[0].Payload.(uint64) //nolint:forcetypeassert // panic on wrong interface
 	}
 }
