@@ -11,10 +11,27 @@ import (
 
 const getMethodsDictKeySz = 19
 
+type StackType string
+
+const (
+	VmInt   StackType = "int"
+	VmCell  StackType = "cell"
+	VmSlice StackType = "slice"
+)
+
+// formats
+const (
+	VmAddrSlice   StackType = "addr"
+	VmBool        StackType = "bool"
+	VmBigInt      StackType = "bigInt"
+	VmStringCell  StackType = "string"
+	VmContentCell StackType = "content"
+)
+
 type VmValueDesc struct {
-	Name     string `json:"name"`
-	FuncType string `json:"func_type"`
-	Format   string `json:"format"`
+	Name      string    `json:"name"`
+	StackType StackType `json:"stack_type"`
+	Format    StackType `json:"format"`
 }
 
 type GetMethodDesc struct {

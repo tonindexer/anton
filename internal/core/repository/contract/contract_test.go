@@ -66,18 +66,18 @@ func TestRepository_AddContracts(t *testing.T) {
 				Name: "get_nft_content",
 				Arguments: []abi.VmValueDesc{
 					{
-						Name:     "index",
-						FuncType: "int",
+						Name:      "index",
+						StackType: "int",
 					}, {
-						Name:     "individual_content",
-						FuncType: "cell",
+						Name:      "individual_content",
+						StackType: "cell",
 					},
 				},
 				ReturnValues: []abi.VmValueDesc{
 					{
-						Name:     "full_content",
-						FuncType: "cell",
-						Format:   "content",
+						Name:      "full_content",
+						StackType: "cell",
+						Format:    "content",
 					},
 				},
 			},

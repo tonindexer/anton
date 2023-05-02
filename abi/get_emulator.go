@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -53,213 +52,238 @@ func NewEmulator(addr *address.Address, code, data, cfg *cell.Cell) (*Emulator, 
 	return &Emulator{Emulator: e, AccountID: accId}, nil
 }
 
-func parseVmValue(v VmValue) (ret tlb.VmStackValue, _ error) {
-	switch v.FuncType {
-	case "int":
-		var bi *big.Int
-		var ok bool
+func vmMakeValueInt(v *VmValue) (ret tlb.VmStackValue, _ error) {
+	var bi *big.Int
+	var ok bool
 
-		switch strings.ToLower(v.Format) {
-		case "", "bigint":
-			bi, ok = v.Payload.(*big.Int)
-		case "uint8":
-			ui, uok := v.Payload.(uint8)
-			bi, ok = big.NewInt(int64(ui)), uok
-		case "uint16":
-			ui, uok := v.Payload.(uint16)
-			bi, ok = big.NewInt(int64(ui)), uok
-		case "uint32":
-			ui, uok := v.Payload.(uint32)
-			bi, ok = big.NewInt(int64(ui)), uok
-		case "uint64":
-			ui, uok := v.Payload.(uint64)
-			bi, ok = big.NewInt(int64(ui)), uok
-		}
-		if !ok {
-			return ret, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.FuncType, v.Format)
-		}
+	switch v.Format {
+	case "", VmBigInt:
+		bi, ok = v.Payload.(*big.Int)
+	case "uint8":
+		ui, uok := v.Payload.(uint8)
+		bi, ok = big.NewInt(int64(ui)), uok
+	case "uint16":
+		ui, uok := v.Payload.(uint16)
+		bi, ok = big.NewInt(int64(ui)), uok
+	case "uint32":
+		ui, uok := v.Payload.(uint32)
+		bi, ok = big.NewInt(int64(ui)), uok
+	case "uint64":
+		ui, uok := v.Payload.(uint64)
+		bi, ok = big.NewInt(int64(ui)), uok
+	}
+	if !ok {
+		return ret, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.StackType, v.Format)
+	}
 
-		ret.SumType = "VmStkInt"
-		ret.VmStkInt = *(*tlb.Int257)(bi)
-		return ret, nil
+	ret.SumType = "VmStkInt"
+	ret.VmStkInt = *(*tlb.Int257)(bi)
 
-	case "cell":
-		var c *cell.Cell
-		var ok bool
+	return ret, nil
+}
 
-		switch strings.ToLower(v.Format) {
-		case "", "cell":
-			c, ok = v.Payload.(*cell.Cell)
-		case "string":
-			s, sok := v.Payload.(string)
-			if sok {
-				b := cell.BeginCell()
-				if err := b.StoreStringSnake(s); err != nil {
-					return ret, errors.Wrap(err, "store string snake")
-				}
-				c, ok = b.EndCell(), sok
+func vmMakeValueCell(v *VmValue) (tlb.VmStackValue, error) {
+	var c *cell.Cell
+	var ok bool
+
+	switch v.Format {
+	case "", VmCell:
+		c, ok = v.Payload.(*cell.Cell)
+	case VmStringCell:
+		s, sok := v.Payload.(string)
+		if sok {
+			b := cell.BeginCell()
+			if err := b.StoreStringSnake(s); err != nil {
+				return tlb.VmStackValue{}, errors.Wrap(err, "store string snake")
 			}
+			c, ok = b.EndCell(), sok
 		}
-		if !ok {
-			return ret, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.FuncType, v.Format)
-		}
+	}
+	if !ok {
+		return tlb.VmStackValue{}, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.StackType, v.Format)
+	}
 
-		tgc, err := boc.DeserializeSinglRootBase64(base64.StdEncoding.EncodeToString(c.ToBOC()))
-		if err != nil {
-			return ret, errors.Wrapf(err, "tongo deserialize boc cell")
-		}
+	tgc, err := boc.DeserializeSinglRootBase64(base64.StdEncoding.EncodeToString(c.ToBOC()))
+	if err != nil {
+		return tlb.VmStackValue{}, errors.Wrapf(err, "tongo deserialize boc cell")
+	}
 
-		ret, err = tlb.TlbStructToVmCell(tgc)
-		return ret, err
+	ret, err := tlb.TlbStructToVmCell(tgc)
+	return ret, err
+}
 
-	case "slice":
-		var s *cell.Slice
-		var ok bool
+func vmMakeValueSlice(v *VmValue) (tlb.VmStackValue, error) {
+	var s *cell.Slice
+	var ok bool
 
-		switch strings.ToLower(v.Format) {
-		case "", "slice":
-			s, ok = v.Payload.(*cell.Slice)
-		case "addr":
-			a, aok := v.Payload.(*address.Address)
-			if aok {
-				b := cell.BeginCell()
-				if err := b.StoreAddr(a); err != nil {
-					return ret, errors.Wrap(err, "store address")
-				}
-				s, ok = b.EndCell().BeginParse(), aok
+	switch v.Format {
+	case "", VmSlice:
+		s, ok = v.Payload.(*cell.Slice)
+	case VmAddrSlice:
+		a, aok := v.Payload.(*address.Address)
+		if aok {
+			b := cell.BeginCell()
+			if err := b.StoreAddr(a); err != nil {
+				return tlb.VmStackValue{}, errors.Wrap(err, "store address")
 			}
+			s, ok = b.EndCell().BeginParse(), aok
 		}
-		if !ok {
-			return ret, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.FuncType, v.Format)
-		}
+	}
+	if !ok {
+		return tlb.VmStackValue{}, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.StackType, v.Format)
+	}
 
-		c, err := s.ToCell()
-		if err != nil {
-			return ret, errors.Wrap(err, "convert slice to cell")
-		}
+	c, err := s.ToCell()
+	if err != nil {
+		return tlb.VmStackValue{}, errors.Wrap(err, "convert slice to cell")
+	}
 
-		tgc, err := boc.DeserializeSinglRootBase64(base64.StdEncoding.EncodeToString(c.ToBOC()))
-		if err != nil {
-			return ret, errors.Wrapf(err, "tongo deserialize boc cell")
-		}
+	tgc, err := boc.DeserializeSinglRootBase64(base64.StdEncoding.EncodeToString(c.ToBOC()))
+	if err != nil {
+		return tlb.VmStackValue{}, errors.Wrapf(err, "tongo deserialize boc cell")
+	}
 
-		ret, err = tlb.TlbStructToVmCellSlice(tgc)
-		return ret, err
+	ret, err := tlb.TlbStructToVmCellSlice(tgc)
+	return ret, err
+}
+
+func vmMakeValue(v *VmValue) (ret tlb.VmStackValue, _ error) {
+	switch v.StackType {
+	case VmInt:
+		return vmMakeValueInt(v)
+
+	case VmCell:
+		return vmMakeValueCell(v)
+
+	case VmSlice:
+		return vmMakeValueSlice(v)
 
 	default:
-		return ret, fmt.Errorf("unsupported '%s' type", v.FuncType)
+		return ret, fmt.Errorf("unsupported '%s' type", v.StackType)
 	}
 }
 
-func mapToVmValue(v *tlb.VmStackValue, d VmValueDesc) (any, error) {
-	switch d.FuncType {
+func vmParseValueInt(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
+	var bi *big.Int
+
+	switch v.SumType {
+	case "VmStkInt":
+		bi = (*big.Int)(&v.VmStkInt)
+	case "VmStkTinyInt":
+		bi = big.NewInt(v.VmStkTinyInt)
+	default:
+		return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.StackType, v.SumType)
+	}
+
+	switch d.Format {
+	case "", VmBigInt:
+		return bi, nil
+	case "uint8":
+		return uint8(bi.Uint64()), nil
+	case "uint16":
+		return uint16(bi.Uint64()), nil
+	case "uint32":
+		return uint32(bi.Uint64()), nil
+	case "uint64":
+		return bi.Uint64(), nil
+	case VmBool:
+		return bi.Cmp(big.NewInt(0)) != 0, nil
+	default:
+		return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
+	}
+}
+
+func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
+	switch v.SumType {
+	case "VmStkNull":
+		return (*cell.Cell)(nil), nil
+	case "VmStkCell":
+	default:
+		return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.StackType, v.SumType)
+	}
+
+	tgcBoc, err := v.VmStkCell.Value.ToBocCustom(false, false, false, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "convert stack cell to boc")
+	}
+	c, err := cell.FromBOC(tgcBoc)
+	if err != nil {
+		return nil, errors.Wrap(err, "convert boc to cell")
+	}
+
+	switch d.Format {
+	case "", VmCell:
+		return c, nil
+	case VmStringCell:
+		s, err := c.BeginParse().LoadStringSnake()
+		if err != nil {
+			return nil, errors.Wrap(err, "load string snake")
+		}
+		return s, nil
+	case VmContentCell:
+		content, err := nft.ContentFromCell(c)
+		if err != nil {
+			return nil, errors.Wrap(err, "load content from cell")
+		}
+		return content, nil
+	default:
+		return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
+	}
+}
+
+func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
+	switch v.SumType {
+	case "VmStkNull":
+		return (*cell.Slice)(nil), nil
+	case "VmStkSlice":
+	default:
+		return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.StackType, v.SumType)
+	}
+
+	tgcBoc, err := v.VmStkSlice.Cell().ToBocCustom(false, false, false, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "convert stack cell to boc")
+	}
+	c, err := cell.FromBOC(tgcBoc)
+	if err != nil {
+		return nil, errors.Wrap(err, "convert boc to cell")
+	}
+
+	switch d.Format {
+	case "", VmSlice:
+		return c.BeginParse(), nil
+	case VmAddrSlice:
+		a, err := c.BeginParse().LoadAddr()
+		if err != nil {
+			return nil, errors.Wrap(err, "load address")
+		}
+		return a, nil
+	default:
+		return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
+	}
+}
+
+func vmParseValue(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
+	switch d.StackType {
 	case "int":
-		var bi *big.Int
-
-		switch v.SumType {
-		case "VmStkInt":
-			bi = (*big.Int)(&v.VmStkInt)
-		case "VmStkTinyInt":
-			bi = big.NewInt(v.VmStkTinyInt)
-		default:
-			return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.FuncType, v.SumType)
-		}
-
-		switch strings.ToLower(d.Format) {
-		case "", "bigint":
-			return bi, nil
-		case "uint8":
-			return uint8(bi.Uint64()), nil
-		case "uint16":
-			return uint16(bi.Uint64()), nil
-		case "uint32":
-			return uint32(bi.Uint64()), nil
-		case "uint64":
-			return bi.Uint64(), nil
-		case "bool":
-			return bi.Cmp(big.NewInt(0)) != 0, nil
-		default:
-			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.FuncType)
-		}
+		return vmParseValueInt(v, d)
 
 	case "cell":
-		switch v.SumType {
-		case "VmStkNull":
-			return (*cell.Cell)(nil), nil
-		case "VmStkCell":
-		default:
-			return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.FuncType, v.SumType)
-		}
-
-		tgcBoc, err := v.VmStkCell.Value.ToBocCustom(false, false, false, 0)
-		if err != nil {
-			return nil, errors.Wrap(err, "convert stack cell to boc")
-		}
-		c, err := cell.FromBOC(tgcBoc)
-		if err != nil {
-			return nil, errors.Wrap(err, "convert boc to cell")
-		}
-
-		switch strings.ToLower(d.Format) {
-		case "", "cell":
-			return c, nil
-		case "string":
-			s, err := c.BeginParse().LoadStringSnake()
-			if err != nil {
-				return nil, errors.Wrap(err, "load string snake")
-			}
-			return s, nil
-		case "content":
-			content, err := nft.ContentFromCell(c)
-			if err != nil {
-				return nil, errors.Wrap(err, "load content from cell")
-			}
-			return content, nil
-		default:
-			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.FuncType)
-		}
+		return vmParseValueCell(v, d)
 
 	case "slice":
-		switch v.SumType {
-		case "VmStkNull":
-			return (*cell.Slice)(nil), nil
-		case "VmStkSlice":
-		default:
-			return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.FuncType, v.SumType)
-		}
-
-		tgcBoc, err := v.VmStkSlice.Cell().ToBocCustom(false, false, false, 0)
-		if err != nil {
-			return nil, errors.Wrap(err, "convert stack cell to boc")
-		}
-		c, err := cell.FromBOC(tgcBoc)
-		if err != nil {
-			return nil, errors.Wrap(err, "convert boc to cell")
-		}
-
-		switch strings.ToLower(d.Format) {
-		case "", "slice":
-			return c.BeginParse(), nil
-		case "addr":
-			a, err := c.BeginParse().LoadAddr()
-			if err != nil {
-				return nil, errors.Wrap(err, "load address")
-			}
-			return a, nil
-		default:
-			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.FuncType)
-		}
+		return vmParseValueSlice(v, d)
 
 	default:
-		return nil, fmt.Errorf("unsupported '%s' type", d.FuncType)
+		return nil, fmt.Errorf("unsupported '%s' type", d.StackType)
 	}
 }
 
 func (e *Emulator) RunGetMethod(ctx context.Context, method string, args VmStack, retDesc []VmValueDesc) (ret VmStack, err error) {
 	var params tlb.VmStack
 
-	for _, a := range args {
-		v, err := parseVmValue(a)
+	for it := range args {
+		v, err := vmMakeValue(&args[it])
 		if err != nil {
 			return nil, err
 		}
@@ -278,7 +302,7 @@ func (e *Emulator) RunGetMethod(ctx context.Context, method string, args VmStack
 	}
 
 	for i := range retDesc {
-		r, err := mapToVmValue(&stk[i], retDesc[i])
+		r, err := vmParseValue(&stk[i], &retDesc[i])
 		if err != nil {
 			return nil, err
 		}

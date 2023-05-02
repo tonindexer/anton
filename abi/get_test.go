@@ -65,17 +65,17 @@ func TestNewEmulator_RunGetMethod(t *testing.T) {
 		[]abi.VmValue{
 			{
 				VmValueDesc: abi.VmValueDesc{
-					Name:     "index",
-					FuncType: "int",
+					Name:      "index",
+					StackType: "int",
 				},
 				Payload: big.NewInt(100),
 			},
 		},
 		[]abi.VmValueDesc{
 			{
-				Name:     "address",
-				FuncType: "slice",
-				Format:   "addr",
+				Name:      "address",
+				StackType: "slice",
+				Format:    "addr",
 			},
 		},
 	)
@@ -102,23 +102,23 @@ func TestNewEmulator_RunGetMethod(t *testing.T) {
 	ret, err = eItem.RunGetMethod(context.Background(), "get_nft_data", nil,
 		[]abi.VmValueDesc{
 			{
-				Name:     "init",
-				FuncType: "int",
-				Format:   "bool",
+				Name:      "init",
+				StackType: "int",
+				Format:    "bool",
 			}, {
-				Name:     "index",
-				FuncType: "int",
+				Name:      "index",
+				StackType: "int",
 			}, {
-				Name:     "collection_address",
-				FuncType: "slice",
-				Format:   "addr",
+				Name:      "collection_address",
+				StackType: "slice",
+				Format:    "addr",
 			}, {
-				Name:     "owner_address",
-				FuncType: "slice",
-				Format:   "addr",
+				Name:      "owner_address",
+				StackType: "slice",
+				Format:    "addr",
 			}, {
-				Name:     "individual_content",
-				FuncType: "cell",
+				Name:      "individual_content",
+				StackType: "cell",
 			},
 		},
 	)
@@ -137,23 +137,23 @@ func TestNewEmulator_RunGetMethod(t *testing.T) {
 		[]abi.VmValue{
 			{
 				VmValueDesc: abi.VmValueDesc{
-					Name:     "index",
-					FuncType: "int",
+					Name:      "index",
+					StackType: "int",
 				},
 				Payload: big.NewInt(100),
 			}, {
 				VmValueDesc: abi.VmValueDesc{
-					Name:     "individual_content",
-					FuncType: "cell",
+					Name:      "individual_content",
+					StackType: "cell",
 				},
 				Payload: indContent,
 			},
 		},
 		[]abi.VmValueDesc{
 			{
-				Name:     "full_content",
-				FuncType: "cell",
-				Format:   "content",
+				Name:      "full_content",
+				StackType: "cell",
+				Format:    "content",
 			},
 		},
 	)
