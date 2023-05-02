@@ -92,7 +92,7 @@
         ]
       },
       {
-        "op_name": "telemint_msg_deploy_v2",
+        "op_name": "telemint_msg_deploy_v_2",
         "op_code": "0x4637289b",
         "body": [
           {

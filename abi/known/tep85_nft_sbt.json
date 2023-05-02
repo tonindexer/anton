@@ -3,7 +3,7 @@
     "interface_name": "nft_item_sbt",
     "in_messages": [
       {
-        "op_name": "prove_ownership",
+        "op_name": "sbt_prove_ownership",
         "op_code": "0x04ded148",
         "body": [
           {
@@ -25,7 +25,7 @@
         ]
       },
       {
-        "op_name": "request_owner",
+        "op_name": "sbt_request_owner",
         "op_code": "0xd0c3bfea",
         "body": [
           {
@@ -47,7 +47,7 @@
         ]
       },
       {
-        "op_name": "destroy",
+        "op_name": "sbt_destroy",
         "op_code": "0x1f04537a",
         "body": [
           {
@@ -57,7 +57,7 @@
         ]
       },
       {
-        "op_name": "revoke",
+        "op_name": "sbt_revoke",
         "op_code": "0x6f89f5e3",
         "body": [
           {
@@ -69,7 +69,7 @@
     ],
     "out_messages": [
       {
-        "op_name": "ownership_proof",
+        "op_name": "sbt_ownership_proof",
         "op_code": "0x0524c7ae",
         "body": [
           {
@@ -99,7 +99,7 @@
         ]
       },
       {
-        "op_name": "owner_info",
+        "op_name": "sbt_owner_info",
         "op_code": "0x0dd607e3",
         "body": [
           {

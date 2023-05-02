@@ -3,7 +3,7 @@
     "interface_name": "nft_item",
     "in_messages": [
       {
-        "op_name": "transfer",
+        "op_name": "nft_item_transfer",
         "op_code": "0x5fcc3d14",
         "body": [
           {
@@ -35,7 +35,7 @@
         ]
       },
       {
-        "op_name": "get_static_data",
+        "op_name": "nft_item_get_static_data",
         "op_code": "0x2fcb26a2",
         "body": [
           {
@@ -47,7 +47,7 @@
     ],
     "out_messages": [
       {
-        "op_name": "ownership_assigned",
+        "op_name": "nft_item_ownership_assigned",
         "op_code": "0x05138d91",
         "body": [
           {
@@ -75,7 +75,7 @@
         ]
       },
       {
-        "op_name": "report_static_data",
+        "op_name": "nft_item_report_static_data",
         "op_code": "0x8b771735",
         "body": [
           {
@@ -129,7 +129,7 @@
     "interface_name": "nft_collection",
     "in_messages": [
       {
-        "op_name": "item_mint",
+        "op_name": "nft_collection_item_mint",
         "op_code": "0x1",
         "body": [
           {
@@ -167,7 +167,7 @@
         ]
       },
       {
-        "op_name": "item_mint_batch",
+        "op_name": "nft_collection_item_mint_batch",
         "op_code": "0x2",
         "body": [
           {
@@ -183,7 +183,7 @@
         ]
       },
       {
-        "op_name": "change_owner",
+        "op_name": "nft_collection_change_owner",
         "op_code": "0x3",
         "body": [
           {
@@ -199,7 +199,7 @@
         ]
       },
       {
-        "op_name": "change_content",
+        "op_name": "nft_collection_change_content",
         "op_code": "0x4",
         "body": [
           {
@@ -278,7 +278,7 @@
     "interface_name": "nft_royalty",
     "in_messages": [
       {
-        "op_name": "get_royalty_params",
+        "op_name": "nft_get_royalty_params",
         "op_code": "0x693d3950",
         "body": [
           {
@@ -291,7 +291,7 @@
     ],
     "out_messages": [
       {
-        "op_name": "report_royalty_params",
+        "op_name": "nft_report_royalty_params",
         "op_code": "0xa8cb00ad",
         "body": [
           {
@@ -340,7 +340,7 @@
     "interface_name": "nft_editable",
     "in_messages": [
       {
-        "op_name": "edit_content",
+        "op_name": "nft_edit",
         "op_code": "0x1a0b9d51",
         "body": [
           {
@@ -356,7 +356,7 @@
         ]
       },
       {
-        "op_name": "transfer_editorship",
+        "op_name": "nft_transfer_editorship",
         "op_code": "0x1c04412a",
         "body": [
           {
@@ -392,7 +392,7 @@
         ]
       },
       {
-        "op_name": "editorship_assigned",
+        "op_name": "nft_editorship_assigned",
         "op_code": "0x511a4463",
         "body": [
           {
