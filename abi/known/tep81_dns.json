@@ -7,19 +7,19 @@
         "arguments": [
           {
             "name": "subdomain",
-            "func_type": "slice"
+            "stack_type": "slice"
           }, {
             "name": "category",
-            "func_type": "int"
+            "stack_type": "int"
           }
         ],
         "return_values": [
           {
             "name": "length",
-            "func_type": "int"
+            "stack_type": "int"
           }, {
             "name": "record",
-            "func_type": "cell"
+            "stack_type": "cell"
           }
         ]
       }

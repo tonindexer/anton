@@ -100,26 +100,26 @@
         "return_values": [
           {
             "name": "init",
-            "func_type": "int",
+            "stack_type": "int",
             "format": "bool"
           },
           {
             "name": "index",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "collection_address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           },
           {
             "name": "owner_address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           },
           {
             "name": "individual_content",
-            "func_type": "cell"
+            "stack_type": "cell"
           }
         ]
       }
@@ -222,16 +222,16 @@
         "return_values": [
           {
             "name": "next_item_index",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "collection_content",
-            "func_type": "cell",
+            "stack_type": "cell",
             "format": "content"
           },
           {
             "name": "owner_address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           }
         ]
@@ -241,13 +241,13 @@
         "arguments": [
           {
             "name": "index",
-            "func_type": "int"
+            "stack_type": "int"
           }
         ],
         "return_values": [
           {
             "name": "address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           }
         ]
@@ -257,17 +257,17 @@
         "arguments": [
           {
             "name": "index",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "individual_content",
-            "func_type": "cell"
+            "stack_type": "cell"
           }
         ],
         "return_values": [
           {
             "name": "full_content",
-            "func_type": "cell",
+            "stack_type": "cell",
             "format": "content"
           }
         ]
@@ -319,17 +319,17 @@
         "return_values": [
           {
             "name": "numerator",
-            "func_type": "int",
+            "stack_type": "int",
             "format": "uint16"
           },
           {
             "name": "denominator",
-            "func_type": "int",
+            "stack_type": "int",
             "format": "uint16"
           },
           {
             "name": "destination",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           }
         ]
@@ -420,7 +420,7 @@
         "return_values": [
           {
             "name": "editor",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           }
         ]

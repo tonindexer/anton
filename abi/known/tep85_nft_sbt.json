@@ -139,7 +139,7 @@
         "return_values": [
           {
             "name": "authority_address",
-            "func_type": "slice"
+            "stack_type": "slice"
           }
         ]
       },
@@ -148,7 +148,7 @@
         "return_values": [
           {
             "name": "revoked_at",
-            "func_type": "int"
+            "stack_type": "int"
           }
         ]
       }

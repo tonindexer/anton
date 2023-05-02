@@ -146,14 +146,14 @@ Each get-method consists of name (which is then used to get `method_id`), argume
          "arguments": [
             {
                "name": "owner_address",         // argument name
-               "func_type": "slice",            // type we are trying to load
+               "stack_type": "slice",            // type we are trying to load
                "format": "addr"               // type we map into
             }
          ],
          "return_values": [
             {
                "name": "jetton_wallet_address", // return value name
-               "func_type": "slice",            // type we load
+               "stack_type": "slice",            // type we load
                "format": "addr"               // type we parse into
             }
          ]
@@ -163,17 +163,17 @@ Each get-method consists of name (which is then used to get `method_id`), argume
          "return_values": [
             {
                "name": "total_supply",
-               "func_type": "int",
+               "stack_type": "int",
                "format": "bigInt"
             },
             {
                "name": "mintable",
-               "func_type": "int",
+               "stack_type": "int",
                "format": "bool"
             },
             {
                "name": "admin_address",
-               "func_type": "slice",
+               "stack_type": "slice",
                "format": "addr"
             }
          ]
@@ -182,13 +182,13 @@ Each get-method consists of name (which is then used to get `method_id`), argume
 }
 ```
 
-Accepted func argument types:
+Accepted argument stack types:
 
 1. `int` - integer; by default maps from `big.Int`
 2. `cell` - map from BoC
 3. `slice` - cell slice
 
-Accepted func return values types:
+Accepted return values stack types:
 
 1. `int` - integer; by default maps into `big.Int`
 2. `cell` - map to BoC
@@ -202,6 +202,7 @@ Accepted types to map from or into in `format` field:
 3. `uint8`, `uint16`, `uint32`, `uint64` - map int to an unsigned integer
 4. `bigInt` - map integer bigger than 64 bits
 5. `string` - load string snake from cell
+6. `content` - load [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md) standard token data into [`nft.ContentAny`](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
 
 ## Known contracts
 

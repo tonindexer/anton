@@ -282,7 +282,7 @@
         "return_values": [
           {
             "name": "token_name",
-            "func_type": "slice"
+            "stack_type": "slice"
           }
         ]
       },
@@ -292,24 +292,24 @@
         "return_values": [
           {
             "name": "bidder_address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           },
           {
             "name": "bid",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "bid_ts",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "min_bid",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "end_time",
-            "func_type": "int"
+            "stack_type": "int"
           }
         ]
       },
@@ -319,28 +319,28 @@
         "return_values": [
           {
             "name": "beneficiary_address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           },
           {
             "name": "initial_min_bid",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "max_bid",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "min_bid_step",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "min_extend_time",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "duration",
-            "func_type": "int"
+            "stack_type": "int"
           }
         ]
       }

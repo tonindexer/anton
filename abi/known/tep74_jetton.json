@@ -110,26 +110,26 @@
         "return_values": [
           {
             "name": "total_supply",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "mintable",
-            "func_type": "int",
+            "stack_type": "int",
             "format": "bool"
           },
           {
             "name": "admin_address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           },
           {
             "name": "content",
-            "func_type": "cell",
+            "stack_type": "cell",
             "format": "content"
           },
           {
             "name": "wallet_code",
-            "func_type": "cell"
+            "stack_type": "cell"
           }
         ]
       },
@@ -138,14 +138,14 @@
         "arguments": [
           {
             "name": "owner_address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           }
         ],
         "return_values": [
           {
             "name": "wallet_address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           }
         ]
@@ -293,21 +293,21 @@
         "return_values": [
           {
             "name": "balance",
-            "func_type": "int"
+            "stack_type": "int"
           },
           {
             "name": "owner_address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           },
           {
             "name": "jetton_master_address",
-            "func_type": "slice",
+            "stack_type": "slice",
             "format": "addr"
           },
           {
             "name": "jetton_wallet_code",
-            "func_type": "cell"
+            "stack_type": "cell"
           }
         ]
       }
