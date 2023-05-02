@@ -54,7 +54,7 @@ func (s *Service) getMethodCall(ctx context.Context, d *abi.GetMethodDesc, acc *
 		return nil, errors.Wrap(err, "account data from boc")
 	}
 
-	e, err := abi.NewEmulator(acc.Address.MustToTU(), code, data, s.bcConfig)
+	e, err := abi.NewEmulator(acc.Address.MustToTonutils(), code, data, s.bcConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "new emulator")
 	}

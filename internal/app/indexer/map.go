@@ -42,14 +42,8 @@ func getMsgHash(msg *tlb.Message) ([]byte, error) {
 func mapMessageInternal(msg *core.Message, raw *tlb.InternalMessage) error {
 	msg.Type = core.Internal
 
-	src, err := addr.FromTonutils(raw.SrcAddr)
-	if err != nil {
-		return errors.Wrapf(err, "src addr from tu %s", raw.SrcAddr)
-	}
-	dst, err := addr.FromTonutils(raw.DstAddr)
-	if err != nil {
-		return errors.Wrapf(err, "dst addr from tu %s", raw.DstAddr)
-	}
+	src := addr.MustFromTonutils(raw.SrcAddr)
+	dst := addr.MustFromTonutils(raw.DstAddr)
 	msg.SrcAddress = *src
 	msg.DstAddress = *dst
 
@@ -83,10 +77,7 @@ func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg *tlb.M
 	case *tlb.ExternalMessage:
 		msg.Type = core.ExternalIn
 
-		dst, err := addr.FromTonutils(raw.DstAddr)
-		if err != nil {
-			return errors.Wrapf(err, "dst addr from tu %s", raw.DstAddr)
-		}
+		dst := addr.MustFromTonutils(raw.DstAddr)
 		msg.DstAddress = *dst
 
 		if raw.StateInit != nil && raw.StateInit.Code != nil {
@@ -105,10 +96,7 @@ func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg *tlb.M
 	case *tlb.ExternalMessageOut:
 		msg.Type = core.ExternalOut
 
-		src, err := addr.FromTonutils(raw.SrcAddr)
-		if err != nil {
-			return errors.Wrapf(err, "src addr from tu %s", raw.SrcAddr)
-		}
+		src := addr.MustFromTonutils(raw.SrcAddr)
 		msg.SrcAddress = *src
 
 		msg.SourceTxHash = rawTx.Hash

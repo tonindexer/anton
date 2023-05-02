@@ -44,7 +44,7 @@ func getOperationDescByName(d *abi.InterfaceDesc, name string) *abi.OperationDes
 
 func loadOperation(t *testing.T, i *abi.InterfaceDesc, opName, bocB64 string) string {
 	dp := getOperationDescByName(i, opName)
-	require.NotNil(t, dp)
+	require.NotNilf(t, dp, "operation name %s", opName)
 
 	op, err := dp.New()
 	require.Nil(t, err)

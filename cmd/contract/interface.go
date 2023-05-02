@@ -45,11 +45,11 @@ func parseOperationDesc(t abi.ContractName, d *abi.OperationDesc) (*core.Contrac
 	var opId uint32
 
 	if c := d.Code; strings.HasPrefix(c, "0x") {
-		if len(c) != 10 {
+		n := new(big.Int)
+		_, ok := n.SetString(c[2:], 16)
+		if !ok {
 			return nil, fmt.Errorf("wrong hex %s operation id format: %s", d.Name, d.Code)
 		}
-		n := new(big.Int)
-		n.SetString(c, 16)
 		opId = uint32(n.Uint64())
 	} else {
 		n, err := strconv.ParseUint(c, 10, 32)
@@ -84,6 +84,9 @@ func parseInterfaceDesc(d *abi.InterfaceDesc) (*core.ContractInterface, []*core.
 	}
 	for it := range i.GetMethodsDesc {
 		i.GetMethodHashes = append(i.GetMethodHashes, abi.MethodNameHash(i.GetMethodsDesc[it].Name))
+	}
+	if len(i.Code) == 0 {
+		i.Code = nil
 	}
 
 	for it := range d.InMessages {
@@ -152,12 +155,12 @@ var Command = &cli.Command{
 
 		for _, i := range interfaces {
 			if err := contract.NewRepository(pg).AddInterface(ctx.Context, i); err != nil {
-				return errors.Wrapf(err, "cannot insert contract interface")
+				return errors.Wrapf(err, "cannot insert %s contract interface", i.Name)
 			}
 		}
 		for _, op := range operations {
 			if err := contract.NewRepository(pg).AddOperation(ctx.Context, op); err != nil {
-				return errors.Wrapf(err, "cannot insert contract interface")
+				return errors.Wrapf(err, "cannot insert %s %s contract operation", op.ContractName, op.Name)
 			}
 		}
 

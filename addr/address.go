@@ -32,31 +32,30 @@ var (
 	_ fmt.Stringer = (*Address)(nil)
 )
 
-func (x *Address) ToTU() (*address.Address, error) {
+func (x *Address) ToTonutils() (*address.Address, error) {
 	return address.ParseAddr(x.Base64())
 }
 
-func (x *Address) MustToTU() *address.Address {
-	a, err := x.ToTU()
+func (x *Address) MustToTonutils() *address.Address {
+	a, err := x.ToTonutils()
 	if err != nil {
 		panic(errors.Wrapf(err, "%s", x.String()))
 	}
 	return a
 }
 
-func FromTonutils(addr *address.Address) (*Address, error) {
-	var x Address
+func (x *Address) FromTonutils(addr *address.Address) (*Address, error) {
 	if len(addr.Data()) != 32 {
 		return nil, fmt.Errorf("wrong addr data length %d", addr.Data())
 	}
 	x[0] = addr.FlagsToByte()
 	x[1] = byte(addr.Workchain())
 	copy(x[2:34], addr.Data())
-	return &x, nil
+	return x, nil
 }
 
 func MustFromTonutils(a *address.Address) *Address {
-	addr, err := FromTonutils(a)
+	addr, err := new(Address).FromTonutils(a)
 	if err != nil {
 		panic(fmt.Sprintf("%s to address", addr))
 	}
@@ -73,7 +72,7 @@ func (x *Address) String() string {
 	return fmt.Sprintf("%d:%x", int8(x[1]), x[2:34])
 }
 
-func FromString(str string) (*Address, error) {
+func (x *Address) FromString(str string) (*Address, error) {
 	split := strings.Split(str, ":")
 	if len(split) != 2 {
 		return nil, fmt.Errorf("wrong address format")
@@ -86,11 +85,11 @@ func FromString(str string) (*Address, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "parse address data hex")
 	}
-	return FromTonutils(address.NewAddress(0, byte(w), d))
+	return x.FromTonutils(address.NewAddress(0, byte(w), d))
 }
 
 func MustFromString(str string) *Address {
-	a, err := FromString(str)
+	a, err := new(Address).FromString(str)
 	if err != nil {
 		panic(errors.Wrapf(err, "%s", str))
 	}
@@ -104,9 +103,7 @@ func (x *Address) Base64() string {
 	return base64.RawURLEncoding.EncodeToString(xCheck[:])
 }
 
-func FromBase64(b64 string) (*Address, error) {
-	var x Address
-
+func (x *Address) FromBase64(b64 string) (*Address, error) {
 	d, err := base64.RawURLEncoding.DecodeString(b64)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode base64")
@@ -121,11 +118,11 @@ func FromBase64(b64 string) (*Address, error) {
 		return nil, errors.Wrap(err, "wrong address checksum")
 	}
 
-	return &x, nil
+	return x, nil
 }
 
 func MustFromBase64(b64 string) *Address {
-	addr, err := FromBase64(b64)
+	addr, err := new(Address).FromBase64(b64)
 	if err != nil {
 		panic(fmt.Sprintf("%s to address", addr))
 	}
@@ -144,10 +141,10 @@ func (x *Address) MarshalJSON() ([]byte, error) {
 
 func (x *Address) UnmarshalJSON(raw []byte) error {
 	s := strings.Replace(string(raw), "\"", "", 2)
-	if _, err := FromBase64(s); err == nil {
+	if _, err := x.FromBase64(s); err == nil {
 		return nil
 	}
-	if _, err := FromString(s); err == nil {
+	if _, err := x.FromString(s); err == nil {
 		return nil
 	}
 	return fmt.Errorf("cannot unmarshal %s to address", s)
