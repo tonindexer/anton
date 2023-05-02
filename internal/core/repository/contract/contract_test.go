@@ -61,7 +61,6 @@ func TestRepository_AddContracts(t *testing.T) {
 		Name:      known.NFTItem,
 		Addresses: []*addr.Address{rndm.Address()},
 		Code:      rndm.Bytes(128),
-		CodeHash:  rndm.Bytes(32),
 		GetMethodsDesc: []abi.GetMethodDesc{
 			{
 				Name: "get_nft_content",
