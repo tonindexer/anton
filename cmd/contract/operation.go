@@ -3,7 +3,6 @@ package contract
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
@@ -65,10 +64,11 @@ var OperationCommand = &cli.Command{
 		op.OperationID = uint32(ctx.Uint64("operationId"))
 
 		schema := json.RawMessage(ctx.String("schema"))
-		if !json.Valid(schema) {
-			return fmt.Errorf("json is not valid: %s", string(schema))
+		var opSchema abi.OperationDesc
+		if err := json.Unmarshal(schema, &opSchema); err != nil {
+			return err
 		}
-		op.Schema = schema
+		op.Schema = opSchema
 
 		pg := bun.NewDB(
 			sql.OpenDB(
@@ -90,7 +90,7 @@ var OperationCommand = &cli.Command{
 			Str("op_name", op.Name).
 			Str("contract", string(op.ContractName)).
 			Uint32("op_id", op.OperationID).
-			Str("schema", string(op.Schema)).
+			RawJSON("schema", schema).
 			Msg("inserted new contract operation")
 
 		return nil

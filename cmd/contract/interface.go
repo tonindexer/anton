@@ -2,90 +2,140 @@ package contract
 
 import (
 	"database/sql"
-	"encoding/hex"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"math/big"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
 	"github.com/urfave/cli/v2"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
 
-var InterfaceCommand = &cli.Command{
-	Name:     "addInterface",
-	Usage:    "Adds contract interface to the database",
-	Category: "abi",
+func readContractInterfaces(filenames []string) (ret []*abi.InterfaceDesc, err error) {
+	for _, fn := range filenames {
+		var interfaces []*abi.InterfaceDesc
 
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:     "contract",
-			Required: true,
-			Aliases:  []string{"n"},
-			Usage:    "Unique contract name (example: getgems_nft_sale)",
-		},
-		&cli.StringSliceFlag{
-			Name:    "address",
-			Aliases: []string{"a"},
-			Usage:   "Contract addresses",
-		},
-		&cli.StringFlag{
-			Name:    "code",
-			Aliases: []string{"c"},
-			Usage:   "Contract code BoC encoded to hex",
-		},
-		&cli.StringSliceFlag{
-			Name:    "get",
-			Aliases: []string{"g"},
-			Usage:   "Contract get methods",
-		},
-	},
+		j, err := os.ReadFile(fn)
+		if err != nil {
+			return nil, errors.Wrapf(err, "read %s", fn)
+		}
+
+		if err := json.Unmarshal(j, &interfaces); err != nil {
+			return nil, errors.Wrapf(err, "unmarshal json")
+		}
+
+		ret = append(ret, interfaces...)
+	}
+
+	return
+}
+
+func parseOperationDesc(t abi.ContractName, d *abi.OperationDesc) (*core.ContractOperation, error) {
+	var opId uint32
+
+	if c := d.Code; strings.HasPrefix(c, "0x") {
+		if len(c) != 10 {
+			return nil, fmt.Errorf("wrong hex %s operation id format: %s", d.Name, d.Code)
+		}
+		n := new(big.Int)
+		n.SetString(c, 16)
+		opId = uint32(n.Uint64())
+	} else {
+		n, err := strconv.ParseUint(c, 10, 32)
+		if err != nil {
+			return nil, errors.Wrapf(err, "parse %s operation id", d.Name)
+		}
+		opId = uint32(n)
+	}
+
+	return &core.ContractOperation{
+		Name:         d.Name,
+		ContractName: t,
+		Outgoing:     false,
+		OperationID:  opId,
+		Schema:       *d,
+	}, nil
+}
+
+func parseInterfaceDesc(d *abi.InterfaceDesc) (*core.ContractInterface, []*core.ContractOperation, error) {
+	var operations []*core.ContractOperation
+
+	code, err := base64.StdEncoding.DecodeString(d.CodeBoc)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "decode code boc from base64")
+	}
+
+	i := core.ContractInterface{
+		Name:           d.Name,
+		Addresses:      d.Addresses,
+		Code:           code,
+		GetMethodsDesc: d.GetMethods,
+	}
+	for it := range i.GetMethodsDesc {
+		i.GetMethodHashes = append(i.GetMethodHashes, abi.MethodNameHash(i.GetMethodsDesc[it].Name))
+	}
+
+	for it := range d.InMessages {
+		op, err := parseOperationDesc(i.Name, &d.InMessages[it])
+		if err != nil {
+			return nil, nil, err
+		}
+		op.Outgoing = false
+		operations = append(operations, op)
+	}
+
+	for it := range d.OutMessages {
+		op, err := parseOperationDesc(i.Name, &d.OutMessages[it])
+		if err != nil {
+			return nil, nil, err
+		}
+		op.Outgoing = true
+		operations = append(operations, op)
+	}
+
+	return &i, operations, nil
+}
+
+func parseInterfacesDesc(descriptors []*abi.InterfaceDesc) (retI []*core.ContractInterface, retOp []*core.ContractOperation, err error) {
+	for _, d := range descriptors {
+		i, operations, err := parseInterfaceDesc(d)
+		if err != nil {
+			return nil, nil, err
+		}
+		retI = append(retI, i)
+		retOp = append(retOp, operations...)
+	}
+	return
+}
+
+var Command = &cli.Command{
+	Name:  "contract",
+	Usage: "Adds contract interface to the database",
+
+	ArgsUsage: "[file1.json] [file2.json]",
 
 	Action: func(ctx *cli.Context) error {
-		var i core.ContractInterface
+		filenames := ctx.Args().Slice()
 
-		addresses := ctx.StringSlice("address")
-		codeStr := ctx.String("code")
-		getMethods := ctx.StringSlice("get")
-
-		if addresses == nil && codeStr == "" && getMethods == nil {
-			return errors.New("contract addresses or code or get methods must be set")
+		interfacesDesc, err := readContractInterfaces(filenames)
+		if err != nil {
+			return err
 		}
 
-		i.Name = abi.ContractName(ctx.String("contract"))
-
-		for _, addrStr := range addresses {
-			a, err := addr.FromString(addrStr)
-			if err != nil {
-				return errors.Wrapf(err, "parse %s", addrStr)
-			}
-			i.Addresses = append(i.Addresses, a)
-		}
-
-		if codeStr != "" {
-			dec, err := hex.DecodeString(codeStr)
-			if err != nil {
-				return errors.Wrapf(err, "cannot parse contract code")
-			}
-			codeCell, err := cell.FromBOC(dec)
-			if err != nil {
-				return errors.Wrapf(err, "cannot get contract code cell from boc")
-			}
-			i.Code = codeCell.ToBOC()
-			i.CodeHash = codeCell.Hash()
-		}
-
-		i.GetMethods = getMethods
-		for _, get := range i.GetMethods {
-			i.GetMethodHashes = append(i.GetMethodHashes, abi.MethodNameHash(get))
+		interfaces, operations, err := parseInterfacesDesc(interfacesDesc)
+		if err != nil {
+			return err
 		}
 
 		pg := bun.NewDB(
@@ -100,17 +150,16 @@ var InterfaceCommand = &cli.Command{
 			return errors.Wrapf(err, "cannot ping postgresql")
 		}
 
-		if err := contract.NewRepository(pg).AddInterface(ctx.Context, &i); err != nil {
-			return errors.Wrapf(err, "cannot insert contract interface")
+		for _, i := range interfaces {
+			if err := contract.NewRepository(pg).AddInterface(ctx.Context, i); err != nil {
+				return errors.Wrapf(err, "cannot insert contract interface")
+			}
 		}
-
-		log.Info().
-			Str("name", string(i.Name)).
-			Str("address", i.Addresses[0].Base64()).
-			Str("code", hex.EncodeToString(i.Code)).
-			Str("get_methods", fmt.Sprintf("%+v", i.GetMethods)).
-			Str("get_method_hashes", fmt.Sprintf("%+v", i.GetMethodHashes)).
-			Msg("inserted new contract interface")
+		for _, op := range operations {
+			if err := contract.NewRepository(pg).AddOperation(ctx.Context, op); err != nil {
+				return errors.Wrapf(err, "cannot insert contract interface")
+			}
+		}
 
 		return nil
 	},

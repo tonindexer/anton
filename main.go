@@ -37,8 +37,7 @@ func main() {
 			indexer.Command,
 			web.Command,
 			archive.Command,
-			contract.InterfaceCommand,
-			contract.OperationCommand,
+			contract.Command,
 		},
 	}
 	if err := app.Run(os.Args); err != nil {
