@@ -6,12 +6,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
-	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
+	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
 
@@ -24,19 +22,17 @@ func matchByAddress(acc *core.AccountState, addresses []*addr.Address) bool {
 	return false
 }
 
-func matchByCode(acc *core.AccountState, code, codeHash []byte) bool {
+func matchByCode(acc *core.AccountState, code []byte) bool {
 	if len(acc.Code) == 0 || len(code) == 0 {
 		return false
 	}
 
-	if len(code) > 0 {
-		codeCell, err := cell.FromBOC(code)
-		if err != nil {
-			log.Error().Err(err).Msg("parse contract interface code")
-			return false
-		}
-		codeHash = codeCell.Hash()
+	codeCell, err := cell.FromBOC(code)
+	if err != nil {
+		log.Error().Err(err).Msg("parse contract interface code")
+		return false
 	}
+	codeHash := codeCell.Hash()
 
 	accCodeCell, err := cell.FromBOC(acc.Code)
 	if err != nil {
@@ -66,27 +62,30 @@ func matchByGetMethods(acc *core.AccountState, getMethodHashes []int32) bool {
 	return true
 }
 
-func (s *Service) DetermineInterfaces(ctx context.Context, acc *core.AccountState) ([]abi.ContractName, error) {
-	var ret []abi.ContractName
+func (s *Service) determineInterfaces(ctx context.Context, acc *core.AccountState) ([]*core.ContractInterface, error) {
+	var ret []*core.ContractInterface
 
-	ifaces, err := s.contractRepo.GetInterfaces(ctx)
+	interfaces, err := s.contractRepo.GetInterfaces(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get contract interfaces")
 	}
 
-	for _, iface := range ifaces {
-		if matchByAddress(acc, iface.Addresses) {
-			ret = append(ret, iface.Name)
+	for _, i := range interfaces {
+		if matchByAddress(acc, i.Addresses) {
+			ret = append(ret, i)
 			continue
 		}
 
-		if matchByCode(acc, iface.Code, iface.CodeHash) {
-			ret = append(ret, iface.Name)
+		if matchByCode(acc, i.Code) {
+			ret = append(ret, i)
 			continue
 		}
 
-		if matchByGetMethods(acc, iface.GetMethodHashes) {
-			ret = append(ret, iface.Name)
+		if len(i.Addresses) == 0 && len(i.Code) == 0 {
+			continue // match by get methods only if code and addresses are not set
+		}
+		if matchByGetMethods(acc, i.GetMethodHashes) {
+			ret = append(ret, i)
 			continue
 		}
 	}
@@ -94,14 +93,13 @@ func (s *Service) DetermineInterfaces(ctx context.Context, acc *core.AccountStat
 	return ret, nil
 }
 
-func (s *Service) ParseAccountData(ctx context.Context, b *ton.BlockIDExt, acc *core.AccountState, types []abi.ContractName) (*core.AccountData, error) {
-	if len(types) == 0 {
-		return nil, errors.Wrap(core.ErrNotAvailable, "unknown contract interfaces")
-	}
-
-	a, err := acc.Address.ToTU()
+func (s *Service) ParseAccountData(ctx context.Context, acc *core.AccountState) (*core.AccountData, error) {
+	interfaces, err := s.determineInterfaces(ctx, acc)
 	if err != nil {
-		return nil, errors.Wrapf(err, "address to TU (%s)", acc.Address.Base64())
+		return nil, errors.Wrapf(err, "determine contract interfaces")
+	}
+	if len(interfaces) == 0 {
+		return nil, errors.Wrap(app.ErrImpossibleParsing, "unknown contract interfaces")
 	}
 
 	data := new(core.AccountData)
@@ -109,16 +107,18 @@ func (s *Service) ParseAccountData(ctx context.Context, b *ton.BlockIDExt, acc *
 	data.LastTxLT = acc.LastTxLT
 	data.LastTxHash = acc.LastTxHash
 	data.Balance = acc.Balance
-	data.Types = types
+	for _, i := range interfaces {
+		data.Types = append(data.Types, i.Name)
+	}
 	data.UpdatedAt = acc.UpdatedAt
 
-	getters := []func(context.Context, *ton.BlockIDExt, *address.Address, []abi.ContractName, *core.AccountData){
+	getters := []func(context.Context, *core.AccountState, []*core.ContractInterface, *core.AccountData){
 		s.getAccountDataNFT,
 		s.getAccountDataFT,
 		s.getAccountDataWallet,
 	}
 	for _, getter := range getters {
-		getter(ctx, b, a, types, data)
+		getter(ctx, acc, interfaces, data)
 	}
 
 	if data.Errors != nil {

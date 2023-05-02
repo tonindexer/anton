@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/ton"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
@@ -18,6 +19,8 @@ type Service struct {
 	cfg *app.ParserConfig
 
 	api *ton.APIClient
+
+	bcConfig *cell.Cell // TODO: init it
 
 	contractRepo core.ContractRepository
 }

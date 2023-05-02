@@ -11,6 +11,7 @@ import (
 	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/tonindexer/anton/addr"
+	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
 
@@ -61,13 +62,8 @@ func (s *Service) processAccount(ctx context.Context, b *ton.BlockIDExt, tx *cor
 		return nil, nil, nil
 	}
 
-	types, err := s.parser.DetermineInterfaces(ctx, acc)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "determine contract interfaces")
-	}
-
-	data, err := s.parser.ParseAccountData(ctx, b, acc, types)
-	if err != nil && !errors.Is(err, core.ErrNotAvailable) {
+	data, err := s.parser.ParseAccountData(ctx, acc)
+	if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
 		return nil, nil, errors.Wrapf(err, "parse account (%s)", a.String())
 	}
 

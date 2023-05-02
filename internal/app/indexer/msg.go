@@ -12,6 +12,7 @@ import (
 	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/tonindexer/anton/addr"
+	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/filter"
 )
@@ -154,7 +155,7 @@ func (s *Service) parseMessagePayloads(ctx context.Context, tx bun.Tx, messages 
 		}
 
 		payload, err := s.parser.ParseMessagePayload(ctx, src, dst, msg)
-		if errors.Is(err, core.ErrNotAvailable) {
+		if errors.Is(err, app.ErrImpossibleParsing) {
 			continue
 		}
 		if err != nil {
