@@ -81,7 +81,7 @@ func (s *Service) determineInterfaces(ctx context.Context, acc *core.AccountStat
 			continue
 		}
 
-		if len(i.Addresses) == 0 && len(i.Code) == 0 {
+		if len(i.Addresses) != 0 || len(i.Code) != 0 {
 			continue // match by get methods only if code and addresses are not set
 		}
 		if matchByGetMethods(acc, i.GetMethodHashes) {
