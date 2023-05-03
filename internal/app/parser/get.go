@@ -193,7 +193,7 @@ func (s *Service) getAccountDataFT(ctx context.Context, acc *core.AccountState, 
 
 func (s *Service) getAccountDataWallet(ctx context.Context, acc *core.AccountState, interfaces []*core.ContractInterface, ret *core.AccountData) {
 	for _, i := range interfaces {
-		if !strings.HasPrefix(string(i.Name), "wallet") {
+		if !strings.HasPrefix(string(i.Name), "wallet") || strings.HasPrefix(string(i.Name), "wallet_highload") {
 			continue
 		}
 
