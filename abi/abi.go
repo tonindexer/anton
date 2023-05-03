@@ -29,7 +29,6 @@ func (i *InterfaceDesc) RegisterDefinitions() error {
 		}
 		t := reflect.TypeOf(v)
 		typeNameMap[dn] = t
-		typeNameRMap[t] = dn
 	}
 	return nil
 }
