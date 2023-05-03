@@ -62,6 +62,7 @@ var (
 		"magic":        reflect.TypeOf(tlb.Magic{}),
 		"coins":        reflect.TypeOf(tlb.Coins{}),
 		"addr":         reflect.TypeOf((*address.Address)(nil)),
+		"string":       reflect.TypeOf((*StringSnake)(nil)),
 		"telemintText": reflect.TypeOf((*TelemintText)(nil)),
 	}
 )
