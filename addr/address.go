@@ -46,7 +46,7 @@ func (x *Address) MustToTonutils() *address.Address {
 
 func (x *Address) FromTonutils(addr *address.Address) (*Address, error) {
 	if addr.Type() == address.NoneAddress {
-		return nil, nil
+		return nil, nil //nolint:nilnil // no address
 	}
 	if len(addr.Data()) != 32 {
 		return nil, fmt.Errorf("wrong addr data length %d", addr.Data())
