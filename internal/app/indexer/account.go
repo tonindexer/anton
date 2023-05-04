@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
+
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/ton"
 
@@ -44,6 +46,7 @@ func (s *Service) processAccount(ctx context.Context, b *ton.BlockIDExt, tx *cor
 	if s.skipAccounts(b, a) {
 		return nil, nil, nil
 	}
+	log.Debug().Str("addr", a.String()).Int32("workchain", b.Workchain).Uint32("seq", b.SeqNo).Msg("getting account state")
 
 	defer timeTrack(time.Now(), fmt.Sprintf("processAccount(%d, %d, %s)", b.Workchain, b.SeqNo, a.String()))
 
