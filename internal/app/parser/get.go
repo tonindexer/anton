@@ -110,7 +110,39 @@ func mapContentDataNFT(ret *core.AccountData, c nft.ContentAny) {
 	}
 }
 
-func (s *Service) getAccountDataNFT(ctx context.Context, acc *core.AccountState, interfaces []*core.ContractInterface, ret *core.AccountData) {
+func (s *Service) getNFTItemContent(ctx context.Context, collection *core.AccountState, idx *big.Int, itemContent *cell.Cell, ret *core.AccountData) {
+	stack, err := s.getMethodCall(ctx,
+		&abi.GetMethodDesc{
+			Name: "get_nft_content",
+			Arguments: []abi.VmValueDesc{{
+				Name:      "index",
+				StackType: "int",
+			}, {
+				Name:      "individual_content",
+				StackType: "cell",
+			}},
+			ReturnValues: []abi.VmValueDesc{{
+				Name:      "full_content",
+				StackType: "cell",
+				Format:    "content",
+			}},
+		},
+		collection, []any{idx, itemContent},
+	)
+	if err != nil {
+		ret.Errors = append(ret.Errors, err.Error())
+		return
+	}
+	mapContentDataNFT(ret, stack[0].Payload.(nft.ContentAny)) //nolint:forcetypeassert // panic on wrong interface
+}
+
+func (s *Service) getAccountDataNFT(
+	ctx context.Context,
+	acc *core.AccountState,
+	others func(context.Context, *addr.Address) (*core.AccountState, error),
+	interfaces []*core.ContractInterface,
+	ret *core.AccountData,
+) {
 	for _, i := range interfaces {
 		switch i.Name {
 		case known.NFTCollection:
@@ -147,8 +179,15 @@ func (s *Service) getAccountDataNFT(ctx context.Context, acc *core.AccountState,
 			ret.MinterAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
 			ret.OwnerAddress = addr.MustFromTonutils(stack[3].Payload.(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
 
-			// TODO: get nft collection account state and full nft content
-			// individualContent := stack[4].Payload.(*cell.Cell)
+			if ret.MinterAddress == nil {
+				continue
+			}
+			collection, err := others(ctx, ret.MinterAddress)
+			if err != nil {
+				ret.Errors = append(ret.Errors, errors.Wrap(err, "get nft collection state").Error())
+				continue
+			}
+			s.getNFTItemContent(ctx, collection, stack[1].Payload.(*big.Int), stack[4].Payload.(*cell.Cell), ret) //nolint:forcetypeassert // panic on wrong interface
 
 		case known.NFTEditable:
 			stack, err := s.getMethodCallNoArgs(ctx, i, "get_editor", acc)
@@ -162,7 +201,12 @@ func (s *Service) getAccountDataNFT(ctx context.Context, acc *core.AccountState,
 	}
 }
 
-func (s *Service) getAccountDataFT(ctx context.Context, acc *core.AccountState, interfaces []*core.ContractInterface, ret *core.AccountData) {
+func (s *Service) getAccountDataFT(
+	ctx context.Context,
+	acc *core.AccountState,
+	_ func(context.Context, *addr.Address) (*core.AccountState, error),
+	interfaces []*core.ContractInterface,
+	ret *core.AccountData) {
 	for _, i := range interfaces {
 		switch i.Name {
 		case known.JettonMinter:
@@ -191,7 +235,13 @@ func (s *Service) getAccountDataFT(ctx context.Context, acc *core.AccountState, 
 	}
 }
 
-func (s *Service) getAccountDataWallet(ctx context.Context, acc *core.AccountState, interfaces []*core.ContractInterface, ret *core.AccountData) {
+func (s *Service) getAccountDataWallet(
+	ctx context.Context,
+	acc *core.AccountState,
+	_ func(context.Context, *addr.Address) (*core.AccountState, error),
+	interfaces []*core.ContractInterface,
+	ret *core.AccountData,
+) {
 	for _, i := range interfaces {
 		if !strings.HasPrefix(string(i.Name), "wallet") || strings.HasPrefix(string(i.Name), "wallet_highload") {
 			continue

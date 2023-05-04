@@ -93,7 +93,11 @@ func (s *Service) determineInterfaces(ctx context.Context, acc *core.AccountStat
 	return ret, nil
 }
 
-func (s *Service) ParseAccountData(ctx context.Context, acc *core.AccountState) (*core.AccountData, error) {
+func (s *Service) ParseAccountData(
+	ctx context.Context,
+	acc *core.AccountState,
+	others func(context.Context, *addr.Address) (*core.AccountState, error),
+) (*core.AccountData, error) {
 	interfaces, err := s.determineInterfaces(ctx, acc)
 	if err != nil {
 		return nil, errors.Wrapf(err, "determine contract interfaces")
@@ -112,13 +116,13 @@ func (s *Service) ParseAccountData(ctx context.Context, acc *core.AccountState) 
 	}
 	data.UpdatedAt = acc.UpdatedAt
 
-	getters := []func(context.Context, *core.AccountState, []*core.ContractInterface, *core.AccountData){
+	getters := []func(context.Context, *core.AccountState, func(context.Context, *addr.Address) (*core.AccountState, error), []*core.ContractInterface, *core.AccountData){
 		s.getAccountDataNFT,
 		s.getAccountDataFT,
 		s.getAccountDataWallet,
 	}
 	for _, getter := range getters {
-		getter(ctx, acc, interfaces, data)
+		getter(ctx, acc, others, interfaces, data)
 	}
 
 	if data.Errors != nil {

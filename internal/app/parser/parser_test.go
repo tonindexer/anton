@@ -85,8 +85,38 @@ func newService(t *testing.T) *Service {
 		}},
 	}
 
+	nftItem := core.ContractInterface{
+		Name: "nft_item",
+		GetMethodsDesc: []abi.GetMethodDesc{{
+			Name:      "get_nft_data",
+			Arguments: []abi.VmValueDesc{},
+			ReturnValues: []abi.VmValueDesc{{
+				Name:      "init",
+				StackType: "int",
+				Format:    "bool",
+			}, {
+				Name:      "index",
+				StackType: "int",
+			}, {
+				Name:      "collection_address",
+				StackType: "slice",
+				Format:    "addr",
+			}, {
+				Name:      "owner_address",
+				StackType: "slice",
+				Format:    "addr",
+			}, {
+				Name:      "individual_content",
+				StackType: "cell",
+			}},
+		}},
+	}
+	for it := range nftItem.GetMethodsDesc {
+		nftItem.GetMethodHashes = append(nftItem.GetMethodHashes, abi.MethodNameHash(nftItem.GetMethodsDesc[it].Name))
+	}
+
 	s.contractRepo = &mockContractRepo{
-		interfaces: []*core.ContractInterface{&walletV3R2, &walletV4R2},
+		interfaces: []*core.ContractInterface{&walletV3R2, &walletV4R2, &nftItem},
 	}
 
 	return s

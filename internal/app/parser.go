@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/ton"
 
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository"
 )
@@ -25,6 +26,15 @@ type ParserConfig struct {
 type ParserService interface {
 	API() *ton.APIClient
 
-	ParseAccountData(ctx context.Context, acc *core.AccountState) (*core.AccountData, error)
-	ParseMessagePayload(ctx context.Context, src, dst *core.AccountData, message *core.Message) (*core.MessagePayload, error)
+	ParseAccountData(
+		ctx context.Context,
+		acc *core.AccountState,
+		others func(context.Context, *addr.Address) (*core.AccountState, error),
+	) (*core.AccountData, error)
+
+	ParseMessagePayload(
+		ctx context.Context,
+		src, dst *core.AccountData,
+		message *core.Message,
+	) (*core.MessagePayload, error)
 }
