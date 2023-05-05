@@ -32,7 +32,8 @@ func (s *Service) skipAccounts(_ *ton.BlockIDExt, a *address.Address) bool {
 	case "EQCuzvIOXLjH2tv35gY4tzhIvXCqZWDuK9kUhFGXKLImgxT5": // skip ETH Bridge Collector
 		return true
 	case "EQA3Hv0IobJQMf-6YZsFQt8ZzuTGEy2Nfngby7_rMDnstiVe",
-		"EQAZu3Jzu1QR08R9qllgXO5w4zfUtEcblZK2xfRGHFoROmPf": // skip Sedov's contracts
+		"EQAZu3Jzu1QR08R9qllgXO5w4zfUtEcblZK2xfRGHFoROmPf",
+		"EQAjYIX3Kkrx4qX1-Y8jdSlZqLKHHxu_zMEnmJpcX7LYOOH6": // skip Sedov's contracts
 		return true
 	case "EQA2u5Z5Fn59EUvTI-TIrX8PIGKQzNj3qLixdCPPujfJleXC",
 		"EQA2Pnxp0rMB9L6SU2z1VqfMIFIfutiTjQWFEXnwa_zPh0P3",
