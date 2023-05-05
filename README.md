@@ -1,4 +1,4 @@
-# anton
+# Anton
 
 This project is an open-source tool that extracts and organizes data from the TON blockchain, 
 efficiently storing it in PostgreSQL and ClickHouse databases. 
@@ -9,58 +9,55 @@ Before you start, take a look at the [official docs](https://ton.org/docs/learn/
 
 Consider an arbitrary contract.
 It has a state that is updated with any transaction on the contract's account.
-This state contains the contract data.
-The contract data can be complex,
-but developers usually provide [get-methods](https://ton.org/docs/develop/func/functions#specifiers) in the contract.
-You can retrieve data by executing these methods and possibly passing them arguments.
-By parsing the contract code, you can check any contract for an arbitrary get-method (identified by function name).
+Each state has the contract code and data.
+The contract data can be complex, but developers typically provide [get-methods](https://ton.org/docs/develop/func/functions#specifiers) in the contract, which can be executed to retrieve the necessary data.
+The TON has standard contracts (such as [TEP-62](https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md), [TEP-74](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md)), and they have predefined get-method names. 
+Therefore, you can attempt to match accounts found in the network to these standards by checking the presence of the get-methods.
+Contract standards also specify [TL-B constructor tags](https://ton.org/docs/learn/overviews/tl-b-language#constructors) (or operation ids) for each acceptable message to contract, defined as the first 32 bits of the parsed message payload cell.
+So you if you know standard of a given contract, you can determine the type of message to it (for example, NFT item transfer) by parsing the first 32 bits of message body. 
 
-TON has some standard tokens, such as
-[TEP-62](https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md),
-[TEP-74](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md).
-Standard contracts have predefined get-method names and various types of acceptable incoming messages,
-each with a different payload schema.
-Standards also specify [tags](https://ton.org/docs/learn/overviews/tl-b-language#constructors) (or operation ids)
-as the first 32 bits of the parsed message payload cell.
-Therefore, you can attempt to match accounts found in the network to the standards by checking the presence of the get-methods and
-matching found messages to these accounts by parsing the first 32 bits of the message payload.
+Anton allows you to define the contract interface in just one JSON schema. 
+Format of every schema is described in detail in [abi/README.md](abi/README.md). 
+Every schema comprises contract get-methods, as well as incoming and outgoing message schemas for the contract.
+Once contract interfaces are defined and stored in the database, Anton begins scanning new blocks on the network.
+The tool stores every account state, transaction, and message in the database.
+For get-methods without arguments in the contract interface, Anton emulates these methods and saves the returned values to the database. 
+When a message is sent to a known contract interface, Anton attempts to match the message to a known schema by comparing the parsed operation ID. 
+If the message is successfully parsed using the identified schema, Anton also stores the parsed data.
 
-For example, look at NFT standard tokens, which can be found [here](https://github.com/ton-blockchain/token-contract).
-NFT item contract has one `get_nft_data` get method and two incoming [messages](https://github.com/ton-blockchain/token-contract/blob/main/nft/op-codes.fc)
-(`transfer` with an operation id = `0x5fcc3d14`, `get_static_data` with an operation id = `0x2fcb26a2`).
-Transfer payload has the following [schema](https://github.com/xssnick/tonutils-go/blob/master/ton/nft/item.go#L14).
-If an arbitrary contract has a `get_nft_data` method, we can parse the operation id of messages sent to and from this contract.
-If the operation id matches a known id, such as `0x5fcc3d14`, we attempt to parse the message data using the known schema
-(new owner of NFT in the given example).
+To explore contract interfaces known to this project, visit the [abi/known](/abi/known) directory. 
+This will provide you with an understanding of the various contract interfaces already supported and serve as examples for adding your own.
 
-Go to [abi/known.go](/abi/known.go) to see contract interfaces known to this project.
-Go to [msg_schema.json](/docs/msg_schema.json) for an example of a message payload JSON schema.
-Go to [API.md](/docs/API.md) to see working query examples.
-Go to [migrations](/migrations) to see database schemas.
+Currently, Anton offers a REST API for retrieving filtered and aggregated data from the databases. To see example queries, refer to the [API.md](/docs/API.md) file.
+
+To explore how Anton stores data, visit the [migrations' directory](/migrations).
 
 ### Project structure
 
-| Folder            | Description                                                                      | 
+| Folder       | Description                                       | 
+|--------------|---------------------------------------------------|
+| `abi`        | get-methods and tlb cell parsing                  |
+| `abi/known`  | contract interfaces known to this project         |
+| `api/http`   | JSON API Swagger documentation                    |
+| `docs`       | only API query examples for now                   |
+| `config`     | custom postgresql configuration                   |
+| `migrations` | database migrations                               |
+| `internal`   | database repositories and services implementation |
+
+### Internal directory structure
+
+| Folder            | Description                                                                      |
 |-------------------|----------------------------------------------------------------------------------|
-| `abi`             | tlb cell parsing defined by json schema, known contract messages and get-methods |
-|                   |                                                                                  |
-| `api/http`        | JSON API documentation                                                           |
-| `docs`            | only API query examples for now                                                  |
-| `config`          | custom postgresql configuration                                                  |
-|                   |                                                                                  |
 | `core`            | contains project domain                                                          |
-| `core/rndm`       | generation of random domain structures                                           |
-| `core/filter`     | filters description                                                              |
-| `core/aggregate`  | aggregation metrics description                                                  |
-| `core/repository` | database repositories implementing filters and aggregation                       |
-|                   |                                                                                  |
-| `app`             | contains all services interfaces and theirs configs                              |
-| `app/parser`      | service to parse contract data and message payloads to known contracts           | 
-| `app/indexer`     | a service to scan blocks and save data from `parser` to a database               |
-|                   |                                                                                  |
-| `migrations`      | database migrations                                                              |
-|                   |                                                                                  |
-| `cmd`             | command line application and env parsers                                         |
+| `core/rndm`       | generates random domain structures                                               |
+| `core/filter`     | describes filters                                                                |
+| `core/aggregate`  | describes aggregation metrics                                                    |
+| `core/repository` | implements database repositories with filters and aggregation                    |
+| `app`             | contains all services interfaces and their configs                               |
+| `app/parser`      | service determines contract interfaces, parse contract data and message payloads | 
+| `app/indexer`     | service scans blocks and save parsed data to databases                           |
+| `app/query`       | service aggregates database repositories                                         |
+| `api/http`        | implements the REST API                                                          |
 
 ## Starting it up
 
@@ -83,7 +80,7 @@ Run repositories tests:
 
 ```shell
 # start databases up
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres clickhouse
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres clickhouse
 
 go test -p 1 $(go list ./... | grep /internal/core) -covermode=count
 ```
@@ -93,7 +90,7 @@ go test -p 1 $(go list ./... | grep /internal/core) -covermode=count
 Firstly, install [`golangci-lint`](https://golangci-lint.run/usage/install/).
 
 ```shell
-golangci-lint run 
+golangci-lint run
 ```
 
 ### Configuration
@@ -125,17 +122,17 @@ go build -o anton .
 # build local docker container via docker cli
 docker build -t anton:latest .
 # or via compose
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml build
 
 # pull public images
-docker-compose pull
+docker compose pull
 ```
 
 ### Running
 
 We have several options for compose run via [override files](https://docs.docker.com/compose/extends/#multiple-compose-files):
 * base (docker-compose.yml) - allows to run services with near default configuration;
-* dev (docker-compose.dev.yml) - allows to rebuld anton image locally and exposes databases ports;
+* dev (docker-compose.dev.yml) - allows to rebuld Anton image locally and exposes databases ports;
 * prod (docker-compose.prod.yml) - allows to configure and backup databases, requires at least 64GB RAM.
 
 You can combine it by your own. Also there are optional [profiles](https://docs.docker.com/compose/profiles/):
@@ -143,62 +140,59 @@ You can combine it by your own. Also there are optional [profiles](https://docs.
 
 Take a look at the following run examples:
 ```shell
-# run base compose without migrations
-docker-compose up -d
+# run base compose
+docker compose up -d
 
-# run base compose with migrations (recommended way)
-docker-compose --profile migrate up -d
+# run dev compose (build docker image locally)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
-# run dev compose with migrations
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml --profile migrate up -d
-
-# run prod compose without migrations
+# run prod compose
 # WARNING: requires at least 64GB RAM
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ### Schema migration
 
 ```shell
-# run optional migrations service on running compose
-docker-compose run migrations
+# run migrations service on running compose
+docker compose run migrations
 ```
 
 ### Reading logs
 
 ```shell
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### Taking a backup
 
 ```shell
 # starting up databases and API service
-docker-compose                      \
+docker compose                      \
     -f docker-compose.yml           \
     -f docker-compose.prod.yml      \
         up -d postgres clickhouse web
 
 # stop indexer
-docker-compose stop indexer
+docker compose stop indexer
 
 # create backup directories
 mkdir backups backups/pg backups/ch
 
 # backing up postgres
-docker-compose exec postgres pg_dump -U user db_name | gzip > backups/pg/1.pg.backup.gz
+docker compose exec postgres pg_dump -U user db_name | gzip > backups/pg/1.pg.backup.gz
 
 # backing up clickhouse (available only with docker-compose.prod.yml)
 ## connect to the clickhouse
-docker-compose exec clickhouse clickhouse-client
+docker compose exec clickhouse clickhouse-client
 ## execute backup command
 # :) BACKUP DATABASE default TO File('/backups/1/');
 
 # execute migrations through API service
-docker-compose exec web anton migrate up
+docker compose exec web anton migrate up
 
 # start up indexer
-docker-compose                      \
+docker compose                      \
     -f docker-compose.yml           \
     -f docker-compose.prod.yml      \
         up -d indexer
@@ -209,30 +203,13 @@ docker-compose                      \
 ### Show archive nodes from global config
 
 ```shell
-go run . archiveNodes [--testnet]
+docker run tonindexer/anton archive [--testnet]
 ```
 
 ### Insert contract interface
 
-It is not very usable right now.
+Insert known interfaces into running Anton:
 
 ```shell
-docker-compose exec indexer anton addInterface        \ 
-    --contract      [unique contract name]            \
-    --address       [optional contract addresses]     \
-    --code          [optional contract code]          \
-    --get           [optional get methods]
-```
-
-### Insert contract operation
-
-It is not very usable right now too.
-
-```shell
-docker-compose exec indexer anton addOperation        \
-    --contract      [contract interface name]         \
-    --operation     [operation name]                  \
-    --operationId   [operation name]                  \
-    --outgoing      [operation id]                    \
-    --schema        [message body schema]
+docker compose exec indexer anton contract abi/known/*.json
 ```
