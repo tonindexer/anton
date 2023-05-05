@@ -45,8 +45,6 @@ services:
       GIN_MODE: "release"
   migrations:
     <<: *anton-service
-    profiles:
-      - migrate
     command: ["migrate", "up", "--init"]
   clickhouse:
     image: "clickhouse/clickhouse-server:22"
