@@ -53,6 +53,7 @@ RUN apk add --no-cache libgcc libstdc++
 RUN addgroup -S anton && adduser -S anton -G anton
 WORKDIR /app
 COPY --from=emulator-builder /output/libemulator.so /lib
+COPY --from=builder /go/src/github.com/tonindexer/anton/abi/known /var/anton/known
 COPY --from=builder /anton /usr/bin/anton
 
 USER anton:anton

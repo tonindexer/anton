@@ -211,5 +211,5 @@ docker run tonindexer/anton archive [--testnet]
 Insert known interfaces into running Anton:
 
 ```shell
-docker compose exec indexer anton contract abi/known/*.json
+docker compose exec web anton contract /var/anton/known/*.json
 ```
