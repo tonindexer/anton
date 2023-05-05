@@ -7,7 +7,7 @@ RUN git clone --recurse-submodules -b emulator_vm_verbosity https://github.com/d
 
 RUN apk add --no-cache make cmake gcc g++ musl-dev zlib-dev openssl-dev linux-headers
 
-RUN mkdir build && (cd build && cmake ../ton -DCMAKE_BUILD_TYPE=Release && cmake --build . --target emulator)
+RUN mkdir build && (cd build && cmake ../ton -DCMAKE_BUILD_TYPE=Release && cmake --build . --target emulator -- -j 8)
 RUN mkdir /output && cp build/emulator/libemulator.so /output
 
 
