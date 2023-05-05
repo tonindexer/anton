@@ -52,7 +52,7 @@ type Message struct {
 	BodyHash        []byte          `bun:"type:bytea" json:"body_hash"`
 	OperationID     uint32          `json:"operation_id,omitempty"`
 	TransferComment string          `json:"transfer_comment,omitempty"`
-	Payload         *MessagePayload `ch:"-" bun:"rel:belongs-to,join:hash=hash" json:"payload,omitempty"`
+	Payload         *MessagePayload `ch:"-" bun:"rel:belongs-to,join:hash=hash,join:created_lt=created_lt" json:"payload,omitempty"`
 
 	StateInitCode []byte `bun:"type:bytea" json:"state_init_code,omitempty"`
 	StateInitData []byte `bun:"type:bytea" json:"state_init_data,omitempty"`
