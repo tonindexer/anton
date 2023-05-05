@@ -1,0 +1,28 @@
+[
+  {
+    "interface_name": "dns_resolver",
+    "get_methods": [
+      {
+        "name": "dnsresolve",
+        "arguments": [
+          {
+            "name": "subdomain",
+            "stack_type": "slice"
+          }, {
+            "name": "category",
+            "stack_type": "int"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "length",
+            "stack_type": "int"
+          }, {
+            "name": "record",
+            "stack_type": "cell"
+          }
+        ]
+      }
+    ]
+  }
+]

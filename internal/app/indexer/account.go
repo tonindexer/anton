@@ -3,15 +3,18 @@ package indexer
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
+
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/ton"
 
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
+	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 )
 
 func (s *Service) skipAccounts(_ *ton.BlockIDExt, a *address.Address) bool {
@@ -37,58 +40,79 @@ func (s *Service) skipAccounts(_ *ton.BlockIDExt, a *address.Address) bool {
 	}
 }
 
-func (s *Service) processAccount(ctx context.Context, b *ton.BlockIDExt, tx *core.Transaction) (*core.AccountState, *core.AccountData, error) {
+func (s *Service) processAccount(ctx context.Context, b *ton.BlockIDExt, tx *core.Transaction) (*core.AccountState, error) {
 	a := address.MustParseAddr(tx.Address.Base64())
 
 	if s.skipAccounts(b, a) {
-		return nil, nil, nil
+		return nil, errors.Wrap(core.ErrNotFound, "skip account")
 	}
+	log.Debug().Str("addr", a.String()).Int32("workchain", b.Workchain).Uint32("seq", b.SeqNo).Msg("getting account state")
 
 	defer timeTrack(time.Now(), fmt.Sprintf("processAccount(%d, %d, %s)", b.Workchain, b.SeqNo, a.String()))
 
 	raw, err := s.api.GetAccount(ctx, b, a)
 	if err != nil {
-		if strings.Contains(err.Error(), "extra currency info is not supported for AccountStorage") { // tonutils-go v1.6.2
-			// skip accounts with extra currency info
-			return nil, nil, nil
-		}
-		return nil, nil, errors.Wrapf(err, "get account")
+		return nil, errors.Wrapf(err, "get account")
 	}
 
 	acc := mapAccount(raw)
 	acc.UpdatedAt = tx.CreatedAt
-	if acc.Status == core.NonExist {
-		return nil, nil, nil
+	if acc.Status != core.Active {
+		return nil, errors.Wrap(core.ErrNotFound, "account is not active")
 	}
 
-	types, err := s.parser.DetermineInterfaces(ctx, acc)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "determine contract interfaces")
-	}
-
-	data, err := s.parser.ParseAccountData(ctx, b, acc, types)
-	if err != nil && !errors.Is(err, core.ErrNotAvailable) {
-		return nil, nil, errors.Wrapf(err, "parse account (%s)", a.String())
-	}
-
-	return acc, data, nil
+	return acc, nil
 }
 
 func (s *Service) processTxAccounts(
-	ctx context.Context, b *ton.BlockIDExt,
-	transactions []*core.Transaction,
-) (accounts map[addr.Address]*core.AccountState, accountsData map[addr.Address]*core.AccountData, err error) {
-	accounts = make(map[addr.Address]*core.AccountState)
-	accountsData = make(map[addr.Address]*core.AccountData)
-
+	ctx context.Context, b *ton.BlockIDExt, transactions []*core.Transaction,
+) (
+	map[addr.Address]*core.AccountState, map[addr.Address]*core.AccountData, error,
+) {
+	accounts := make(map[addr.Address]*core.AccountState)
 	for _, tx := range transactions {
-		acc, data, err := s.processAccount(ctx, b, tx)
-		if err != nil {
+		acc, err := s.processAccount(ctx, b, tx)
+		if err != nil && !errors.Is(err, core.ErrNotFound) {
 			return nil, nil, errors.Wrapf(err, "process account (%s)", tx.Address.Base64())
 		}
-
 		if acc != nil {
 			accounts[acc.Address] = acc
+		}
+	}
+
+	// sometimes, to fetch the full account data we need to get other contracts states
+	getOtherAccount := func(ctx context.Context, a *addr.Address) (*core.AccountState, error) {
+		// first attempt is to look for an account in this given block
+		acc, ok := accounts[*a]
+		if ok {
+			return acc, nil
+		}
+
+		// second attempt is to look for an account states in our database
+		got, err := s.accountRepo.FilterAccounts(ctx, &filter.AccountsReq{
+			Addresses:   []*addr.Address{a},
+			LatestState: true,
+		})
+		if err == nil && len(got.Rows) > 0 {
+			return got.Rows[0], nil
+		}
+
+		// final attempt is take an account from the liteserver
+		log.Warn().Str("address", a.String()).Msg("account state is not found locally")
+
+		raw, err := s.api.GetAccount(ctx, b, a.MustToTonutils())
+		if err == nil {
+			return mapAccount(raw), nil
+		}
+
+		return nil, errors.Wrapf(core.ErrNotFound, "cannot find %s account state", a.Base64())
+	}
+
+	accountsData := make(map[addr.Address]*core.AccountData)
+	for _, acc := range accounts {
+		data, err := s.parser.ParseAccountData(ctx, acc, getOtherAccount)
+		if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
+			return nil, nil, errors.Wrapf(err, "parse account data (%s)", acc.Address.String())
 		}
 		if data != nil {
 			accountsData[data.Address] = data

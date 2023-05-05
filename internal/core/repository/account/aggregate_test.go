@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/uptrace/bun/extra/bunbig"
 
-	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/abi/known"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
 	"github.com/tonindexer/anton/internal/core/rndm"
@@ -44,12 +44,12 @@ func TestRepository_AggregateAccounts_NFTCollection(t *testing.T) {
 		assert.Nil(t, err)
 
 		collectionStates = rndm.AccountStates(100)
-		collectionData = rndm.ContractsData(collectionStates, abi.NFTCollection, nil)
+		collectionData = rndm.ContractsData(collectionStates, known.NFTCollection, nil)
 
 		for i := 0; i < itemCount; i++ {
 			itemStates := rndm.AccountStates(100 / itemCount)
 			itemsStates = append(itemsStates, itemStates...)
-			itemsData = append(itemsData, rndm.ContractsData(itemStates, abi.NFTItem, &collectionStates[0].Address)...)
+			itemsData = append(itemsData, rndm.ContractsData(itemStates, known.NFTItem, &collectionStates[0].Address)...)
 		}
 
 		err = repo.AddAccountData(ctx, tx, append(itemsData, collectionData...))
@@ -116,13 +116,13 @@ func TestRepository_AggregateAccounts_JettonMinter(t *testing.T) {
 		assert.Nil(t, err)
 
 		minterStates = rndm.AccountStates(100)
-		minterData = rndm.ContractsData(minterStates, abi.JettonMinter, nil)
+		minterData = rndm.ContractsData(minterStates, known.JettonMinter, nil)
 
 		for i := 0; i < walletsCount; i++ {
 			walletStates := rndm.AccountStates(100 / walletsCount)
 
 			walletsStates = append(walletsStates, walletStates...)
-			walletsData = append(walletsData, rndm.ContractsData(walletStates, abi.JettonWallet, &minterStates[0].Address)...)
+			walletsData = append(walletsData, rndm.ContractsData(walletStates, known.JettonWallet, &minterStates[0].Address)...)
 
 			walletLatestData := walletsData[len(walletsData)-1]
 			totalSupply = totalSupply.Add(walletLatestData.JettonBalance)

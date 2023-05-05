@@ -18,21 +18,36 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 )
 
+// Address consists of flags (1 byte), workchain_id (1 byte) and account_id (32 byte).
+// https://docs.ton.org/learn/overviews/addresses#user-friendly-address-structure
 type Address [34]byte
 
 var (
 	_ json.Marshaler   = (*Address)(nil)
 	_ json.Unmarshaler = (*Address)(nil)
-	_ sql.Scanner      = (*Address)(nil)
-	_ driver.Valuer    = (*Address)(nil)
-	_ fmt.Stringer     = (*Address)(nil)
+
+	_ sql.Scanner   = (*Address)(nil)
+	_ driver.Valuer = (*Address)(nil)
+
+	_ fmt.Stringer = (*Address)(nil)
 )
 
-func (x *Address) ToTU() (*address.Address, error) {
+func (x *Address) ToTonutils() (*address.Address, error) {
 	return address.ParseAddr(x.Base64())
 }
 
-func (x *Address) FromTU(addr *address.Address) (*Address, error) {
+func (x *Address) MustToTonutils() *address.Address {
+	a, err := x.ToTonutils()
+	if err != nil {
+		panic(errors.Wrapf(err, "%s", x.String()))
+	}
+	return a
+}
+
+func (x *Address) FromTonutils(addr *address.Address) (*Address, error) {
+	if addr.Type() == address.NoneAddress {
+		return nil, nil //nolint:nilnil // no address
+	}
 	if len(addr.Data()) != 32 {
 		return nil, fmt.Errorf("wrong addr data length %d", addr.Data())
 	}
@@ -42,10 +57,10 @@ func (x *Address) FromTU(addr *address.Address) (*Address, error) {
 	return x, nil
 }
 
-func MustFromTU(a *address.Address) *Address {
-	addr, err := new(Address).FromTU(a)
+func MustFromTonutils(a *address.Address) *Address {
+	addr, err := new(Address).FromTonutils(a)
 	if err != nil {
-		panic(fmt.Sprintf("%s to address", addr))
+		panic(fmt.Sprintf("%s to address", a.String()))
 	}
 	return addr
 }
@@ -73,7 +88,15 @@ func (x *Address) FromString(str string) (*Address, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "parse address data hex")
 	}
-	return x.FromTU(address.NewAddress(0, byte(w), d))
+	return x.FromTonutils(address.NewAddress(0, byte(w), d))
+}
+
+func MustFromString(str string) *Address {
+	a, err := new(Address).FromString(str)
+	if err != nil {
+		panic(errors.Wrapf(err, "%s", str))
+	}
+	return a
 }
 
 func (x *Address) Base64() string {
@@ -120,13 +143,14 @@ func (x *Address) MarshalJSON() ([]byte, error) {
 }
 
 func (x *Address) UnmarshalJSON(raw []byte) error {
-	if _, err := x.FromBase64(string(raw)); err == nil {
+	s := strings.Replace(string(raw), "\"", "", 2)
+	if _, err := x.FromBase64(s); err == nil {
 		return nil
 	}
-	if _, err := x.FromString(string(raw)); err == nil {
+	if _, err := x.FromString(s); err == nil {
 		return nil
 	}
-	return fmt.Errorf("cannot unmarshal %s to address", string(raw))
+	return fmt.Errorf("cannot unmarshal %s to address", s)
 }
 
 func (x *Address) UnmarshalText(data []byte) error {

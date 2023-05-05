@@ -154,7 +154,7 @@ curl -X GET 'https://anton.tools/api/v0/contract/interfaces'
 ## GetContractOperations
 
 After we match contracts in the network to interfaces, we can parse messages going to and from them.
-Schemas of messages returned here is identical to what is defined in [msg_schema.json](/docs/msg_schema.json). 
+Schemas of messages returned here are identical to what is defined in [abi](/abi/README.md). 
 
 ### Endpoint: `/contract/operations`
 
@@ -171,65 +171,105 @@ curl -X GET 'https://anton.tools/api/v0/contract/operations'
   "total": 26,
   "results": [
     {
-      "name": "jetton_transfer_notification",
-      "contract_name": "jetton_wallet",
-      "outgoing": true,
-      "operation_id": 1935855772,
-      "schema": [
-        {
-          "tag": "tlb:\"#7362d09c\"",
-          "name": "Op",
-          "type": "magic"
-        },
-        {
-          "tag": "tlb:\"## 64\"",
-          "name": "QueryID",
-          "type": "uint64"
-        },
-        {
-          "tag": "tlb:\".\"",
-          "name": "Amount",
-          "type": "coins"
-        },
-        {
-          "tag": "tlb:\"addr\"",
-          "name": "Sender",
-          "type": "address"
-        }
-      ]
-    },
-    {
-      "name": "jetton_transfer",
-      "contract_name": "jetton_wallet",
+      "name": "telemint_msg_deploy",
+      "contract_name": "telemint_nft_collection",
       "outgoing": false,
-      "operation_id": 260734629,
-      "schema": [
-        {
-          "tag": "tlb:\"#0f8a7ea5\"",
-          "name": "Op",
-          "type": "magic"
-        },
-        {
-          "tag": "tlb:\"## 64\"",
-          "name": "QueryID",
-          "type": "uint64"
-        },
-        {
-          "tag": "tlb:\".\"",
-          "name": "Amount",
-          "type": "coins"
-        },
-        {
-          "tag": "tlb:\"addr\"",
-          "name": "Destination",
-          "type": "address"
-        },
-        {
-          "tag": "tlb:\"addr\"",
-          "name": "ResponseDestination",
-          "type": "address"
-        }
-      ]
+      "operation_id": 1178019994,
+      "schema": {
+        "op_name": "",
+        "op_code": "0x4637289a",
+        "body": [
+          {
+            "name": "sig",
+            "tlb_type": "bits 512",
+            "format": "bytes"
+          },
+          {
+            "name": "subwallet_id",
+            "tlb_type": "## 32",
+            "format": "uint32"
+          },
+          {
+            "name": "valid_since",
+            "tlb_type": "## 32",
+            "format": "uint32"
+          },
+          {
+            "name": "valid_till",
+            "tlb_type": "## 32",
+            "format": "uint32"
+          },
+          {
+            "name": "token_name",
+            "tlb_type": ".",
+            "format": "telemintText"
+          },
+          {
+            "name": "content",
+            "tlb_type": "^",
+            "format": "cell"
+          },
+          {
+            "name": "auction_config",
+            "tlb_type": "^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "beneficiary_address",
+                "tlb_type": "addr",
+                "format": "addr"
+              },
+              {
+                "name": "initial_min_bid",
+                "tlb_type": ".",
+                "format": "coins"
+              },
+              {
+                "name": "max_bid",
+                "tlb_type": ".",
+                "format": "coins"
+              },
+              {
+                "name": "min_bid_step",
+                "tlb_type": "## 8",
+                "format": "uint8"
+              },
+              {
+                "name": "min_extend_time",
+                "tlb_type": "## 32",
+                "format": "uint32"
+              },
+              {
+                "name": "duration",
+                "tlb_type": "## 32",
+                "format": "uint32"
+              }
+            ]
+          },
+          {
+            "name": "royalty_params",
+            "tlb_type": "maybe ^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "numerator",
+                "tlb_type": "## 16",
+                "format": "uint16"
+              },
+              {
+                "name": "denominator",
+                "tlb_type": "## 16",
+                "format": "uint16"
+              },
+              {
+                "name": "destination",
+                "tlb_type": "addr",
+                "format": "addr"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }
@@ -620,9 +660,12 @@ curl -X GET 'https://anton.tools/api/v0/messages?operation_name=jetton_transfer&
         "dst_contract": "nft_item",
         "operation_name": "nft_item_transfer",
         "data": {
-          "NewOwner": "EQAoxcO1zTHVb-dwBZLc1LjKayP8DS51C8_slcxJgv6i9bSB",
-          "ForwardAmount": "10000000",
-          "ResponseDestination": "EQBFA5heG7y4_o9_tL3ja4Ekv24du1BPfX0jkAK1aGNwxuIg"
+          "query_id": 0,
+          "new_owner": "EQAqTSGtAg2WqsPFghNIdWguGTWAiFP3pcejcNncaHDtyQVj",
+          "custom_payload": null,
+          "forward_amount": "20000000",
+          "forward_payload": {},
+          "response_destination": "EQCKu1ocgljleBs09Pv1ntMcZM8c7fXCbudW-jkKYQuigwRo"
         },
         "minter_address": {
           "hex": "0:80d78a35f955a14b679faa887ff4cd5bfc0f43b4a4eea2a7e6927f3701b273c2",
@@ -896,10 +939,10 @@ curl -X GET 'https://anton.tools/api/v0/blocks?workchain=-1&with_transactions=tr
                     "operation_id": 1935855772,
                     "operation_name": "jetton_transfer_notification",
                     "data": {
-                      "Amount": "1000000000",
-                      "Sender": "NONE",
-                      "QueryID": 12696594446820521946,
-                      "ForwardPayload": {}
+                      "amount": "1000000000",
+                      "sender": "NONE",
+                      "query_id": 12696594446820521946,
+                      "forward_payload": {}
                     },
                     "minter_address": {
                       "hex": "0:4f0156ba7e3322831b271c5df7510ddabae7d5ae0d99f250594d8f51fa2b1f8c",

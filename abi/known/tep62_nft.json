@@ -1,0 +1,430 @@
+[
+  {
+    "interface_name": "nft_item",
+    "in_messages": [
+      {
+        "op_name": "nft_item_transfer",
+        "op_code": "0x5fcc3d14",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "new_owner",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "response_destination",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "custom_payload",
+            "tlb_type": "maybe ^"
+          },
+          {
+            "name": "forward_amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "nft_item_get_static_data",
+        "op_code": "0x2fcb26a2",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "nft_item_ownership_assigned",
+        "op_code": "0x05138d91",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "prev_owner",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^"
+          }
+        ]
+      },
+      {
+        "op_name": "excesses",
+        "op_code": "0xd53276db",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          }
+        ]
+      },
+      {
+        "op_name": "nft_item_report_static_data",
+        "op_code": "0x8b771735",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "index",
+            "tlb_type": "## 256"
+          },
+          {
+            "name": "collection",
+            "tlb_type": "addr"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_nft_data",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "init",
+            "stack_type": "int",
+            "format": "bool"
+          },
+          {
+            "name": "index",
+            "stack_type": "int"
+          },
+          {
+            "name": "collection_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "owner_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "individual_content",
+            "stack_type": "cell"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "nft_collection",
+    "in_messages": [
+      {
+        "op_name": "nft_collection_item_mint",
+        "op_code": "0x1",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "index",
+            "tlb_type": "## 64",
+            "format": "bigInt"
+          },
+          {
+            "name": "ton_amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "content",
+            "tlb_type": "^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "owner",
+                "tlb_type": "addr",
+                "format": "addr"
+              },
+              {
+                "name": "content",
+                "tlb_type": "^",
+                "format": "cell"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op_name": "nft_collection_item_mint_batch",
+        "op_code": "0x2",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "deploy_list",
+            "tlb_type": "dict 64",
+            "format": "dict"
+          }
+        ]
+      },
+      {
+        "op_name": "nft_collection_change_owner",
+        "op_code": "0x3",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_owner",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "op_name": "nft_collection_change_content",
+        "op_code": "0x4",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "content",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_collection_data",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "next_item_index",
+            "stack_type": "int"
+          },
+          {
+            "name": "collection_content",
+            "stack_type": "cell",
+            "format": "content"
+          },
+          {
+            "name": "owner_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_nft_address_by_index",
+        "arguments": [
+          {
+            "name": "index",
+            "stack_type": "int"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "address",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_nft_content",
+        "arguments": [
+          {
+            "name": "index",
+            "stack_type": "int"
+          },
+          {
+            "name": "individual_content",
+            "stack_type": "cell"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "full_content",
+            "stack_type": "cell",
+            "format": "content"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "nft_royalty",
+    "in_messages": [
+      {
+        "op_name": "nft_get_royalty_params",
+        "op_code": "0x693d3950",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "nft_report_royalty_params",
+        "op_code": "0xa8cb00ad",
+        "body": [
+          {
+            "name": "numerator",
+            "tlb_type": "## 16",
+            "format": "uint16"
+          },
+          {
+            "name": "denominator",
+            "tlb_type": "## 16",
+            "format": "uint16"
+          },
+          {
+            "name": "destination",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "royalty_params",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "numerator",
+            "stack_type": "int",
+            "format": "uint16"
+          },
+          {
+            "name": "denominator",
+            "stack_type": "int",
+            "format": "uint16"
+          },
+          {
+            "name": "destination",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "nft_editable",
+    "in_messages": [
+      {
+        "op_name": "nft_edit",
+        "op_code": "0x1a0b9d51",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "content",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "nft_transfer_editorship",
+        "op_code": "0x1c04412a",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_editor",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "response_destination",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "custom_payload",
+            "tlb_type": "maybe ^",
+            "format": "cell"
+          },
+          {
+            "name": "forward_amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "nft_editorship_assigned",
+        "op_code": "0x511a4463",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "prev_editor",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "cell"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_editor",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "editor",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -45,9 +45,7 @@ func TestAddress_FromBase64(t *testing.T) {
 	}
 
 	for _, c := range testCases {
-		var addr Address
-
-		_, err := addr.FromBase64(c.b64)
+		addr, err := new(Address).FromBase64(c.b64)
 		assert.Nil(t, err)
 
 		addrStr := addr.String()
@@ -58,9 +56,9 @@ func TestAddress_FromBase64(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, c.b64, addrGot.Base64())
 
-		addrTU, err := addrGot.ToTU()
+		addrTU, err := addrGot.ToTonutils()
 		assert.Nil(t, err)
-		addrFromTU := MustFromTU(addrTU)
+		addrFromTU := MustFromTonutils(addrTU)
 		assert.Equal(t, c.b64, addrFromTU.Base64())
 	}
 }

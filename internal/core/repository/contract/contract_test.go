@@ -3,16 +3,19 @@ package contract_test
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/abi/known"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 	"github.com/tonindexer/anton/internal/core/rndm"
@@ -55,23 +58,76 @@ func TestRepository_AddContracts(t *testing.T) {
 	initdb(t)
 
 	i := &core.ContractInterface{
-		Name:            abi.NFTItem,
-		Addresses:       []*addr.Address{rndm.Address()},
-		Code:            rndm.Bytes(128),
-		CodeHash:        rndm.Bytes(32),
-		GetMethods:      []string{rndm.String(16)},
+		Name:      known.NFTItem,
+		Addresses: []*addr.Address{rndm.Address()},
+		Code:      rndm.Bytes(128),
+		GetMethodsDesc: []abi.GetMethodDesc{
+			{
+				Name: "get_nft_content",
+				Arguments: []abi.VmValueDesc{
+					{
+						Name:      "index",
+						StackType: "int",
+					}, {
+						Name:      "individual_content",
+						StackType: "cell",
+					},
+				},
+				ReturnValues: []abi.VmValueDesc{
+					{
+						Name:      "full_content",
+						StackType: "cell",
+						Format:    "content",
+					},
+				},
+			},
+		},
 		GetMethodHashes: rndm.GetMethodHashes(),
 	}
 
-	schema, err := abi.MarshalSchema((*abi.NFTItemTransfer)(nil))
-	assert.Nil(t, err)
+	schema := `{
+        "op_name": "nft_item_transfer",
+        "op_code": "0x5fcc3d14",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "new_owner",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "response_destination",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "custom_payload",
+            "tlb_type": "maybe ^"
+          },
+          {
+            "name": "forward_amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "cell"
+          }
+        ]
+      }`
+
+	var opSchema abi.OperationDesc
+	err := json.Unmarshal([]byte(schema), &opSchema)
+	require.Nil(t, err)
 
 	op := &core.ContractOperation{
 		Name:         "nft_item_transfer",
-		ContractName: abi.NFTItem,
+		ContractName: known.NFTItem,
 		Outgoing:     false,
 		OperationID:  0xdeadbeed,
-		Schema:       schema,
+		Schema:       opSchema,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -105,8 +161,6 @@ func TestRepository_AddContracts(t *testing.T) {
 		ret, err := repo.GetOperations(ctx)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(ret))
-		assert.JSONEq(t, string(schema), string(ret[0].Schema))
-		ret[0].Schema = schema
 		assert.Equal(t, []*core.ContractOperation{op}, ret)
 	})
 
@@ -118,8 +172,6 @@ func TestRepository_AddContracts(t *testing.T) {
 			op.OperationID,
 		)
 		assert.Nil(t, err)
-		assert.JSONEq(t, string(schema), string(ret.Schema))
-		ret.Schema = schema
 		assert.Equal(t, op, ret)
 	})
 }

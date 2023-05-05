@@ -8,6 +8,7 @@ import (
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/abi/known"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate/history"
 )
@@ -16,7 +17,7 @@ func getContractTypes(types []abi.ContractName) (ret []abi.ContractName) {
 	for _, t := range types {
 		ret = append(ret, t)
 		if t == "wallet" {
-			ret = append(ret, abi.GetAllWalletNames()...)
+			ret = append(ret, known.GetAllWalletNames()...)
 		}
 	}
 	return

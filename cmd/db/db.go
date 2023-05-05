@@ -8,9 +8,10 @@ import (
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	"github.com/urfave/cli/v2"
+
 	"github.com/uptrace/bun/migrate"
 	"github.com/uptrace/go-clickhouse/chmigrate"
-	"github.com/urfave/cli/v2"
 
 	"github.com/tonindexer/anton/internal/core/repository"
 
@@ -71,8 +72,9 @@ var Command = &cli.Command{
 			},
 		},
 		{
-			Name:  "create",
-			Usage: "Creates up and down SQL migrations",
+			Name:      "create",
+			Usage:     "Creates up and down SQL migrations",
+			ArgsUsage: "migration_name",
 			Action: func(c *cli.Context) error {
 				name := strings.Join(c.Args().Slice(), "_")
 

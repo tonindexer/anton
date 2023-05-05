@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
 	"github.com/tonindexer/anton/internal/core/filter"
@@ -25,10 +25,10 @@ var (
 	db *repository.DB
 
 	accountRepo repository.Account
-	abiRepo     repository.Contract
-	blockRepo   repository.Block
-	txRepo      repository.Transaction
-	msgRepo     repository.Message
+	// abiRepo     repository.Contract
+	blockRepo repository.Block
+	txRepo    repository.Transaction
+	msgRepo   repository.Message
 )
 
 func initDB() {
@@ -42,7 +42,7 @@ func initDB() {
 	}
 
 	accountRepo = account.NewRepository(db.CH, db.PG)
-	abiRepo = contract.NewRepository(db.PG)
+	// abiRepo = contract.NewRepository(db.PG)
 	blockRepo = block.NewRepository(db.CH, db.PG)
 	txRepo = tx.NewRepository(db.CH, db.PG)
 	msgRepo = msg.NewRepository(db.CH, db.PG)
@@ -122,20 +122,12 @@ func createTables(t testing.TB) {
 func TestInsertKnownInterfaces(t *testing.T) {
 	initDB()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
 	t.Run("drop tables", func(t *testing.T) {
 		dropTables(t)
 	})
 
 	t.Run("create tables", func(t *testing.T) {
 		createTables(t)
-	})
-
-	t.Run("insert known interfaces", func(t *testing.T) {
-		err := repository.InsertKnownInterfaces(ctx, abiRepo)
-		assert.Nil(t, err)
 	})
 }
 

@@ -10,7 +10,7 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 )
 
 type AccountStatus string
@@ -55,17 +55,6 @@ type AccountState struct {
 	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
 }
 
-type NFTCollectionData struct {
-	NextItemIndex *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"next_item_index,omitempty"`
-	// OwnerAddress Address
-}
-
-type NFTRoyaltyData struct {
-	RoyaltyAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"royalty_address,omitempty"`
-	RoyaltyFactor  uint16        `ch:"type:UInt16" bun:"type:integer" json:"royalty_factor,omitempty"`
-	RoyaltyBase    uint16        `ch:"type:UInt16" bun:"type:integer" json:"royalty_base,omitempty"`
-}
-
 type NFTContentData struct {
 	ContentURI         string `ch:"type:String" json:"content_uri,omitempty"`
 	ContentName        string `ch:"type:String" json:"content_name,omitempty"`
@@ -74,12 +63,26 @@ type NFTContentData struct {
 	ContentImageData   []byte `ch:"type:String" json:"content_image_data,omitempty"`
 }
 
+type NFTCollectionData struct {
+	NextItemIndex *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"next_item_index,omitempty"`
+	// OwnerAddress Address
+}
+
 type NFTItemData struct {
 	Initialized bool        `ch:"type:Bool" json:"initialized,omitempty"`
 	ItemIndex   *bunbig.Int `ch:"type:UInt256" json:"item_index,omitempty"`
 	// CollectionAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"collection_address,omitempty"`
-	EditorAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"editor_address,omitempty"`
 	// OwnerAddress      *addr.Address
+}
+
+type NFTRoyaltyData struct {
+	RoyaltyAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"royalty_address,omitempty"`
+	RoyaltyFactor  uint16        `ch:"type:UInt16" bun:"type:integer" json:"royalty_factor,omitempty"`
+	RoyaltyBase    uint16        `ch:"type:UInt16" bun:"type:integer" json:"royalty_base,omitempty"`
+}
+
+type NFTEditable struct {
+	EditorAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"editor_address,omitempty"`
 }
 
 type FTMasterData struct {
@@ -118,6 +121,7 @@ type AccountData struct {
 	NFTRoyaltyData
 	NFTContentData
 	NFTItemData
+	NFTEditable
 
 	FTMasterData
 	FTWalletData

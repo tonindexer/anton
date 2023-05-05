@@ -2,13 +2,12 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/tonindexer/anton/abi"
-	"github.com/tonindexer/anton/internal/addr"
+	"github.com/tonindexer/anton/addr"
 )
 
 // TODO: contract addresses labels
@@ -17,23 +16,22 @@ type ContractInterface struct {
 	ch.CHModel    `ch:"contract_interfaces" json:"-"`
 	bun.BaseModel `bun:"table:contract_interfaces" json:"-"`
 
-	Name            abi.ContractName `ch:",pk" bun:",pk" json:"name"`
-	Addresses       []*addr.Address  `ch:"type:Array(String),pk" bun:"type:bytea[]" json:"addresses"`
-	Code            []byte           `ch:"type:String" bun:"type:bytea,unique" json:"code"`
-	CodeHash        []byte           `ch:"type:String" bun:"type:bytea,unique" json:"code_hash"` // TODO: match by code hash
-	GetMethods      []string         `ch:"type:Array(String)" bun:",unique,array" json:"get_methods"`
-	GetMethodHashes []int32          `ch:"type:Array(UInt32)" bun:"type:integer[],unique" json:"get_method_hashes"`
+	Name            abi.ContractName    `bun:",pk" json:"name"`
+	Addresses       []*addr.Address     `bun:"type:bytea[],unique" json:"addresses"`
+	Code            []byte              `bun:"type:bytea,unique" json:"code"`
+	GetMethodsDesc  []abi.GetMethodDesc `bun:"type:text" json:"get_methods_descriptors"`
+	GetMethodHashes []int32             `bun:"type:integer[]" json:"get_method_hashes"`
 }
 
 type ContractOperation struct {
 	ch.CHModel    `ch:"contract_operations" json:"-"`
 	bun.BaseModel `bun:"table:contract_operations" json:"-"`
 
-	Name         string           `bun:",unique" json:"name"`
-	ContractName abi.ContractName `ch:",pk" bun:",pk" json:"contract_name"`
-	Outgoing     bool             `ch:",pk" bun:",pk" json:"outgoing"` // if operation is going from contract
-	OperationID  uint32           `ch:",pk" bun:",pk" json:"operation_id"`
-	Schema       json.RawMessage  `ch:"type:String" bun:"type:jsonb" json:"schema"`
+	Name         string            `bun:",unique" json:"name"`
+	ContractName abi.ContractName  `bun:",pk" json:"contract_name"`
+	Outgoing     bool              `bun:",pk" json:"outgoing"` // if operation is going from contract
+	OperationID  uint32            `bun:",pk" json:"operation_id"`
+	Schema       abi.OperationDesc `bun:"type:jsonb" json:"schema"`
 }
 
 type ContractRepository interface {

@@ -1,0 +1,349 @@
+[
+  {
+    "interface_name": "telemint_nft_collection",
+    "addresses": [
+      "EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N",
+      "EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi"
+    ],
+    "definitions": {
+      "auction_config": [
+        {
+          "name": "beneficiary_address",
+          "tlb_type": "addr"
+        },
+        {
+          "name": "initial_min_bid",
+          "tlb_type": ".",
+          "format": "coins"
+        },
+        {
+          "name": "max_bid",
+          "tlb_type": ".",
+          "format": "coins"
+        },
+        {
+          "name": "min_bid_step",
+          "tlb_type": "## 8"
+        },
+        {
+          "name": "min_extend_time",
+          "tlb_type": "## 32"
+        },
+        {
+          "name": "duration",
+          "tlb_type": "## 32"
+        }
+      ],
+      "royalty_params": [
+        {
+          "name": "numerator",
+          "tlb_type": "## 16"
+        },
+        {
+          "name": "denominator",
+          "tlb_type": "## 16"
+        },
+        {
+          "name": "destination",
+          "tlb_type": "addr"
+        }
+      ]
+    },
+    "in_messages": [
+      {
+        "op_name": "telemint_msg_deploy",
+        "op_code": "0x4637289a",
+        "body": [
+          {
+            "name": "sig",
+            "tlb_type": "bits 512"
+          },
+          {
+            "name": "subwallet_id",
+            "tlb_type": "## 32"
+          },
+          {
+            "name": "valid_since",
+            "tlb_type": "## 32"
+          },
+          {
+            "name": "valid_till",
+            "tlb_type": "## 32"
+          },
+          {
+            "name": "token_name",
+            "tlb_type": ".",
+            "format": "telemintText"
+          },
+          {
+            "name": "content",
+            "tlb_type": "^"
+          },
+          {
+            "name": "auction_config",
+            "tlb_type": "^",
+            "format": "auction_config"
+          },
+          {
+            "name": "royalty_params",
+            "tlb_type": "maybe ^",
+            "format": "royalty_params"
+          }
+        ]
+      },
+      {
+        "op_name": "telemint_msg_deploy_v_2",
+        "op_code": "0x4637289b",
+        "body": [
+          {
+            "name": "sig",
+            "tlb_type": "bits 512"
+          },
+          {
+            "name": "subwallet_id",
+            "tlb_type": "## 32"
+          },
+          {
+            "name": "valid_since",
+            "tlb_type": "## 32"
+          },
+          {
+            "name": "valid_till",
+            "tlb_type": "## 32"
+          },
+          {
+            "name": "token_name",
+            "tlb_type": ".",
+            "format": "telemintText"
+          },
+          {
+            "name": "content",
+            "tlb_type": "^"
+          },
+          {
+            "name": "auction_config",
+            "tlb_type": "^",
+            "format": "auction_config"
+          },
+          {
+            "name": "royalty_params",
+            "tlb_type": "maybe ^",
+            "format": "royalty_params"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "teleitem_msg_deploy",
+        "op_code": "0x299a3e15",
+        "body": [
+          {
+            "name": "sender_address",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "bid",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "info",
+            "tlb_type": "^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "name",
+                "tlb_type": ".",
+                "format": "telemintText"
+              },
+              {
+                "name": "domain",
+                "tlb_type": ".",
+                "format": "telemintText"
+              }
+            ]
+          },
+          {
+            "name": "content",
+            "tlb_type": "^"
+          },
+          {
+            "name": "auction_config",
+            "tlb_type": "^",
+            "format": "auction_config"
+          },
+          {
+            "name": "royalty_params",
+            "tlb_type": "^",
+            "format": "royalty_params"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "telemint_nft_item",
+    "definitions": {
+      "auction_config": [
+        {
+          "name": "beneficiary_address",
+          "tlb_type": "addr"
+        },
+        {
+          "name": "initial_min_bid",
+          "tlb_type": ".",
+          "format": "coins"
+        },
+        {
+          "name": "max_bid",
+          "tlb_type": ".",
+          "format": "coins"
+        },
+        {
+          "name": "min_bid_step",
+          "tlb_type": "## 8"
+        },
+        {
+          "name": "min_extend_time",
+          "tlb_type": "## 32"
+        },
+        {
+          "name": "duration",
+          "tlb_type": "## 32"
+        }
+      ],
+      "royalty_params": [
+        {
+          "name": "numerator",
+          "tlb_type": "## 16"
+        },
+        {
+          "name": "denominator",
+          "tlb_type": "## 16"
+        },
+        {
+          "name": "destination",
+          "tlb_type": "addr"
+        }
+      ]
+    },
+    "in_messages": [
+      {
+        "op_name": "teleitem_start_auction",
+        "op_code": "0x487a8e81",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "auction_config",
+            "tlb_type": "^",
+            "format": "auction_config"
+          }
+        ]
+      },
+      {
+        "op_name": "teleitem_cancel_auction",
+        "op_code": "0x371638ae",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "teleitem_ok",
+        "op_code": "0xa37a0983",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "teleitem_outbid_notification",
+        "op_code": "0x557cea20",
+        "body": null
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_telemint_token_name",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "token_name",
+            "stack_type": "slice"
+          }
+        ]
+      },
+      {
+        "name": "get_telemint_auction_state",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "bidder_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "bid",
+            "stack_type": "int"
+          },
+          {
+            "name": "bid_ts",
+            "stack_type": "int"
+          },
+          {
+            "name": "min_bid",
+            "stack_type": "int"
+          },
+          {
+            "name": "end_time",
+            "stack_type": "int"
+          }
+        ]
+      },
+      {
+        "name": "get_telemint_auction_config",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "beneficiary_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "initial_min_bid",
+            "stack_type": "int"
+          },
+          {
+            "name": "max_bid",
+            "stack_type": "int"
+          },
+          {
+            "name": "min_bid_step",
+            "stack_type": "int"
+          },
+          {
+            "name": "min_extend_time",
+            "stack_type": "int"
+          },
+          {
+            "name": "duration",
+            "stack_type": "int"
+          }
+        ]
+      }
+    ]
+  }
+]
