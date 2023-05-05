@@ -2,33 +2,31 @@
 
 ## Overview
 
-You can define messages schema going to and from contract, contract get-methods and account data in just one JSON schema.
-Those schemas are used in Anton, it looks for contracts in the network, which fit interfaces it knows.
+You can define schema of contract get-methods and messages going to and from contract in just one JSON schema.
 
 ### Contract interface
 
 Anton mainly determines contracts by the presence of get-methods in the contract code.
-But if it is impossible to define your contracts by only get-methods (as in Telemint NFT collection contracts), 
-you should define contract addresses in the network or a contract code BoC.
+But if it is impossible to identify your contracts by only get-methods (as in Telemint NFT collection contracts), 
+you should define contract addresses in the network or a contract code Bag of Cells.
 
 ```json5
 {
    "interface_name": "",  // name of the contract
-   "addresses": [],       // optional known addresses
-   "code_boc": "",        // optional contract code
-   "definitions": {},     // map from definition name to cell schema
+   "addresses": [],       // optional contract addresses
+   "code_boc": "",        // optional contract code BoC
+   "definitions": {},     // map definition name to cell schema
    "in_messages": [],     // possible incoming messages schema
    "out_messages": [],    // possible outgoing messages schema
-   "get_methods": [],     // get-method names, return values and arguments
-   "contract_data": []    // contract state data cell schema
+   "get_methods": []      // get-method names, return values and arguments
 }
 ```
 
 ### Message schema
 
 Each message schema has operation name, operation code and field definitions. 
-Each field definition has name, TL-B type and Go type, which will be used to map this field into a Golang structure.
-Also, it is possible to define similarly described embedded structures in the field.
+Each field definition has name, TL-B type and format, which shows how to parse cell.
+Also, it is possible to define similarly described embedded structures in each field in `struct_fields`.
 
 ```json5
 {
@@ -37,8 +35,8 @@ Also, it is possible to define similarly described embedded structures in the fi
    "body": [
       {                             // fields definitions
          "name": "query_id",        // field name
-         "tlb_type": "## 64",       // describes how we should parse the field
-         "format": "uint64"         // [optional] describes in what golang type should we map the given field
+         "tlb_type": "## 64",       // field TL-B type
+         "format": "uint64"         // describes how we should parse the field
       }, 
       {
          "name": "auction_config",
@@ -56,23 +54,18 @@ Also, it is possible to define similarly described embedded structures in the fi
 }
 ```
 
-### Contract data schema
-
-Contract data schema has the structure same as each message body schema, as it has no operation id and name.
-
 ### Types mapping
 
 While parsing TL-B cells by fields description, we are trying to parse data according to TL-B type and map it into some Golang type or structure.
 Each TL-B type used in schemas has value equal to the structure tags in [tonutils-go](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tlb/loader.go#L24).
 If it is not possible to parse the field using `tlb.LoadFromCell`, 
-you can define your custom type with `LoadFromCell` method in `abi` package (example, `TelemintText`) and register it in `tlb_types.go`.
+you can define your custom type with `LoadFromCell` method in `abi` package (for example, `TelemintText`) and register it in `tlb_types.go`.
 
 Accepted TL-B types in `tlb_type`:
 1. `## N` - integer with N bits; by default maps to `uintX` or `big.Int`
 2. `^` - data is stored in the referenced cell; by default maps to `cell.Cell` or to custom struct, if `struct_fields` is defined
 3. `.` - inner struct; by default maps to `cell.Cell` or to custom struct, if `struct_fields` is defined
-4. [TODO] `[^]dict N [-> array [^]]` - dictionary with key size `N`, transformation `->` can be applied to convert dict to array. 
-   Example: `dict 256 -> array ^` will give you array of deserialized refs of values
+4. [TODO] `[^]dict N [-> array [^]]` - dictionary with key size `N`, transformation is not supported yet
 5. `bits N` - bit slice N len; by default maps to `[]byte`
 6. `bool` - 1 bit boolean; by default maps to `bool`
 7. `addr` - ton address; by default maps to `addr.Address`
@@ -146,15 +139,15 @@ Each get-method consists of name (which is then used to get `method_id`), argume
          "arguments": [
             {
                "name": "owner_address",         // argument name
-               "stack_type": "slice",            // type we are trying to load
-               "format": "addr"               // type we map into
+               "stack_type": "slice",
+               "format": "addr"
             }
          ],
          "return_values": [
             {
                "name": "jetton_wallet_address", // return value name
-               "stack_type": "slice",            // type we load
-               "format": "addr"               // type we parse into
+               "stack_type": "slice",           // type we load
+               "format": "addr"                 // type we parse into
             }
          ]
       },
@@ -208,11 +201,11 @@ Accepted types to map from or into in `format` field:
 
 1. TEP-62 NFT Standard: [interfaces](/abi/known/tep62_nft.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md), [contract code](https://github.com/ton-blockchain/token-contract/tree/main/nft)
 2. TEP-74 Fungible tokens (Jettons) standard: [interfaces](/abi/known/tep74_jetton.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md), [contract code](https://github.com/ton-blockchain/token-contract/tree/main/ft)
-3. TEP-81 DNS contracts: [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md)
-4. TEP-85 NFT SBT tokens: [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0085-sbt-standard.md)
-5. Telemint contracts: [contract code](https://github.com/TelegramMessenger/telemint) 
+3. TEP-81 DNS contracts: [interface](/abi/known/tep81_dns.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md)
+4. TEP-85 NFT SBT tokens: [interfaces](/abi/known/tep85_nft_sbt.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0085-sbt-standard.md)
+5. Telemint contracts: [interfaces](/abi/known/telemint.json), [contract code](https://github.com/TelegramMessenger/telemint) 
 6. Getgems contracts: [contract code](https://github.com/getgems-io/nft-contracts/blob/main/packages/contracts/sources)
-7. Wallets: [tonweb](https://github.com/toncenter/tonweb/tree/0a5effd36a3f342f4aacabab728b1f9747085ad1/src/contract/wallet)
+7. Wallets: [interfaces](/abi/known/wallets.json), [tonweb](https://github.com/toncenter/tonweb/tree/0a5effd36a3f342f4aacabab728b1f9747085ad1/src/contract/wallet)
 8. [STON.fi](https://ston.fi) DEX: [architecture](https://docs.ston.fi/docs/developer-section/architecture), [contract code](https://github.com/ston-fi/dex-core)
 9. [Megaton.fi](https://megaton.fi) DEX: [architecture](https://docs.megaton.fi/developers/contract)
 10. [Tonpay](https://thetonpay.app): [go-sdk](https://github.com/TheTonpay/tonpay-go-sdk), [js-sdk](https://github.com/TheTonpay/tonpay-js-sdk) 
