@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun/extra/bunbig"
@@ -243,7 +242,7 @@ func (s *Service) getAccountDataWallet(
 	ret *core.AccountData,
 ) {
 	for _, i := range interfaces {
-		if !strings.HasPrefix(string(i.Name), "wallet") || strings.HasPrefix(string(i.Name), "wallet_highload") {
+		if len(i.GetMethodsDesc) == 0 {
 			continue
 		}
 
