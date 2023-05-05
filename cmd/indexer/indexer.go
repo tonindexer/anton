@@ -39,7 +39,7 @@ var Command = &cli.Command{
 			return errors.Wrap(err, "get interfaces")
 		}
 		if len(interfaces) == 0 {
-			return errors.Wrap(err, "no contract interfaces")
+			return errors.New("no contract interfaces")
 		}
 
 		for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
