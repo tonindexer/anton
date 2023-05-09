@@ -240,16 +240,23 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 			tx.InAmount = bunbig.FromMathBig(in.Amount.NanoTON())
 		}
 	}
-	for _, m := range raw.IO.Out {
-		if out, ok := m.Msg.(*tlb.InternalMessage); ok {
-			tx.OutAmount = tx.OutAmount.Add(bunbig.FromMathBig(out.Amount.NanoTON()))
+	if raw.IO.Out != nil {
+		messages, err := raw.IO.Out.ToSlice()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting outgoing tx messages")
+		}
+		for _, m := range messages {
+			if out, ok := m.Msg.(*tlb.InternalMessage); ok {
+				tx.OutAmount = tx.OutAmount.Add(bunbig.FromMathBig(out.Amount.NanoTON()))
+			}
 		}
 	}
-	if raw.StateUpdate != nil {
-		tx.StateUpdate = raw.StateUpdate.ToBOC()
-	}
-	if raw.Description != nil {
-		tx.Description = raw.Description.ToBOC()
+	if raw.Description.Description != nil {
+		c, err := tlb.ToCell(raw.Description.Description)
+		if err != nil {
+			return nil, errors.Wrap(err, "tx description to cell")
+		}
+		tx.Description = c.ToBOC()
 	}
 
 	return tx, nil

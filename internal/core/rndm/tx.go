@@ -31,7 +31,6 @@ func BlockTransaction(b *core.BlockID) *core.Transaction {
 		OutMsgCount:    uint16(rand.Int() % 32),
 		OutAmount:      BigInt(),
 		TotalFees:      BigInt(),
-		StateUpdate:    Bytes(128),
 		Description:    Bytes(256),
 		OrigStatus:     core.Active,
 		EndStatus:      core.Active,

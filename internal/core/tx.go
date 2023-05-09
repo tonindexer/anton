@@ -36,7 +36,6 @@ type Transaction struct {
 
 	TotalFees *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"total_fees"`
 
-	StateUpdate []byte `bun:"type:bytea" json:"state_update,omitempty"`
 	Description []byte `bun:"type:bytea" json:"description,omitempty"`
 
 	OrigStatus AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"orig_status"`

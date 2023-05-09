@@ -43,8 +43,12 @@ func (s *Service) processBlockMessages(ctx context.Context, dbtx bun.Tx, b *ton.
 	)
 
 	for _, tx := range blockTx {
-		for _, outMsg := range tx.IO.Out {
-			msg, err := mapMessage(tx, outMsg)
+		outMessagesRaw, err := tx.IO.Out.ToSlice()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting outgoing tx messages")
+		}
+		for i := range outMessagesRaw {
+			msg, err := mapMessage(tx, &outMessagesRaw[i])
 			if err != nil {
 				return nil, errors.Wrap(err, "map outcoming message")
 			}
