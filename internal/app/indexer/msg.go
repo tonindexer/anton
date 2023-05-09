@@ -43,6 +43,9 @@ func (s *Service) processBlockMessages(ctx context.Context, dbtx bun.Tx, b *ton.
 	)
 
 	for _, tx := range blockTx {
+		if tx.IO.Out == nil {
+			continue // no outgoing messages
+		}
 		outMessagesRaw, err := tx.IO.Out.ToSlice()
 		if err != nil {
 			return nil, errors.Wrap(err, "getting outgoing tx messages")
