@@ -86,6 +86,10 @@ func vmMakeValueCell(v *VmValue) (tlb.VmStackValue, error) {
 	var c *cell.Cell
 	var ok bool
 
+	if v.Payload == nil {
+		return tlb.VmStackValue{SumType: "VmStkNull"}, nil
+	}
+
 	switch v.Format {
 	case "", VmCell:
 		c, ok = v.Payload.(*cell.Cell)
