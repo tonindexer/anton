@@ -102,7 +102,7 @@ func (s *Service) processTxAccounts(
 		}
 
 		// final attempt is take an account from the liteserver
-		log.Warn().Str("address", a.String()).Msg("account state is not found locally")
+		log.Debug().Str("address", a.String()).Msg("account state is not found locally")
 
 		raw, err := s.api.GetAccount(ctx, b, a.MustToTonutils())
 		if err == nil {
