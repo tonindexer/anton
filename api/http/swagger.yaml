@@ -1,5 +1,75 @@
 basePath: /api/v0
 definitions:
+  abi.GetMethodDesc:
+    properties:
+      arguments:
+        items:
+          $ref: '#/definitions/abi.VmValueDesc'
+        type: array
+      name:
+        type: string
+      return_values:
+        items:
+          $ref: '#/definitions/abi.VmValueDesc'
+        type: array
+    type: object
+  abi.OperationDesc:
+    properties:
+      body:
+        items:
+          $ref: '#/definitions/abi.TLBFieldDesc'
+        type: array
+      op_code:
+        type: string
+      op_name:
+        type: string
+    type: object
+  abi.StackType:
+    enum:
+    - int
+    - cell
+    - slice
+    - addr
+    - bool
+    - bigInt
+    - string
+    - content
+    type: string
+    x-enum-varnames:
+    - VmInt
+    - VmCell
+    - VmSlice
+    - VmAddrSlice
+    - VmBool
+    - VmBigInt
+    - VmStringCell
+    - VmContentCell
+  abi.TLBFieldDesc:
+    properties:
+      format:
+        type: string
+      name:
+        type: string
+      struct_fields:
+        allOf:
+        - $ref: '#/definitions/abi.TLBFieldsDesc'
+        description: Format = "struct"
+      tlb_type:
+        type: string
+    type: object
+  abi.TLBFieldsDesc:
+    items:
+      $ref: '#/definitions/abi.TLBFieldDesc'
+    type: array
+  abi.VmValueDesc:
+    properties:
+      format:
+        $ref: '#/definitions/abi.StackType'
+      name:
+        type: string
+      stack_type:
+        $ref: '#/definitions/abi.StackType'
+    type: object
   aggregate.AccountsRes:
     properties:
       items:
@@ -170,8 +240,6 @@ definitions:
       content_uri:
         type: string
       editor_address:
-        description: CollectionAddress *addr.Address `ch:"type:String" bun:"type:bytea"
-          json:"collection_address,omitempty"`
         items:
           type: integer
         type: array
@@ -218,6 +286,8 @@ definitions:
         type: array
       updated_at:
         type: string
+      wallet_seq_no:
+        type: integer
     type: object
   core.AccountState:
     properties:
@@ -316,18 +386,13 @@ definitions:
         items:
           type: integer
         type: array
-      code_hash:
-        description: 'TODO: match by code hash'
-        items:
-          type: integer
-        type: array
       get_method_hashes:
         items:
           type: integer
         type: array
-      get_methods:
+      get_methods_descriptors:
         items:
-          type: string
+          $ref: '#/definitions/abi.GetMethodDesc'
         type: array
       name:
         type: string
@@ -344,9 +409,7 @@ definitions:
         description: if operation is going from contract
         type: boolean
       schema:
-        items:
-          type: integer
-        type: array
+        $ref: '#/definitions/abi.OperationDesc'
     type: object
   core.Message:
     properties:
@@ -516,10 +579,6 @@ definitions:
         type: array
       prev_tx_lt:
         type: integer
-      state_update:
-        items:
-          type: integer
-        type: array
       total_fees:
         $ref: '#/definitions/bunbig.Int'
     type: object

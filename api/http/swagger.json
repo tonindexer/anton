@@ -793,6 +793,108 @@
         }
     },
     "definitions": {
+        "abi.GetMethodDesc": {
+            "type": "object",
+            "properties": {
+                "arguments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/abi.VmValueDesc"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "return_values": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/abi.VmValueDesc"
+                    }
+                }
+            }
+        },
+        "abi.OperationDesc": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/abi.TLBFieldDesc"
+                    }
+                },
+                "op_code": {
+                    "type": "string"
+                },
+                "op_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "abi.StackType": {
+            "type": "string",
+            "enum": [
+                "int",
+                "cell",
+                "slice",
+                "addr",
+                "bool",
+                "bigInt",
+                "string",
+                "content"
+            ],
+            "x-enum-varnames": [
+                "VmInt",
+                "VmCell",
+                "VmSlice",
+                "VmAddrSlice",
+                "VmBool",
+                "VmBigInt",
+                "VmStringCell",
+                "VmContentCell"
+            ]
+        },
+        "abi.TLBFieldDesc": {
+            "type": "object",
+            "properties": {
+                "format": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "struct_fields": {
+                    "description": "Format = \"struct\"",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/abi.TLBFieldsDesc"
+                        }
+                    ]
+                },
+                "tlb_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "abi.TLBFieldsDesc": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/abi.TLBFieldDesc"
+            }
+        },
+        "abi.VmValueDesc": {
+            "type": "object",
+            "properties": {
+                "format": {
+                    "$ref": "#/definitions/abi.StackType"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "stack_type": {
+                    "$ref": "#/definitions/abi.StackType"
+                }
+            }
+        },
         "aggregate.AccountsRes": {
             "type": "object",
             "properties": {
@@ -1052,7 +1154,6 @@
                     "type": "string"
                 },
                 "editor_address": {
-                    "description": "CollectionAddress *addr.Address `ch:\"type:String\" bun:\"type:bytea\" json:\"collection_address,omitempty\"`",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -1121,6 +1222,9 @@
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "wallet_seq_no": {
+                    "type": "integer"
                 }
             }
         },
@@ -1270,23 +1374,16 @@
                         "type": "integer"
                     }
                 },
-                "code_hash": {
-                    "description": "TODO: match by code hash",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
                 "get_method_hashes": {
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
-                "get_methods": {
+                "get_methods_descriptors": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/abi.GetMethodDesc"
                     }
                 },
                 "name": {
@@ -1311,10 +1408,7 @@
                     "type": "boolean"
                 },
                 "schema": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "$ref": "#/definitions/abi.OperationDesc"
                 }
             }
         },
@@ -1567,12 +1661,6 @@
                 },
                 "prev_tx_lt": {
                     "type": "integer"
-                },
-                "state_update": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
                 },
                 "total_fees": {
                     "$ref": "#/definitions/bunbig.Int"
