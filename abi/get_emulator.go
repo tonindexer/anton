@@ -86,10 +86,6 @@ func vmMakeValueCell(v *VmValue) (tlb.VmStackValue, error) {
 	var c *cell.Cell
 	var ok bool
 
-	if v.Payload == nil {
-		return tlb.VmStackValue{SumType: "VmStkNull"}, nil
-	}
-
 	switch v.Format {
 	case "", VmCell:
 		c, ok = v.Payload.(*cell.Cell)
@@ -105,6 +101,10 @@ func vmMakeValueCell(v *VmValue) (tlb.VmStackValue, error) {
 	}
 	if !ok {
 		return tlb.VmStackValue{}, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.StackType, v.Format)
+	}
+
+	if c == nil {
+		return tlb.VmStackValue{SumType: "VmStkNull"}, nil
 	}
 
 	tgc, err := boc.DeserializeSinglRootBase64(base64.StdEncoding.EncodeToString(c.ToBOC()))
