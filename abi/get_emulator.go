@@ -234,6 +234,9 @@ func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	switch v.SumType {
 	case "VmStkNull":
+		if d.Format == VmAddrSlice {
+			return address.NewAddressNone(), nil
+		}
 		return (*cell.Slice)(nil), nil
 	case "VmStkSlice":
 	default:

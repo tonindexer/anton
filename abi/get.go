@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sigurn/crc16"
+
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 

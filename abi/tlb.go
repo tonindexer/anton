@@ -7,11 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-	"github.com/xssnick/tonutils-go/address"
-
 	"github.com/iancoleman/strcase"
+	"github.com/pkg/errors"
 
+	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
