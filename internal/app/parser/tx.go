@@ -37,6 +37,8 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountDat
 		ret.DstContract = operation.ContractName
 	}
 
+	ret.MinterAddress = acc.MinterAddress
+
 	msgParsed, err := operation.Schema.New()
 	if err != nil {
 		return errors.Wrapf(err, "creating struct from %s/%s schema", operation.ContractName, operation.Name)
@@ -56,8 +58,6 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountDat
 	if err != nil {
 		return errors.Wrap(err, "json marshal parsed payload")
 	}
-
-	ret.MinterAddress = acc.MinterAddress
 
 	return nil
 }
