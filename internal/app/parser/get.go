@@ -90,7 +90,7 @@ func (s *Service) getMethodCallNoArgs(ctx context.Context, i *core.ContractInter
 	return stack, nil
 }
 
-func mapContentDataNFT(ret *core.AccountData, c nft.ContentAny) {
+func mapContentDataNFT(ret *core.AccountData, c any) {
 	if c == nil {
 		return
 	}
@@ -136,7 +136,7 @@ func (s *Service) getNFTItemContent(ctx context.Context, collection *core.Accoun
 		ret.Errors = append(ret.Errors, err.Error())
 		return
 	}
-	mapContentDataNFT(ret, stack[0].Payload.(nft.ContentAny)) //nolint:forcetypeassert // panic on wrong interface
+	mapContentDataNFT(ret, stack[0].Payload)
 }
 
 func (s *Service) getAccountDataNFT(
@@ -156,8 +156,8 @@ func (s *Service) getAccountDataNFT(
 			}
 
 			ret.NFTCollectionData.NextItemIndex = bunbig.FromMathBig(stack[0].Payload.(*big.Int)) //nolint:forcetypeassert // panic on wrong interface
-			mapContentDataNFT(ret, stack[1].Payload.(nft.ContentAny))                             //nolint:forcetypeassert // panic on wrong interface
 			ret.OwnerAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address))         //nolint:forcetypeassert // panic on wrong interface
+			mapContentDataNFT(ret, stack[1].Payload)
 
 		case known.NFTRoyalty:
 			stack, err := s.getMethodCallNoArgs(ctx, i, "royalty_params", acc)
@@ -222,7 +222,7 @@ func (s *Service) getAccountDataFT(
 			ret.FTMasterData.TotalSupply = bunbig.FromMathBig(stack[0].Payload.(*big.Int))             //nolint:forcetypeassert // panic on wrong interface
 			ret.FTMasterData.Mintable = stack[1].Payload.(bool)                                        //nolint:forcetypeassert // panic on wrong interface
 			ret.FTMasterData.AdminAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-			mapContentDataNFT(ret, stack[3].Payload.(nft.ContentAny))                                  //nolint:forcetypeassert // panic on wrong interface
+			mapContentDataNFT(ret, stack[3].Payload)
 
 		case known.JettonWallet:
 			stack, err := s.getMethodCallNoArgs(ctx, i, "get_wallet_data", acc)
