@@ -1,3 +1,5 @@
+SET statement_timeout = 0;
+
 ALTER TABLE transactions DROP COLUMN state_update;
 
 --bun:split
