@@ -34,6 +34,9 @@ func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (re
 		q = q.Where("message.dst_address in (?)", bun.In(req.DstAddresses)).
 			Where("length(message.dst_address) > 0") // partial index
 	}
+	if req.OperationID != nil {
+		q = q.Where("message.operation_id = ?", *req.OperationID)
+	}
 
 	if req.WithPayload {
 		if len(req.SrcContracts) > 0 {
@@ -102,6 +105,9 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 	}
 	if len(req.DstAddresses) > 0 {
 		q = q.Where("dst_address in (?)", ch.In(req.DstAddresses))
+	}
+	if req.OperationID != nil {
+		q = q.Where("message.operation_id = ?", *req.OperationID)
 	}
 
 	if payload {

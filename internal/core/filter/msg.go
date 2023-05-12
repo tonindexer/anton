@@ -15,6 +15,7 @@ type MessagesReq struct {
 	Hash         []byte          // `form:"hash"`
 	SrcAddresses []*addr.Address // `form:"src_address"`
 	DstAddresses []*addr.Address // `form:"dst_address"`
+	OperationID  *uint32
 
 	WithPayload    bool
 	SrcContracts   []string `form:"src_contract"`

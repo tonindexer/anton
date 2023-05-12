@@ -4,9 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bunbig"
 	"github.com/uptrace/go-clickhouse/ch"
+	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/addr"
 )
@@ -36,13 +39,32 @@ type Transaction struct {
 
 	TotalFees *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"total_fees"`
 
-	Description []byte `bun:"type:bytea" json:"description,omitempty"`
+	Description       []byte `bun:"type:bytea,notnull" json:"description_boc,omitempty"`
+	DescriptionLoaded any    `ch:"-" bun:"-" json:"description,omitempty"`
+	ResultCode        int32  `ch:"type:Int32" bun:",notnull" json:"result_code"`
 
 	OrigStatus AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"orig_status"`
 	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"end_status"`
 
 	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
 	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
+}
+
+func (tx *Transaction) LoadDescription() error { // TODO: optionally load description in API
+	var d tlb.TransactionDescription
+
+	c, err := cell.FromBOC(tx.Description)
+	if err != nil {
+		return errors.Wrap(err, "load description boc")
+	}
+
+	if err := d.LoadFromCell(c.BeginParse()); err != nil {
+		return errors.Wrap(err, "load description from cell")
+	}
+
+	tx.DescriptionLoaded = d
+
+	return nil
 }
 
 type TransactionRepository interface {

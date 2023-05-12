@@ -23,7 +23,7 @@ type Service struct {
 
 	api *ton.APIClient
 
-	bcConfig *cell.Cell // TODO: init it
+	bcConfig *cell.Cell
 
 	contractRepo core.ContractRepository
 }

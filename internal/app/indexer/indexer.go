@@ -15,7 +15,6 @@ import (
 	"github.com/tonindexer/anton/internal/core/repository"
 	"github.com/tonindexer/anton/internal/core/repository/account"
 	"github.com/tonindexer/anton/internal/core/repository/block"
-	"github.com/tonindexer/anton/internal/core/repository/contract"
 	"github.com/tonindexer/anton/internal/core/repository/msg"
 	"github.com/tonindexer/anton/internal/core/repository/tx"
 )
@@ -25,7 +24,6 @@ var _ app.IndexerService = (*Service)(nil)
 type Service struct {
 	cfg *app.IndexerConfig
 
-	abiRepo     core.ContractRepository
 	blockRepo   core.BlockRepository
 	txRepo      core.TransactionRepository
 	msgRepo     repository.Message
@@ -46,7 +44,6 @@ func NewService(_ context.Context, cfg *app.IndexerConfig) (*Service, error) {
 
 	s.cfg = cfg
 	ch, pg := cfg.DB.CH, cfg.DB.PG
-	s.abiRepo = contract.NewRepository(pg)
 	s.blockRepo = block.NewRepository(ch, pg)
 	s.txRepo = tx.NewRepository(ch, pg)
 	s.msgRepo = msg.NewRepository(ch, pg)

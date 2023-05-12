@@ -21,7 +21,7 @@ func (s *Service) getNotSeenShards(ctx context.Context, shard *ton.BlockIDExt) (
 		return nil, nil
 	}
 
-	b, err := s.api.GetBlockData(ctx, shard) // TODO: save this block data to a database
+	b, err := s.api.GetBlockData(ctx, shard)
 	if err != nil {
 		return nil, fmt.Errorf("get block data: %w", err)
 	}

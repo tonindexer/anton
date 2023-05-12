@@ -87,7 +87,7 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	_, err = pgDB.NewCreateTable().
 		Model(&core.Transaction{}).
 		IfNotExists().
-		// WithForeignKeys().
+		ForeignKey(`(in_msg_hash) REFERENCES messages(hash)`).
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "transaction pg create table")
