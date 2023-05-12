@@ -1,11 +1,12 @@
-# build emulator libraries
+# syntax=docker/dockerfile:1.5-labs
 FROM alpine:3 AS emulator-builder
 
-RUN apk add --no-cache git
+# build emulator libraries
 
-RUN git clone --recurse-submodules -b emulator_vm_verbosity https://github.com/dungeon-master-666/ton.git
+RUN apk add --no-cache make cmake gcc g++ musl-dev zlib-dev openssl-dev linux-headers git
 
-RUN apk add --no-cache make cmake gcc g++ musl-dev zlib-dev openssl-dev linux-headers
+ADD --keep-git-dir=true https://github.com/dungeon-master-666/ton.git#emulator_vm_verbosity /ton
+RUN cd /ton && git submodule update --init --recursive
 
 RUN mkdir build && (cd build && cmake ../ton -DCMAKE_BUILD_TYPE=Release && cmake --build . --target emulator -- -j 8)
 RUN mkdir /output && cp build/emulator/libemulator.so /output
@@ -34,7 +35,7 @@ COPY internal /go/src/github.com/tonindexer/anton/internal
 COPY main.go /go/src/github.com/tonindexer/anton
 
 # copy emulator library to the tongo package, which uses it
-COPY --from=emulator-builder /output/libemulator.so /go/pkg/mod/github.com/tonkeeper/tongo@v1.0.14/lib/linux/libemulator.so
+COPY --from=emulator-builder /output/libemulator.so /lib
 
 RUN swag init \
         --output api/http --generalInfo internal/api/http/controller.go \
@@ -52,7 +53,7 @@ RUN apk add --no-cache libgcc libstdc++
 
 RUN addgroup -S anton && adduser -S anton -G anton
 WORKDIR /app
-COPY --from=emulator-builder /output/libemulator.so /lib
+COPY --from=builder /lib/libemulator.so /lib
 COPY --from=builder /go/src/github.com/tonindexer/anton/abi/known /var/anton/known
 COPY --from=builder /anton /usr/bin/anton
 
