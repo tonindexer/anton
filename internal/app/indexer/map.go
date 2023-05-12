@@ -15,30 +15,6 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-func getMsgHash(msg *tlb.Message) ([]byte, error) {
-	switch raw := msg.Msg.(type) { // TODO: fix ToCell marshal in tonutils-go
-	case *tlb.InternalMessage:
-		if raw.StateInit != nil {
-			raw.StateInit.Lib = nil
-		}
-	case *tlb.ExternalMessage:
-		if raw.StateInit != nil {
-			raw.StateInit.Lib = nil
-		}
-	case *tlb.ExternalMessageOut:
-		if raw.StateInit != nil {
-			raw.StateInit.Lib = nil
-		}
-	}
-
-	msgCell, err := tlb.ToCell(msg.Msg)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot convert message to cell")
-	}
-
-	return msgCell.Hash(), nil
-}
-
 func mapMessageInternal(msg *core.Message, raw *tlb.InternalMessage) error {
 	msg.Type = core.Internal
 
@@ -149,10 +125,11 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 		err error
 	)
 
-	msg.Hash, err = getMsgHash(message)
+	msgCell, err := tlb.ToCell(message)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cannot convert message to cell")
 	}
+	msg.Hash = msgCell.Hash()
 
 	switch raw := message.Msg.(type) {
 	case *tlb.InternalMessage:
@@ -204,8 +181,6 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 }
 
 func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction, error) {
-	var err error
-
 	tx := &core.Transaction{
 		Hash: raw.Hash,
 
@@ -232,10 +207,11 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 		tx.BlockSeqNo = b.SeqNo
 	}
 	if raw.IO.In != nil && raw.IO.In.Msg != nil {
-		tx.InMsgHash, err = getMsgHash(raw.IO.In)
+		msgCell, err := tlb.ToCell(raw.IO.In)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "cannot convert in message to cell")
 		}
+		tx.InMsgHash = msgCell.Hash()
 		if in, ok := raw.IO.In.Msg.(*tlb.InternalMessage); ok {
 			tx.InAmount = bunbig.FromMathBig(in.Amount.NanoTON())
 		}
