@@ -91,6 +91,9 @@ func (s *Service) getMethodCallNoArgs(ctx context.Context, i *core.ContractInter
 }
 
 func mapContentDataNFT(ret *core.AccountData, c nft.ContentAny) {
+	if c == nil {
+		return
+	}
 	switch content := c.(type) {
 	case *nft.ContentSemichain: // TODO: remove this (?)
 		ret.ContentURI = content.URI

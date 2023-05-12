@@ -200,8 +200,20 @@ func vmParseValueInt(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	switch v.SumType {
 	case "VmStkNull":
-		return (*cell.Cell)(nil), nil
+		switch d.Format {
+		case "", VmCell:
+			return (*cell.Cell)(nil), nil
+		case VmStringCell:
+			return "", nil
+		case VmContentCell:
+			return nft.ContentAny(nil), nil
+		default:
+			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
+		}
+
 	case "VmStkCell":
+		// go further
+
 	default:
 		return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.StackType, v.SumType)
 	}
@@ -238,11 +250,18 @@ func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	switch v.SumType {
 	case "VmStkNull":
-		if d.Format == VmAddrSlice {
+		switch d.Format {
+		case "", VmSlice:
+			return (*cell.Slice)(nil), nil
+		case VmAddrSlice:
 			return address.NewAddressNone(), nil
+		default:
+			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
 		}
-		return (*cell.Slice)(nil), nil
+
 	case "VmStkSlice":
+		// go further
+
 	default:
 		return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.StackType, v.SumType)
 	}
