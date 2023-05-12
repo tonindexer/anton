@@ -385,6 +385,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "operation id in hex format or as int32",
+                        "name": "operation_id",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -1614,7 +1620,8 @@ const docTemplate = `{
                 "created_lt": {
                     "type": "integer"
                 },
-                "description": {
+                "description": {},
+                "description_boc": {
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -1663,6 +1670,9 @@ const docTemplate = `{
                     }
                 },
                 "prev_tx_lt": {
+                    "type": "integer"
+                },
+                "result_code": {
                     "type": "integer"
                 },
                 "total_fees": {

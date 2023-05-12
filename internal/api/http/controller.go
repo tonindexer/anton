@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -70,6 +71,22 @@ func unmarshalAddress(a string) (*addr.Address, error) {
 	}
 
 	return x, nil
+}
+
+func unmarshalOperationID(op string) (uint32, error) {
+	op = strings.Replace(op, "0x", "", 1)
+
+	i, err := strconv.ParseInt(op, 10, 32)
+	if err == nil {
+		return uint32(i), nil
+	}
+
+	i, err = strconv.ParseInt(op, 16, 32)
+	if err == nil {
+		return uint32(i), nil
+	}
+
+	return 0, err
 }
 
 func unmarshalSorting(sort string) (string, error) {
@@ -486,6 +503,7 @@ func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
 //	@Param   		hash				query	string  	false	"msg hash"
 //	@Param   		src_address     	query   []string 	false   "source address"
 //	@Param   		dst_address     	query   []string 	false   "destination address"
+//	@Param   		operation_id     	query   string 		false   "operation id in hex format or as int32"
 //	@Param   		src_contract		query	[]string  	false	"source contract interface"
 //	@Param   		dst_contract		query	[]string  	false	"destination contract interface"
 //	@Param   		operation_name		query	[]string  	false	"filter by contract operation names"
@@ -527,6 +545,15 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 	if err != nil {
 		paramErr(ctx, "minter_address", err)
 		return
+	}
+
+	if op := ctx.Query("operation_id"); op != "" {
+		id, err := unmarshalOperationID(op)
+		if err != nil {
+			paramErr(ctx, "operation_id", err)
+			return
+		}
+		req.OperationID = &id
 	}
 
 	req.WithPayload = true

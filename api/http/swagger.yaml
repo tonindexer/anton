@@ -545,7 +545,8 @@ definitions:
         type: string
       created_lt:
         type: integer
-      description:
+      description: {}
+      description_boc:
         items:
           type: integer
         type: array
@@ -578,6 +579,8 @@ definitions:
           type: integer
         type: array
       prev_tx_lt:
+        type: integer
+      result_code:
         type: integer
       total_fees:
         $ref: '#/definitions/bunbig.Int'
@@ -934,6 +937,10 @@ paths:
           type: string
         name: dst_address
         type: array
+      - description: operation id in hex format or as int32
+        in: query
+        name: operation_id
+        type: string
       - description: source contract interface
         in: query
         items:
