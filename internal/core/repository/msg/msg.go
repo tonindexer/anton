@@ -77,6 +77,14 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "message created_lt pg create index")
 	}
 
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.Message{}).
+		Column("operation_id").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "message operation id pg create index")
+	}
+
 	// message payloads
 
 	_, err = pgDB.NewCreateIndex().

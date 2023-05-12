@@ -23,6 +23,9 @@ func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (re
 		q = q.Relation("Payload")
 	}
 
+	if req.OperationID != nil {
+		q = q.Where("message.operation_id = ?", *req.OperationID)
+	}
 	if len(req.Hash) > 0 {
 		q = q.Where("message.hash = ?", req.Hash)
 	}
