@@ -125,7 +125,7 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	_, err := pgDB.ExecContext(ctx, "CREATE TYPE message_type AS ENUM (?, ?, ?)",
 		core.ExternalIn, core.ExternalOut, core.Internal)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
-		return errors.Wrap(err, "account status pg create enum")
+		return errors.Wrap(err, "messages pg create enum")
 	}
 
 	_, err = chDB.NewCreateTable().
@@ -153,6 +153,12 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "message ch create table")
+	}
+
+	_, err = pgDB.ExecContext(ctx, "ALTER TABLE messages ADD CONSTRAINT messages_source_tx_hash_notnull "+
+		"CHECK (NOT (source_tx_hash IS NULL AND src_address != decode('11ff0000000000000000000000000000000000000000000000000000000000000000', 'hex')));")
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return errors.Wrap(err, "messages pg create source tx hash check")
 	}
 
 	_, err = pgDB.NewCreateTable().
