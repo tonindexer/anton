@@ -35,7 +35,8 @@ COPY internal /go/src/github.com/tonindexer/anton/internal
 COPY main.go /go/src/github.com/tonindexer/anton
 
 # copy emulator library to the tongo package, which uses it
-COPY --from=emulator-builder /output/libemulator.so /lib
+COPY --from=emulator-builder /output/libemulator.so /libemulator.so
+RUN cp /libemulator.so /go/pkg/mod/github.com/tonkeeper/tongo@v1.0.14/lib/linux/libemulator.so
 
 RUN swag init \
         --output api/http --generalInfo internal/api/http/controller.go \
@@ -53,7 +54,7 @@ RUN apk add --no-cache libgcc libstdc++
 
 RUN addgroup -S anton && adduser -S anton -G anton
 WORKDIR /app
-COPY --from=builder /lib/libemulator.so /lib
+COPY --from=builder /libemulator.so /lib
 COPY --from=builder /go/src/github.com/tonindexer/anton/abi/known /var/anton/known
 COPY --from=builder /anton /usr/bin/anton
 
