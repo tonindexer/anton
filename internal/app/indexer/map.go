@@ -180,6 +180,19 @@ func mapAccount(acc *tlb.Account) *core.AccountState {
 	return ret
 }
 
+func mapTransactionDescription(desc any, tx *core.Transaction) {
+	switch d := desc.(type) {
+	case *tlb.TransactionDescriptionOrdinary:
+		tx.ResultCode = d.ActionPhase.ResultCode
+	case *tlb.TransactionDescriptionTickTock:
+		tx.ResultCode = d.ActionPhase.ResultCode
+	case *tlb.TransactionDescriptionSplitPrepare:
+		tx.ResultCode = d.ActionPhase.ResultCode
+	case *tlb.TransactionDescriptionMergeInstall:
+		tx.ResultCode = d.ActionPhase.ResultCode
+	}
+}
+
 func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction, error) {
 	tx := &core.Transaction{
 		Hash: raw.Hash,
@@ -233,6 +246,7 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 			return nil, errors.Wrap(err, "tx description to cell")
 		}
 		tx.Description = c.ToBOC()
+		mapTransactionDescription(raw.Description.Description, tx)
 	}
 
 	return tx, nil
