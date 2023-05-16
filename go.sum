@@ -182,8 +182,8 @@ github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAh
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
 github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 h1:bAn7/zixMGCfxrRTfdpNzjtPYqr8smhKouy9mxVdGPU=
 github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673/go.mod h1:N3UwUGtsrSj3ccvlPHLoLsHnpR27oXr4ZE984MbSER8=
-github.com/xssnick/tonutils-go v1.7.2 h1:OqMp6CXfZ1HtgAxJ4cps7Ce5SH7+0fMv+5+x4P+nccI=
-github.com/xssnick/tonutils-go v1.7.2/go.mod h1:wH8ldhLueyfXW15r3MyaIq9YzA+8bzvL6UMU2BLp08g=
+github.com/xssnick/tonutils-go v1.7.3 h1:+m6Yh4pvPNGxviv06g8wKcy/w2N7AwUnUoAcRVjyOxo=
+github.com/xssnick/tonutils-go v1.7.3/go.mod h1:wH8ldhLueyfXW15r3MyaIq9YzA+8bzvL6UMU2BLp08g=
 github.com/yuin/goldmark v1.4.0/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 go.opentelemetry.io/otel v1.13.0 h1:1ZAKnNQKwBBxFtww/GwxNUyTf0AxkZzrukO8MeXqe4Y=
