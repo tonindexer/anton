@@ -24,5 +24,43 @@
         ]
       }
     ]
+  },
+  {
+    "interface_name": "dns_nft_item",
+    "get_methods": [
+      {
+        "name": "get_domain",
+        "return_values": [
+          {
+            "name": "domain",
+            "stack_type": "slice",
+            "format": "string"
+          }
+        ]
+      }, {
+        "name": "get_auction_info",
+        "return_values": [
+          {
+            "name": "max_bid_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "max_bid_amount",
+            "stack_type": "int"
+          }, {
+            "name": "auction_end_time",
+            "stack_type": "int"
+          }
+        ]
+      }, {
+        "name": "get_last_fill_up_time",
+        "return_values": [
+          {
+            "name": "last_fill_up_time",
+            "stack_type": "int"
+          }
+        ]
+      }
+    ]
   }
 ]
