@@ -152,7 +152,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 To run Anton, you need at least one defined contract interface.
-There some known interfaces in the [abi/known](/abi/known) directory.
+There are some known interfaces in the [abi/known](/abi/known) directory.
 You can add them through this command:
 ```shell
 docker compose exec web sh -c "anton contract /var/anton/known/*.json"
@@ -215,11 +215,16 @@ docker run tonindexer/anton archive [--testnet]
 
 ### Insert contract interface
 
-Insert known interfaces into running Anton:
-
 ```shell
 # add from stdin
 cat abi/known/tep81_dns.json | docker compose exec -T web anton contract --stdin
 # add from file
-docker compose exec web sh -c "anton contract /var/anton/known/*.json"
+docker compose exec web anton contract "/var/anton/known/tep81_dns.json"
 ```
+
+### Delete contract interface
+
+```shell
+docker compose exec web anton contract delete "dns_nft_item"
+```
+

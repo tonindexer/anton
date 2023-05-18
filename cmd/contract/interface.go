@@ -166,6 +166,40 @@ var Command = &cli.Command{
 		},
 	},
 
+	Subcommands: cli.Commands{
+		{
+			Name:  "delete",
+			Usage: "Deletes contract interface from the database",
+
+			ArgsUsage: "[interface_name_1] [interface_name_2]",
+
+			Action: func(ctx *cli.Context) error {
+				pg := bun.NewDB(
+					sql.OpenDB(
+						pgdriver.NewConnector(
+							pgdriver.WithDSN(env.GetString("DB_PG_URL", "")),
+						),
+					),
+					pgdialect.New(),
+				)
+				if err := pg.Ping(); err != nil {
+					return errors.Wrapf(err, "cannot ping postgresql")
+				}
+
+				contractRepo := contract.NewRepository(pg)
+
+				for _, i := range ctx.Args().Slice() {
+					err := contractRepo.DelInterface(ctx.Context, i)
+					if err != nil {
+						return errors.Wrapf(err, "deleting %s interface", i)
+					}
+				}
+
+				return nil
+			},
+		},
+	},
+
 	Action: func(ctx *cli.Context) (err error) {
 		var interfacesDesc []*abi.InterfaceDesc
 
@@ -174,7 +208,7 @@ var Command = &cli.Command{
 		} else {
 			filenames := ctx.Args().Slice()
 			if len(filenames) == 0 {
-				return errors.Wrap(core.ErrInvalidArg, "no files given and stdin flag is not selected")
+				cli.ShowSubcommandHelpAndExit(ctx, 1)
 			}
 			interfacesDesc, err = readFiles(filenames)
 		}

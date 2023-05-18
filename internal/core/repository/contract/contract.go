@@ -71,6 +71,34 @@ func (r *Repository) AddOperation(ctx context.Context, op *core.ContractOperatio
 	return nil
 }
 
+func (r *Repository) DelInterface(ctx context.Context, name string) error {
+	_, err := r.pg.NewDelete().
+		Model((*core.ContractOperation)(nil)).
+		Where("contract_name = ?", name).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	ret, err := r.pg.NewDelete().
+		Model((*core.ContractInterface)(nil)).
+		Where("name = ?", name).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	rows, err := ret.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "rows affected")
+	}
+	if rows == 0 {
+		return errors.Wrap(core.ErrNotFound, "no such interface")
+	}
+
+	return nil
+}
+
 func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
 	var ret []*core.ContractInterface
 
