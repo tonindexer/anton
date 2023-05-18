@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
 	"os"
 	"strconv"
@@ -22,7 +23,22 @@ import (
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
 
-func readContractInterfaces(filenames []string) (ret []*abi.InterfaceDesc, err error) {
+func readStdin() ([]*abi.InterfaceDesc, error) {
+	var interfaces []*abi.InterfaceDesc
+
+	j, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(j, &interfaces); err != nil {
+		return nil, errors.Wrapf(err, "unmarshal json")
+	}
+
+	return interfaces, nil
+}
+
+func readFiles(filenames []string) (ret []*abi.InterfaceDesc, err error) {
 	for _, fn := range filenames {
 		var interfaces []*abi.InterfaceDesc
 
@@ -142,10 +158,26 @@ var Command = &cli.Command{
 
 	ArgsUsage: "[file1.json] [file2.json]",
 
-	Action: func(ctx *cli.Context) error {
-		filenames := ctx.Args().Slice()
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:    "stdin",
+			Usage:   "read from stdin instead of files",
+			Aliases: []string{"i"},
+		},
+	},
 
-		interfacesDesc, err := readContractInterfaces(filenames)
+	Action: func(ctx *cli.Context) (err error) {
+		var interfacesDesc []*abi.InterfaceDesc
+
+		if ctx.Bool("stdin") {
+			interfacesDesc, err = readStdin()
+		} else {
+			filenames := ctx.Args().Slice()
+			if len(filenames) == 0 {
+				return errors.Wrap(core.ErrInvalidArg, "no files given and stdin flag is not selected")
+			}
+			interfacesDesc, err = readFiles(filenames)
+		}
 		if err != nil {
 			return err
 		}

@@ -132,10 +132,10 @@ docker compose pull
 
 We have several options for compose run via [override files](https://docs.docker.com/compose/extends/#multiple-compose-files):
 * base (docker-compose.yml) - allows to run services with near default configuration;
-* dev (docker-compose.dev.yml) - allows to rebuld Anton image locally and exposes databases ports;
+* dev (docker-compose.dev.yml) - allows to rebuild Anton image locally and exposes databases ports;
 * prod (docker-compose.prod.yml) - allows to configure and backup databases, requires at least 64GB RAM.
 
-You can combine it by your own. Also there are optional [profiles](https://docs.docker.com/compose/profiles/):
+You can combine it by your own. Also, there are optional [profiles](https://docs.docker.com/compose/profiles/):
 * migrate - runs optional migrations service.
 
 Take a look at the following run examples:
@@ -149,6 +149,13 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 # run prod compose
 # WARNING: requires at least 64GB RAM
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+To run Anton, you need at least one defined contract interface.
+There some known interfaces in the [abi/known](/abi/known) directory.
+You can add them through this command:
+```shell
+docker compose exec web sh -c "anton contract /var/anton/known/*.json"
 ```
 
 ### Schema migration
@@ -211,5 +218,8 @@ docker run tonindexer/anton archive [--testnet]
 Insert known interfaces into running Anton:
 
 ```shell
+# add from stdin
+cat abi/known/tep81_dns.json | docker compose exec -T web anton contract --stdin
+# add from file
 docker compose exec web sh -c "anton contract /var/anton/known/*.json"
 ```
