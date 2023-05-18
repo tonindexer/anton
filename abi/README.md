@@ -200,7 +200,8 @@ Accepted types to map from or into in `format` field:
 3. `uint8`, `uint16`, `uint32`, `uint64` - map int to an unsigned integer
 4. `bigInt` - map integer bigger than 64 bits
 5. `string` - load string snake from cell
-6. `content` - load [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md) standard token data into [`nft.ContentAny`](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
+6. `bytes` - convert big int to bytes
+7. `content` - load [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md) standard token data into [`nft.ContentAny`](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
 
 ## Known contracts
 

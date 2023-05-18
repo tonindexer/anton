@@ -71,6 +71,9 @@ func vmMakeValueInt(v *VmValue) (ret tlb.VmStackValue, _ error) {
 	case "uint64":
 		ui, uok := v.Payload.(uint64)
 		bi, ok = big.NewInt(int64(ui)), uok
+	case "bytes":
+		ui, uok := v.Payload.([]byte)
+		bi, ok = new(big.Int).SetBytes(ui), uok
 	}
 	if !ok {
 		return ret, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.StackType, v.Format)
@@ -192,6 +195,8 @@ func vmParseValueInt(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		return bi.Uint64(), nil
 	case VmBool:
 		return bi.Cmp(big.NewInt(0)) != 0, nil
+	case VmBytes:
+		return bi.Bytes(), nil
 	default:
 		return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
 	}

@@ -26,6 +26,7 @@ const (
 	VmBool        StackType = "bool"
 	VmBigInt      StackType = "bigInt"
 	VmStringCell  StackType = "string"
+	VmBytes       StackType = "bytes"
 	VmContentCell StackType = "content"
 )
 
