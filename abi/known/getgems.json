@@ -240,131 +240,6 @@
     ]
   },
   {
-    "interface": "getgems_nft_raffle",
-    "code_boc": "te6ccsECGgEABKgAAA0AEgAXAD0AQwCdANwA+AEgAV4BwQHoAh8CcQJ/Ar4CwwMRAy8DYwObA7cD8QQGBEUEqAEU/wD0pBP0vPLICwECAWIFAgIBWAQDAUW6KJ2zz4QvhD+ET4RfhG+Ef4SPhJ+Er4S/hM+E34TvhP+FCBkBBbtguBUEqNAz0NMDAXGw8kDbPPpAMALTH/hHUkDHBfhIUlDHBfhJUmDHBYIQBRONkVJQuo6GEDRfBNs84IEH0VJQuo6ObDMzgQPqWbFYsfL02zzgMIEH0lJAuhkNCgYDdI6YM4ED6lMxsfL0cAGSMHHeApJyMt5DMNs84FuBB9RSILqOhhAjXwPbPOAygQfTuo6C2zzgW4QP8vAJCAcANIED6fhCcbry8oED6vhJE8cFEvL01NMHMPsAAUqBA+n4QnO98vL4RfhDoPhOqIED61IiufLy+EX4Q6CpBPhQAds8EwNyMDGBA+n4QnG68vQhwAGd+EyCCJiWgFIgoaD4bN4BwAKc+E2CCJiWgBKhoPhtkTDi2zyOgts83ts8FQ8RBLqBA+n4QnG98vKBA+nbPPLycvhi+E/4TvhH+EjbPIIID0JAcPsC+Ef4TI0E05GVCByYWZmbGUgY2FuY2VsZWSBy2zz4SPhNjQTTkZUIHJhZmZsZSBjYW5jZWxlZIHIVDBILA0TbPPhJcI0E05GVCByYWZmbGUgY2FuY2VsZWSCBAILbPNs8EhIRAmZ/jy0kgwf0fG+lII8eItcLA8ACjoZxVHZS2zzeAtcLA8ADjoZxVHUx2zzekTLiAbPmXwUYGASYggiYloASofhOoSDBAPhCcb2xjoMw2zzgIvpEMfhPAds8XLGzjoRfBNs84DQ0+G8Cm/hGpPhm+EwioPhs3pv4RKT4ZPhNAaD4bZEw4hcWFw4DEts8joLbPN7bPBUPEQRyc/hi+FD4T9s8+HD4UPhO2zyCCA9CQHD7AvhJcI0FU5GVCByYWZmbGUgY29tbWlzc2lvboIEAgts8FBMSEAEE2zwRAJj4UPhPyPQA9ADJyPhK+gL4S/oC+Ez6AvhN+gL4TvoCycj4R88W+EjPFvhJzxbJ+Eb4RfhE+EP4QsjLAcsDywPLA8sDycjMzMzMye1UADhwIIAYyMsFUAbPFlAE+gIUy2oSyx8BzxbJAfsAAmB/jyoigwf0fG+lII8bAtcLAMABjohw+EdUZDHbPI6IcPhIVGQx2zzikTLiAbPmXwMYGABsf44xIYMH9HxvpTIhjiNy+BHAAJ1xyMsAydBUIAWDB/QWnXDIywDJ0FQgBYMH9BbiA94Bs+ZbATLbPPhD+ES6+EX4Rrqw+Ez4Sr6w+E34S76wGQBwcFRwEoMH9A5vocAAlF8EcCDg0wMwwACeMXLIywPJ0EADgwf0Fn+fMHPIywPJ0EADgwf0Fn8C4lgBJIBA1yH6QDAB+kQxgEACcALbPBgAenAg+CWCEF/MPRTIyx/LPyTPFlAEzxYTygAi+gISygDJcXAgcoAYyMsFywHLAMsHE8v/UAP6AstqzMkB+wAAwvhBbt3tRNDUAdDTAQH4YtMDAfhj0wMB+GTTAwH4ZdMDMPhm1AHQ+kAB+Gf6QAH4aPpAMPhp1AHQ+gAB+Gr6AAH4a/oAAfhs+gAB+G36ADD4btQw0PQEAfhv9AQw+HB/+GEoOcFW",
-    "get_methods": [
-      {
-        "name": "raffle_state",
-        "return_values": [
-          {
-            "name": "state",
-            "stack_type": "int"
-          }, {
-            "name": "right_nfts_count",
-            "stack_type": "int"
-          }, {
-            "name": "right_nfts_received",
-            "stack_type": "int"
-          }, {
-            "name": "left_nfts_count",
-            "stack_type": "int"
-          }, {
-            "name": "left_nfts_received",
-            "stack_type": "int"
-          }, {
-            "name": "left_user",
-            "stack_type": "slice",
-            "format": "addr"
-          }, {
-            "name": "right_user",
-            "stack_type": "slice",
-            "format": "addr"
-          }, {
-            "name": "super_user",
-            "stack_type": "slice",
-            "format": "addr"
-          }, {
-            "name": "left_commission",
-            "stack_type": "int"
-          }, {
-            "name": "right_commission",
-            "stack_type": "int"
-          }, {
-            "name": "left_coins_got",
-            "stack_type": "int"
-          }, {
-            "name": "right_coins_got",
-            "stack_type": "int"
-          }, {
-            "name": "nft_transfer_fee",
-            "stack_type": "int"
-          }, {
-            "name": "nfts",
-            "stack_type": "cell"
-          }, {
-            "name": "raffled_nfts",
-            "stack_type": "cell"
-          }
-        ]
-      }
-    ],
-    "in_messages": [
-      {
-        "op_name": "getgems_nft_raffle_cancel",
-        "op_code": "2001"
-      }, {
-        "op_name": "getgems_nft_raffle_add_coins",
-        "op_code": "2002"
-      }, {
-        "op_name": "getgems_nft_raffle_send_again",
-        "op_code": "2004"
-      }, {
-        "op_name": "getgems_nft_raffle_maintain",
-        "op_code": "2003"
-      }
-    ]
-  },
-  {
-    "interface": "getgems_fix_price_sale",
-    "code_boc": "te6cckECCgEAAbIAART/APSkE/S88sgLAQIBIAMCAATyMAIBSAUEADegOFnaiaH0gfSB9IH0AahhofQB9IH0gfQAYCBHAgLNCAYB99G8EIHc1lACkgUCkQX3lw4QFofQB9IH0gfQAYOEAIZGWCqATniyi6UJDQqFrQilAK/QEK5bVkuP2AOEAIZGWCrGeLKAP9AQtltWS4/YA4QAhkZYKsZ4ssfQFltWS4/YA4EEEIL+YeihDADGRlgqgC54sRfQEKZbUJ5Y+JwHAC7LPyPPFlADzxYSygAh+gLKAMmBAKD7AAH30A6GmBgLjYSS+CcH0gGHaiaH0gfSB9IH0AahgRa6ThAVnHHZkbGymQ44LJL4NwKJFjgvlw+gFpj8EIAonGyIldeXD66Z+Y/SAYIBpkKALniygB54sA54sA/QFmZPaqcBNjgEybCBsimYI4eAJwA2mP6Z+YEOAAyS+FcBDAkAtsACmjEQRxA2RUAS8ATgMjQ0NDXAA449ghA7msoAE77y4clwIIIQX8w9FCGAEMjLBVAHzxYi+gIWy2oVyx8Tyz8hzxYBzxYSygAh+gLKAMmBAKD7AOBfBIQP8vCVeDe4",
-    "get_methods": [
-      {
-        "name": "get_sale_data",
-        "return_values": [
-          {
-            "name": "marketplace_address",
-            "stack_type": "slice",
-            "format": "addr"
-          }, {
-            "name": "nft_address",
-            "stack_type": "slice",
-            "format": "addr"
-          }, {
-            "name": "nft_owner_address",
-            "stack_type": "slice",
-            "format": "addr"
-          }, {
-            "name": "full_price",
-            "stack_type": "int"
-          }, {
-            "name": "marketplace_fee_address",
-            "stack_type": "slice",
-            "format": "addr"
-          }, {
-            "name": "marketplace_fee",
-            "stack_type": "int"
-          }, {
-            "name": "royalty_address",
-            "stack_type": "slice",
-            "format": "addr"
-          }, {
-            "name": "royalty_amount",
-            "stack_type": "int"
-          }
-        ]
-      }
-    ],
-    "in_messages": [
-      {
-        "op_name": "getgems_nft_fix_price_buy",
-        "op_code": "2"
-      }, {
-        "op_name": "getgems_nft_fix_price_cancel",
-        "op_code": "3"
-      }
-    ]
-  },
-  {
     "interface": "getgems_fix_price_sale_v2",
     "code_boc": "te6cckECDAEAAikAART/APSkE/S88sgLAQIBIAMCAATyMAIBSAUEAFGgOFnaiaGmAaY/9IH0gfSB9AGoYaH0gfQB9IH0AGEEIIySsKAVgAKrAQICzQgGAfdmCEDuaygBSYKBSML7y4cIk0PpA+gD6QPoAMFOSoSGhUIehFqBSkHCAEMjLBVADzxYB+gLLaslx+wAlwgAl10nCArCOF1BFcIAQyMsFUAPPFgH6AstqyXH7ABAjkjQ04lpwgBDIywVQA88WAfoCy2rJcfsAcCCCEF/MPRSBwCCIYAYyMsFKs8WIfoCy2rLHxPLPyPPFlADzxbKACH6AsoAyYMG+wBxVVAGyMsAFcsfUAPPFgHPFgHPFgH6AszJ7VQC99AOhpgYC42EkvgnB9IBh2omhpgGmP/SB9IH0gfQBqGBNgAPloyhFrpOEBWccgGRwcKaDjgskvhHAoomOC+XD6AmmPwQgCicbIiV15cPrpn5j9IBggKwNkZYAK5Y+oAeeLAOeLAOeLAP0BZmT2qnAbE+OAcYED6Y/pn5gQwLCQFKwAGSXwvgIcACnzEQSRA4R2AQJRAkECPwBeA6wAPjAl8JhA/y8AoAyoIQO5rKABi+8uHJU0bHBVFSxwUVsfLhynAgghBfzD0UIYAQyMsFKM8WIfoCy2rLHxnLPyfPFifPFhjKACf6AhfKAMmAQPsAcQZQREUVBsjLABXLH1ADzxYBzxYBzxYB+gLMye1UABY3EDhHZRRDMHDwBTThaBI=",
     "get_methods": [
@@ -486,7 +361,7 @@
   },
   {
     "interface": "getgems_fix_price_sale_v3r2",
-    "code_boc": "te6cckECDAEAAqAAART/APSkE/S88sgLAQIBIAMCAH7yMO1E0NMA0x/6QPpA+kD6ANTTADDAAY4d+ABwB8jLABbLH1AEzxZYzxYBzxYB+gLMywDJ7VTgXweCAP/+8vACAUgFBABXoDhZ2omhpgGmP/SB9IH0gfQBqaYAYGGh9IH0AfSB9ABhBCCMkrCgFYACqwECAs0IBgH3ZghA7msoAUmCgUjC+8uHCJND6QPoA+kD6ADBTkqEhoVCHoRagUpBwgBDIywVQA88WAfoCy2rJcfsAJcIAJddJwgKwjhdQRXCAEMjLBVADzxYB+gLLaslx+wAQI5I0NOJacIAQyMsFUAPPFgH6AstqyXH7AHAgghBfzD0UgcAlsjLHxPLPyPPFlADzxbKAIIJycOA+gLKAMlxgBjIywUmzxZw+gLLaszJgwb7AHFVUHAHyMsAFssfUATPFljPFgHPFgH6AszLAMntVAP10A6GmBgLjYSS+CcH0gGHaiaGmAaY/9IH0gfSB9AGppgBgYOCmE44BgAEwthGmP6Z+lVW8Q4AHxgRDAgRXdFOAA2CnT44LYTwhWL4ZqGGhpg+oYAP2AcBRgAPloyhJrpOEBWfGBHByUYABOGxuIHCOyiiGYOHgC8BRgAMCwoJAC6SXwvgCMACmFVEECQQI/AF4F8KhA/y8ACAMDM5OVNSxwWSXwngUVHHBfLh9IIQBRONkRW68uH1BPpAMEBmBXAHyMsAFssfUATPFljPFgHPFgH6AszLAMntVADYMTc4OYIQO5rKABi+8uHJU0bHBVFSxwUVsfLhynAgghBfzD0UIYAQyMsFKM8WIfoCy2rLHxXLPyfPFifPFhTKACP6AhPKAMmAQPsAcVBmRRUEcAfIywAWyx9QBM8WWM8WAc8WAfoCzMsAye1UM/Vflw==",
+    "code_boc": "te6cckECCwEAArkAART/APSkE/S88sgLAQIBIAIDAgFIBAUAfvIw7UTQ0wDTH/pA+kD6QPoA1NMAMMABjh34AHAHyMsAFssfUATPFljPFgHPFgH6AszLAMntVOBfB4IA//7y8AICzQYHAFegOFnaiaGmAaY/9IH0gfSB9AGppgBgYaH0gfQB9IH0AGEEIIySsKAVgAKrAQH30A6GmBgLjYSS+CcH0gGHaiaGmAaY/9IH0gfSB9AGppgBgYOCmE44BgAEqYhOmPhW8Q4YBKGATpn8cIxbMbC3MbK2QV44LJOZlvKAVxFWAAyS+G8BJrpOEBFcCBFd0VYACRWdjYKdxjgthOjq+G6hhoaYPqGAD9gHAU4ADAgB92YIQO5rKAFJgoFIwvvLhwiTQ+kD6APpA+gAwU5KhIaFQh6EWoFKQcIAQyMsFUAPPFgH6AstqyXH7ACXCACXXScICsI4XUEVwgBDIywVQA88WAfoCy2rJcfsAECOSNDTiWnCAEMjLBVADzxYB+gLLaslx+wBwIIIQX8w9FIKAejy0ZSzjkIxMzk5U1LHBZJfCeBRUccF8uH0ghAFE42RFrry4fUD+kAwRlAQNFlwB8jLABbLH1AEzxZYzxYBzxYB+gLMywDJ7VTgMDcowAPjAijAAJw2NxA4R2UUQzBw8AXgCMACmFVEECQQI/AF4F8KhA/y8AkA1Dg5ghA7msoAGL7y4clTRscFUVLHBRWx8uHKcCCCEF/MPRQhgBDIywUozxYh+gLLassfFcs/J88WJ88WFMoAI/oCE8oAyYMG+wBxUGZFFQRwB8jLABbLH1AEzxZYzxYBzxYB+gLMywDJ7VQAlsjLHxPLPyPPFlADzxbKAIIJycOA+gLKAMlxgBjIywUmzxZw+gLLaszJgwb7AHFVUHAHyMsAFssfUATPFljPFgHPFgH6AszLAMntVNZeZYk=",
     "get_methods": [
       {
         "name": "get_sale_data",
@@ -545,7 +420,7 @@
     ]
   },
   {
-    "interface": "getgems_nft_marketplace",
+    "interface": "getgems_nft_marketplace_v2",
     "code_boc": "te6cckEBDAEA7wABFP8A9KQT9LzyyAsBAgEgAwIAePKDCNcYINMf0x/THwL4I7vyY/ABUTK68qFRRLryogT5AVQQVfkQ8qP4AJMg10qW0wfUAvsA6DABpALwAgIBSAcEAgFIBgUAEbjJftRNDXCx+AAXuznO1E0NM/MdcL/4AgLOCQgAF0AsjLH8sfy//J7VSAIBIAsKABU7UTQ0x/TH9P/MIACpGwiIMcAkVvgAdDTAzBxsJEw4PABbCEB0x8BwAGONIMI1xgg+QFAA/kQ8qPU1DAh+QBwyMoHy//J0Hd0gBjIywXLAljPFnD6AstrEszMyYBA+wDgW4NC26jQ=",
     "in_messages": [
       {
