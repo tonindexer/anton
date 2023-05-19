@@ -49,7 +49,16 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 		Where("addresses IS NULL and code IS NULL").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "transaction account lt pg create index")
+		return errors.Wrap(err, "contract interface get_method_hashes create unique index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.ContractOperation{}).
+		Unique().
+		Column("name", "contract_name").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "contract operation name create unique index")
 	}
 
 	return nil
