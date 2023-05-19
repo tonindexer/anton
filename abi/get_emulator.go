@@ -341,7 +341,7 @@ func (e *Emulator) RunGetMethod(ctx context.Context, method string, args VmStack
 	if exit != 0 && exit != 1 { // 1 - alternative success code
 		return nil, fmt.Errorf("tvm execution failed with code %d", exit)
 	}
-	if len(stk) != len(retDesc) {
+	if len(stk) < len(retDesc) {
 		return nil, fmt.Errorf("tvm execution returned stack with length %d, but expected length %d", len(stk), len(retDesc))
 	}
 
