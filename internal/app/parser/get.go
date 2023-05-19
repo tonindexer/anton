@@ -258,11 +258,11 @@ func (s *Service) getAccountDataWallet(
 			ret.Errors = append(ret.Errors, err.Error())
 			continue
 		}
-		if len(stack) != 1 || stack[0].Format != "uint64" {
+		if len(stack) != 1 || stack[0].Format != "uint32" {
 			// we panic as standard contract interface has the wrong description
 			panic(fmt.Errorf("wrong wallet `seqno` get-method description"))
 		}
 
-		ret.WalletSeqNo = stack[0].Payload.(uint64) //nolint:forcetypeassert // panic on wrong interface
+		ret.WalletSeqNo = uint64(stack[0].Payload.(uint32)) //nolint:forcetypeassert // panic on wrong interface
 	}
 }

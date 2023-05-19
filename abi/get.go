@@ -25,7 +25,8 @@ const (
 	VmAddrSlice   StackType = "addr"
 	VmBool        StackType = "bool"
 	VmBigInt      StackType = "bigInt"
-	VmStringCell  StackType = "string"
+	VmString      StackType = "string"
+	VmBytes       StackType = "bytes"
 	VmContentCell StackType = "content"
 )
 

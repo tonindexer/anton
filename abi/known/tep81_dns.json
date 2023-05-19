@@ -24,5 +24,73 @@
         ]
       }
     ]
+  },
+  {
+    "interface_name": "dns_nft_item",
+    "in_messages": [
+      {
+        "op_name": "change_dns_record",
+        "op_code": "0x4eb1f0f9",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          }
+        ]
+      }, {
+        "op_name": "process_governance_decision",
+        "op_code": "0x44beae41",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          }
+        ]
+      }, {
+        "op_name": "dns_balance_release",
+        "op_code": "0x4ed14b65",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_domain",
+        "return_values": [
+          {
+            "name": "domain",
+            "stack_type": "slice",
+            "format": "string"
+          }
+        ]
+      }, {
+        "name": "get_auction_info",
+        "return_values": [
+          {
+            "name": "max_bid_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "max_bid_amount",
+            "stack_type": "int"
+          }, {
+            "name": "auction_end_time",
+            "stack_type": "int"
+          }
+        ]
+      }, {
+        "name": "get_last_fill_up_time",
+        "return_values": [
+          {
+            "name": "last_fill_up_time",
+            "stack_type": "int"
+          }
+        ]
+      }
+    ]
   }
 ]

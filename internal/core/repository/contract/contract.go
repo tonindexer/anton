@@ -49,7 +49,16 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 		Where("addresses IS NULL and code IS NULL").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "transaction account lt pg create index")
+		return errors.Wrap(err, "contract interface get_method_hashes create unique index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.ContractOperation{}).
+		Unique().
+		Column("name", "contract_name").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "contract operation name create unique index")
 	}
 
 	return nil
@@ -68,6 +77,34 @@ func (r *Repository) AddOperation(ctx context.Context, op *core.ContractOperatio
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (r *Repository) DelInterface(ctx context.Context, name string) error {
+	_, err := r.pg.NewDelete().
+		Model((*core.ContractOperation)(nil)).
+		Where("contract_name = ?", name).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	ret, err := r.pg.NewDelete().
+		Model((*core.ContractInterface)(nil)).
+		Where("name = ?", name).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	rows, err := ret.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "rows affected")
+	}
+	if rows == 0 {
+		return errors.Wrap(core.ErrNotFound, "no such interface")
+	}
+
 	return nil
 }
 

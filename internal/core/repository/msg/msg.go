@@ -163,12 +163,6 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "message ch create table")
 	}
 
-	_, err = pgDB.ExecContext(ctx, "ALTER TABLE messages ADD CONSTRAINT messages_source_tx_hash_notnull "+
-		"CHECK (NOT (source_tx_hash IS NULL AND src_address != decode('11ff0000000000000000000000000000000000000000000000000000000000000000', 'hex')));")
-	if err != nil && !strings.Contains(err.Error(), "already exists") {
-		return errors.Wrap(err, "messages pg create source tx hash check")
-	}
-
 	_, err = pgDB.NewCreateTable().
 		Model(&core.Message{}).
 		IfNotExists().
@@ -180,6 +174,12 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 
 	if err := createIndexes(ctx, pgDB); err != nil {
 		return err
+	}
+
+	_, err = pgDB.ExecContext(ctx, "ALTER TABLE messages ADD CONSTRAINT messages_source_tx_hash_notnull "+
+		"CHECK (NOT (source_tx_hash IS NULL AND src_address != decode('11ff0000000000000000000000000000000000000000000000000000000000000000', 'hex')));")
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return errors.Wrap(err, "messages pg create source tx hash check")
 	}
 
 	return nil

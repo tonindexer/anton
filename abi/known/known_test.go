@@ -73,6 +73,16 @@ func getMethodDescByName(d *abi.InterfaceDesc, name string) *abi.GetMethodDesc {
 	return nil
 }
 
+func getCodeHash(t *testing.T, codeB64 string) []byte {
+	code, err := base64.StdEncoding.DecodeString(codeB64)
+	require.Nil(t, err)
+
+	codeCell, err := cell.FromBOCMultiRoot(code)
+	require.Nil(t, err)
+
+	return codeCell[0].Hash()
+}
+
 func execGetMethod(t *testing.T, i *abi.InterfaceDesc, addr *address.Address, methodName, codeB64, dataB64 string) (ret []any) {
 	dp := getMethodDescByName(i, methodName)
 	require.NotNil(t, dp)

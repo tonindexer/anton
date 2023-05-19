@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
 	"os"
 	"strconv"
@@ -22,7 +23,22 @@ import (
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
 
-func readContractInterfaces(filenames []string) (ret []*abi.InterfaceDesc, err error) {
+func readStdin() ([]*abi.InterfaceDesc, error) {
+	var interfaces []*abi.InterfaceDesc
+
+	j, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(j, &interfaces); err != nil {
+		return nil, errors.Wrapf(err, "unmarshal json")
+	}
+
+	return interfaces, nil
+}
+
+func readFiles(filenames []string) (ret []*abi.InterfaceDesc, err error) {
 	for _, fn := range filenames {
 		var interfaces []*abi.InterfaceDesc
 
@@ -142,10 +158,60 @@ var Command = &cli.Command{
 
 	ArgsUsage: "[file1.json] [file2.json]",
 
-	Action: func(ctx *cli.Context) error {
-		filenames := ctx.Args().Slice()
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:    "stdin",
+			Usage:   "read from stdin instead of files",
+			Aliases: []string{"i"},
+		},
+	},
 
-		interfacesDesc, err := readContractInterfaces(filenames)
+	Subcommands: cli.Commands{
+		{
+			Name:  "delete",
+			Usage: "Deletes contract interface from the database",
+
+			ArgsUsage: "[interface_name_1] [interface_name_2]",
+
+			Action: func(ctx *cli.Context) error {
+				pg := bun.NewDB(
+					sql.OpenDB(
+						pgdriver.NewConnector(
+							pgdriver.WithDSN(env.GetString("DB_PG_URL", "")),
+						),
+					),
+					pgdialect.New(),
+				)
+				if err := pg.Ping(); err != nil {
+					return errors.Wrapf(err, "cannot ping postgresql")
+				}
+
+				contractRepo := contract.NewRepository(pg)
+
+				for _, i := range ctx.Args().Slice() {
+					err := contractRepo.DelInterface(ctx.Context, i)
+					if err != nil {
+						return errors.Wrapf(err, "deleting %s interface", i)
+					}
+				}
+
+				return nil
+			},
+		},
+	},
+
+	Action: func(ctx *cli.Context) (err error) {
+		var interfacesDesc []*abi.InterfaceDesc
+
+		if ctx.Bool("stdin") {
+			interfacesDesc, err = readStdin()
+		} else {
+			filenames := ctx.Args().Slice()
+			if len(filenames) == 0 {
+				cli.ShowSubcommandHelpAndExit(ctx, 1)
+			}
+			interfacesDesc, err = readFiles(filenames)
+		}
 		if err != nil {
 			return err
 		}
