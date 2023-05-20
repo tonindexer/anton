@@ -56,7 +56,7 @@ type AccountState struct {
 	OwnerAddress  *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
 	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
 
-	ExecutedGetMethods map[string]abi.GetMethodExecution `ch:"type:json" bun:"type:jsonb" json:"executed_get_methods,omitempty"`
+	ExecutedGetMethods map[string]abi.GetMethodExecution `ch:"type:JSON" bun:"type:jsonb" json:"executed_get_methods,omitempty"`
 
 	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
 }
