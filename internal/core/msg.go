@@ -30,14 +30,11 @@ type Message struct {
 
 	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"  json:"hash"`
 
+	// TODO: add constraints on tx lt
 	SrcAddress addr.Address `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
+	SrcTxLT    uint64       `json:"src_tx_lt,omitempty"`
 	DstAddress addr.Address `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
-
-	// SourceTx initiates outgoing message.
-	// For external incoming messages SourceTx == nil.
-	SourceTxHash []byte       `bun:"type:bytea" json:"source_tx_hash,omitempty"`
-	SourceTxLT   uint64       `json:"source_tx_lt,omitempty"`
-	Source       *Transaction `ch:"-" bun:"-" json:"source,omitempty"` // TODO: join it
+	DstTxLT    uint64       `json:"dst_tx_lt,omitempty"`
 
 	Bounce  bool `bun:",notnull" json:"bounce"`
 	Bounced bool `bun:",notnull" json:"bounced"`
