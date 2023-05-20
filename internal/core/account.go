@@ -22,22 +22,24 @@ const (
 	NonExist = AccountStatus(tlb.AccountStatusNonExist)
 )
 
-type LatestAccountState struct {
-	bun.BaseModel `bun:"table:latest_account_states" json:"-"`
+type AddressLabel struct {
+	bun.BaseModel `bun:"table:address_labels" json:"-"`
 
-	Address      addr.Address  `bun:"type:bytea,pk,notnull" json:"address"`
-	LastTxLT     uint64        `bun:"type:bigint,notnull" json:"last_tx_lt"`
-	AccountState *AccountState `bun:"rel:has-one,join:address=address,join:last_tx_lt=last_tx_lt" json:"account"`
+	Address addr.Address `bun:"type:bytea,pk,notnull" json:"-"`
+	Name    string       `bun:"type:string,notnull" json:"name"`
 }
 
 type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:status" json:"-"`
 	bun.BaseModel `bun:"table:account_states" json:"-"`
 
-	Address  addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
+	Address addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
+	Label   *AddressLabel `ch:"-" bun:"rel:has-one,join:address=address" json:"label,omitempty"`
+
 	IsActive bool          `json:"is_active"`
 	Status   AccountStatus `ch:",lc" bun:"type:account_status" json:"status"` // TODO: ch enum
-	Balance  *bunbig.Int   `ch:"type:UInt256" bun:"type:numeric" json:"balance"`
+
+	Balance *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"balance"`
 
 	LastTxLT   uint64 `ch:",pk" bun:"type:bigint,pk,notnull" json:"last_tx_lt"`
 	LastTxHash []byte `bun:"type:bytea,unique,notnull" json:"last_tx_hash"`
@@ -59,6 +61,14 @@ type AccountState struct {
 	ExecutedGetMethods map[string]abi.GetMethodExecution `ch:"type:JSON" bun:"type:jsonb" json:"executed_get_methods,omitempty"`
 
 	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
+}
+
+type LatestAccountState struct {
+	bun.BaseModel `bun:"table:latest_account_states" json:"-"`
+
+	Address      addr.Address  `bun:"type:bytea,pk,notnull" json:"address"`
+	LastTxLT     uint64        `bun:"type:bigint,notnull" json:"last_tx_lt"`
+	AccountState *AccountState `bun:"rel:has-one,join:address=address,join:last_tx_lt=last_tx_lt" json:"account"`
 }
 
 type AccountRepository interface {
