@@ -42,8 +42,6 @@ type AccountState struct {
 	LastTxLT   uint64 `ch:",pk" bun:"type:bigint,pk,notnull" json:"last_tx_lt"`
 	LastTxHash []byte `bun:"type:bytea,unique,notnull" json:"last_tx_hash"`
 
-	StateData *AccountData `ch:"-" bun:"rel:belongs-to,join:address=address,join:last_tx_lt=last_tx_lt" json:"state_data,omitempty"`
-
 	StateHash []byte `bun:"type:bytea" json:"state_hash,omitempty"` // only if account is frozen
 	Code      []byte `bun:"type:bytea" json:"code,omitempty"`
 	CodeHash  []byte `bun:"type:bytea" json:"code_hash,omitempty"`
@@ -52,86 +50,17 @@ type AccountState struct {
 
 	GetMethodHashes []int32 `ch:"type:Array(UInt32)" bun:"type:integer[]" json:"get_method_hashes"`
 
-	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
-}
-
-type NFTContentData struct {
-	ContentURI         string `ch:"type:String" json:"content_uri,omitempty"`
-	ContentName        string `ch:"type:String" json:"content_name,omitempty"`
-	ContentDescription string `ch:"type:String" json:"content_description,omitempty"`
-	ContentImage       string `ch:"type:String" json:"content_image,omitempty"`
-	ContentImageData   []byte `ch:"type:String" json:"content_image_data,omitempty"`
-}
-
-type NFTCollectionData struct {
-	NextItemIndex *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"next_item_index,omitempty"`
-	// OwnerAddress Address
-}
-
-type NFTItemData struct {
-	Initialized bool        `ch:"type:Bool" json:"initialized,omitempty"`
-	ItemIndex   *bunbig.Int `ch:"type:UInt256" json:"item_index,omitempty"`
-	// CollectionAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"collection_address,omitempty"`
-	// OwnerAddress      *addr.Address
-}
-
-type NFTRoyaltyData struct {
-	RoyaltyAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"royalty_address,omitempty"`
-	RoyaltyFactor  uint16        `ch:"type:UInt16" bun:"type:integer" json:"royalty_factor,omitempty"`
-	RoyaltyBase    uint16        `ch:"type:UInt16" bun:"type:integer" json:"royalty_base,omitempty"`
-}
-
-type NFTEditable struct {
-	EditorAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"editor_address,omitempty"`
-}
-
-type FTMasterData struct {
-	TotalSupply  *bunbig.Int   `ch:"type:UInt256" bun:"type:numeric" json:"total_supply,omitempty" swaggertype:"string"`
-	Mintable     bool          `json:"mintable,omitempty"`
-	AdminAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"admin_addr,omitempty"`
-	// Content     nft.ContentAny
-	// WalletCode  *cell.Cell
-}
-
-type FTWalletData struct {
-	JettonBalance *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"balance,omitempty" swaggertype:"string"`
-	// OwnerAddress  Address
-	// MasterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"master_address,omitempty"`
-	// WalletCode    *cell.Cell
-}
-
-type AccountData struct {
-	ch.CHModel    `ch:"account_data,partition:types" json:"-"`
-	bun.BaseModel `bun:"table:account_data" json:"-"`
-
-	Address    addr.Address `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
-	LastTxLT   uint64       `ch:",pk" bun:",pk,notnull" json:"last_tx_lt"`
-	LastTxHash []byte       `bun:"type:bytea,notnull,unique" json:"last_tx_hash"`
-	Balance    *bunbig.Int  `ch:"type:UInt256" bun:"type:numeric" json:"balance"`
-
 	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types"`
-
-	WalletSeqNo uint64 `json:"wallet_seq_no,omitempty"`
 
 	// common fields for FT and NFT
 	OwnerAddress  *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
 	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
 
-	NFTCollectionData
-	NFTRoyaltyData
-	NFTContentData
-	NFTItemData
-	NFTEditable
-
-	FTMasterData
-	FTWalletData
-
-	Errors []string `json:"error,omitempty"`
+	ExecutedGetMethods map[string]abi.GetMethodExecution `ch:"type:json" bun:"type:jsonb" json:"executed_get_methods,omitempty"`
 
 	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
 }
 
 type AccountRepository interface {
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
-	AddAccountData(ctx context.Context, tx bun.Tx, data []*AccountData) error
 }
