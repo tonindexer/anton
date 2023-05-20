@@ -31,10 +31,12 @@ type Message struct {
 	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"  json:"hash"`
 
 	// TODO: add constraints on tx lt
-	SrcAddress addr.Address `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
-	SrcTxLT    uint64       `json:"src_tx_lt,omitempty"`
-	DstAddress addr.Address `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
-	DstTxLT    uint64       `json:"dst_tx_lt,omitempty"`
+	SrcAddress addr.Address  `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
+	SrcTxLT    uint64        `json:"src_tx_lt,omitempty"`
+	SrcState   *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:src_tx_lt=last_tx_lt" json:"src_state"`
+	DstAddress addr.Address  `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
+	DstTxLT    uint64        `json:"dst_tx_lt,omitempty"`
+	DstState   *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:dst_tx_lt=last_tx_lt" json:"dst_state"`
 
 	Bounce  bool `bun:",notnull" json:"bounce"`
 	Bounced bool `bun:",notnull" json:"bounced"`
