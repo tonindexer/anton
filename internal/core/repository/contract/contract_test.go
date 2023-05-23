@@ -123,11 +123,11 @@ func TestRepository_AddContracts(t *testing.T) {
 	require.Nil(t, err)
 
 	op := &core.ContractOperation{
-		Name:         "nft_item_transfer",
-		ContractName: known.NFTItem,
-		Outgoing:     false,
-		OperationID:  0xdeadbeed,
-		Schema:       opSchema,
+		OperationName: "nft_item_transfer",
+		ContractName:  known.NFTItem,
+		Outgoing:      false,
+		OperationID:   0xdeadbeed,
+		Schema:        opSchema,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
