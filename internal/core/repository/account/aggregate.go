@@ -15,7 +15,7 @@ import (
 
 func (r *Repository) makeLastItemStateQuery(minter *addr.Address) *ch.SelectQuery {
 	return r.ch.NewSelect().
-		Model((*core.AccountData)(nil)).
+		Model((*core.AccountState)(nil)).
 		ColumnExpr("argMax(address, last_tx_lt) as item_address").
 		Where("minter_address = ?", minter).
 		Group("address")
@@ -47,7 +47,7 @@ func (r *Repository) aggregateNFTMinter(ctx context.Context, req *aggregate.Acco
 	// TODO: in rare cases grouping result is duplicated twice, report to go-ch
 
 	err = r.ch.NewSelect().
-		Model((*core.AccountData)(nil)).
+		Model((*core.AccountState)(nil)).
 		ColumnExpr("address AS item_address").
 		ColumnExpr("uniqExact(owner_address) AS owners_count").
 		Where("minter_address = ?", req.MinterAddress).
@@ -115,7 +115,7 @@ func (r *Repository) AggregateAccounts(ctx context.Context, req *aggregate.Accou
 	}
 
 	err := r.ch.NewSelect().
-		Model((*core.AccountData)(nil)).
+		Model((*core.AccountState)(nil)).
 		ColumnExpr("argMax(types, last_tx_lt) as interfaces").
 		Where("address = ?", req.MinterAddress).
 		Group("address").

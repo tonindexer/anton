@@ -58,14 +58,13 @@ func AddressState(a *addr.Address, t []abi.ContractName, minter *addr.Address) *
 }
 
 func AddressStateContract(a *addr.Address, t abi.ContractName, minter *addr.Address) *core.AccountState {
-	var types []abi.ContractName
-
 	if minter == nil {
 		minter = new(addr.Address)
 		copy((*minter)[:], a[:])
 		minter[16] = '\xde'
 	}
 
+	types := ContractNames(a)
 	if t != "" {
 		types = append(types, t)
 	}
@@ -82,4 +81,12 @@ func AddressStates(a *addr.Address, n int) (ret []*core.AccountState) {
 
 func AccountStates(n int) (ret []*core.AccountState) {
 	return AddressStates(Address(), n)
+}
+
+func AccountStatesContract(n int, t abi.ContractName, minter *addr.Address) (ret []*core.AccountState) {
+	a := Address()
+	for i := 0; i < n; i++ {
+		ret = append(ret, AddressStateContract(a, t, minter))
+	}
+	return ret
 }

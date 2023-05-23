@@ -60,11 +60,6 @@ func dropTables(t testing.TB) {
 	_, err = pg.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 
-	_, err = ck.NewDropTable().Model((*core.AccountData)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
-	_, err = pg.NewDropTable().Model((*core.AccountData)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
-
 	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS account_status")
 	assert.Nil(t, err)
 }
@@ -72,8 +67,8 @@ func dropTables(t testing.TB) {
 func TestRepository_AddAccounts(t *testing.T) {
 	initdb(t)
 
-	states := rndm.AccountStates(10)
-	data := rndm.AccountData(states)
+	contractData := rndm.AccountStatesContract(10, "", nil)
+	states := append(contractData, rndm.AccountStates(10)...)
 	a := &states[0].Address
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -88,22 +83,6 @@ func TestRepository_AddAccounts(t *testing.T) {
 
 	t.Run("create tables", func(t *testing.T) {
 		createTables(t)
-	})
-
-	t.Run("add account data", func(t *testing.T) {
-		err := repo.AddAccountData(ctx, tx, data)
-		assert.Nil(t, err)
-
-		got := new(core.AccountData)
-
-		err = tx.NewSelect().Model(got).Where("address = ?", a).Where("last_tx_lt = ?", data[0].LastTxLT).Scan(ctx)
-		assert.Nil(t, err)
-		assert.Equal(t, data[0], got)
-
-		err = ck.NewSelect().Model(got).Where("address = ?", a).Where("last_tx_lt = ?", data[0].LastTxLT).Scan(ctx)
-		assert.Nil(t, err)
-		got.UpdatedAt = data[0].UpdatedAt // TODO: look at time.Time ch unmarshal
-		assert.Equal(t, data[0], got)
 	})
 
 	t.Run("add account states", func(t *testing.T) {
@@ -153,10 +132,8 @@ func BenchmarkRepository_AddAccounts(b *testing.B) {
 			states := rndm.AccountStates(30)
 			states = append(states, rndm.AccountStates(30)...)
 			states = append(states, rndm.AccountStates(30)...)
-			data := rndm.AccountData(states)
+			states = append(states, rndm.AccountStatesContract(30, "", nil)...)
 
-			err = repo.AddAccountData(ctx, tx, data)
-			assert.Nil(b, err)
 			err = repo.AddAccountStates(ctx, tx, states)
 			assert.Nil(b, err)
 
@@ -173,10 +150,7 @@ func BenchmarkRepository_AddAccounts(b *testing.B) {
 			assert.Nil(b, err)
 
 			states := rndm.AddressStates(a, 1)
-			data := rndm.AccountData(states)
 
-			err = repo.AddAccountData(ctx, tx, data)
-			assert.Nil(b, err)
 			err = repo.AddAccountStates(ctx, tx, states)
 			assert.Nil(b, err)
 

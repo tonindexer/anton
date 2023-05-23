@@ -28,23 +28,32 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 	// account data
 
 	_, err := pgDB.NewCreateIndex().
-		Model(&core.AccountData{}).
+		Model(&core.AccountState{}).
 		Using("HASH").
 		Column("owner_address").
-		Where("length(owner_address) > 0").
+		Where("owner_address IS NOT NULL").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "address state pg create unique index")
+		return errors.Wrap(err, "address state owner pg create index")
 	}
 
 	_, err = pgDB.NewCreateIndex().
-		Model(&core.AccountData{}).
+		Model(&core.AccountState{}).
 		Using("HASH").
 		Column("minter_address").
-		Where("length(minter_address) > 0").
+		Where("minter_address IS NOT NULL").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "address state pg create unique index")
+		return errors.Wrap(err, "address state minter pg create index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountState{}).
+		Using("GIN").
+		Column("types").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state contract types pg create index")
 	}
 
 	// account state
@@ -55,16 +64,7 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		Column("address").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "address state pg create unique index")
-	}
-
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.AccountData{}).
-		Using("GIN").
-		Column("types").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "account state contract types pg create index")
+		return errors.Wrap(err, "address state address pg create index")
 	}
 
 	_, err = pgDB.NewCreateIndex().
@@ -84,7 +84,7 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		Column("last_tx_lt").
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "account state last_tx_lt pg create index")
+		return errors.Wrap(err, "latest account state last_tx_lt pg create index")
 	}
 
 	return nil
@@ -95,24 +95,6 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		core.Uninit, core.Active, core.Frozen, core.NonExist)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return errors.Wrap(err, "account status pg create enum")
-	}
-
-	_, err = chDB.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.AccountData{}).
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "account data ch create table")
-	}
-
-	_, err = pgDB.NewCreateTable().
-		Model(&core.AccountData{}).
-		IfNotExists().
-		WithForeignKeys().
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "account data pg create table")
 	}
 
 	_, err = chDB.NewCreateTable().
@@ -182,20 +164,5 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		return err
 	}
 
-	return nil
-}
-
-func (r *Repository) AddAccountData(ctx context.Context, tx bun.Tx, data []*core.AccountData) error {
-	if len(data) == 0 {
-		return nil
-	}
-	_, err := tx.NewInsert().Model(&data).Exec(ctx)
-	if err != nil {
-		return err
-	}
-	_, err = r.ch.NewInsert().Model(&data).Exec(ctx)
-	if err != nil {
-		return err
-	}
 	return nil
 }

@@ -29,6 +29,18 @@ type AddressLabel struct {
 	Name    string       `bun:"type:string,notnull" json:"name"`
 }
 
+type NFTContentData struct {
+	ContentURI         string `ch:"type:String" json:"content_uri,omitempty"`
+	ContentName        string `ch:"type:String" json:"content_name,omitempty"`
+	ContentDescription string `ch:"type:String" json:"content_description,omitempty"`
+	ContentImage       string `ch:"type:String" json:"content_image,omitempty"`
+	ContentImageData   []byte `ch:"type:String" json:"content_image_data,omitempty"`
+}
+
+type FTWalletData struct {
+	JettonBalance *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"balance,omitempty" swaggertype:"string"`
+}
+
 type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:status" json:"-"`
 	bun.BaseModel `bun:"table:account_states" json:"-"`
@@ -59,6 +71,10 @@ type AccountState struct {
 	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
 
 	ExecutedGetMethods map[string]abi.GetMethodExecution `ch:"type:JSON" bun:"type:jsonb" json:"executed_get_methods,omitempty"`
+
+	// TODO: remove this
+	NFTContentData
+	FTWalletData
 
 	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
 }
