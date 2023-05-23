@@ -19,19 +19,11 @@ func loadTransactions(q *bun.SelectQuery, prefix string, f *filter.BlocksReq) *b
 			}
 			return q
 		})
-		if f.WithTransactionAccountData {
-			q = q.Relation(prefix + "Transactions.Account.StateData")
-		}
 	}
 	if f.WithTransactionMessages {
 		q = q.
 			Relation(prefix + "Transactions.InMsg").
 			Relation(prefix + "Transactions.OutMsg")
-		if f.WithTransactionMessagePayloads {
-			q = q.
-				Relation(prefix + "Transactions.InMsg.Payload").
-				Relation(prefix + "Transactions.OutMsg.Payload")
-		}
 	}
 	return q
 }
