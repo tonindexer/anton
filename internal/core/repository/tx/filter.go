@@ -21,16 +21,11 @@ func (r *Repository) filterTx(ctx context.Context, f *filter.TransactionsReq) (r
 			}
 			return q
 		})
-		if f.WithAccountData {
-			q = q.Relation("Account.StateData")
-		}
 	}
 	if f.WithMessages {
 		q = q.
 			Relation("InMsg").
-			Relation("InMsg.Payload").
-			Relation("OutMsg").
-			Relation("OutMsg.Payload")
+			Relation("OutMsg")
 	}
 
 	if len(f.Hash) > 0 {
