@@ -12,12 +12,10 @@ type BlocksReq struct {
 	SeqNo     *uint32 `form:"seq_no"`
 	FileHash  []byte  `form:"file_hash"`
 
-	WithShards                     bool // TODO: array of relations as strings
-	WithTransactionAccountState    bool
-	WithTransactionAccountData     bool
-	WithTransactions               bool `form:"with_transactions"`
-	WithTransactionMessages        bool
-	WithTransactionMessagePayloads bool
+	WithShards                  bool // TODO: array of relations as strings
+	WithTransactionAccountState bool
+	WithTransactions            bool `form:"with_transactions"`
+	WithTransactionMessages     bool
 
 	ExcludeColumn []string // TODO: support relations
 

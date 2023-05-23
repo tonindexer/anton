@@ -17,7 +17,6 @@ type MessagesReq struct {
 	DstAddresses []*addr.Address // `form:"dst_address"`
 	OperationID  *uint32
 
-	WithPayload    bool
 	SrcContracts   []string `form:"src_contract"`
 	DstContracts   []string `form:"dst_contract"`
 	OperationNames []string `form:"operation_name"`

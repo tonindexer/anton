@@ -17,10 +17,8 @@ type TransactionsReq struct {
 
 	BlockID *core.BlockID
 
-	WithAccountState    bool
-	WithAccountData     bool
-	WithMessages        bool
-	WithMessagePayloads bool
+	WithAccountState bool
+	WithMessages     bool
 
 	ExcludeColumn []string // TODO: support relations
 
