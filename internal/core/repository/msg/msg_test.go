@@ -59,11 +59,6 @@ func dropTables(t testing.TB) {
 	_, err = pg.NewDropTable().Model((*core.Message)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 
-	_, err = ck.NewDropTable().Model((*core.MessagePayload)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
-	_, err = pg.NewDropTable().Model((*core.MessagePayload)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
-
 	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS message_type")
 	assert.Nil(t, err)
 }
@@ -72,7 +67,6 @@ func TestRepository_AddMessages(t *testing.T) {
 	initdb(t)
 
 	messages := rndm.Messages(10)
-	payloads := rndm.MessagePayloads(messages)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -86,25 +80,6 @@ func TestRepository_AddMessages(t *testing.T) {
 
 	t.Run("create tables", func(t *testing.T) {
 		createTables(t)
-	})
-
-	t.Run("add message payloads", func(t *testing.T) {
-		err := repo.AddMessagePayloads(ctx, tx, payloads)
-		assert.Nil(t, err)
-
-		got := new(core.MessagePayload)
-
-		err = tx.NewSelect().Model(got).Where("hash = ?", payloads[0].Hash).Scan(ctx)
-		assert.Nil(t, err)
-		assert.JSONEq(t, string(payloads[0].DataJSON), string(got.DataJSON))
-		got.DataJSON = payloads[0].DataJSON
-		assert.Equal(t, payloads[0], got)
-
-		err = ck.NewSelect().Model(got).Where("hash = ?", payloads[0].Hash).Scan(ctx)
-		assert.Nil(t, err)
-		got.CreatedAt = payloads[0].CreatedAt // TODO: look at time.Time ch unmarshal
-		got.DataJSON = payloads[0].DataJSON   // TODO: no payload data in clickhouse
-		assert.Equal(t, payloads[0], got)
 	})
 
 	t.Run("add messages", func(t *testing.T) {

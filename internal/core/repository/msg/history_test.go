@@ -34,19 +34,15 @@ func TestRepository_AggregateMessagesHistory(t *testing.T) {
 		tx, err := pg.Begin()
 		assert.Nil(t, err)
 
-		messages := rndm.Messages(10)
-		messagesToSpecial := rndm.Messages(50)
+		messages := rndm.Messages(50)
+		for _, m := range messages {
+			m.DstContract = "special"
+		}
 
-		payloads := append(
-			rndm.MessagePayloads(messages),
-			rndm.MessagesToContract(messagesToSpecial, "special")...)
-
-		for _, m := range messagesToSpecial {
+		for _, m := range messages {
 			amountSum = amountSum.Add(m.Amount)
 		}
 
-		err = repo.AddMessagePayloads(ctx, tx, payloads)
-		assert.Nil(t, err)
 		err = repo.AddMessages(ctx, tx, messages)
 		assert.Nil(t, err)
 

@@ -55,8 +55,8 @@ type Message struct {
 	StateInitCode []byte `bun:"type:bytea" json:"state_init_code,omitempty"`
 	StateInitData []byte `bun:"type:bytea" json:"state_init_data,omitempty"`
 
-	SrcContract abi.ContractName `ch:",lc" json:"src_contract,omitempty"`
-	DstContract abi.ContractName `ch:",lc" json:"dst_contract,omitempty"`
+	SrcContract abi.ContractName `ch:",lc" bun:",nullzero" json:"src_contract,omitempty"`
+	DstContract abi.ContractName `ch:",lc" bun:",nullzero" json:"dst_contract,omitempty"`
 
 	// can be used to show all jetton or nft item transfers
 	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
