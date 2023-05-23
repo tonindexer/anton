@@ -64,11 +64,6 @@ func dropTables(t testing.TB) {
 	_, err = pg.NewDropTable().Model((*core.Message)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 
-	_, err = ck.NewDropTable().Model((*core.MessagePayload)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
-	_, err = pg.NewDropTable().Model((*core.MessagePayload)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
-
 	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS message_type")
 	assert.Nil(t, err)
 
@@ -78,11 +73,6 @@ func dropTables(t testing.TB) {
 	_, err = ck.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
-
-	_, err = ck.NewDropTable().Model((*core.AccountData)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
-	_, err = pg.NewDropTable().Model((*core.AccountData)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 
 	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS account_status")
@@ -143,14 +133,11 @@ func TestRelations(t *testing.T) {
 
 	address := rndm.Address()
 
-	state := rndm.AddressState(address)
-	data := rndm.ContractData(state, contractName, nil)
-	state.StateData = data
+	state := rndm.AddressStateContract(address, contractName, nil)
 
 	messageTo := rndm.MessageTo(address)
 	messagesFrom := rndm.MessagesFrom(address, 1)
-	payload := rndm.MessageOperationToContract(messageTo, operation, contractName)
-	messageTo.Payload = payload
+	messageTo.OperationName, messageTo.DstContract = operation, contractName
 
 	transaction := rndm.AddressTransaction(address)
 
@@ -159,8 +146,7 @@ func TestRelations(t *testing.T) {
 
 	// make related graph
 	for _, m := range messagesFrom {
-		m.SourceTxLT = transaction.CreatedLT
-		m.SourceTxHash = transaction.Hash
+		m.SrcTxLT = transaction.CreatedLT
 	}
 	transaction.InMsgHash = messageTo.Hash
 	transaction.InMsg = messageTo
@@ -168,7 +154,6 @@ func TestRelations(t *testing.T) {
 
 	state.LastTxHash = transaction.Hash
 	state.LastTxLT = transaction.CreatedLT
-	state.StateData.LastTxLT = transaction.CreatedLT
 	transaction.Account = state
 
 	transaction.BlockWorkchain = shard.Workchain
@@ -182,10 +167,8 @@ func TestRelations(t *testing.T) {
 	// make slices
 	addresses := []*addr.Address{address}
 	states := []*core.AccountState{state}
-	contracts := []*core.AccountData{data}
 	messagesTo := []*core.Message{messageTo}
 	messages := append(messagesFrom, messageTo) //nolint:gocritic // append result not assigned to the same slice
-	payloads := []*core.MessagePayload{payload}
 	transactions := []*core.Transaction{transaction}
 	blocks := []*core.Block{shard, master}
 
@@ -203,10 +186,6 @@ func TestRelations(t *testing.T) {
 
 		err = accountRepo.AddAccountStates(ctx, dbtx, states)
 		assert.Nil(t, err)
-		err = accountRepo.AddAccountData(ctx, dbtx, contracts)
-		assert.Nil(t, err)
-		err = msgRepo.AddMessagePayloads(ctx, dbtx, payloads)
-		assert.Nil(t, err)
 		err = msgRepo.AddMessages(ctx, dbtx, messages)
 		assert.Nil(t, err)
 		err = txRepo.AddTransactions(ctx, dbtx, transactions)
@@ -222,7 +201,6 @@ func TestRelations(t *testing.T) {
 		res, err := accountRepo.FilterAccounts(ctx, &filter.AccountsReq{
 			Addresses:   addresses,
 			LatestState: true,
-			WithData:    true,
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, res.Total)
@@ -232,48 +210,40 @@ func TestRelations(t *testing.T) {
 	t.Run("get messages with payloads", func(t *testing.T) {
 		res, err := msgRepo.FilterMessages(ctx, &filter.MessagesReq{
 			DstAddresses: addresses,
-			WithPayload:  true,
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, res.Total)
 		assert.Equal(t, len(messagesTo), len(res.Rows))
 		for i := range messagesTo {
-			assert.NotNil(t, messagesTo[i].Payload)
-			assert.NotNil(t, res.Rows[i].Payload)
-			assert.JSONEq(t, string(messagesTo[i].Payload.DataJSON), string(res.Rows[i].Payload.DataJSON))
-			res.Rows[i].Payload.DataJSON = messagesTo[i].Payload.DataJSON
+			assert.JSONEq(t, string(messagesTo[i].DataJSON), string(res.Rows[i].DataJSON))
+			res.Rows[i].DataJSON = messagesTo[i].DataJSON
 		}
 		assert.Equal(t, messagesTo, res.Rows)
 	})
 
 	t.Run("get transactions with states and messages", func(t *testing.T) {
 		res, err := txRepo.FilterTransactions(ctx, &filter.TransactionsReq{
-			Addresses:           addresses,
-			WithAccountState:    true,
-			WithAccountData:     true,
-			WithMessages:        true,
-			WithMessagePayloads: true,
+			Addresses:        addresses,
+			WithAccountState: true,
+			WithMessages:     true,
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, res.Total)
 		assert.Equal(t, 1, len(res.Rows))
 		assert.NotNil(t, res.Rows[0].InMsg)
-		assert.NotNil(t, res.Rows[0].InMsg.Payload)
-		assert.JSONEq(t, string(messagesTo[0].Payload.DataJSON), string(res.Rows[0].InMsg.Payload.DataJSON))
-		res.Rows[0].InMsg.Payload.DataJSON = messagesTo[0].Payload.DataJSON
+		assert.JSONEq(t, string(messagesTo[0].DataJSON), string(res.Rows[0].InMsg.DataJSON))
+		res.Rows[0].InMsg.DataJSON = messagesTo[0].DataJSON
 		assert.Equal(t, transactions, res.Rows)
 	})
 
 	t.Run("get master block with shards and transactions", func(t *testing.T) {
 		var workchain int32 = -1
 		res, err := blockRepo.FilterBlocks(ctx, &filter.BlocksReq{
-			Workchain:                      &workchain,
-			WithShards:                     true,
-			WithTransactions:               true,
-			WithTransactionAccountState:    true,
-			WithTransactionAccountData:     true,
-			WithTransactionMessages:        true,
-			WithTransactionMessagePayloads: true,
+			Workchain:                   &workchain,
+			WithShards:                  true,
+			WithTransactions:            true,
+			WithTransactionAccountState: true,
+			WithTransactionMessages:     true,
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, res.Total)
@@ -281,9 +251,8 @@ func TestRelations(t *testing.T) {
 		assert.Equal(t, 1, len(res.Rows[0].Shards))
 		assert.Equal(t, 1, len(res.Rows[0].Shards[0].Transactions))
 		assert.NotNil(t, res.Rows[0].Shards[0].Transactions[0].InMsg)
-		assert.NotNil(t, res.Rows[0].Shards[0].Transactions[0].InMsg.Payload)
-		assert.JSONEq(t, string(messagesTo[0].Payload.DataJSON), string(res.Rows[0].Shards[0].Transactions[0].InMsg.Payload.DataJSON))
-		res.Rows[0].Shards[0].Transactions[0].InMsg.Payload.DataJSON = messagesTo[0].Payload.DataJSON
+		assert.JSONEq(t, string(messagesTo[0].DataJSON), string(res.Rows[0].Shards[0].Transactions[0].InMsg.DataJSON))
+		res.Rows[0].Shards[0].Transactions[0].InMsg.DataJSON = messagesTo[0].DataJSON
 		assert.Equal(t, blocks[1:], res.Rows)
 	})
 
@@ -303,7 +272,7 @@ func TestRelations(t *testing.T) {
 		assert.Equal(t, 1, len(stats.AccountStatusCount))
 		assert.Equal(t, core.Active, stats.AccountStatusCount[0].Status)
 		assert.Equal(t, 1, stats.AccountStatusCount[0].Count)
-		assert.Equal(t, data.Types, stats.AccountTypesCount[0].Interfaces)
+		assert.Equal(t, state.Types, stats.AccountTypesCount[0].Interfaces)
 		assert.Equal(t, 1, stats.AccountTypesCount[0].Count)
 		assert.Equal(t, operation, stats.MessageTypesCount[0].Operation)
 		assert.Equal(t, 1, stats.MessageTypesCount[0].Count)
