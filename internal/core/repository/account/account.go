@@ -97,6 +97,21 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "account status pg create enum")
 	}
 
+	_, err = pgDB.ExecContext(ctx, "CREATE TYPE label_category AS ENUM (?, ?)",
+		core.CentralizedExchange, core.Scam)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return errors.Wrap(err, "address label category pg create enum")
+	}
+
+	_, err = pgDB.NewCreateTable().
+		Model(&core.AddressLabel{}).
+		IfNotExists().
+		WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address label pg create table")
+	}
+
 	_, err = chDB.NewCreateTable().
 		IfNotExists().
 		Engine("ReplacingMergeTree").
@@ -121,7 +136,7 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		WithForeignKeys().
 		Exec(ctx)
 	if err != nil {
-		return errors.Wrap(err, "account state pg create table")
+		return errors.Wrap(err, "latest account state pg create table")
 	}
 
 	return createIndexes(ctx, pgDB)

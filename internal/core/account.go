@@ -22,11 +22,19 @@ const (
 	NonExist = AccountStatus(tlb.AccountStatusNonExist)
 )
 
+type LabelCategory string
+
+var (
+	CentralizedExchange LabelCategory = "centralized_exchange"
+	Scam                LabelCategory = "scam"
+)
+
 type AddressLabel struct {
 	bun.BaseModel `bun:"table:address_labels" json:"-"`
 
-	Address addr.Address `bun:"type:bytea,pk,notnull" json:"-"`
-	Name    string       `bun:"type:string,notnull" json:"name"`
+	Address  addr.Address  `bun:"type:bytea,pk,notnull" json:"-"`
+	Name     string        `bun:"type:string,notnull" json:"name"`
+	Category LabelCategory `bun:"type:label_category" json:"category,omitempty"`
 }
 
 type NFTContentData struct {
