@@ -30,11 +30,11 @@ type ParserService interface {
 		ctx context.Context,
 		acc *core.AccountState,
 		others func(context.Context, *addr.Address) (*core.AccountState, error),
-	) (*core.AccountData, error)
+	) (*core.AccountState, error)
 
 	ParseMessagePayload(
 		ctx context.Context,
-		src, dst *core.AccountData,
+		src, dst *core.AccountState,
 		message *core.Message,
-	) (*core.MessagePayload, error)
+	) (*core.Message, error)
 }

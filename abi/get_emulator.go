@@ -26,10 +26,10 @@ type VmValue struct {
 type VmStack []VmValue
 
 type GetMethodExecution struct {
-	Name         string    `json:"name,omitempty"`
-	Arguments    []VmValue `json:"arguments,omitempty"`
-	ReturnValues []VmValue `json:"return_values,omitempty"`
-	Error        string    `json:"error,omitempty"`
+	Name      string  `json:"name,omitempty"`
+	Arguments VmStack `json:"arguments,omitempty"`
+	Returns   VmStack `json:"returns,omitempty"`
+	Error     string  `json:"error,omitempty"`
 }
 
 var ErrWrongValueFormat = errors.New("wrong value for this format")

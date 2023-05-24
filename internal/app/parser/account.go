@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
@@ -97,7 +98,7 @@ func (s *Service) ParseAccountData(
 	ctx context.Context,
 	acc *core.AccountState,
 	others func(context.Context, *addr.Address) (*core.AccountState, error),
-) (*core.AccountData, error) {
+) (*core.AccountState, error) {
 	interfaces, err := s.determineInterfaces(ctx, acc)
 	if err != nil {
 		return nil, errors.Wrapf(err, "determine contract interfaces")
@@ -106,28 +107,19 @@ func (s *Service) ParseAccountData(
 		return nil, errors.Wrap(app.ErrImpossibleParsing, "unknown contract interfaces")
 	}
 
-	data := new(core.AccountData)
-	data.Address = acc.Address
-	data.LastTxLT = acc.LastTxLT
-	data.LastTxHash = acc.LastTxHash
-	data.Balance = acc.Balance
 	for _, i := range interfaces {
-		data.Types = append(data.Types, i.Name)
+		acc.Types = append(acc.Types, i.Name)
 	}
-	data.UpdatedAt = acc.UpdatedAt
+	acc.ExecutedGetMethods = map[abi.ContractName][]abi.GetMethodExecution{}
 
-	getters := []func(context.Context, *core.AccountState, func(context.Context, *addr.Address) (*core.AccountState, error), []*core.ContractInterface, *core.AccountData){
+	getters := []func(context.Context, *core.AccountState, func(context.Context, *addr.Address) (*core.AccountState, error), []*core.ContractInterface){
 		s.getAccountDataNFT,
 		s.getAccountDataFT,
 		s.getAccountDataWallet,
 	}
 	for _, getter := range getters {
-		getter(ctx, acc, others, interfaces, data)
+		getter(ctx, acc, others, interfaces)
 	}
 
-	if data.Errors != nil {
-		log.Warn().Str("address", acc.Address.Base64()).Strs("errors", data.Errors).Msg("parse account data")
-	}
-
-	return data, nil
+	return acc, nil
 }

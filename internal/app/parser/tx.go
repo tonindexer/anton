@@ -13,7 +13,7 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountData, message *core.Message, ret *core.MessagePayload) error {
+func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountState, msg *core.Message) error {
 	if acc == nil {
 		return errors.Wrap(app.ErrImpossibleParsing, "no account data")
 	}
@@ -21,30 +21,30 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountDat
 		return errors.Wrap(app.ErrImpossibleParsing, "no interfaces")
 	}
 
-	operation, err := s.contractRepo.GetOperationByID(ctx, acc.Types, acc.Address == message.SrcAddress, message.OperationID)
+	op, err := s.contractRepo.GetOperationByID(ctx, acc.Types, acc.Address == msg.SrcAddress, msg.OperationID)
 	if errors.Is(err, core.ErrNotFound) {
 		return errors.Wrap(app.ErrImpossibleParsing, "unknown operation")
 	}
 	if err != nil {
 		return errors.Wrap(err, "get contract operations")
 	}
-	ret.OperationName = operation.Name
+	msg.OperationName = op.OperationName
 
 	// set src and dst contract types
-	if acc.Address == message.SrcAddress {
-		ret.SrcContract = operation.ContractName
+	if acc.Address == msg.SrcAddress {
+		msg.SrcContract = op.ContractName
 	} else {
-		ret.DstContract = operation.ContractName
+		msg.DstContract = op.ContractName
 	}
 
-	ret.MinterAddress = acc.MinterAddress
+	msg.MinterAddress = acc.MinterAddress
 
-	msgParsed, err := operation.Schema.New()
+	msgParsed, err := op.Schema.New()
 	if err != nil {
-		return errors.Wrapf(err, "creating struct from %s/%s schema", operation.ContractName, operation.Name)
+		return errors.Wrapf(err, "creating struct from %s/%s schema", op.ContractName, op.OperationName)
 	}
 
-	payloadCell, err := cell.FromBOC(message.Body)
+	payloadCell, err := cell.FromBOC(msg.Body)
 	if err != nil {
 		return errors.Wrap(err, "msg body from boc")
 	}
@@ -54,7 +54,7 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountDat
 		return errors.Wrap(err, "load from cell")
 	}
 
-	ret.DataJSON, err = json.Marshal(msgParsed)
+	msg.DataJSON, err = json.Marshal(msgParsed)
 	if err != nil {
 		return errors.Wrap(err, "json marshal parsed payload")
 	}
@@ -62,49 +62,38 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountDat
 	return nil
 }
 
-func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.AccountData, message *core.Message) (*core.MessagePayload, error) {
+func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.AccountState, msg *core.Message) (*core.Message, error) {
 	var err = app.ErrImpossibleParsing // save message parsing error to a database to look at it later
 
 	// you can parse separately incoming messages to known contracts and outgoing message from them
 
-	ret := &core.MessagePayload{
-		Type:        message.Type,
-		Hash:        message.Hash,
-		SrcAddress:  message.SrcAddress,
-		DstAddress:  message.DstAddress,
-		Amount:      message.Amount,
-		BodyHash:    message.BodyHash,
-		OperationID: message.OperationID,
-		CreatedLT:   message.CreatedLT,
-		CreatedAt:   message.CreatedAt,
-	}
-	if len(message.Body) == 0 {
+	if len(msg.Body) == 0 {
 		return nil, errors.Wrap(app.ErrImpossibleParsing, "no message body")
 	}
 
-	errIn := s.parseDirectedMessage(ctx, dst, message, ret)
+	errIn := s.parseDirectedMessage(ctx, dst, msg)
 	if errIn != nil && !errors.Is(errIn, app.ErrImpossibleParsing) {
 		log.Warn().Err(errIn).
-			Hex("tx_hash", message.SourceTxHash).
+			Uint64("src_tx_lt", msg.SrcTxLT).
 			Str("dst_addr", dst.Address.Base64()).
-			Uint32("op_id", message.OperationID).Msgf("parse dst %v message", dst.Types)
+			Uint32("op_id", msg.OperationID).Msgf("parse dst %v message", dst.Types)
 		err = errors.Wrap(errIn, "incoming")
 	}
 	if errIn == nil {
-		return ret, nil
+		return msg, nil
 	}
 
-	errOut := s.parseDirectedMessage(ctx, src, message, ret)
+	errOut := s.parseDirectedMessage(ctx, src, msg)
 	if errOut != nil && !errors.Is(errOut, app.ErrImpossibleParsing) {
 		log.Warn().Err(errOut).
-			Hex("tx_hash", message.SourceTxHash).
+			Uint64("src_tx_lt", msg.SrcTxLT).
 			Str("src_addr", src.Address.Base64()).
-			Uint32("op_id", message.OperationID).Msgf("parse src %v message", src.Types)
+			Uint32("op_id", msg.OperationID).Msgf("parse src %v message", src.Types)
 		err = errors.Wrap(errOut, "outgoing")
 	}
 	if errOut == nil {
-		return ret, nil
+		return msg, nil
 	}
 
-	return ret, err
+	return msg, err
 }

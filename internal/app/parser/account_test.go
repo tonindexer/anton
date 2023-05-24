@@ -32,7 +32,7 @@ func TestService_ParseAccountData_WalletV3R2(t *testing.T) {
 	}, nil)
 	require.Nil(t, err)
 	require.Equal(t, []abi.ContractName{"wallet_v3r2"}, ret.Types)
-	require.Equal(t, uint64(1), ret.WalletSeqNo)
+	require.Equal(t, uint64(1), ret.ExecutedGetMethods)
 }
 
 func TestService_ParseAccountData_WalletV4R2(t *testing.T) {
@@ -52,7 +52,7 @@ func TestService_ParseAccountData_WalletV4R2(t *testing.T) {
 	}, nil)
 	require.Nil(t, err)
 	require.Equal(t, []abi.ContractName{"wallet_v4r2"}, ret.Types)
-	require.Equal(t, uint64(0x22), ret.WalletSeqNo)
+	require.Equal(t, uint64(0x22), ret.ExecutedGetMethods)
 }
 
 func TestService_ParseAccountData_NFTItem(t *testing.T) {
