@@ -66,7 +66,7 @@ func matchByGetMethods(acc *core.AccountState, getMethodHashes []int32) bool {
 func (s *Service) determineInterfaces(ctx context.Context, acc *core.AccountState) ([]*core.ContractInterface, error) {
 	var ret []*core.ContractInterface
 
-	interfaces, err := s.contractRepo.GetInterfaces(ctx)
+	interfaces, err := s.ContractRepo.GetInterfaces(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get contract interfaces")
 	}
@@ -97,7 +97,7 @@ func (s *Service) determineInterfaces(ctx context.Context, acc *core.AccountStat
 func (s *Service) ParseAccountData(
 	ctx context.Context,
 	acc *core.AccountState,
-	others func(context.Context, *addr.Address) (*core.AccountState, error),
+	others func(context.Context, addr.Address) (*core.AccountState, error),
 ) (*core.AccountState, error) {
 	interfaces, err := s.determineInterfaces(ctx, acc)
 	if err != nil {
@@ -112,7 +112,7 @@ func (s *Service) ParseAccountData(
 	}
 	acc.ExecutedGetMethods = map[abi.ContractName][]abi.GetMethodExecution{}
 
-	getters := []func(context.Context, *core.AccountState, func(context.Context, *addr.Address) (*core.AccountState, error), []*core.ContractInterface){
+	getters := []func(context.Context, *core.AccountState, func(context.Context, addr.Address) (*core.AccountState, error), []*core.ContractInterface){
 		s.getAccountDataNFT,
 		s.getAccountDataFT,
 		s.getAccountDataWallet,

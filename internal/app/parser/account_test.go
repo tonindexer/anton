@@ -63,7 +63,7 @@ func TestService_ParseAccountData_NFTItem(t *testing.T) {
 	data, err := base64.StdEncoding.DecodeString("te6cckEBAgEAWAABlQAAAAAAAABkgAmZdBGwAyeH1p8lmxniF4hL/lrgtKpVWt5op0KDyjb28AIihaT5me2lhAhFtxowTSuLb3JY8S1sv5rLvgAnLsoWVgEAEDEwMC5qc29u7rJBww==")
 	require.Nil(t, err)
 
-	others := func(_ context.Context, a *addr.Address) (*core.AccountState, error) {
+	others := func(_ context.Context, a addr.Address) (*core.AccountState, error) {
 		aStr := "EQBMy6CNgBk8PrT5LNjPELxCX_LXBaVSqtbzRToUHlG3t-fg"
 		if a.Base64() != aStr {
 			return nil, errors.Wrapf(core.ErrNotFound, "unexpected address %s", a.Base64())

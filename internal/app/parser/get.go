@@ -56,7 +56,7 @@ func (s *Service) getMethodCall(ctx context.Context, d *abi.GetMethodDesc, acc *
 		return ret, errors.Wrap(err, "account data from boc")
 	}
 
-	e, err := abi.NewEmulator(acc.Address.MustToTonutils(), code, data, s.bcConfig)
+	e, err := abi.NewEmulator(acc.Address.MustToTonutils(), code, data, s.BlockchainConfig)
 	if err != nil {
 		return ret, errors.Wrap(err, "new emulator")
 	}
@@ -151,7 +151,7 @@ func (s *Service) getNFTItemContent(ctx context.Context, collection *core.Accoun
 func (s *Service) getAccountDataNFT(
 	ctx context.Context,
 	acc *core.AccountState,
-	others func(context.Context, *addr.Address) (*core.AccountState, error),
+	others func(context.Context, addr.Address) (*core.AccountState, error),
 	interfaces []*core.ContractInterface,
 ) {
 	for _, i := range interfaces {
@@ -190,7 +190,7 @@ func (s *Service) getAccountDataNFT(
 			if acc.MinterAddress == nil {
 				continue
 			}
-			collection, err := others(ctx, acc.MinterAddress)
+			collection, err := others(ctx, *acc.MinterAddress)
 			if err != nil {
 				log.Error().Err(err).Msg("get nft collection state")
 				return
@@ -211,7 +211,7 @@ func (s *Service) getAccountDataNFT(
 func (s *Service) getAccountDataFT(
 	ctx context.Context,
 	acc *core.AccountState,
-	_ func(context.Context, *addr.Address) (*core.AccountState, error),
+	_ func(context.Context, addr.Address) (*core.AccountState, error),
 	interfaces []*core.ContractInterface,
 ) {
 	for _, i := range interfaces {
@@ -244,7 +244,7 @@ func (s *Service) getAccountDataFT(
 func (s *Service) getAccountDataWallet(
 	ctx context.Context,
 	acc *core.AccountState,
-	_ func(context.Context, *addr.Address) (*core.AccountState, error),
+	_ func(context.Context, addr.Address) (*core.AccountState, error),
 	interfaces []*core.ContractInterface,
 ) {
 	for _, i := range interfaces {

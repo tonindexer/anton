@@ -21,7 +21,7 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 		return errors.Wrap(app.ErrImpossibleParsing, "no interfaces")
 	}
 
-	op, err := s.contractRepo.GetOperationByID(ctx, acc.Types, acc.Address == msg.SrcAddress, msg.OperationID)
+	op, err := s.ContractRepo.GetOperationByID(ctx, acc.Types, acc.Address == msg.SrcAddress, msg.OperationID)
 	if errors.Is(err, core.ErrNotFound) {
 		return errors.Wrap(app.ErrImpossibleParsing, "unknown operation")
 	}
@@ -62,7 +62,7 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 	return nil
 }
 
-func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.AccountState, msg *core.Message) (*core.Message, error) {
+func (s *Service) ParseMessagePayload(ctx context.Context, msg *core.Message) (*core.Message, error) {
 	var err = app.ErrImpossibleParsing // save message parsing error to a database to look at it later
 
 	// you can parse separately incoming messages to known contracts and outgoing message from them
@@ -71,24 +71,24 @@ func (s *Service) ParseMessagePayload(ctx context.Context, src, dst *core.Accoun
 		return nil, errors.Wrap(app.ErrImpossibleParsing, "no message body")
 	}
 
-	errIn := s.parseDirectedMessage(ctx, dst, msg)
+	errIn := s.parseDirectedMessage(ctx, msg.DstState, msg)
 	if errIn != nil && !errors.Is(errIn, app.ErrImpossibleParsing) {
 		log.Warn().Err(errIn).
 			Uint64("src_tx_lt", msg.SrcTxLT).
-			Str("dst_addr", dst.Address.Base64()).
-			Uint32("op_id", msg.OperationID).Msgf("parse dst %v message", dst.Types)
+			Str("dst_addr", msg.DstState.Address.Base64()).
+			Uint32("op_id", msg.OperationID).Msgf("parse dst %v message", msg.DstState.Types)
 		err = errors.Wrap(errIn, "incoming")
 	}
 	if errIn == nil {
 		return msg, nil
 	}
 
-	errOut := s.parseDirectedMessage(ctx, src, msg)
+	errOut := s.parseDirectedMessage(ctx, msg.SrcState, msg)
 	if errOut != nil && !errors.Is(errOut, app.ErrImpossibleParsing) {
 		log.Warn().Err(errOut).
 			Uint64("src_tx_lt", msg.SrcTxLT).
-			Str("src_addr", src.Address.Base64()).
-			Uint32("op_id", msg.OperationID).Msgf("parse src %v message", src.Types)
+			Str("src_addr", msg.SrcState.Address.Base64()).
+			Uint32("op_id", msg.OperationID).Msgf("parse src %v message", msg.SrcState.Types)
 		err = errors.Wrap(errOut, "outgoing")
 	}
 	if errOut == nil {

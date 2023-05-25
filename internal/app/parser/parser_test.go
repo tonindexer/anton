@@ -5,12 +5,14 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"github.com/xssnick/tonutils-go/liteclient"
+	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
-	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 var ctx = context.Background()
@@ -42,16 +44,22 @@ func (m *mockContractRepo) GetOperationByID(_ context.Context, _ []abi.ContractN
 }
 
 func newService(t *testing.T) *Service {
-	s, err := NewService(ctx, &app.ParserConfig{
-		DB: &repository.DB{},
-		Servers: []*app.ServerAddr{
-			{
-				IPPort:    "135.181.177.59:53312",
-				PubKeyB64: "aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=",
-			},
-		},
-	})
-	require.Nil(t, err)
+	var servers = []app.ServerAddr{{
+		IPPort:    "135.181.177.59:53312",
+		PubKeyB64: "aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=",
+	}}
+
+	client := liteclient.NewConnectionPool()
+	for _, n := range servers {
+		if err := client.AddConnection(ctx, n.IPPort, n.PubKeyB64); err != nil {
+			t.Fatal(errors.Wrapf(err, "cannot add connection (host = '%s', key = '%s')", n.IPPort, n.PubKeyB64))
+		}
+	}
+
+	bcConfig, err := app.GetBlockchainConfig(ctx, ton.NewAPIClient(client))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	walletV3R2Code, err := base64.StdEncoding.DecodeString("te6cckEBAQEAcQAA3v8AIN0gggFMl7ohggEznLqxn3Gw7UTQ0x/THzHXC//jBOCk8mCDCNcYINMf0x/TH/gjE7vyY+1E0NMf0x/T/9FRMrryoVFEuvKiBPkBVBBV+RDyo/gAkyDXSpbTB9QC+wDo0QGkyMsfyx/L/8ntVBC9ba0=")
 	require.Nil(t, err)
@@ -115,9 +123,12 @@ func newService(t *testing.T) *Service {
 		nftItem.GetMethodHashes = append(nftItem.GetMethodHashes, abi.MethodNameHash(nftItem.GetMethodsDesc[it].Name))
 	}
 
-	s.contractRepo = &mockContractRepo{
+	contractRepo := &mockContractRepo{
 		interfaces: []*core.ContractInterface{&walletV3R2, &walletV4R2, &nftItem},
 	}
 
-	return s
+	return NewService(&app.ParserConfig{
+		BlockchainConfig: bcConfig,
+		ContractRepo:     contractRepo,
+	})
 }
