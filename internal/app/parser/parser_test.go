@@ -44,16 +44,9 @@ func (m *mockContractRepo) GetOperationByID(_ context.Context, _ []abi.ContractN
 }
 
 func newService(t *testing.T) *Service {
-	var servers = []app.ServerAddr{{
-		IPPort:    "135.181.177.59:53312",
-		PubKeyB64: "aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=",
-	}}
-
 	client := liteclient.NewConnectionPool()
-	for _, n := range servers {
-		if err := client.AddConnection(ctx, n.IPPort, n.PubKeyB64); err != nil {
-			t.Fatal(errors.Wrapf(err, "cannot add connection (host = '%s', key = '%s')", n.IPPort, n.PubKeyB64))
-		}
+	if err := client.AddConnection(ctx, "135.181.177.59:53312", "aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ="); err != nil {
+		t.Fatal(errors.Wrapf(err, "cannot add connection"))
 	}
 
 	bcConfig, err := app.GetBlockchainConfig(ctx, ton.NewAPIClient(client))

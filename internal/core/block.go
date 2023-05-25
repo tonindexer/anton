@@ -5,12 +5,21 @@ import (
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
+	"github.com/xssnick/tonutils-go/ton"
 )
 
 type BlockID struct {
 	Workchain int32  `json:"workchain"`
 	Shard     int64  `json:"shard"`
 	SeqNo     uint32 `json:"seq_no"`
+}
+
+func GetBlockID(b *ton.BlockIDExt) BlockID {
+	return BlockID{
+		Workchain: b.Workchain,
+		Shard:     b.Shard,
+		SeqNo:     b.SeqNo,
+	}
 }
 
 type Block struct {
