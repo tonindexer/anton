@@ -3,6 +3,7 @@ package parser
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -32,7 +33,9 @@ func TestService_ParseAccountData_WalletV3R2(t *testing.T) {
 	}, nil)
 	require.Nil(t, err)
 	require.Equal(t, []abi.ContractName{"wallet_v3r2"}, ret.Types)
-	require.Equal(t, uint64(1), ret.ExecutedGetMethods)
+	j, err := json.Marshal(ret.ExecutedGetMethods)
+	require.Nil(t, err)
+	require.Equal(t, `{"wallet_v3r2":[{"name":"seqno","returns":[{"name":"seqno","stack_type":"int","format":"uint64","payload":1}]}]}`, string(j))
 }
 
 func TestService_ParseAccountData_WalletV4R2(t *testing.T) {
@@ -52,7 +55,9 @@ func TestService_ParseAccountData_WalletV4R2(t *testing.T) {
 	}, nil)
 	require.Nil(t, err)
 	require.Equal(t, []abi.ContractName{"wallet_v4r2"}, ret.Types)
-	require.Equal(t, uint64(0x22), ret.ExecutedGetMethods)
+	j, err := json.Marshal(ret.ExecutedGetMethods)
+	require.Nil(t, err)
+	require.Equal(t, `{"wallet_v4r2":[{"name":"seqno","returns":[{"name":"seqno","stack_type":"int","format":"uint64","payload":34}]}]}`, string(j))
 }
 
 func TestService_ParseAccountData_NFTItem(t *testing.T) {
@@ -99,4 +104,7 @@ func TestService_ParseAccountData_NFTItem(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, []abi.ContractName{"nft_item"}, ret.Types)
 	require.Equal(t, "https://loton.fun/nft/100.json", ret.NFTContentData.ContentURI)
+	j, err := json.Marshal(ret.ExecutedGetMethods)
+	require.Nil(t, err)
+	require.Equal(t, `{"nft_collection":[{"name":"get_nft_content","arguments":[{"name":"index","stack_type":"int","payload":100},{"name":"individual_content","stack_type":"cell","payload":"te6cckEBAQEACgAAEDEwMC5qc29ue9bV9g=="}],"returns":[{"name":"full_content","stack_type":"cell","format":"content","payload":{"URI":"https://loton.fun/nft/100.json"}}]}],"nft_item":[{"name":"get_nft_data","returns":[{"name":"init","stack_type":"int","format":"bool","payload":true},{"name":"index","stack_type":"int","payload":100},{"name":"collection_address","stack_type":"slice","format":"addr","payload":"EQBMy6CNgBk8PrT5LNjPELxCX_LXBaVSqtbzRToUHlG3t-fg"},{"name":"owner_address","stack_type":"slice","format":"addr","payload":"EQCIoWk-ZntpYQIRbcaME0ri29yWPEtbL-ay74AJy7KFlcfj"},{"name":"individual_content","stack_type":"cell","payload":"te6cckEBAQEACgAAEDEwMC5qc29ue9bV9g=="}]}]}`, string(j))
 }

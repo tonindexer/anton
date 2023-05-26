@@ -20,7 +20,7 @@ import (
 
 type VmValue struct {
 	VmValueDesc
-	Payload any
+	Payload any `json:"payload"`
 }
 
 type VmStack []VmValue
