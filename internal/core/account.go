@@ -33,16 +33,16 @@ type AddressLabel struct {
 	bun.BaseModel `bun:"table:address_labels" json:"-"`
 
 	Address  addr.Address  `bun:"type:bytea,pk,notnull" json:"-"`
-	Name     string        `bun:"type:string,notnull" json:"name"`
+	Name     string        `bun:"type:text,notnull" json:"name"`
 	Category LabelCategory `bun:"type:label_category" json:"category,omitempty"`
 }
 
 type NFTContentData struct {
-	ContentURI         string `ch:"type:String" json:"content_uri,omitempty"`
-	ContentName        string `ch:"type:String" json:"content_name,omitempty"`
-	ContentDescription string `ch:"type:String" json:"content_description,omitempty"`
-	ContentImage       string `ch:"type:String" json:"content_image,omitempty"`
-	ContentImageData   []byte `ch:"type:String" json:"content_image_data,omitempty"`
+	ContentURI         string `ch:"type:String" bun:",nullzero" json:"content_uri,omitempty"`
+	ContentName        string `ch:"type:String" bun:",nullzero" json:"content_name,omitempty"`
+	ContentDescription string `ch:"type:String" bun:",nullzero" json:"content_description,omitempty"`
+	ContentImage       string `ch:"type:String" bun:",nullzero" json:"content_image,omitempty"`
+	ContentImageData   []byte `ch:"type:String" bun:",nullzero" json:"content_image_data,omitempty"`
 }
 
 type FTWalletData struct {
@@ -78,7 +78,7 @@ type AccountState struct {
 	OwnerAddress  *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
 	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
 
-	ExecutedGetMethods map[abi.ContractName][]abi.GetMethodExecution `ch:"type:JSON" bun:"type:jsonb" json:"executed_get_methods,omitempty"`
+	ExecutedGetMethods map[abi.ContractName][]abi.GetMethodExecution `ch:"-" bun:"type:jsonb" json:"executed_get_methods,omitempty"`
 
 	// TODO: remove this
 	NFTContentData

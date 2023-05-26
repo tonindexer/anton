@@ -14,9 +14,9 @@ import (
 
 func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq) (ret []*core.AccountState, err error) {
 	var (
-		q           *bun.SelectQuery
-		statesTable string
-		latest      []*core.LatestAccountState
+		q                   *bun.SelectQuery
+		prefix, statesTable string
+		latest              []*core.LatestAccountState
 	)
 
 	// choose table to filter states by
@@ -26,6 +26,7 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 			return q.ExcludeColumn(f.ExcludeColumn...)
 		})
 		statesTable = "latest_account_state."
+		prefix = "account_state."
 	} else {
 		q = r.pg.NewSelect().Model(&ret).
 			ExcludeColumn(f.ExcludeColumn...)
@@ -36,13 +37,13 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 		q = q.Where(statesTable+"address in (?)", bun.In(f.Addresses))
 	}
 	if len(f.ContractTypes) > 0 {
-		q = q.Where(statesTable+"types && ?", pgdialect.Array(f.ContractTypes))
+		q = q.Where(prefix+"types && ?", pgdialect.Array(f.ContractTypes))
 	}
 	if f.OwnerAddress != nil {
-		q = q.Where(statesTable+"owner_address = ?", f.OwnerAddress)
+		q = q.Where(prefix+"owner_address = ?", f.OwnerAddress)
 	}
 	if f.MinterAddress != nil {
-		q = q.Where(statesTable+"minter_address = ?", f.MinterAddress)
+		q = q.Where(prefix+"minter_address = ?", f.MinterAddress)
 	}
 
 	if f.AfterTxLT != nil {

@@ -30,7 +30,7 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Message{}).
-		Column("src_address", "source_tx_lt").
+		Column("src_address", "src_tx_lt").
 		Where("src_address IS NOT NULL").
 		Exec(ctx)
 	if err != nil {
@@ -155,20 +155,20 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "message pg create table")
 	}
 
-	_, err = pgDB.ExecContext(ctx, "ALTER TABLE messages ADD CONSTRAINT messages_source_tx_hash_notnull "+
-		"CHECK (NOT (source_tx_hash IS NULL AND src_address != decode('11ff0000000000000000000000000000000000000000000000000000000000000000', 'hex')));")
+	_, err = pgDB.ExecContext(ctx, `
+ALTER TABLE messages
+ADD CONSTRAINT messages_tx_lt_notnull
+CHECK (
+    (src_address IS NOT NULL AND src_tx_lt IS NOT NULL AND dst_address IS NULL AND dst_tx_lt IS NULL) OR
+    (src_address IS NULL AND src_tx_lt IS NULL AND dst_address IS NOT NULL AND dst_tx_lt IS NOT NULL) OR
+    (src_address IS NOT NULL AND src_tx_lt IS NOT NULL AND dst_address IS NOT NULL AND dst_tx_lt IS NOT NULL)
+)`)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return errors.Wrap(err, "messages pg create source tx hash check")
 	}
 
 	if err := createIndexes(ctx, pgDB); err != nil {
 		return err
-	}
-
-	_, err = pgDB.ExecContext(ctx, "ALTER TABLE messages ADD CONSTRAINT messages_source_tx_hash_notnull "+
-		"CHECK (NOT (source_tx_hash IS NULL AND src_address != decode('11ff0000000000000000000000000000000000000000000000000000000000000000', 'hex')));")
-	if err != nil && !strings.Contains(err.Error(), "already exists") {
-		return errors.Wrap(err, "messages pg create source tx hash check")
 	}
 
 	return nil

@@ -101,7 +101,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 			Order:     "ASC", Limit: len(addressStates),
 		})
 		assert.Nil(t, err)
-		assert.Equal(t, 60, results.Total)
+		assert.Equal(t, 15, results.Total)
 		assert.Equal(t, addressStates, results.Rows)
 	})
 
@@ -150,7 +150,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 			Order:         "DESC", Limit: 1,
 		})
 		assert.Nil(t, err)
-		assert.Equal(t, 60, results.Total)
+		assert.Equal(t, 5, results.Total)
 		assert.Equal(t, []*core.AccountState{latestState}, results.Rows)
 	})
 

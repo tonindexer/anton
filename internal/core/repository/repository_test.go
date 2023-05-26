@@ -64,9 +64,6 @@ func dropTables(t testing.TB) {
 	_, err = pg.NewDropTable().Model((*core.Message)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 
-	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS message_type")
-	assert.Nil(t, err)
-
 	_, err = pg.NewDropTable().Model((*core.LatestAccountState)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 
@@ -86,6 +83,9 @@ func dropTables(t testing.TB) {
 	_, err = pg.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
+	assert.Nil(t, err)
+
+	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS message_type")
 	assert.Nil(t, err)
 }
 

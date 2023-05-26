@@ -55,7 +55,7 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.ContractOperation{}).
 		Unique().
-		Column("name", "contract_name").
+		Column("operation_name", "contract_name").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "contract operation name create unique index")

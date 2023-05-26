@@ -51,6 +51,8 @@ func AddressState(a *addr.Address, t []abi.ContractName, minter *addr.Address) *
 		Types:           t,
 		OwnerAddress:    Address(),
 		MinterAddress:   minter,
+		FTWalletData:    core.FTWalletData{JettonBalance: BigInt()},
+		NFTContentData:  core.NFTContentData{ContentImageData: []byte{}}, // TODO: i dunno why ",nullzero" tag does not work in pg
 		UpdatedAt:       timestamp,
 	}
 
@@ -64,9 +66,11 @@ func AddressStateContract(a *addr.Address, t abi.ContractName, minter *addr.Addr
 		minter[16] = '\xde'
 	}
 
-	types := ContractNames(a)
+	var types []abi.ContractName
 	if t != "" {
 		types = append(types, t)
+	} else {
+		types = append(types, ContractNames(a)...)
 	}
 
 	return AddressState(a, types, minter)

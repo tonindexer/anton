@@ -63,6 +63,11 @@ func GetStatistics(ctx context.Context, ck *ch.DB, pg *bun.DB) (*Statistics, err
 	if err != nil {
 		return nil, errors.Wrap(err, "account state count")
 	}
+	ret.ParsedAccountCount, err = ck.NewSelect().Model((*core.AccountState)(nil)).Where("length(types) > 0").Count(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "account data count")
+	}
+
 	err = ck.NewSelect().
 		ColumnExpr("last_status as status").
 		ColumnExpr("count(addr) as count").
@@ -82,10 +87,6 @@ func GetStatistics(ctx context.Context, ck *ch.DB, pg *bun.DB) (*Statistics, err
 		ret.AddressCount += row.Count
 	}
 
-	ret.ParsedAccountCount, err = ck.NewSelect().Model((*core.AccountState)(nil)).Count(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "account data count")
-	}
 	err = ck.NewSelect().
 		ColumnExpr("last_types as interfaces").
 		ColumnExpr("count(addr) as count").
@@ -116,6 +117,7 @@ func GetStatistics(ctx context.Context, ck *ch.DB, pg *bun.DB) (*Statistics, err
 	err = ck.NewSelect().Model((*core.Message)(nil)).
 		ColumnExpr("operation_name as operation").
 		ColumnExpr("count() as count").
+		Where("length(operation_name) > 0").
 		Group("operation_name").
 		Order("count DESC").
 		Scan(ctx, &ret.MessageTypesCount)

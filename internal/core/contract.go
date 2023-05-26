@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/uptrace/bun"
-	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
@@ -13,7 +12,6 @@ import (
 // TODO: contract addresses labels
 
 type ContractInterface struct {
-	ch.CHModel    `ch:"contract_interfaces" json:"-"`
 	bun.BaseModel `bun:"table:contract_interfaces" json:"-"`
 
 	Name            abi.ContractName    `bun:",pk" json:"name"`
@@ -24,7 +22,6 @@ type ContractInterface struct {
 }
 
 type ContractOperation struct {
-	ch.CHModel    `ch:"contract_operations" json:"-"`
 	bun.BaseModel `bun:"table:contract_operations" json:"-"`
 
 	OperationName string            `json:"operation_name"`

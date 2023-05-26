@@ -10,14 +10,14 @@ import (
 )
 
 var (
-	operationNames        = []string{"nft_item_transfer", "nft_collection_item_mint"}
-	msgLT          uint64 = 1000
-	msgTS                 = time.Now().UTC()
+	// operationNames        = []string{"nft_item_transfer", "nft_collection_item_mint"}
+	msgLT uint64 = 1000
+	msgTS        = time.Now().UTC()
 )
 
-func OperationName() string {
-	return operationNames[int(rand.Uint32())%len(operationNames)]
-}
+// func OperationName() string {
+// 	return operationNames[int(rand.Uint32())%len(operationNames)]
+// }
 
 func MessageFromTo(from, to *addr.Address) *core.Message {
 	msgLT++
@@ -37,7 +37,6 @@ func MessageFromTo(from, to *addr.Address) *core.Message {
 		BodyHash:        Bytes(32),
 		OperationID:     rand.Uint32(),
 		TransferComment: String(8),
-		OperationName:   OperationName(),
 		DataJSON:        json.RawMessage(`{}`),
 		MinterAddress:   Address(),
 		StateInitCode:   Bytes(64),
