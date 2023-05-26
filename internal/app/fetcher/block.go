@@ -13,7 +13,7 @@ func (s *Service) lookupMaster(ctx context.Context, seqNo uint32) (*ton.BlockIDE
 		return master, nil
 	}
 
-	master, err := s.API.LookupBlock(ctx, s.masterWorkchain, s.masterShard, seqNo)
+	master, err := s.API.LookupBlock(ctx, s.masterWorkchain, int64(s.masterShard), seqNo)
 	if err != nil {
 		return nil, errors.Wrap(err, "lookup masterchain block")
 	}

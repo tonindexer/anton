@@ -169,24 +169,13 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 }
 
 func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*core.Message) error {
-	var unknown []*core.Message
-
-	for _, msg := range messages {
-		unknown = append(unknown, msg)
-	}
-
-	if len(unknown) == 0 {
-		return nil
-	}
-
-	_, err := tx.NewInsert().Model(&unknown).Exec(ctx)
+	_, err := tx.NewInsert().Model(&messages).Exec(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = r.ch.NewInsert().Model(&unknown).Exec(ctx)
+	_, err = r.ch.NewInsert().Model(&messages).Exec(ctx)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }

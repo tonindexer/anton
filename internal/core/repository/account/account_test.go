@@ -67,8 +67,7 @@ func dropTables(t testing.TB) {
 func TestRepository_AddAccounts(t *testing.T) {
 	initdb(t)
 
-	contractData := rndm.AccountStatesContract(10, "", nil)
-	states := append(contractData, rndm.AccountStates(10)...)
+	states := append(rndm.AccountStatesContract(10, "", nil), rndm.AccountStates(10)...)
 	a := &states[0].Address
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)

@@ -74,7 +74,7 @@ func mapMessageInternal(msg *core.Message, raw *tlb.InternalMessage) error {
 	return nil
 }
 
-func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg *tlb.Message) error {
+func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg tlb.Message) error {
 	switch raw := rawMsg.Msg.(type) {
 	case *tlb.ExternalMessage:
 		msg.Type = core.ExternalIn
@@ -142,7 +142,7 @@ func parseOperationID(body []byte) (opId uint32, comment string, err error) {
 	return opId, comment, nil
 }
 
-func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error) {
+func mapMessage(tx *tlb.Transaction, message tlb.Message) (*core.Message, error) {
 	var (
 		msg = new(core.Message)
 		err error
@@ -215,7 +215,7 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 		tx.BlockSeqNo = b.SeqNo
 	}
 	if raw.IO.In != nil && raw.IO.In.Msg != nil {
-		in, err := mapMessage(raw, raw.IO.In)
+		in, err := mapMessage(raw, *raw.IO.In)
 		if err != nil {
 			return nil, errors.Wrap(err, "map incoming message")
 		}
@@ -232,7 +232,7 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 			return nil, errors.Wrap(err, "getting outgoing tx messages")
 		}
 		for _, m := range messages {
-			out, err := mapMessage(raw, &m)
+			out, err := mapMessage(raw, m)
 			if err != nil {
 				return nil, errors.Wrap(err, "map outgoing message")
 			}

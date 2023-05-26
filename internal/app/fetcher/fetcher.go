@@ -10,7 +10,7 @@ type Service struct {
 	*app.FetcherConfig
 
 	masterWorkchain int32
-	masterShard     int64
+	masterShard     uint64
 
 	accounts *accountCache
 	blocks   *blocksCache
