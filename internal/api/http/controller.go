@@ -228,9 +228,7 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 	if req.WithTransactions {
 		req.WithTransactions = true
 		req.WithTransactionAccountState = true
-		req.WithTransactionAccountData = true
 		req.WithTransactionMessages = true
-		req.WithTransactionMessagePayloads = true
 	}
 
 	req.Order, err = unmarshalSorting(req.Order)
@@ -277,8 +275,6 @@ func (c *Controller) GetAccounts(ctx *gin.Context) {
 		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
-
-	req.WithData = true
 
 	req.Addresses, err = getAddresses(ctx, "address")
 	if err != nil {
@@ -430,9 +426,7 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 	}
 
 	req.WithAccountState = true
-	req.WithAccountData = true
 	req.WithMessages = true
-	req.WithMessagePayloads = true
 
 	req.Addresses, err = getAddresses(ctx, "address")
 	if err != nil {
@@ -555,8 +549,6 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 		}
 		req.OperationID = &id
 	}
-
-	req.WithPayload = true
 
 	req.Order, err = unmarshalSorting(req.Order)
 	if err != nil {
