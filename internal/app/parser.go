@@ -68,10 +68,10 @@ type ParserService interface {
 		ctx context.Context,
 		acc *core.AccountState,
 		others func(context.Context, addr.Address) (*core.AccountState, error),
-	) (*core.AccountState, error)
+	) error
 
 	ParseMessagePayload(
 		ctx context.Context,
 		message *core.Message, // source and destination account states must be known
-	) (*core.Message, error)
+	) error
 }

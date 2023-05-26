@@ -254,17 +254,3 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 
 	return tx, nil
 }
-
-func mapTransactions(b *ton.BlockIDExt, blockTx []*tlb.Transaction) ([]*core.Transaction, error) {
-	var transactions []*core.Transaction
-
-	for _, raw := range blockTx {
-		tx, err := mapTransaction(b, raw)
-		if err != nil {
-			return nil, err
-		}
-		transactions = append(transactions, tx)
-	}
-
-	return transactions, nil
-}

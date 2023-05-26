@@ -98,13 +98,17 @@ func (s *Service) ParseAccountData(
 	ctx context.Context,
 	acc *core.AccountState,
 	others func(context.Context, addr.Address) (*core.AccountState, error),
-) (*core.AccountState, error) {
+) error {
+	if s.ContractRepo == nil {
+		return errors.Wrap(app.ErrImpossibleParsing, "no contract repository")
+	}
+
 	interfaces, err := s.determineInterfaces(ctx, acc)
 	if err != nil {
-		return nil, errors.Wrapf(err, "determine contract interfaces")
+		return errors.Wrapf(err, "determine contract interfaces")
 	}
 	if len(interfaces) == 0 {
-		return nil, errors.Wrap(app.ErrImpossibleParsing, "unknown contract interfaces")
+		return errors.Wrap(app.ErrImpossibleParsing, "unknown contract interfaces")
 	}
 
 	for _, i := range interfaces {
@@ -121,5 +125,5 @@ func (s *Service) ParseAccountData(
 		getter(ctx, acc, others, interfaces)
 	}
 
-	return acc, nil
+	return nil
 }

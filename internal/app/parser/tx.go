@@ -62,13 +62,13 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 	return nil
 }
 
-func (s *Service) ParseMessagePayload(ctx context.Context, msg *core.Message) (*core.Message, error) {
+func (s *Service) ParseMessagePayload(ctx context.Context, msg *core.Message) error {
 	var err = app.ErrImpossibleParsing // save message parsing error to a database to look at it later
 
 	// you can parse separately incoming messages to known contracts and outgoing message from them
 
 	if len(msg.Body) == 0 {
-		return nil, errors.Wrap(app.ErrImpossibleParsing, "no message body")
+		return errors.Wrap(app.ErrImpossibleParsing, "no message body")
 	}
 
 	errIn := s.parseDirectedMessage(ctx, msg.DstState, msg)
@@ -80,7 +80,7 @@ func (s *Service) ParseMessagePayload(ctx context.Context, msg *core.Message) (*
 		err = errors.Wrap(errIn, "incoming")
 	}
 	if errIn == nil {
-		return msg, nil
+		return nil
 	}
 
 	errOut := s.parseDirectedMessage(ctx, msg.SrcState, msg)
@@ -92,8 +92,8 @@ func (s *Service) ParseMessagePayload(ctx context.Context, msg *core.Message) (*
 		err = errors.Wrap(errOut, "outgoing")
 	}
 	if errOut == nil {
-		return msg, nil
+		return nil
 	}
 
-	return msg, err
+	return err
 }

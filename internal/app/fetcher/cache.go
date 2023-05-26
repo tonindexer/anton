@@ -20,7 +20,11 @@ type blocksCache struct {
 }
 
 func newBlocksCache() *blocksCache {
-	return &blocksCache{masterBlocks: map[uint32]*ton.BlockIDExt{}, shardsInfo: map[uint32][]*ton.BlockIDExt{}}
+	return &blocksCache{
+		masterBlocks: map[uint32]*ton.BlockIDExt{},
+		shardsInfo:   map[uint32][]*ton.BlockIDExt{},
+		lastUsed:     map[uint32]time.Time{},
+	}
 }
 
 func (c *blocksCache) clearCaches() {
@@ -87,7 +91,10 @@ func (c *accountCache) clearCaches() {
 }
 
 func newAccountCache() *accountCache {
-	return &accountCache{m: map[core.BlockID]map[addr.Address]*core.AccountState{}}
+	return &accountCache{
+		m:        map[core.BlockID]map[addr.Address]*core.AccountState{},
+		lastUsed: map[core.BlockID]time.Time{},
+	}
 }
 
 func (c *accountCache) get(bExt *ton.BlockIDExt, a addr.Address) (*core.AccountState, bool) {
