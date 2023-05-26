@@ -164,6 +164,16 @@ func (x *Address) Value() (driver.Value, error) {
 	if x == nil {
 		return nil, nil
 	}
+	none := true
+	for _, i := range x {
+		if i != 0 {
+			none = false
+			break
+		}
+	}
+	if none {
+		return nil, nil
+	}
 	return x[:], nil
 }
 
