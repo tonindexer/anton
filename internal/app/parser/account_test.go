@@ -24,13 +24,14 @@ func TestService_ParseAccountData_WalletV3R2(t *testing.T) {
 	data, err := base64.StdEncoding.DecodeString("te6cckEBAQEAKgAAUAAAAAEGQZj7UhMYn0DGJKa8VAJx2X9dF+VkfoJrgOKgW7MinX6Pqkvc3Pev")
 	require.Nil(t, err)
 
-	ret, err := s.ParseAccountData(ctx, &core.AccountState{
+	ret := &core.AccountState{
 		Address:  *addr.MustFromBase64("EQDj5AA8mQvM5wJEQsFFFof79y3ZsuX6wowktWQFhz_Anton"),
 		IsActive: true, Status: core.Active,
 		Balance: bunbig.FromInt64(1e9),
 		Code:    code,
 		Data:    data,
-	}, nil)
+	}
+	err = s.ParseAccountData(ctx, ret, nil)
 	require.Nil(t, err)
 	require.Equal(t, []abi.ContractName{"wallet_v3r2"}, ret.Types)
 	j, err := json.Marshal(ret.ExecutedGetMethods)
@@ -46,13 +47,14 @@ func TestService_ParseAccountData_WalletV4R2(t *testing.T) {
 	data, err := base64.StdEncoding.DecodeString("te6cckEBAQEAKwAAUQAAACIpqaMXt5/GUJUGuDtk+HdlAcW91x/58gRLxYvfD26hyGLEcWxAm7pXnQ==")
 	require.Nil(t, err)
 
-	ret, err := s.ParseAccountData(ctx, &core.AccountState{
+	ret := &core.AccountState{
 		Address:  *addr.MustFromBase64("EQBCPrKazoIMW0CBYbHitNdrh2Lf_s70EtqdSqp0Y4k9Ul6N"),
 		IsActive: true, Status: core.Active,
 		Balance: bunbig.FromInt64(1e9),
 		Code:    code,
 		Data:    data,
-	}, nil)
+	}
+	err = s.ParseAccountData(ctx, ret, nil)
 	require.Nil(t, err)
 	require.Equal(t, []abi.ContractName{"wallet_v4r2"}, ret.Types)
 	j, err := json.Marshal(ret.ExecutedGetMethods)
@@ -93,14 +95,15 @@ func TestService_ParseAccountData_NFTItem(t *testing.T) {
 	getMethodHashes, err := abi.GetMethodHashes(codeCell)
 	require.Nil(t, err)
 
-	ret, err := s.ParseAccountData(ctx, &core.AccountState{
+	ret := &core.AccountState{
 		Address:  *addr.MustFromBase64("EQAQKmY9GTsEb6lREv-vxjT5sVHJyli40xGEYP3tKZSDuTBj"),
 		IsActive: true, Status: core.Active,
 		Balance:         bunbig.FromInt64(1e9),
 		Code:            code,
 		Data:            data,
 		GetMethodHashes: getMethodHashes,
-	}, others)
+	}
+	err = s.ParseAccountData(ctx, ret, others)
 	require.Nil(t, err)
 	require.Equal(t, []abi.ContractName{"nft_item"}, ret.Types)
 	require.Equal(t, "https://loton.fun/nft/100.json", ret.NFTContentData.ContentURI)
