@@ -14,7 +14,7 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-func (s *Service) FetchBlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*core.Transaction, error) {
+func (s *Service) BlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*core.Transaction, error) {
 	var (
 		after        *ton.TransactionID3
 		fetchedIDs   []ton.TransactionShortInfo
@@ -51,6 +51,13 @@ func (s *Service) FetchBlockTransactions(ctx context.Context, b *ton.BlockIDExt)
 	ret, err := mapTransactions(b, transactions)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse block transactions")
+	}
+
+	for _, tx := range ret {
+		tx.Account, err = s.getAccount(ctx, b, tx) // TODO: we can do it concurrently
+		if err != nil {
+			return nil, errors.Wrapf(err, "get account state on %x tx", tx.Hash)
+		}
 	}
 
 	return ret, nil

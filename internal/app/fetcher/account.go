@@ -37,7 +37,7 @@ func (s *Service) skipAccounts(_ *ton.BlockIDExt, a addr.Address) bool {
 	}
 }
 
-func (s *Service) FetchAccount(ctx context.Context, b *ton.BlockIDExt, tx *core.Transaction) (*core.AccountState, error) {
+func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, tx *core.Transaction) (*core.AccountState, error) {
 	a := *addr.MustFromTonutils(address.MustParseAddr(tx.Address.Base64()))
 
 	acc, ok := s.accounts.get(b, a)

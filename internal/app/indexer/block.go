@@ -13,18 +13,24 @@ import (
 )
 
 func (s *Service) processMaster(ctx context.Context, master *ton.BlockIDExt, shards []*ton.BlockIDExt) error {
-	var insertBlocks []*core.Block
+	var (
+		insertBlocks   []*core.Block
+		insertTx       []*core.Transaction
+		insertAccounts []*core.AccountState
+		insertMsg      []*core.Message
+	)
 
-	insertTx, err := s.DB.PG.Begin()
+	dbTx, err := s.DB.PG.Begin()
 	if err != nil {
 		return errors.Wrap(err, "cannot begin db tx")
 	}
 	defer func() {
-		_ = insertTx.Rollback()
+		_ = dbTx.Rollback()
 	}()
 
-	if err := s.processBlockTransactions(ctx, insertTx, master); err != nil {
-		return errors.Wrap(err, "cannot process masterchain block transactions")
+	insertTx, err = s.Fetcher.BlockTransactions(ctx, master)
+	if err != nil {
+		return errors.Wrap(err, "get block transactions")
 	}
 
 	for _, shard := range shards {
@@ -33,10 +39,12 @@ func (s *Service) processMaster(ctx context.Context, master *ton.BlockIDExt, sha
 			Int32("shard_workchain", shard.Workchain).Uint32("shard_seq", shard.SeqNo).
 			Msg("new shard block")
 
-		if err := s.processBlockTransactions(ctx, insertTx, shard); err != nil {
-			return err
+		shardTx, err := s.Fetcher.BlockTransactions(ctx, master)
+		if err != nil {
+			return errors.Wrap(err, "get block transactions")
 		}
 
+		insertTx = append(insertTx, shardTx...)
 		insertBlocks = append(insertBlocks, &core.Block{
 			Workchain: shard.Workchain,
 			Shard:     shard.Shard,
@@ -59,11 +67,28 @@ func (s *Service) processMaster(ctx context.Context, master *ton.BlockIDExt, sha
 		RootHash:  master.RootHash,
 	})
 
-	if err := s.blockRepo.AddBlocks(ctx, insertTx, insertBlocks); err != nil {
+	for i := range insertTx {
+		insertAccounts = append(insertAccounts, insertTx[i].Account)
+	}
+	for i := range insertTx {
+		insertMsg = append(insertMsg, insertTx[i].InMsg)
+		insertMsg = append(insertMsg, insertTx[i].OutMsg...)
+	}
+
+	if err := s.accountRepo.AddAccountStates(ctx, dbTx, insertAccounts); err != nil {
+		return errors.Wrap(err, "add account states")
+	}
+	if err := s.msgRepo.AddMessages(ctx, dbTx, insertMsg); err != nil {
+		return errors.Wrap(err, "add messages")
+	}
+	if err := s.txRepo.AddTransactions(ctx, dbTx, insertTx); err != nil {
+		return errors.Wrap(err, "add transactions")
+	}
+	if err := s.blockRepo.AddBlocks(ctx, dbTx, insertBlocks); err != nil {
 		return errors.Wrap(err, "add shard block")
 	}
 
-	if err := insertTx.Commit(); err != nil {
+	if err := dbTx.Commit(); err != nil {
 		return errors.Wrap(err, "cannot commit db tx")
 	}
 
@@ -71,7 +96,7 @@ func (s *Service) processMaster(ctx context.Context, master *ton.BlockIDExt, sha
 }
 
 func (s *Service) processMasterSeqNo(ctx context.Context, seq uint32) bool {
-	master, shards, err := s.Fetcher.FetchBlocksInMaster(ctx, seq)
+	master, shards, err := s.Fetcher.UnseenBlocks(ctx, seq)
 	if errors.Is(err, ton.ErrBlockNotFound) || (err != nil && strings.Contains(err.Error(), "block is not applied")) {
 		return false
 	}

@@ -25,7 +25,6 @@ func TimeTrack(start time.Time, name string) {
 }
 
 type FetcherService interface {
-	FetchBlocksInMaster(ctx context.Context, seqNo uint32) (master *ton.BlockIDExt, shards []*ton.BlockIDExt, err error)
-	FetchBlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*core.Transaction, error)
-	FetchAccount(ctx context.Context, b *ton.BlockIDExt, tx *core.Transaction) (*core.AccountState, error)
+	UnseenBlocks(ctx context.Context, masterSeqNo uint32) (master *ton.BlockIDExt, shards []*ton.BlockIDExt, err error)
+	BlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*core.Transaction, error)
 }

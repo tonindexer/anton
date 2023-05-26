@@ -70,10 +70,10 @@ func (s *Service) getNotSeenShards(ctx context.Context, shard *ton.BlockIDExt, s
 	return ret, nil
 }
 
-func (s *Service) FetchBlocksInMaster(ctx context.Context, seqNo uint32) (master *ton.BlockIDExt, shards []*ton.BlockIDExt, err error) {
+func (s *Service) UnseenBlocks(ctx context.Context, masterSeqNo uint32) (master *ton.BlockIDExt, shards []*ton.BlockIDExt, err error) {
 	var newShards []*ton.BlockIDExt
 
-	curMaster, err := s.lookupMaster(ctx, seqNo)
+	curMaster, err := s.lookupMaster(ctx, masterSeqNo)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "lookup master")
 	}
@@ -82,7 +82,7 @@ func (s *Service) FetchBlocksInMaster(ctx context.Context, seqNo uint32) (master
 		return nil, nil, errors.Wrap(err, "get masterchain shards info")
 	}
 
-	prevMaster, err := s.lookupMaster(ctx, seqNo-1)
+	prevMaster, err := s.lookupMaster(ctx, masterSeqNo-1)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "lookup master")
 	}
