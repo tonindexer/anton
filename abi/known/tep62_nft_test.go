@@ -84,7 +84,7 @@ func TestLoadOperation_NFTCollection(t *testing.T) {
 			// tx hash 3fa60549d7bdd8640f67bebb96240b3683032420691396b0dd4bff37a65c3222
 			schema:   `{"op_name":"nft_collection_item_mint","op_code":"0x1","body":[{"name":"query_id","tlb_type":"## 64","format":"uint64"},{"name":"index","tlb_type":"## 64","format":"bigInt"},{"name":"ton_amount","tlb_type":".","format":"coins"},{"name":"content","tlb_type":"^","format":"struct","struct_fields":[{"name":"owner","tlb_type":"addr","format":"addr"},{"name":"content","tlb_type":"^","format":"cell"}]}]}`,
 			boc:      `te6cckEBAwEAcAABMQAAAAEAAAAAAAAAAAAAAAAAAAEaQC+vCAgBAYWADp1n1HTZ6w3lG+DAt9kB/n3R2/GVH4sVu8f2JT7l9r4wAnNV2x5VpHz5NgrTTwmcnFe3yTCqMygGQXqc8N/RpSlKAgAYMjgyLzI4Mi5qc29uxWpC2Q==`,
-			expected: `{"query_id":0,"index":282,"ton_amount":"50000000","content":{"owner":"EQB06z6jps9YbyjfBgW-yA_z7o7fjKj8WK3eP7Ep9y-18a0N","content":{}}}`,
+			expected: `{"query_id":0,"index":282,"ton_amount":"50000000","content":{"owner":"EQB06z6jps9YbyjfBgW-yA_z7o7fjKj8WK3eP7Ep9y-18a0N","content":"te6cckEBAQEADgAAGDI4Mi8yODIuanNvbv8O9H0="}}`,
 		}, {
 			// tx hash 0b97a525e1acbcde7832e66270675c2ce5de7ace50d517c195aa0956edc66bd7
 			schema:   `{"op_name":"nft_collection_item_mint_batch","op_code":"0x2","body":[{"name":"query_id","tlb_type":"## 64","format":"uint64"},{"name":"deploy_list","tlb_type":"dict 64","format":"dict"}]}`,
@@ -99,7 +99,7 @@ func TestLoadOperation_NFTCollection(t *testing.T) {
 			// tx hash 19a40062e31365d6ad4473aabb62562f37d04c8aa5618b7ea800885dbb5a0e70
 			schema:   `{"op_name":"nft_collection_change_content","op_code":"0x4","body":[{"name":"query_id","tlb_type":"## 64","format":"uint64"},{"name":"content","tlb_type":"^","format":"cell"}]}`,
 			boc:      `te6cckEBBQEAxQACGAAAAAQAAAAAAAAAAAIBAEsAAABkgAe4JggE07o9i50C5vJ2aQiIbUYwl8/YMW27aEtS1YEfMAIABAMAaGh0dHBzOi8vcy5nZXRnZW1zLmlvL25mdC9jLzYzYTgwMDVlY2MxM2M0OTE0YjMxNGIyMy8AogFodHRwczovL3MuZ2V0Z2Vtcy5pby9uZnQvYy82M2E4MDA1ZWNjMTNjNDkxNGIzMTRiMjMvZWRpdC9tZXRhLTE2NzIyODIyMDQ1ODkuanNvbml2vhQ=`,
-			expected: `{"query_id":0,"content":{}}`,
+			expected: `{"query_id":0,"content":"te6cckEBAwEAjQACAAIBAGhodHRwczovL3MuZ2V0Z2Vtcy5pby9uZnQvYy82M2E4MDA1ZWNjMTNjNDkxNGIzMTRiMjMvAKIBaHR0cHM6Ly9zLmdldGdlbXMuaW8vbmZ0L2MvNjNhODAwNWVjYzEzYzQ5MTRiMzE0YjIzL2VkaXQvbWV0YS0xNjcyMjgyMjA0NTg5Lmpzb279fEK3"}`,
 		},
 	}
 

@@ -42,6 +42,10 @@ func (m *mockContractRepo) AddOperation(_ context.Context, _ *core.ContractOpera
 	panic("implement me")
 }
 
+func (m *mockContractRepo) DelInterface(ctx context.Context, name string) error {
+	panic("implement me")
+}
+
 func (m *mockContractRepo) GetInterfaces(_ context.Context) ([]*core.ContractInterface, error) {
 	return m.interfaces, nil
 }

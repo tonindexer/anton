@@ -27,7 +27,7 @@ type ContractOperation struct {
 	ch.CHModel    `ch:"contract_operations" json:"-"`
 	bun.BaseModel `bun:"table:contract_operations" json:"-"`
 
-	OperationName string            `bun:",unique" json:"operation_name"`
+	OperationName string            `json:"operation_name"`
 	ContractName  abi.ContractName  `bun:",pk" json:"contract_name"`
 	MessageType   MessageType       `bun:"type:message_type,notnull" json:"message_type"` // only internal is supported now
 	Outgoing      bool              `bun:",pk" json:"outgoing"`                           // if operation is going from contract
@@ -38,6 +38,8 @@ type ContractOperation struct {
 type ContractRepository interface {
 	AddInterface(context.Context, *ContractInterface) error
 	AddOperation(context.Context, *ContractOperation) error
+
+	DelInterface(ctx context.Context, name string) error
 
 	GetInterfaces(context.Context) ([]*ContractInterface, error)
 	GetOperations(context.Context) ([]*ContractOperation, error)

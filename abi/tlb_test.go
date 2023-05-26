@@ -107,6 +107,6 @@ func TestTLBFieldsDesc_LoadFromCell(t *testing.T) {
 	j, err := json.Marshal(&x)
 	require.Nil(t, err)
 
-	exp := `{"small_int":42,"big_int":8000000000000000000000000,"ref_struct":{"addr":"EQDj5AA8mQvM5wJEQsFFFof79y3ZsuX6wowktWQFhz_Anton"},"embed_struct":{"bits":"YXNkZg=="},"maybe_cell":null,"either_cell":{}}`
+	exp := `{"small_int":42,"big_int":8000000000000000000000000,"ref_struct":{"addr":"EQDj5AA8mQvM5wJEQsFFFof79y3ZsuX6wowktWQFhz_Anton"},"embed_struct":{"bits":"YXNkZg=="},"maybe_cell":null,"either_cell":"te6cckEBAQEACAAADGVpdGhlcskJ1lc="}`
 	require.Equal(t, exp, string(j))
 }

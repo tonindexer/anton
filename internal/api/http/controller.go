@@ -76,12 +76,12 @@ func unmarshalAddress(a string) (*addr.Address, error) {
 func unmarshalOperationID(op string) (uint32, error) {
 	op = strings.Replace(op, "0x", "", 1)
 
-	i, err := strconv.ParseInt(op, 10, 32)
+	i, err := strconv.ParseInt(op, 10, 64)
 	if err == nil {
 		return uint32(i), nil
 	}
 
-	i, err = strconv.ParseInt(op, 16, 32)
+	i, err = strconv.ParseInt(op, 16, 64)
 	if err == nil {
 		return uint32(i), nil
 	}

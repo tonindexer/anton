@@ -126,6 +126,11 @@ You can define some cell schema in contract interface `definitions` field and us
 }
 ```
 
+## Converting Golang struct to JSON schema
+
+You can convert Golang struct with described tlb tags to the JSON schema by using `abi.NewTLBDesc` and `abi.NewOperationDesc` functions.
+See an example in [`tlb_test.go`](/abi/tlb_test.go) file.
+
 ### Get-methods
 
 Each get-method consists of name (which is then used to get `method_id`), arguments and return values.
@@ -195,7 +200,8 @@ Accepted types to map from or into in `format` field:
 3. `uint8`, `uint16`, `uint32`, `uint64` - map int to an unsigned integer
 4. `bigInt` - map integer bigger than 64 bits
 5. `string` - load string snake from cell
-6. `content` - load [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md) standard token data into [`nft.ContentAny`](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
+6. `bytes` - convert big int to bytes
+7. `content` - load [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md) standard token data into [`nft.ContentAny`](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
 
 ## Known contracts
 
@@ -203,9 +209,9 @@ Accepted types to map from or into in `format` field:
 2. TEP-74 Fungible tokens (Jettons) standard: [interfaces](/abi/known/tep74_jetton.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md), [contract code](https://github.com/ton-blockchain/token-contract/tree/main/ft)
 3. TEP-81 DNS contracts: [interface](/abi/known/tep81_dns.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md)
 4. TEP-85 NFT SBT tokens: [interfaces](/abi/known/tep85_nft_sbt.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0085-sbt-standard.md)
-5. Telemint contracts: [interfaces](/abi/known/telemint.json), [contract code](https://github.com/TelegramMessenger/telemint) 
-6. Getgems contracts: [contract code](https://github.com/getgems-io/nft-contracts/blob/main/packages/contracts/sources)
+5. Telemint contracts: [interfaces](/abi/known/telemint.json), [contract code](https://github.com/TelegramMessenger/telemint)
+6. Getgems contracts: [interfaces](/abi/known/getgems.json), [contract code](https://github.com/getgems-io/nft-contracts/blob/main/packages/contracts/sources)
 7. Wallets: [interfaces](/abi/known/wallets.json), [tonweb](https://github.com/toncenter/tonweb/tree/0a5effd36a3f342f4aacabab728b1f9747085ad1/src/contract/wallet)
 8. [STON.fi](https://ston.fi) DEX: [architecture](https://docs.ston.fi/docs/developer-section/architecture), [contract code](https://github.com/ston-fi/dex-core)
 9. [Megaton.fi](https://megaton.fi) DEX: [architecture](https://docs.megaton.fi/developers/contract)
-10. [Tonpay](https://thetonpay.app): [go-sdk](https://github.com/TheTonpay/tonpay-go-sdk), [js-sdk](https://github.com/TheTonpay/tonpay-js-sdk) 
+10. [Tonpay](https://thetonpay.app): [go-sdk](https://github.com/TheTonpay/tonpay-go-sdk), [js-sdk](https://github.com/TheTonpay/tonpay-js-sdk)
