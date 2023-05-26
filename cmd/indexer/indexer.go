@@ -10,8 +10,11 @@ import (
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
+	"github.com/xssnick/tonutils-go/liteclient"
+	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/tonindexer/anton/internal/app"
+	"github.com/tonindexer/anton/internal/app/fetcher"
 	"github.com/tonindexer/anton/internal/app/indexer"
 	"github.com/tonindexer/anton/internal/app/parser"
 	"github.com/tonindexer/anton/internal/core/repository"
@@ -24,8 +27,6 @@ var Command = &cli.Command{
 	Usage:   "Scans new blocks",
 
 	Action: func(ctx *cli.Context) error {
-		var liteservers []*app.ServerAddr
-
 		chURL := env.GetString("DB_CH_URL", "")
 		pgURL := env.GetString("DB_PG_URL", "")
 
@@ -42,35 +43,48 @@ var Command = &cli.Command{
 			return errors.New("no contract interfaces")
 		}
 
+		client := liteclient.NewConnectionPool()
+		api := ton.NewAPIClient(client)
 		for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
 			split := strings.Split(addr, "|")
 			if len(split) != 2 {
 				return errors.Wrapf(err, "wrong server address format '%s'", addr)
 			}
-			liteservers = append(liteservers, &app.ServerAddr{
-				IPPort:    split[0],
-				PubKeyB64: split[1],
-			})
+			host, key := split[0], split[1]
+			if err := client.AddConnection(ctx.Context, host, key); err != nil {
+				return errors.Wrapf(err, "cannot add connection with %s host and %s key", host, key)
+			}
+		}
+		bcConfig, err := app.GetBlockchainConfig(ctx.Context, api)
+		if err != nil {
+			return errors.Wrap(err, "cannot get blockchain config")
 		}
 
-		p, err := parser.NewService(ctx.Context, &app.ParserConfig{
-			DB:      conn,
-			Servers: liteservers,
+		p := parser.NewService(&app.ParserConfig{
+			BlockchainConfig: bcConfig,
+			ContractRepo:     contract.NewRepository(conn.PG),
 		})
 		if err != nil {
 			return errors.Wrap(err, "new parser service")
 		}
 
-		s, err := indexer.NewService(ctx.Context, &app.IndexerConfig{
+		f := fetcher.NewService(&app.FetcherConfig{
+			API:    api,
+			Parser: p,
+		})
+
+		i := indexer.NewService(&app.IndexerConfig{
 			DB:               conn,
+			API:              api,
 			Parser:           p,
+			Fetcher:          f,
 			FromBlock:        uint32(env.GetInt32("FROM_BLOCK", 22222022)),
 			FetchBlockPeriod: 1 * time.Millisecond,
 		})
 		if err != nil {
 			return err
 		}
-		if err = s.Start(); err != nil {
+		if err = i.Start(); err != nil {
 			return err
 		}
 
@@ -79,7 +93,8 @@ var Command = &cli.Command{
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
 			<-c
-			s.Stop()
+			i.Stop()
+			conn.Close()
 			done <- struct{}{}
 		}()
 
