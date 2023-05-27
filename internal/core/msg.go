@@ -31,14 +31,14 @@ type Message struct {
 	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"  json:"hash"`
 
 	SrcAddress    addr.Address  `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
-	SrcTxLT       uint64        `json:"src_tx_lt,omitempty"`
+	SrcTxLT       uint64        `bun:",nullzero" json:"src_tx_lt,omitempty"`
 	SrcWorkchain  int32         `bun:"type:integer,notnull" json:"src_workchain"`
 	SrcShard      int64         `bun:"type:bigint,notnull" json:"src_shard"`
 	SrcBlockSeqNo uint32        `bun:"type:integer,notnull" json:"src_block_seq_no"`
 	SrcState      *AccountState `ch:"-" bun:"rel:has-one,join:src_address=address,join:src_workchain=workchain,join:src_shard=shard,join:src_block_seq_no=block_seq_no" json:"src_state"`
 
 	DstAddress    addr.Address  `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
-	DstTxLT       uint64        `json:"dst_tx_lt,omitempty"`
+	DstTxLT       uint64        `bun:",nullzero" json:"dst_tx_lt,omitempty"`
 	DstWorkchain  int32         `bun:"type:integer,notnull" json:"dst_workchain"`
 	DstShard      int64         `bun:"type:bigint,notnull" json:"dst_shard"`
 	DstBlockSeqNo uint32        `bun:"type:integer,notnull" json:"dst_block_seq_no"`
