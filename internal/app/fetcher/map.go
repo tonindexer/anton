@@ -15,8 +15,12 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-func mapAccount(acc *tlb.Account) *core.AccountState {
+func mapAccount(b *ton.BlockIDExt, acc *tlb.Account) *core.AccountState {
 	ret := new(core.AccountState)
+
+	ret.Workchain = b.Workchain
+	ret.Shard = b.Shard
+	ret.BlockSeqNo = b.SeqNo
 
 	ret.IsActive = acc.IsActive
 	ret.Status = core.NonExist
@@ -220,8 +224,8 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 			return nil, errors.Wrap(err, "map incoming message")
 		}
 		in.DstTxLT = tx.CreatedLT
-		tx.InMsg = in
-		tx.InMsgHash = in.Hash
+		in.DstWorkchain, in.DstShard, in.DstBlockSeqNo = b.Workchain, b.Shard, b.SeqNo
+		tx.InMsg, tx.InMsgHash = in, in.Hash
 		if in.Type == core.Internal {
 			tx.InAmount = in.Amount
 		}
@@ -237,6 +241,7 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 				return nil, errors.Wrap(err, "map outgoing message")
 			}
 			out.SrcTxLT = tx.CreatedLT
+			out.SrcWorkchain, out.SrcShard, out.SrcBlockSeqNo = b.Workchain, b.Shard, b.SeqNo
 			tx.OutMsg = append(tx.OutMsg, out)
 			if out.Type == core.Internal {
 				tx.OutAmount = tx.OutAmount.Add(out.Amount)

@@ -53,7 +53,7 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 		return nil, errors.Wrapf(err, "get account")
 	}
 
-	acc = mapAccount(raw)
+	acc = mapAccount(b, raw)
 	if acc.Status != core.Active {
 		return nil, errors.Wrap(core.ErrNotFound, "account is not active")
 	}
@@ -68,7 +68,7 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 		}
 		raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
 		if err == nil {
-			return mapAccount(raw), nil
+			return mapAccount(b, raw), nil
 		}
 		return nil, errors.Wrapf(core.ErrNotFound, "cannot find %s account state", a.Base64())
 	}
