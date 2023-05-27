@@ -10,20 +10,71 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/ton"
 
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
 
 func (s *Service) getTransaction(ctx context.Context, b *ton.BlockIDExt, id ton.TransactionShortInfo) (*core.Transaction, error) {
-	addr := address.NewAddress(0, byte(b.Workchain), id.Account)
+	var tx *core.Transaction
+	var acc *core.AccountState
 
-	tx, err := s.API.GetTransaction(ctx, b, addr, id.LT)
-	if err != nil {
-		return nil, errors.Wrapf(err, "get transaction (workchain = %d, seq = %d, addr = %s, lt = %d)",
-			b.Workchain, b.SeqNo, addr.String(), id.LT)
+	type ret struct {
+		res any
+		err error
 	}
 
-	return mapTransaction(b, tx)
+	a := address.NewAddress(0, byte(b.Workchain), id.Account)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	txCh := make(chan ret)
+	go func() {
+		rawTx, err := s.API.GetTransaction(ctx, b, a, id.LT)
+		if err == nil {
+			tx, err := mapTransaction(b, rawTx)
+			txCh <- ret{res: tx, err: errors.Wrapf(err, "map transaction (hash = %x)", rawTx.Hash)}
+			return
+		}
+		txCh <- ret{
+			err: errors.Wrapf(err, "get transaction (workchain = %d, seq = %d, addr = %s, lt = %d)",
+				b.Workchain, b.SeqNo, a.String(), id.LT),
+		}
+	}()
+
+	accCh := make(chan ret)
+	go func() {
+		acc, err := s.getAccount(ctx, b, *addr.MustFromTonutils(a))
+		accCh <- ret{res: acc, err: errors.Wrapf(err, "get account (addr = %s)", a)}
+	}()
+
+	go func() {
+		wg.Wait()
+		close(txCh)
+		close(accCh)
+	}()
+
+	for i := 0; i < 2; i++ {
+		select {
+		case accRet := <-accCh:
+			if err := accRet.err; err != nil && !errors.Is(err, core.ErrNotFound) {
+				return nil, err
+			}
+			if accRet.res != nil {
+				acc = accRet.res.(*core.AccountState)
+			}
+
+		case txRet := <-txCh:
+			if err := txRet.err; err != nil {
+				return nil, err
+			}
+			tx = txRet.res.(*core.Transaction)
+		}
+	}
+
+	tx.Account = acc
+	return tx, nil
 }
 
 func (s *Service) getTransactions(ctx context.Context, b *ton.BlockIDExt, ids []ton.TransactionShortInfo) ([]*core.Transaction, error) {
@@ -91,10 +142,6 @@ func (s *Service) BlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*
 		}
 
 		transactions = append(transactions, rawTx...)
-	}
-
-	if err := s.getTxAccounts(ctx, b, transactions); err != nil {
-		return nil, err
 	}
 
 	return transactions, nil

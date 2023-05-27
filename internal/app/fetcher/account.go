@@ -3,7 +3,6 @@ package fetcher
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -81,53 +80,4 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 
 	s.accounts.set(b, acc)
 	return acc, nil
-}
-
-func (s *Service) getTxAccounts(ctx context.Context, b *ton.BlockIDExt, transactions []*core.Transaction) error {
-	var wg sync.WaitGroup
-
-	type ret struct {
-		addr  addr.Address
-		state *core.AccountState
-		err   error
-	}
-
-	defer app.TimeTrack(time.Now(), fmt.Sprintf("getAccounts(%d, %d)", b.Workchain, b.SeqNo))
-
-	ch := make(chan ret, len(transactions))
-
-	wg.Add(len(transactions))
-
-	for i := range transactions {
-		go func(tx *core.Transaction) {
-			defer wg.Done()
-			account, err := s.getAccount(ctx, b, tx.Address)
-			ch <- ret{addr: tx.Address, state: account, err: err}
-		}(transactions[i])
-	}
-
-	go func() {
-		wg.Wait()
-		close(ch)
-	}()
-
-	results := make(map[addr.Address]*core.AccountState)
-	for r := range ch {
-		if errors.Is(r.err, core.ErrNotFound) {
-			continue
-		}
-		if r.err != nil {
-			return errors.Wrapf(r.err, "get %s account", r.addr.Base64())
-		}
-		results[r.addr] = r.state
-	}
-
-	for _, tx := range transactions {
-		tx.Account = results[tx.Address]
-		if tx.Account != nil {
-			tx.Account.UpdatedAt = tx.CreatedAt
-		}
-	}
-
-	return nil
 }
