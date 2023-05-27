@@ -62,14 +62,14 @@ func (s *Service) getTransaction(ctx context.Context, b *ton.BlockIDExt, id ton.
 				return nil, err
 			}
 			if accRet.res != nil {
-				acc = accRet.res.(*core.AccountState)
+				acc = accRet.res.(*core.AccountState) //nolint:forcetypeassert // that's ok
 			}
 
 		case txRet := <-txCh:
 			if err := txRet.err; err != nil {
 				return nil, err
 			}
-			tx = txRet.res.(*core.Transaction)
+			tx = txRet.res.(*core.Transaction) //nolint:forcetypeassert // that's ok
 		}
 	}
 

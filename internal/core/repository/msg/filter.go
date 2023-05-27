@@ -41,10 +41,6 @@ func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (re
 	if len(req.OperationNames) > 0 {
 		q = q.Where("operation_name IN (?)", bun.In(req.OperationNames))
 	}
-	if req.MinterAddress != nil {
-		q = q.Where("minter_address = ?", req.MinterAddress)
-	}
-
 	if req.AfterTxLT != nil {
 		if req.Order == "ASC" {
 			q = q.Where("created_lt > ?", req.AfterTxLT)
@@ -82,7 +78,6 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 	if req.OperationID != nil {
 		q = q.Where("operation_id = ?", *req.OperationID)
 	}
-
 	if len(req.SrcContracts) > 0 {
 		q = q.Where("src_contract IN (?)", ch.In(req.SrcContracts))
 	}
@@ -91,9 +86,6 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 	}
 	if len(req.OperationNames) > 0 {
 		q = q.Where("operation_name IN (?)", ch.In(req.OperationNames))
-	}
-	if req.MinterAddress != nil {
-		q = q.Where("minter_address = ?", req.MinterAddress)
 	}
 
 	return q.Count(ctx)

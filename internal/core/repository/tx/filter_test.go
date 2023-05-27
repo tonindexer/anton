@@ -70,8 +70,8 @@ func TestRepository_FilterTransactions(t *testing.T) {
 	t.Run("filter by block id", func(t *testing.T) {
 		res, err := repo.FilterTransactions(ctx, &filter.TransactionsReq{
 			BlockID: &core.BlockID{
-				Workchain: transactions[0].BlockWorkchain,
-				Shard:     transactions[0].BlockShard,
+				Workchain: transactions[0].Workchain,
+				Shard:     transactions[0].Shard,
 				SeqNo:     transactions[0].BlockSeqNo,
 			},
 		})

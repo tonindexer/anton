@@ -21,7 +21,7 @@ func (r *Repository) AggregateTransactionsHistory(ctx context.Context, req *hist
 		q = q.Where("address in (?)", ch.In(req.Addresses))
 	}
 	if req.Workchain != nil {
-		q = q.Where("block_workchain = ?", *req.Workchain)
+		q = q.Where("workchain = ?", *req.Workchain)
 	}
 
 	switch req.Metric {

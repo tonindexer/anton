@@ -60,6 +60,15 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.AccountState{}).
+		Unique().
+		Column("address", "workchain", "shard", "block_seq_no").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address state address in block pg create unique index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.AccountState{}).
 		Using("HASH").
 		Column("address").
 		Exec(ctx)

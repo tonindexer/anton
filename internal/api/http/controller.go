@@ -501,7 +501,6 @@ func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
 //	@Param   		src_contract		query	[]string  	false	"source contract interface"
 //	@Param   		dst_contract		query	[]string  	false	"destination contract interface"
 //	@Param   		operation_name		query	[]string  	false	"filter by contract operation names"
-//	@Param   		minter_address		query	string  	false	"filter FT or NFT operations by minter address"
 //	@Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
 //	@Param   		after	     		query   int 		false	"start from this created_lt"
 //	@Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
@@ -533,11 +532,6 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 	req.DstAddresses, err = getAddresses(ctx, "dst_address")
 	if err != nil {
 		paramErr(ctx, "dst_address", err)
-		return
-	}
-	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
-	if err != nil {
-		paramErr(ctx, "minter_address", err)
 		return
 	}
 

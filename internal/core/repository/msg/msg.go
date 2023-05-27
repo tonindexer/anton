@@ -117,16 +117,6 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "message payload pg create operation name index")
 	}
 
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.Message{}).
-		Using("HASH").
-		Column("minter_address").
-		Where("minter_address IS NOT NULL").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "address state pg create unique index")
-	}
-
 	return nil
 }
 

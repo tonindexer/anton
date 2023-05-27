@@ -92,18 +92,6 @@ func TestRepository_FilterMessages(t *testing.T) {
 		res.Rows[0].DataJSON = specialOperation.DataJSON
 		assert.Equal(t, []*core.Message{specialOperation}, res.Rows)
 	})
-
-	t.Run("filter by minter address", func(t *testing.T) {
-		res, err := repo.FilterMessages(ctx, &filter.MessagesReq{
-			MinterAddress: specialOperation.MinterAddress,
-		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, res.Total)
-		assert.Equal(t, 1, len(res.Rows))
-		assert.JSONEq(t, string(specialOperation.DataJSON), string(res.Rows[0].DataJSON))
-		res.Rows[0].DataJSON = specialOperation.DataJSON
-		assert.Equal(t, []*core.Message{specialOperation}, res.Rows)
-	})
 }
 
 // TODO: benchmarks on filtering by msg payload

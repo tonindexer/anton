@@ -47,7 +47,7 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Transaction{}).
-		Column("block_workchain", "block_shard", "block_seq_no").
+		Column("workchain", "shard", "block_seq_no").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "tx block id pg create unique index")

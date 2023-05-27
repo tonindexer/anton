@@ -35,8 +35,13 @@ func AddressState(a *addr.Address, t []abi.ContractName, minter *addr.Address) *
 	lastTxLT++
 	timestamp = timestamp.Add(time.Minute)
 
+	b := Block(0)
+
 	s := &core.AccountState{
 		Address:         *a,
+		Workchain:       b.Workchain,
+		Shard:           b.Shard,
+		BlockSeqNo:      b.SeqNo,
 		IsActive:        true,
 		Status:          core.Active,
 		Balance:         BigInt(),

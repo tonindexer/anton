@@ -37,8 +37,6 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 		msg.DstContract = op.ContractName
 	}
 
-	msg.MinterAddress = acc.MinterAddress
-
 	msgParsed, err := op.Schema.New()
 	if err != nil {
 		return errors.Wrapf(err, "creating struct from %s/%s schema", op.ContractName, op.OperationName)

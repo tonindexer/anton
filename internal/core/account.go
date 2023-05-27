@@ -56,6 +56,10 @@ type AccountState struct {
 	Address addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
 	Label   *AddressLabel `ch:"-" bun:"rel:has-one,join:address=address" json:"label,omitempty"`
 
+	Workchain  int32  `bun:"type:integer,notnull" json:"workchain"`
+	Shard      int64  `bun:"type:bigint,notnull" json:"shard"`
+	BlockSeqNo uint32 `bun:"type:integer,notnull" json:"block_seq_no"`
+
 	IsActive bool          `json:"is_active"`
 	Status   AccountStatus `ch:",lc" bun:"type:account_status" json:"status"` // TODO: ch enum
 

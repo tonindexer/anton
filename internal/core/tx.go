@@ -22,9 +22,9 @@ type Transaction struct {
 	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull" json:"hash"`
 	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:created_lt=last_tx_lt" json:"account"`
 
-	BlockWorkchain int32  `bun:",notnull" json:"block_workchain"`
-	BlockShard     int64  `bun:",notnull" json:"block_shard"`
-	BlockSeqNo     uint32 `bun:",notnull" json:"block_seq_no"`
+	Workchain  int32  `bun:"type:integer,notnull" json:"workchain"`
+	Shard      int64  `bun:"type:bigint,notnull" json:"shard"`
+	BlockSeqNo uint32 `bun:"type:integer,notnull" json:"block_seq_no"`
 
 	PrevTxHash []byte `bun:"type:bytea" json:"prev_tx_hash,omitempty"`
 	PrevTxLT   uint64 `json:"prev_tx_lt,omitempty"`

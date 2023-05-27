@@ -23,12 +23,20 @@ func MessageFromTo(from, to *addr.Address) *core.Message {
 	msgLT++
 	msgTS = msgTS.Add(time.Minute)
 
+	src, dst := Block(0), Block(0)
+
 	return &core.Message{
 		Type:            core.Internal,
 		Hash:            Bytes(32),
 		SrcAddress:      *from,
+		SrcWorkchain:    src.Workchain,
+		SrcShard:        src.Shard,
+		SrcBlockSeqNo:   src.SeqNo,
 		SrcTxLT:         msgLT,
 		DstAddress:      *to,
+		DstWorkchain:    dst.Workchain,
+		DstShard:        dst.Shard,
+		DstBlockSeqNo:   dst.SeqNo,
 		DstTxLT:         msgLT,
 		Amount:          BigInt(),
 		IHRFee:          BigInt(),
@@ -38,7 +46,6 @@ func MessageFromTo(from, to *addr.Address) *core.Message {
 		OperationID:     rand.Uint32(),
 		TransferComment: String(8),
 		DataJSON:        json.RawMessage(`{}`),
-		MinterAddress:   Address(),
 		StateInitCode:   Bytes(64),
 		StateInitData:   Bytes(64),
 		CreatedAt:       msgTS,

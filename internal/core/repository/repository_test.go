@@ -156,8 +156,8 @@ func TestRelations(t *testing.T) {
 	state.LastTxLT = transaction.CreatedLT
 	transaction.Account = state
 
-	transaction.BlockWorkchain = shard.Workchain
-	transaction.BlockShard = shard.Shard
+	transaction.Workchain = shard.Workchain
+	transaction.Shard = shard.Shard
 	transaction.BlockSeqNo = shard.SeqNo
 
 	shard.Transactions = []*core.Transaction{transaction}

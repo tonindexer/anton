@@ -21,8 +21,6 @@ type MessagesReq struct {
 	DstContracts   []string `form:"dst_contract"`
 	OperationNames []string `form:"operation_name"`
 
-	MinterAddress *addr.Address // `form:"minter_address"`
-
 	Order string `form:"order"` // ASC, DESC
 
 	AfterTxLT *uint64 `form:"after"`

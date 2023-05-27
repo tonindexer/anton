@@ -210,8 +210,8 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 	}
 	if b != nil {
 		tx.Address = *addr.MustFromTonutils(address.NewAddress(0, byte(b.Workchain), raw.AccountAddr))
-		tx.BlockWorkchain = b.Workchain
-		tx.BlockShard = b.Shard
+		tx.Workchain = b.Workchain
+		tx.Shard = b.Shard
 		tx.BlockSeqNo = b.SeqNo
 	}
 	if raw.IO.In != nil && raw.IO.In.Msg != nil {
