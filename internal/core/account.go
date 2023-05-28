@@ -50,7 +50,7 @@ type FTWalletData struct {
 }
 
 type AccountState struct {
-	ch.CHModel    `ch:"account_states,partition:status" json:"-"`
+	ch.CHModel    `ch:"account_states,partition:toYYYYMM(updated_at)" json:"-"`
 	bun.BaseModel `bun:"table:account_states" json:"-"`
 
 	Address addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`

@@ -23,7 +23,7 @@ func GetBlockID(b *ton.BlockIDExt) BlockID {
 }
 
 type Block struct {
-	ch.CHModel    `ch:"block_info,partition:workchain" json:"-"`
+	ch.CHModel    `ch:"block_info" json:"-"`
 	bun.BaseModel `bun:"table:block_info" json:"-"`
 
 	Workchain int32  `ch:",pk" bun:"type:integer,pk,notnull" json:"workchain"`

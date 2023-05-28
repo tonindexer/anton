@@ -19,7 +19,7 @@ type Transaction struct {
 	bun.BaseModel `bun:"table:transactions" json:"-"`
 
 	Address addr.Address  `ch:"type:String,pk" bun:"type:bytea,notnull" json:"address"`
-	Hash    []byte        `ch:",pk" bun:"type:bytea,pk,notnull" json:"hash"`
+	Hash    []byte        `bun:"type:bytea,pk,notnull" json:"hash"`
 	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:created_lt=last_tx_lt" json:"account"`
 
 	Workchain  int32  `bun:"type:integer,notnull" json:"workchain"`
@@ -47,7 +47,7 @@ type Transaction struct {
 	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"end_status"`
 
 	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
-	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
+	CreatedLT uint64    `ch:",pk" bun:",notnull" json:"created_lt"`
 }
 
 func (tx *Transaction) LoadDescription() error { // TODO: optionally load description in API

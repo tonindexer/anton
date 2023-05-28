@@ -2,6 +2,7 @@ package contract
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
@@ -52,13 +53,9 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "contract interface get_method_hashes create unique index")
 	}
 
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.ContractOperation{}).
-		Unique().
-		Column("operation_name", "contract_name").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "contract operation name create unique index")
+	_, err = pgDB.ExecContext(ctx, `ALTER TABLE contract_operations ADD CONSTRAINT contract_interfaces_uniq_name UNIQUE (operation_name, contract_name)`)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return errors.Wrap(err, "messages pg create source tx hash check")
 	}
 
 	return nil
