@@ -78,7 +78,7 @@ var Command = &cli.Command{
 			API:              api,
 			Parser:           p,
 			Fetcher:          f,
-			FromBlock:        uint32(env.GetInt32("FROM_BLOCK", 22222022)),
+			FromBlock:        uint32(env.GetInt32("FROM_BLOCK", 1)),
 			FetchBlockPeriod: 1 * time.Millisecond,
 		})
 		if err != nil {
