@@ -64,15 +64,10 @@ var Command = &cli.Command{
 			BlockchainConfig: bcConfig,
 			ContractRepo:     contract.NewRepository(conn.PG),
 		})
-		if err != nil {
-			return errors.Wrap(err, "new parser service")
-		}
-
 		f := fetcher.NewService(&app.FetcherConfig{
 			API:    api,
 			Parser: p,
 		})
-
 		i := indexer.NewService(&app.IndexerConfig{
 			DB:               conn,
 			API:              api,
@@ -81,9 +76,6 @@ var Command = &cli.Command{
 			FromBlock:        uint32(env.GetInt32("FROM_BLOCK", 1)),
 			FetchBlockPeriod: 1 * time.Millisecond,
 		})
-		if err != nil {
-			return err
-		}
 		if err = i.Start(); err != nil {
 			return err
 		}
