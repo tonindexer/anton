@@ -169,11 +169,15 @@ func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*cor
 	if len(messages) == 0 {
 		return nil
 	}
-	_, err := tx.NewInsert().Model(&messages).Exec(ctx)
-	if err != nil {
-		return err
+	for _, msg := range messages { // TODO: on conflict does not work with array (bun bug)
+		_, err := tx.NewInsert().Model(msg).
+			On("CONFLICT (hash) DO NOTHING"). // some external messages can be repeated with the same hash
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
 	}
-	_, err = r.ch.NewInsert().Model(&messages).Exec(ctx)
+	_, err := r.ch.NewInsert().Model(&messages).Exec(ctx)
 	if err != nil {
 		return err
 	}
