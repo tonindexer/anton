@@ -217,6 +217,7 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 		insertAcc     []*core.AccountState
 		insertMsg     []*core.Message
 		unknownDstMsg = make(map[uint32]map[string]*core.Message)
+		lastLog       = time.Now()
 	)
 
 	t := time.NewTicker(100 * time.Millisecond)
@@ -340,6 +341,11 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 		}
 		insertAcc, insertMsg, insertTx, insertBlocks = nil, nil, nil, nil
 
-		log.Debug().Uint32("master_seq_no", newMaster.SeqNo).Msg("inserted new block")
+		lvl := log.Debug()
+		if time.Since(lastLog) > time.Minute {
+			lvl = log.Info()
+			lastLog = time.Now()
+		}
+		lvl.Uint32("master_seq_no", newMaster.SeqNo).Msg("inserted new block")
 	}
 }
