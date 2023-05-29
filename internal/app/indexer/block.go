@@ -173,6 +173,23 @@ func (s *Service) insertData(
 		_ = dbTx.Rollback()
 	}()
 
+	for _, message := range msg {
+		err := s.Parser.ParseMessagePayload(ctx, message)
+		if errors.Is(err, app.ErrImpossibleParsing) {
+			continue
+		}
+		if err != nil {
+			log.Error().Err(err).
+				Hex("msg_hash", message.Hash).
+				Hex("src_tx_hash", message.SrcTxHash).
+				Str("src_addr", message.SrcAddress.String()).
+				Hex("dst_tx_hash", message.DstTxHash).
+				Str("dst_addr", message.DstAddress.String()).
+				Uint32("op_id", message.OperationID).
+				Msg("parse message payload")
+		}
+	}
+
 	if err := s.accountRepo.AddAccountStates(ctx, dbTx, acc); err != nil {
 		return errors.Wrap(err, "add account states")
 	}
@@ -259,12 +276,14 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 						msg.SrcTxLT, msg.SrcTxHash
 					uniqMessages[id].SrcWorkchain, uniqMessages[id].SrcShard, uniqMessages[id].SrcBlockSeqNo =
 						msg.SrcWorkchain, msg.SrcShard, msg.SrcBlockSeqNo
+					uniqMessages[id].SrcState = msg.SrcState
 
 				case msg.DstTxLT != 0:
 					uniqMessages[id].DstTxLT, uniqMessages[id].DstTxHash =
 						msg.DstTxLT, msg.DstTxHash
 					uniqMessages[id].DstWorkchain, uniqMessages[id].DstShard, uniqMessages[id].DstBlockSeqNo =
 						msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo
+					uniqMessages[id].DstState = msg.DstState
 				}
 			}
 
@@ -288,7 +307,7 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			}
 
 			for _, msg := range uniqMessages {
-				if (msg.Type != core.Internal) || msg.SrcTxLT != 0 && msg.DstTxLT != 0 {
+				if (msg.Type != core.Internal) || (msg.SrcTxLT != 0 && msg.DstTxLT != 0) {
 					insertMsg = append(insertMsg, msg)
 					continue
 				}
