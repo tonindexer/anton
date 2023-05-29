@@ -145,6 +145,9 @@ func (s *Service) getNFTItemContent(ctx context.Context, collection *core.Accoun
 		return
 	}
 	acc.ExecutedGetMethods[known.NFTCollection] = append(acc.ExecutedGetMethods[known.NFTCollection], exec)
+	if exec.Error != "" {
+		return
+	}
 
 	mapContentDataNFT(acc, exec.Returns[0].Payload)
 }
@@ -164,6 +167,9 @@ func (s *Service) getAccountDataNFT(
 				return
 			}
 			acc.ExecutedGetMethods[i.Name] = append(acc.ExecutedGetMethods[i.Name], exec)
+			if exec.Error != "" {
+				continue
+			}
 
 			acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
 
@@ -184,6 +190,9 @@ func (s *Service) getAccountDataNFT(
 				return
 			}
 			acc.ExecutedGetMethods[i.Name] = append(acc.ExecutedGetMethods[i.Name], exec)
+			if exec.Error != "" {
+				continue
+			}
 
 			acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
 			acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[3].Payload.(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
@@ -224,6 +233,9 @@ func (s *Service) getAccountDataFT(
 				continue
 			}
 			acc.ExecutedGetMethods[i.Name] = append(acc.ExecutedGetMethods[i.Name], exec)
+			if exec.Error != "" {
+				continue
+			}
 
 			mapContentDataNFT(acc, exec.Returns[3].Payload)
 
@@ -234,6 +246,9 @@ func (s *Service) getAccountDataFT(
 				continue
 			}
 			acc.ExecutedGetMethods[i.Name] = append(acc.ExecutedGetMethods[i.Name], exec)
+			if exec.Error != "" {
+				return
+			}
 
 			acc.JettonBalance = bunbig.FromMathBig(exec.Returns[0].Payload.(*big.Int))            //nolint:forcetypeassert // panic on wrong interface
 			acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[1].Payload.(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
@@ -261,6 +276,10 @@ func (s *Service) getAccountDataWallet(
 			log.Error().Err(err).Msg("call seqno wallet get-method")
 			continue
 		}
+		if exec.Error != "" {
+			continue
+		}
+
 		acc.ExecutedGetMethods[i.Name] = append(acc.ExecutedGetMethods[i.Name], exec)
 	}
 }
