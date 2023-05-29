@@ -74,9 +74,9 @@ type AccountState struct {
 	Data      []byte `bun:"type:bytea" json:"data,omitempty"`
 	DataHash  []byte `bun:"type:bytea" json:"data_hash,omitempty"`
 
-	GetMethodHashes []int32 `ch:"type:Array(UInt32)" bun:"type:integer[]" json:"get_method_hashes"`
+	GetMethodHashes []int32 `ch:"type:Array(UInt32)" bun:"type:integer[]" json:"get_method_hashes,omitempty"`
 
-	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types"`
+	Types []abi.ContractName `ch:"type:Array(String)" bun:"type:text[],array" json:"types,omitempty"`
 
 	// common fields for FT and NFT
 	OwnerAddress  *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
