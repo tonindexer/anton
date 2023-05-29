@@ -2,6 +2,7 @@ package parser
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"math/big"
 	"strings"
@@ -56,6 +57,9 @@ func (s *Service) getMethodCall(ctx context.Context, d *abi.GetMethodDesc, acc *
 		return ret, errors.Wrap(err, "account data from boc")
 	}
 
+	s.emulatorMx.Lock()
+	defer s.emulatorMx.Unlock()
+
 	e, err := abi.NewEmulator(acc.Address.MustToTonutils(), code, data, s.BlockchainConfig)
 	if err != nil {
 		return ret, errors.Wrap(err, "new emulator")
@@ -70,7 +74,12 @@ func (s *Service) getMethodCall(ctx context.Context, d *abi.GetMethodDesc, acc *
 	}
 	if err != nil {
 		ret.Error = errors.Wrap(err, "run get method").Error()
-		log.Warn().Err(err).Str("get_method", d.Name).Str("address", acc.Address.Base64()).Msg("run get method")
+		log.Warn().Err(err).
+			Str("get_method", d.Name).
+			Str("address", acc.Address.Base64()).
+			Str("code", base64.StdEncoding.EncodeToString(code.ToBOC())).
+			Str("data", base64.StdEncoding.EncodeToString(data.ToBOC())).
+			Msg("run get method")
 	}
 	return ret, nil
 }
