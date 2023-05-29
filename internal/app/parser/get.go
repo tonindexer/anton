@@ -48,19 +48,11 @@ func (s *Service) getMethodCall(ctx context.Context, d *abi.GetMethodDesc, acc *
 		})
 	}
 
-	code, err := cell.FromBOC(acc.Code)
-	if err != nil {
-		return ret, errors.Wrap(err, "account code from boc")
-	}
-	data, err := cell.FromBOC(acc.Data)
-	if err != nil {
-		return ret, errors.Wrap(err, "account data from boc")
-	}
+	codeBase64, dataBase64 :=
+		base64.StdEncoding.EncodeToString(acc.Code),
+		base64.StdEncoding.EncodeToString(acc.Data)
 
-	s.emulatorMx.Lock()
-	defer s.emulatorMx.Unlock()
-
-	e, err := abi.NewEmulator(acc.Address.MustToTonutils(), code, data, s.BlockchainConfig)
+	e, err := abi.NewEmulatorBase64(acc.Address.MustToTonutils(), codeBase64, dataBase64, s.bcConfigBase64)
 	if err != nil {
 		return ret, errors.Wrap(err, "new emulator")
 	}
@@ -77,8 +69,8 @@ func (s *Service) getMethodCall(ctx context.Context, d *abi.GetMethodDesc, acc *
 		log.Warn().Err(err).
 			Str("get_method", d.Name).
 			Str("address", acc.Address.Base64()).
-			Str("code", base64.StdEncoding.EncodeToString(code.ToBOC())).
-			Str("data", base64.StdEncoding.EncodeToString(data.ToBOC())).
+			Str("code", codeBase64).
+			Str("data", dataBase64).
 			Msg("run get method")
 	}
 	return ret, nil
