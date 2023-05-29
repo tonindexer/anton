@@ -51,7 +51,9 @@ func mapMessageInternal(msg *core.Message, raw *tlb.InternalMessage) error {
 	msg.Type = core.Internal
 
 	msg.SrcAddress = *addr.MustFromTonutils(raw.SrcAddr)
+	msg.SrcWorkchain = int32(msg.SrcAddress.Workchain())
 	msg.DstAddress = *addr.MustFromTonutils(raw.DstAddr)
+	msg.DstWorkchain = int32(msg.DstAddress.Workchain())
 
 	msg.Bounce = raw.Bounce
 	msg.Bounced = raw.Bounced
@@ -84,7 +86,8 @@ func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg tlb.Me
 		msg.Type = core.ExternalIn
 
 		msg.DstAddress = *addr.MustFromTonutils(raw.DstAddr)
-		msg.DstTxLT = rawTx.LT
+		msg.DstWorkchain = int32(msg.DstAddress.Workchain())
+		msg.DstTxLT, msg.DstTxHash = rawTx.LT, rawTx.Hash
 
 		if raw.StateInit != nil && raw.StateInit.Code != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
@@ -103,7 +106,8 @@ func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg tlb.Me
 		msg.Type = core.ExternalOut
 
 		msg.SrcAddress = *addr.MustFromTonutils(raw.SrcAddr)
-		msg.SrcTxLT = rawTx.LT
+		msg.SrcWorkchain = int32(msg.SrcAddress.Workchain())
+		msg.SrcTxLT, msg.SrcTxHash = rawTx.LT, rawTx.Hash
 
 		if raw.StateInit != nil && raw.StateInit.Code != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
@@ -223,7 +227,7 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 		if err != nil {
 			return nil, errors.Wrap(err, "map incoming message")
 		}
-		in.DstTxLT = tx.CreatedLT
+		in.DstTxLT, in.DstTxHash = tx.CreatedLT, tx.Hash
 		in.DstWorkchain, in.DstShard, in.DstBlockSeqNo = b.Workchain, b.Shard, b.SeqNo
 		tx.InMsg, tx.InMsgHash = in, in.Hash
 		if in.Type == core.Internal {
@@ -240,7 +244,7 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 			if err != nil {
 				return nil, errors.Wrap(err, "map outgoing message")
 			}
-			out.SrcTxLT = tx.CreatedLT
+			out.SrcTxLT, out.SrcTxHash = tx.CreatedLT, tx.Hash
 			out.SrcWorkchain, out.SrcShard, out.SrcBlockSeqNo = b.Workchain, b.Shard, b.SeqNo
 			tx.OutMsg = append(tx.OutMsg, out)
 			if out.Type == core.Internal {
