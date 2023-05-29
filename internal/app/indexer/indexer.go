@@ -52,9 +52,9 @@ func (s *Service) running() bool {
 }
 
 func (s *Service) Start() error {
-	var fromBlock uint32
-
 	ctx := context.Background()
+
+	fromBlock := s.FromBlock
 
 	lastMaster, err := s.blockRepo.GetLastMasterBlock(ctx)
 	switch {
@@ -68,8 +68,13 @@ func (s *Service) Start() error {
 	s.run = true
 	s.mx.Unlock()
 
+	blocksChan := make(chan processedMasterBlock, s.Workers)
+
 	s.wg.Add(1)
-	go s.fetchBlocksLoop(ctx, fromBlock)
+	go s.fetchBlocksLoop(fromBlock, blocksChan)
+
+	s.wg.Add(1)
+	go s.saveBlocksLoop(blocksChan)
 
 	log.Info().Uint32("from_block", fromBlock).Msg("started")
 

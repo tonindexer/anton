@@ -1,8 +1,6 @@
 package app
 
 import (
-	"time"
-
 	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/tonindexer/anton/internal/core/repository"
@@ -16,8 +14,8 @@ type IndexerConfig struct {
 	Fetcher FetcherService
 	Parser  ParserService
 
-	FromBlock        uint32
-	FetchBlockPeriod time.Duration
+	FromBlock uint32
+	Workers   int
 }
 
 type IndexerService interface {
