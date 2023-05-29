@@ -131,7 +131,9 @@ CREATE TABLE messages (
         ) OR (
             (type = 'EXTERNAL_IN') AND (src_address IS NULL) AND (src_tx_lt IS NULL) AND (dst_address IS NOT NULL) AND (dst_tx_lt IS NOT NULL)
         ) OR (
-            (type = 'INTERNAL') AND (src_workchain = -1 OR dst_workchain != -1) AND (src_address IS NOT NULL) AND (src_tx_lt IS NOT NULL) AND (dst_address IS NOT NULL) AND (dst_tx_lt IS NOT NULL)
+            (type = 'INTERNAL') AND (src_workchain != -1 OR dst_workchain != -1) AND (src_address IS NOT NULL) AND (src_tx_lt IS NOT NULL) AND (dst_address IS NOT NULL) AND (dst_tx_lt IS NOT NULL)
+        ) OR (
+            (type = 'INTERNAL') AND src_workchain = -1 AND dst_workchain = -1
         )
     ))
 );
