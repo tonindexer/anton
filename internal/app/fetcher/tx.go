@@ -76,6 +76,12 @@ func (s *Service) getTransaction(ctx context.Context, b *ton.BlockIDExt, id ton.
 	tx.Account = acc
 	if tx.Account != nil {
 		tx.Account.UpdatedAt = tx.CreatedAt
+		if tx.InMsg != nil {
+			tx.InMsg.DstState = tx.Account
+		}
+		for _, out := range tx.OutMsg {
+			out.SrcState = tx.Account
+		}
 	}
 	return tx, nil
 }
