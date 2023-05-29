@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
@@ -21,6 +20,14 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 		return errors.Wrap(app.ErrImpossibleParsing, "no interfaces")
 	}
 
+	incoming := acc.Address == msg.SrcAddress
+	if incoming && len(acc.Types) == 1 {
+		msg.SrcContract = acc.Types[0]
+	}
+	if !incoming && len(acc.Types) == 1 {
+		msg.DstContract = acc.Types[0]
+	}
+
 	op, err := s.ContractRepo.GetOperationByID(ctx, acc.Types, acc.Address == msg.SrcAddress, msg.OperationID)
 	if errors.Is(err, core.ErrNotFound) {
 		return errors.Wrap(app.ErrImpossibleParsing, "unknown operation")
@@ -28,10 +35,9 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 	if err != nil {
 		return errors.Wrap(err, "get contract operations")
 	}
-	msg.OperationName = op.OperationName
 
-	// set src and dst contract types
-	if acc.Address == msg.SrcAddress {
+	msg.OperationName = op.OperationName
+	if incoming {
 		msg.SrcContract = op.ContractName
 	} else {
 		msg.DstContract = op.ContractName
@@ -71,10 +77,6 @@ func (s *Service) ParseMessagePayload(ctx context.Context, msg *core.Message) er
 
 	errIn := s.parseDirectedMessage(ctx, msg.DstState, msg)
 	if errIn != nil && !errors.Is(errIn, app.ErrImpossibleParsing) {
-		log.Warn().Err(errIn).
-			Uint64("src_tx_lt", msg.SrcTxLT).
-			Str("dst_addr", msg.DstState.Address.Base64()).
-			Uint32("op_id", msg.OperationID).Msgf("parse dst %v message", msg.DstState.Types)
 		err = errors.Wrap(errIn, "incoming")
 	}
 	if errIn == nil {
@@ -83,10 +85,6 @@ func (s *Service) ParseMessagePayload(ctx context.Context, msg *core.Message) er
 
 	errOut := s.parseDirectedMessage(ctx, msg.SrcState, msg)
 	if errOut != nil && !errors.Is(errOut, app.ErrImpossibleParsing) {
-		log.Warn().Err(errOut).
-			Uint64("src_tx_lt", msg.SrcTxLT).
-			Str("src_addr", msg.SrcState.Address.Base64()).
-			Uint32("op_id", msg.OperationID).Msgf("parse src %v message", msg.SrcState.Types)
 		err = errors.Wrap(errOut, "outgoing")
 	}
 	if errOut == nil {
