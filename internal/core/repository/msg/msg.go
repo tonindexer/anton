@@ -149,9 +149,9 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 ALTER TABLE messages
 ADD CONSTRAINT messages_tx_lt_notnull
 CHECK (
-    (src_address IS NOT NULL AND src_tx_lt IS NOT NULL AND dst_address IS NULL AND dst_tx_lt IS NULL) OR
-    (src_address IS NULL AND src_tx_lt IS NULL AND dst_address IS NOT NULL AND dst_tx_lt IS NOT NULL) OR
-    (src_address IS NOT NULL AND src_tx_lt IS NOT NULL AND dst_address IS NOT NULL AND dst_tx_lt IS NOT NULL)
+    (type = 'EXTERNAL_OUT' AND src_address IS NOT NULL AND src_tx_lt IS NOT NULL AND dst_address IS NULL AND dst_tx_lt IS NULL) OR
+    (type = 'EXTERNAL_IN' AND src_address IS NULL AND src_tx_lt IS NULL AND dst_address IS NOT NULL AND dst_tx_lt IS NOT NULL) OR
+    (type = 'INTERNAL' AND (src_workchain = -1 OR dst_workchain != -1) AND src_address IS NOT NULL AND src_tx_lt IS NOT NULL AND dst_address IS NOT NULL AND dst_tx_lt IS NOT NULL)
 )`)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return errors.Wrap(err, "messages pg create source tx hash check")
@@ -165,6 +165,9 @@ CHECK (
 }
 
 func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*core.Message) error {
+	if len(messages) == 0 {
+		return nil
+	}
 	_, err := tx.NewInsert().Model(&messages).Exec(ctx)
 	if err != nil {
 		return err

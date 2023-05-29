@@ -32,6 +32,7 @@ type Message struct {
 
 	SrcAddress    addr.Address  `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
 	SrcTxLT       uint64        `bun:",nullzero" json:"src_tx_lt,omitempty"`
+	SrcTxHash     []byte        `ch:"-" bun:"-" json:"src_tx_hash,omitempty"`
 	SrcWorkchain  int32         `bun:"type:integer,notnull" json:"src_workchain"`
 	SrcShard      int64         `bun:"type:bigint,notnull" json:"src_shard"`
 	SrcBlockSeqNo uint32        `bun:"type:integer,notnull" json:"src_block_seq_no"`
@@ -39,6 +40,7 @@ type Message struct {
 
 	DstAddress    addr.Address  `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
 	DstTxLT       uint64        `bun:",nullzero" json:"dst_tx_lt,omitempty"`
+	DstTxHash     []byte        `ch:"-" bun:"-" json:"dst_tx_hash,omitempty"`
 	DstWorkchain  int32         `bun:"type:integer,notnull" json:"dst_workchain"`
 	DstShard      int64         `bun:"type:bigint,notnull" json:"dst_shard"`
 	DstBlockSeqNo uint32        `bun:"type:integer,notnull" json:"dst_block_seq_no"`
