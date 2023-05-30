@@ -18,7 +18,7 @@ type Transaction struct {
 	ch.CHModel    `ch:"transactions,partition:toYYYYMM(created_at)" json:"-"`
 	bun.BaseModel `bun:"table:transactions" json:"-"`
 
-	Address addr.Address  `ch:"type:String,pk" bun:"type:bytea,notnull" json:"address"`
+	Address addr.Address  `ch:"type:String,pk" bun:"type:bytea" json:"address"`
 	Hash    []byte        `bun:"type:bytea,pk,notnull" json:"hash"`
 	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:created_lt=last_tx_lt" json:"account"`
 

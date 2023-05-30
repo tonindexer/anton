@@ -131,7 +131,12 @@ CREATE TABLE messages (
         ) OR (
             (type = 'EXTERNAL_IN') AND (src_address IS NULL) AND (src_tx_lt IS NULL) AND (dst_address IS NOT NULL) AND (dst_tx_lt IS NOT NULL)
         ) OR (
-            (type = 'INTERNAL') AND (src_workchain != -1 OR dst_workchain != -1) AND (src_address IS NOT NULL) AND (src_tx_lt IS NOT NULL) AND (dst_address IS NOT NULL) AND (dst_tx_lt IS NOT NULL)
+            (type = 'INTERNAL') AND
+            (src_workchain != -1 OR dst_workchain != -1) AND
+            (src_address IS NOT NULL) AND
+            (src_tx_lt IS NOT NULL) AND
+            -- (dst_address IS NOT NULL) AND -- destination can be null (burn address)
+            (dst_tx_lt IS NOT NULL)
         ) OR (
             (type = 'INTERNAL') AND src_workchain = -1 AND dst_workchain = -1
         )
@@ -140,7 +145,7 @@ CREATE TABLE messages (
 
 --bun:split
 CREATE TABLE transactions (
-    address bytea NOT NULL,
+    address bytea,
     hash bytea NOT NULL,
     workchain integer NOT NULL,
     shard bigint NOT NULL,
@@ -185,7 +190,6 @@ CREATE TABLE contract_operations (
     CONSTRAINT contract_operations_pkey PRIMARY KEY (contract_name, outgoing, operation_id),
     CONSTRAINT contract_interfaces_uniq_name UNIQUE (operation_name, contract_name)
 );
-
 
 
 --bun:split
