@@ -23,6 +23,7 @@ CREATE TABLE block_info (
 
 --bun:split
 CREATE TYPE label_category AS ENUM (
+    '',
     'centralized_exchange',
     'scam'
 );
@@ -30,7 +31,7 @@ CREATE TYPE label_category AS ENUM (
 --bun:split
 CREATE TABLE address_labels (
     address bytea NOT NULL,
-    name text NOT NULL,
+    name text,
     category label_category,
     CONSTRAINT address_labels_pkey PRIMARY KEY (address)
 );

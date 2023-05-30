@@ -3,6 +3,20 @@
 --
 
 
+CREATE TABLE address_labels
+(
+    address String,
+    name String,
+    category LowCardinality(String)
+)
+ENGINE = ReplacingMergeTree
+ORDER BY (address)
+SETTINGS index_granularity = 8192;
+
+
+--migration:split
+
+
 CREATE TABLE account_states
 (
     address String,

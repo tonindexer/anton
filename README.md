@@ -230,3 +230,11 @@ docker compose exec web anton contract "/var/anton/known/tep81_dns.json"
 docker compose exec web anton contract delete "dns_nft_item"
 ```
 
+### Add address label
+
+```shell
+docker compose exec web anton label "EQDj5AA8mQvM5wJEQsFFFof79y3ZsuX6wowktWQFhz_Anton" "anton.tools"
+
+# known tonscan labels
+docker compose exec web anton label --tonscan
+```

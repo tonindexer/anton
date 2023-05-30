@@ -30,11 +30,12 @@ var (
 )
 
 type AddressLabel struct {
+	ch.CHModel    `ch:"address_labels" json:"-"`
 	bun.BaseModel `bun:"table:address_labels" json:"-"`
 
-	Address  addr.Address  `bun:"type:bytea,pk,notnull" json:"-"`
-	Name     string        `bun:"type:text,notnull" json:"name"`
-	Category LabelCategory `bun:"type:label_category" json:"category,omitempty"`
+	Address  addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"-"`
+	Name     string        `bun:"type:text" json:"name"`
+	Category LabelCategory `ch:",lc" bun:"type:label_category" json:"category,omitempty"`
 }
 
 type NFTContentData struct {
@@ -100,5 +101,7 @@ type LatestAccountState struct {
 }
 
 type AccountRepository interface {
+	AddAddressLabel(context.Context, *AddressLabel) error
+
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
 }

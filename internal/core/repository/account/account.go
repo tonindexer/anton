@@ -112,6 +112,15 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "address label category pg create enum")
 	}
 
+	_, err = chDB.NewCreateTable().
+		IfNotExists().
+		Engine("ReplacingMergeTree").
+		Model(&core.AddressLabel{}).
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "address label ch create table")
+	}
+
 	_, err = pgDB.NewCreateTable().
 		Model(&core.AddressLabel{}).
 		IfNotExists().
@@ -149,6 +158,18 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	}
 
 	return createIndexes(ctx, pgDB)
+}
+
+func (r *Repository) AddAddressLabel(ctx context.Context, label *core.AddressLabel) error {
+	_, err := r.pg.NewInsert().Model(label).Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "pg insert label")
+	}
+	_, err = r.ch.NewInsert().Model(label).Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "ch insert label")
+	}
+	return nil
 }
 
 func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts []*core.AccountState) error {

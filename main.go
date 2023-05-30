@@ -13,6 +13,7 @@ import (
 	"github.com/tonindexer/anton/cmd/contract"
 	"github.com/tonindexer/anton/cmd/db"
 	"github.com/tonindexer/anton/cmd/indexer"
+	"github.com/tonindexer/anton/cmd/label"
 	"github.com/tonindexer/anton/cmd/web"
 )
 
@@ -38,6 +39,7 @@ func main() {
 			web.Command,
 			archive.Command,
 			contract.Command,
+			label.Command,
 		},
 	}
 	if err := app.Run(os.Args); err != nil {

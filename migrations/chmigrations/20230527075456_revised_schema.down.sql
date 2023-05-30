@@ -1,3 +1,7 @@
+DROP TABLE address_labels;
+
+--migration:split
+
 DROP TABLE account_states;
 
 --migration:split
