@@ -183,16 +183,38 @@ func mapMessage(tx *tlb.Transaction, message tlb.Message) (*core.Message, error)
 	return msg, nil
 }
 
+func mapTransactionComputePhase(phase tlb.ComputePhase, tx *core.Transaction) {
+	switch p := phase.Phase.(type) {
+	case tlb.ComputePhaseVM:
+		tx.ComputePhaseExitCode = p.Details.ExitCode
+	}
+}
+
 func mapTransactionDescription(desc any, tx *core.Transaction) {
 	switch d := desc.(type) {
-	case *tlb.TransactionDescriptionOrdinary:
-		tx.ResultCode = d.ActionPhase.ResultCode
-	case *tlb.TransactionDescriptionTickTock:
-		tx.ResultCode = d.ActionPhase.ResultCode
-	case *tlb.TransactionDescriptionSplitPrepare:
-		tx.ResultCode = d.ActionPhase.ResultCode
-	case *tlb.TransactionDescriptionMergeInstall:
-		tx.ResultCode = d.ActionPhase.ResultCode
+	case tlb.TransactionDescriptionOrdinary:
+		if d.ActionPhase != nil {
+			tx.ActionPhaseResultCode = d.ActionPhase.ResultCode
+		}
+		mapTransactionComputePhase(d.ComputePhase, tx)
+
+	case tlb.TransactionDescriptionTickTock:
+		if d.ActionPhase != nil {
+			tx.ActionPhaseResultCode = d.ActionPhase.ResultCode
+		}
+		mapTransactionComputePhase(d.ComputePhase, tx)
+
+	case tlb.TransactionDescriptionSplitPrepare:
+		if d.ActionPhase != nil {
+			tx.ActionPhaseResultCode = d.ActionPhase.ResultCode
+		}
+		mapTransactionComputePhase(d.ComputePhase, tx)
+
+	case tlb.TransactionDescriptionMergeInstall:
+		if d.ActionPhase != nil {
+			tx.ActionPhaseResultCode = d.ActionPhase.ResultCode
+		}
+		mapTransactionComputePhase(d.ComputePhase, tx)
 	}
 }
 

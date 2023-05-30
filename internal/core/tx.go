@@ -39,9 +39,10 @@ type Transaction struct {
 
 	TotalFees *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"total_fees"`
 
-	Description       []byte `bun:"type:bytea,notnull" json:"description_boc,omitempty"`
-	DescriptionLoaded any    `ch:"-" bun:"-" json:"description,omitempty"`
-	ResultCode        int32  `ch:"type:Int32" bun:",notnull" json:"result_code"`
+	Description           []byte `bun:"type:bytea,notnull" json:"description_boc,omitempty"`
+	DescriptionLoaded     any    `ch:"-" bun:"-" json:"description,omitempty"`
+	ComputePhaseExitCode  int32  `ch:"type:Int32" bun:",notnull" json:"compute_phase_exit_code"`
+	ActionPhaseResultCode int32  `ch:"type:Int32" bun:",notnull" json:"action_phase_result_code"`
 
 	OrigStatus AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"orig_status"`
 	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"end_status"`
