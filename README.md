@@ -55,6 +55,7 @@ To explore how Anton stores data, visit the [migrations' directory](/migrations)
 | `core/repository` | implements database repositories with filters and aggregation                    |
 | `app`             | contains all services interfaces and their configs                               |
 | `app/parser`      | service determines contract interfaces, parse contract data and message payloads | 
+| `app/fetcher`     | service concurrently fetches data from blockchain                                | 
 | `app/indexer`     | service scans blocks and save parsed data to databases                           |
 | `app/query`       | service aggregates database repositories                                         |
 | `api/http`        | implements the REST API                                                          |
