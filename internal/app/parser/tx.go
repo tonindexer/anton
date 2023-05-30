@@ -20,15 +20,15 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 		return errors.Wrap(app.ErrImpossibleParsing, "no interfaces")
 	}
 
-	incoming := acc.Address == msg.SrcAddress
-	if incoming && len(acc.Types) == 1 {
+	outgoing := acc.Address == msg.SrcAddress
+	if outgoing && len(acc.Types) == 1 {
 		msg.SrcContract = acc.Types[0]
 	}
-	if !incoming && len(acc.Types) == 1 {
+	if !outgoing && len(acc.Types) == 1 {
 		msg.DstContract = acc.Types[0]
 	}
 
-	op, err := s.ContractRepo.GetOperationByID(ctx, acc.Types, acc.Address == msg.SrcAddress, msg.OperationID)
+	op, err := s.ContractRepo.GetOperationByID(ctx, acc.Types, outgoing, msg.OperationID)
 	if errors.Is(err, core.ErrNotFound) {
 		return errors.Wrap(app.ErrImpossibleParsing, "unknown operation")
 	}
@@ -37,7 +37,7 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 	}
 
 	msg.OperationName = op.OperationName
-	if incoming {
+	if outgoing {
 		msg.SrcContract = op.ContractName
 	} else {
 		msg.DstContract = op.ContractName
