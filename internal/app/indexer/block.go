@@ -123,35 +123,65 @@ func (s *Service) processMasterSeqNo(seq uint32) (ret processedMasterBlock) {
 	}
 }
 
+func (s *Service) fetchBlocksConcurrent(fromBlock uint32) []processedMasterBlock {
+	var blocks []processedMasterBlock
+	var wg sync.WaitGroup
+
+	wg.Add(s.Workers)
+
+	ch := make(chan processedMasterBlock, s.Workers)
+
+	for i := 0; i < s.Workers; i++ {
+		go func(seq uint32) {
+			defer wg.Done()
+			r := s.processMasterSeqNo(seq)
+			ch <- r
+		}(fromBlock + uint32(i))
+	}
+
+	wg.Wait()
+	close(ch)
+
+	for b := range ch {
+		blocks = append(blocks, b)
+	}
+
+	sort.Slice(blocks, func(i, j int) bool {
+		return blocks[i].master.block.SeqNo < blocks[j].master.block.SeqNo
+	})
+
+	return blocks
+}
+
+func (s *Service) needThreads(latestProcessedBlock uint32) bool {
+	if !s.threaded {
+		return s.threaded
+	}
+
+	latest, err := s.API.GetMasterchainInfo(context.Background())
+	if err != nil {
+		log.Error().Err(err).Msg("cannot get masterchain info")
+		return false
+	}
+
+	if latestProcessedBlock > latest.SeqNo-16 {
+		s.threaded = false
+	}
+	return s.threaded
+}
+
 func (s *Service) fetchBlocksLoop(fromBlock uint32, results chan<- processedMasterBlock) {
 	defer s.wg.Done()
 
 	for s.running() {
-		var wg sync.WaitGroup
-		wg.Add(s.Workers)
-
-		ch := make(chan processedMasterBlock, s.Workers)
-
-		for i := 0; i < s.Workers; i++ {
-			go func(seq uint32) {
-				defer wg.Done()
-				r := s.processMasterSeqNo(seq)
-				ch <- r
-			}(fromBlock + uint32(i))
+		if !s.needThreads(fromBlock) || s.Workers <= 1 {
+			block := s.processMasterSeqNo(fromBlock)
+			results <- block
+			fromBlock = block.master.block.SeqNo + 1
+			continue
 		}
 
-		wg.Wait()
-		close(ch)
-
-		var blocks []processedMasterBlock
-		for b := range ch {
-			blocks = append(blocks, b)
-		}
-
-		sort.Slice(blocks, func(i, j int) bool {
-			return blocks[i].master.block.SeqNo < blocks[j].master.block.SeqNo
-		})
-
+		blocks := s.fetchBlocksConcurrent(fromBlock)
 		for i := range blocks {
 			results <- blocks[i]
 		}

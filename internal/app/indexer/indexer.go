@@ -25,6 +25,8 @@ type Service struct {
 	msgRepo     core.MessageRepository
 	accountRepo core.AccountRepository
 
+	threaded bool
+
 	run bool
 	mx  sync.RWMutex
 	wg  sync.WaitGroup
@@ -40,6 +42,7 @@ func NewService(cfg *app.IndexerConfig) *Service {
 	s.msgRepo = msg.NewRepository(ch, pg)
 	s.blockRepo = block.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)
+	s.threaded = true
 
 	return s
 }
