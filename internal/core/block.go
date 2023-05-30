@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
@@ -39,6 +40,8 @@ type Block struct {
 	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:workchain=workchain,join:shard=shard,join:seq_no=block_seq_no" json:"transactions"`
 
 	// TODO: block info data
+
+	ScannedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"scanned_at"`
 }
 
 type BlockRepository interface {

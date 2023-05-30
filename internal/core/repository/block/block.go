@@ -75,7 +75,7 @@ func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Bloc
 func (r *Repository) GetLastMasterBlock(ctx context.Context) (*core.Block, error) {
 	ret := new(core.Block)
 
-	err := r.ch.NewSelect().Model(ret).
+	err := r.pg.NewSelect().Model(ret).
 		Where("workchain = ?", -1).
 		Order("seq_no DESC").
 		Limit(1).

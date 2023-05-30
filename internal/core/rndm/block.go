@@ -1,6 +1,8 @@
 package rndm
 
 import (
+	"time"
+
 	"github.com/tonindexer/anton/internal/core"
 )
 
@@ -27,6 +29,7 @@ func Block(workchain int32) *core.Block {
 		SeqNo:     id.SeqNo,
 		FileHash:  Bytes(32),
 		RootHash:  Bytes(32),
+		ScannedAt: time.Now().UTC(),
 	}
 }
 

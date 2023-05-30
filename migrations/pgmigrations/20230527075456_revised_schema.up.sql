@@ -14,6 +14,7 @@ CREATE TABLE block_info (
     master_workchain integer,
     master_shard bigint,
     master_seq_no integer,
+    scanned_at timestamp without time zone NOT NULL DEFAULT NOW(),
     CONSTRAINT block_info_pkey PRIMARY KEY (workchain, shard, seq_no),
     CONSTRAINT block_info_file_hash_key UNIQUE (file_hash),
     CONSTRAINT block_info_root_hash_key UNIQUE (root_hash)

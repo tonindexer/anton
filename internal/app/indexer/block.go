@@ -64,6 +64,7 @@ func (s *Service) processMasterSeqNo(seq uint32) (ret processedMasterBlock) {
 					FileHash:     master.FileHash,
 					RootHash:     master.RootHash,
 					Transactions: tx,
+					ScannedAt:    time.Now(),
 				},
 				err: err,
 			}
@@ -88,6 +89,7 @@ func (s *Service) processMasterSeqNo(seq uint32) (ret processedMasterBlock) {
 							SeqNo:     master.SeqNo,
 						},
 						Transactions: tx,
+						ScannedAt:    time.Now(),
 					},
 					err: err,
 				}

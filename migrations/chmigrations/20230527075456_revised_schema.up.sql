@@ -118,7 +118,8 @@ CREATE TABLE block_info
     shard Int64,
     seq_no UInt32,
     file_hash String,
-    root_hash String
+    root_hash String,
+    scanned_at DateTime
 )
 ENGINE = ReplacingMergeTree
 ORDER BY (workchain, shard, seq_no)
