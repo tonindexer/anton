@@ -1,7 +1,6 @@
 package indexer
 
 import (
-	"bytes"
 	"fmt"
 	"time"
 
@@ -34,13 +33,12 @@ func (s *Service) addMessage(msg *core.Message, uniqMsg map[string]*core.Message
 	id := string(msg.Hash)
 
 	for seq, m := range s.unknownDstMsg {
-		for id, srcMsg := range m {
-			if !bytes.Equal(msg.Hash, srcMsg.Hash) {
-				continue
-			}
-			uniqMsg[id] = srcMsg
-			delete(m, id)
+		srcMsg, ok := m[id]
+		if !ok {
+			continue
 		}
+		uniqMsg[id] = srcMsg
+		delete(m, id)
 		if len(m) == 0 {
 			delete(s.unknownDstMsg, seq)
 		}
@@ -94,8 +92,8 @@ func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message
 			if msg.SrcAddress.Workchain() == -1 && msg.DstAddress.Workchain() == -1 {
 				continue
 			}
-			panic(fmt.Errorf("unknown source message with hash %x on block (%d, %x, %d) from %s to %s",
-				msg.Hash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
+			panic(fmt.Errorf("unknown source message with dst tx hash %x on block (%d, %x, %d) from %s to %s",
+				msg.DstTxHash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
 		}
 
 		// unknown destination, waiting for next transactions
@@ -139,14 +137,17 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 
 		newBlocks := b.shards
 		newBlocks = append(newBlocks, b.master)
+		var newTransactions []*core.Transaction
 
 		for i := range newBlocks {
 			newBlock := newBlocks[i].block
 			insertBlocks = append(insertBlocks, newBlock)
-			insertTx = append(insertTx, newBlock.Transactions...)
-			insertAcc = append(insertAcc, s.uniqAccounts(newBlock.Transactions)...)
-			insertMsg = append(insertMsg, s.uniqMessages(newBlock.Transactions)...)
+			newTransactions = append(newTransactions, newBlock.Transactions...)
 		}
+
+		insertTx = append(insertTx, newTransactions...)
+		insertAcc = append(insertAcc, s.uniqAccounts(newTransactions)...)
+		insertMsg = append(insertMsg, s.uniqMessages(newTransactions)...)
 
 		if len(s.unknownDstMsg) != 0 {
 			continue
