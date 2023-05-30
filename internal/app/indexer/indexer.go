@@ -27,6 +27,8 @@ type Service struct {
 
 	threaded bool
 
+	unknownDstMsg map[uint32]map[string]*core.Message
+
 	run bool
 	mx  sync.RWMutex
 	wg  sync.WaitGroup
@@ -42,7 +44,10 @@ func NewService(cfg *app.IndexerConfig) *Service {
 	s.msgRepo = msg.NewRepository(ch, pg)
 	s.blockRepo = block.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)
+
 	s.threaded = true
+
+	s.unknownDstMsg = make(map[uint32]map[string]*core.Message)
 
 	return s
 }
@@ -74,7 +79,7 @@ func (s *Service) Start() error {
 	blocksChan := make(chan processedMasterBlock, s.Workers)
 
 	s.wg.Add(1)
-	go s.fetchBlocksLoop(fromBlock, blocksChan)
+	go s.fetchMasterLoop(fromBlock, blocksChan)
 
 	s.wg.Add(1)
 	go s.saveBlocksLoop(blocksChan)

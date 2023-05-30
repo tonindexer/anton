@@ -1,7 +1,6 @@
 package indexer
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
@@ -13,7 +12,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/ton"
 
-	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
@@ -28,8 +26,8 @@ type processedMasterBlock struct {
 	shards []processedBlock
 }
 
-func (s *Service) processMasterSeqNo(seq uint32) (ret processedMasterBlock) {
-	defer app.TimeTrack(time.Now(), fmt.Sprintf("processMasterSeqNo(%d)", seq))
+func (s *Service) fetchMaster(seq uint32) (ret processedMasterBlock) {
+	defer app.TimeTrack(time.Now(), fmt.Sprintf("fetchMaster(%d)", seq))
 
 	for {
 		ctx := context.Background()
@@ -123,7 +121,7 @@ func (s *Service) processMasterSeqNo(seq uint32) (ret processedMasterBlock) {
 	}
 }
 
-func (s *Service) fetchBlocksConcurrent(fromBlock uint32) []processedMasterBlock {
+func (s *Service) fetchMastersConcurrent(fromBlock uint32) []processedMasterBlock {
 	var blocks []processedMasterBlock
 	var wg sync.WaitGroup
 
@@ -134,7 +132,7 @@ func (s *Service) fetchBlocksConcurrent(fromBlock uint32) []processedMasterBlock
 	for i := 0; i < s.Workers; i++ {
 		go func(seq uint32) {
 			defer wg.Done()
-			r := s.processMasterSeqNo(seq)
+			r := s.fetchMaster(seq)
 			ch <- r
 		}(fromBlock + uint32(i))
 	}
@@ -170,18 +168,18 @@ func (s *Service) needThreads(latestProcessedBlock uint32) bool {
 	return s.threaded
 }
 
-func (s *Service) fetchBlocksLoop(fromBlock uint32, results chan<- processedMasterBlock) {
+func (s *Service) fetchMasterLoop(fromBlock uint32, results chan<- processedMasterBlock) {
 	defer s.wg.Done()
 
 	for s.running() {
 		if !s.needThreads(fromBlock) || s.Workers <= 1 {
-			block := s.processMasterSeqNo(fromBlock)
+			block := s.fetchMaster(fromBlock)
 			results <- block
 			fromBlock = block.master.block.SeqNo + 1
 			continue
 		}
 
-		blocks := s.fetchBlocksConcurrent(fromBlock)
+		blocks := s.fetchMastersConcurrent(fromBlock)
 		for i := range blocks {
 			results <- blocks[i]
 		}
@@ -240,144 +238,4 @@ func (s *Service) insertData(
 	}
 
 	return nil
-}
-
-func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
-	var (
-		insertBlocks  []*core.Block
-		insertTx      []*core.Transaction
-		insertAcc     []*core.AccountState
-		insertMsg     []*core.Message
-		unknownDstMsg = make(map[uint32]map[string]*core.Message)
-		lastLog       = time.Now()
-	)
-
-	t := time.NewTicker(100 * time.Millisecond)
-	defer t.Stop()
-
-	for s.running() {
-		var b processedMasterBlock
-
-		select {
-		case b = <-results:
-		case <-t.C:
-			continue
-		}
-
-		newMaster := b.master.block
-
-		log.Debug().
-			Uint32("master_seq_no", newMaster.SeqNo).
-			Int("master_tx", len(newMaster.Transactions)).
-			Int("shards", len(b.shards)).
-			Msg("new master")
-
-		newBlocks := b.shards
-		newBlocks = append(newBlocks, b.master)
-
-		for i := range newBlocks {
-			var (
-				newBlock     = newBlocks[i].block
-				uniqMessages = make(map[string]*core.Message)
-				uniqAccounts = make(map[addr.Address]*core.AccountState)
-			)
-
-			addMessage := func(msg *core.Message) {
-				id := string(msg.Hash)
-
-				for seq, m := range unknownDstMsg {
-					for id, srcMsg := range m {
-						if !bytes.Equal(msg.Hash, srcMsg.Hash) {
-							continue
-						}
-						uniqMessages[id] = srcMsg
-						delete(m, id)
-					}
-					if len(m) == 0 {
-						delete(unknownDstMsg, seq)
-					}
-				}
-
-				if _, ok := uniqMessages[id]; !ok {
-					uniqMessages[id] = msg
-					return
-				}
-
-				switch {
-				case msg.SrcTxLT != 0:
-					uniqMessages[id].SrcTxLT, uniqMessages[id].SrcTxHash =
-						msg.SrcTxLT, msg.SrcTxHash
-					uniqMessages[id].SrcWorkchain, uniqMessages[id].SrcShard, uniqMessages[id].SrcBlockSeqNo =
-						msg.SrcWorkchain, msg.SrcShard, msg.SrcBlockSeqNo
-					uniqMessages[id].SrcState = msg.SrcState
-
-				case msg.DstTxLT != 0:
-					uniqMessages[id].DstTxLT, uniqMessages[id].DstTxHash =
-						msg.DstTxLT, msg.DstTxHash
-					uniqMessages[id].DstWorkchain, uniqMessages[id].DstShard, uniqMessages[id].DstBlockSeqNo =
-						msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo
-					uniqMessages[id].DstState = msg.DstState
-				}
-			}
-
-			insertBlocks = append(insertBlocks, newBlock)
-
-			insertTx = append(insertTx, newBlock.Transactions...)
-
-			for j := range newBlock.Transactions {
-				tx := newBlock.Transactions[j]
-
-				if tx.Account != nil {
-					uniqAccounts[tx.Account.Address] = tx.Account
-				}
-
-				if tx.InMsg != nil {
-					addMessage(tx.InMsg)
-				}
-				for _, out := range tx.OutMsg {
-					addMessage(out)
-				}
-			}
-
-			for _, msg := range uniqMessages {
-				if (msg.Type != core.Internal) || (msg.SrcTxLT != 0 && msg.DstTxLT != 0) {
-					insertMsg = append(insertMsg, msg)
-					continue
-				}
-				if msg.SrcTxLT == 0 && msg.DstTxLT != 0 {
-					if msg.SrcAddress.Workchain() == -1 && msg.DstAddress.Workchain() == -1 {
-						continue
-					}
-					panic(fmt.Errorf("unknown source message with hash %x on block (%d, %x, %d) from %s to %s",
-						msg.Hash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
-				}
-
-				// unknown destination, waiting for next transactions
-				if _, ok := unknownDstMsg[msg.SrcBlockSeqNo]; !ok {
-					unknownDstMsg[msg.SrcBlockSeqNo] = make(map[string]*core.Message)
-				}
-				unknownDstMsg[msg.SrcBlockSeqNo][string(msg.Hash)] = msg
-			}
-
-			for _, a := range uniqAccounts {
-				insertAcc = append(insertAcc, a)
-			}
-		}
-
-		if len(unknownDstMsg) != 0 {
-			continue
-		}
-
-		if err := s.insertData(insertAcc, insertMsg, insertTx, insertBlocks); err != nil {
-			panic(err)
-		}
-		insertAcc, insertMsg, insertTx, insertBlocks = nil, nil, nil, nil
-
-		lvl := log.Debug()
-		if time.Since(lastLog) > time.Minute {
-			lvl = log.Info()
-			lastLog = time.Now()
-		}
-		lvl.Uint32("master_seq_no", newMaster.SeqNo).Msg("inserted new block")
-	}
 }
