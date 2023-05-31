@@ -45,7 +45,7 @@ func MessageFromTo(from, to *addr.Address) *core.Message {
 		BodyHash:        Bytes(32),
 		OperationID:     rand.Uint32(),
 		TransferComment: String(8),
-		DataJSON:        json.RawMessage(`{}`),
+		DataJSON:        json.RawMessage(`{"new_owner": "new_owner_addr"}`),
 		StateInitCode:   Bytes(64),
 		StateInitData:   Bytes(64),
 		CreatedAt:       msgTS,

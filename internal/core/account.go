@@ -83,7 +83,7 @@ type AccountState struct {
 	OwnerAddress  *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
 	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
 
-	ExecutedGetMethods map[abi.ContractName][]abi.GetMethodExecution `ch:"-" bun:"type:jsonb" json:"executed_get_methods,omitempty"`
+	ExecutedGetMethods map[abi.ContractName][]abi.GetMethodExecution `ch:"type:String" bun:"type:jsonb" json:"executed_get_methods,omitempty"`
 
 	// TODO: remove this
 	NFTContentData

@@ -37,6 +37,7 @@ CREATE TABLE account_states
     types Array(String),
     owner_address String,
     minter_address String,
+    executed_get_methods String,
     content_uri String,
     content_name String,
     content_description String,
@@ -83,6 +84,7 @@ CREATE TABLE messages
     src_contract LowCardinality(String),
     dst_contract LowCardinality(String),
     operation_name LowCardinality(String),
+    data_json String,
     error String,
     created_at DateTime,
     created_lt UInt64

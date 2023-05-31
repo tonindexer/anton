@@ -2,7 +2,7 @@ module github.com/tonindexer/anton
 
 go 1.19
 
-replace github.com/uptrace/go-clickhouse v0.3.0 => github.com/iam047801/go-clickhouse v0.0.0-20230302135744-fc217d428c55 // go-clickhouse branch with dirty fixes
+replace github.com/uptrace/go-clickhouse v0.3.0 => github.com/iam047801/go-clickhouse v0.0.0-20230531081532-4d11768422f0 // go-clickhouse branch with dirty fixes
 
 require (
 	github.com/allisson/go-env v0.3.0

@@ -67,7 +67,7 @@ type Message struct {
 	DstContract abi.ContractName `ch:",lc" bun:",nullzero" json:"dst_contract,omitempty"`
 
 	OperationName string          `ch:",lc" bun:",nullzero" json:"operation_name,omitempty"`
-	DataJSON      json.RawMessage `ch:"-" bun:"type:jsonb" json:"data,omitempty"`
+	DataJSON      json.RawMessage `ch:"type:String" bun:"type:jsonb" json:"data,omitempty"`
 	Error         string          `json:"error,omitempty"`
 
 	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`

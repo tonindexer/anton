@@ -56,9 +56,22 @@ func AddressState(a *addr.Address, t []abi.ContractName, minter *addr.Address) *
 		Types:           t,
 		OwnerAddress:    Address(),
 		MinterAddress:   minter,
-		FTWalletData:    core.FTWalletData{JettonBalance: BigInt()},
-		NFTContentData:  core.NFTContentData{ContentImageData: []byte{}}, // TODO: i dunno why ",nullzero" tag does not work in pg
-		UpdatedAt:       timestamp,
+		ExecutedGetMethods: map[abi.ContractName][]abi.GetMethodExecution{
+			"nft_item": {{
+				Name: "get_nft_data",
+				Returns: abi.VmStack{{
+					VmValueDesc: abi.VmValueDesc{
+						Name:      "init",
+						StackType: "int",
+						Format:    "bool",
+					},
+					Payload: true,
+				}},
+			}},
+		},
+		FTWalletData:   core.FTWalletData{JettonBalance: BigInt()},
+		NFTContentData: core.NFTContentData{ContentImageData: []byte{}}, // TODO: i dunno why ",nullzero" tag does not work in pg
+		UpdatedAt:      timestamp,
 	}
 
 	return s
