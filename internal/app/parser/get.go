@@ -68,8 +68,9 @@ func (s *Service) callGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *
 		log.Warn().Err(err).
 			Str("get_method", d.Name).
 			Str("address", acc.Address.Base64()).
-			Str("code", codeBase64).
-			Str("data", dataBase64).
+			Int32("workchain", acc.Workchain).
+			Int64("shard", acc.Shard).
+			Uint32("block_seq_no", acc.BlockSeqNo).
 			Msg("run get method")
 	}
 	return ret, nil
