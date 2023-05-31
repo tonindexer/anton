@@ -184,8 +184,7 @@ func mapMessage(tx *tlb.Transaction, message tlb.Message) (*core.Message, error)
 }
 
 func mapTransactionComputePhase(phase tlb.ComputePhase, tx *core.Transaction) {
-	switch p := phase.Phase.(type) {
-	case tlb.ComputePhaseVM:
+	if p, ok := phase.Phase.(tlb.ComputePhaseVM); ok {
 		tx.ComputePhaseExitCode = p.Details.ExitCode
 	}
 }

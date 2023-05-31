@@ -158,7 +158,9 @@ func (s *Service) callPossibleGetMethods(
 	interfaces []*core.ContractInterface,
 ) {
 	for _, i := range interfaces {
-		for _, d := range i.GetMethodsDesc {
+		for it := range i.GetMethodsDesc {
+			d := &i.GetMethodsDesc[it]
+
 			if len(d.Arguments) != 0 {
 				continue
 			}
