@@ -418,12 +418,6 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "filter FT or NFT operations by minter address",
-                        "name": "minter_address",
-                        "in": "query"
-                    },
-                    {
                         "enum": [
                             "ASC",
                             "DESC"
@@ -822,6 +816,29 @@ const docTemplate = `{
                 }
             }
         },
+        "abi.GetMethodExecution": {
+            "type": "object",
+            "properties": {
+                "arguments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/abi.VmValue"
+                    }
+                },
+                "error": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "returns": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/abi.VmValue"
+                    }
+                }
+            }
+        },
         "abi.OperationDesc": {
             "type": "object",
             "properties": {
@@ -849,6 +866,7 @@ const docTemplate = `{
                 "bool",
                 "bigInt",
                 "string",
+                "bytes",
                 "content"
             ],
             "x-enum-varnames": [
@@ -858,7 +876,8 @@ const docTemplate = `{
                 "VmAddrSlice",
                 "VmBool",
                 "VmBigInt",
-                "VmStringCell",
+                "VmString",
+                "VmBytes",
                 "VmContentCell"
             ]
         },
@@ -888,6 +907,21 @@ const docTemplate = `{
             "type": "array",
             "items": {
                 "$ref": "#/definitions/abi.TLBFieldDesc"
+            }
+        },
+        "abi.VmValue": {
+            "type": "object",
+            "properties": {
+                "format": {
+                    "$ref": "#/definitions/abi.StackType"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "payload": {},
+                "stack_type": {
+                    "$ref": "#/definitions/abi.StackType"
+                }
             }
         },
         "abi.VmValueDesc": {
@@ -1126,7 +1160,7 @@ const docTemplate = `{
         "bunbig.Int": {
             "type": "object"
         },
-        "core.AccountData": {
+        "core.AccountState": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1135,14 +1169,23 @@ const docTemplate = `{
                         "type": "integer"
                     }
                 },
-                "admin_addr": {
+                "balance": {
+                    "type": "string"
+                },
+                "block_seq_no": {
+                    "type": "integer"
+                },
+                "code": {
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
-                "balance": {
-                    "type": "string"
+                "code_hash": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "content_description": {
                     "type": "string"
@@ -1162,105 +1205,6 @@ const docTemplate = `{
                 "content_uri": {
                     "type": "string"
                 },
-                "editor_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "error": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "initialized": {
-                    "type": "boolean"
-                },
-                "item_index": {
-                    "$ref": "#/definitions/bunbig.Int"
-                },
-                "last_tx_hash": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "last_tx_lt": {
-                    "type": "integer"
-                },
-                "mintable": {
-                    "type": "boolean"
-                },
-                "minter_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "next_item_index": {
-                    "$ref": "#/definitions/bunbig.Int"
-                },
-                "owner_address": {
-                    "description": "common fields for FT and NFT",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "royalty_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "royalty_base": {
-                    "type": "integer"
-                },
-                "royalty_factor": {
-                    "type": "integer"
-                },
-                "total_supply": {
-                    "type": "string"
-                },
-                "types": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "wallet_seq_no": {
-                    "type": "integer"
-                }
-            }
-        },
-        "core.AccountState": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "balance": {
-                    "$ref": "#/definitions/bunbig.Int"
-                },
-                "code": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "code_hash": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
                 "data": {
                     "type": "array",
                     "items": {
@@ -1273,6 +1217,15 @@ const docTemplate = `{
                         "type": "integer"
                     }
                 },
+                "executed_get_methods": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/abi.GetMethodExecution"
+                        }
+                    }
+                },
                 "get_method_hashes": {
                     "type": "array",
                     "items": {
@@ -1281,6 +1234,9 @@ const docTemplate = `{
                 },
                 "is_active": {
                     "type": "boolean"
+                },
+                "label": {
+                    "$ref": "#/definitions/core.AddressLabel"
                 },
                 "last_tx_hash": {
                     "type": "array",
@@ -1291,8 +1247,21 @@ const docTemplate = `{
                 "last_tx_lt": {
                     "type": "integer"
                 },
-                "state_data": {
-                    "$ref": "#/definitions/core.AccountData"
+                "minter_address": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "owner_address": {
+                    "description": "common fields for FT and NFT",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "shard": {
+                    "type": "integer"
                 },
                 "state_hash": {
                     "description": "only if account is frozen",
@@ -1305,7 +1274,27 @@ const docTemplate = `{
                     "description": "TODO: ch enum",
                     "type": "string"
                 },
+                "types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "updated_at": {
+                    "type": "string"
+                },
+                "workchain": {
+                    "type": "integer"
+                }
+            }
+        },
+        "core.AddressLabel": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -1327,6 +1316,9 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                },
+                "scanned_at": {
+                    "type": "string"
                 },
                 "seq_no": {
                     "type": "integer"
@@ -1406,11 +1398,15 @@ const docTemplate = `{
                 "contract_name": {
                     "type": "string"
                 },
-                "name": {
+                "message_type": {
+                    "description": "only internal is supported now",
                     "type": "string"
                 },
                 "operation_id": {
                     "type": "integer"
+                },
+                "operation_name": {
+                    "type": "string"
                 },
                 "outgoing": {
                     "description": "if operation is going from contract",
@@ -1451,11 +1447,44 @@ const docTemplate = `{
                 "created_lt": {
                     "type": "integer"
                 },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "dst_address": {
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
+                },
+                "dst_block_seq_no": {
+                    "type": "integer"
+                },
+                "dst_contract": {
+                    "type": "string"
+                },
+                "dst_shard": {
+                    "type": "integer"
+                },
+                "dst_state": {
+                    "$ref": "#/definitions/core.AccountState"
+                },
+                "dst_tx_hash": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "dst_tx_lt": {
+                    "type": "integer"
+                },
+                "dst_workchain": {
+                    "type": "integer"
+                },
+                "error": {
+                    "type": "string"
                 },
                 "fwd_fee": {
                     "$ref": "#/definitions/bunbig.Int"
@@ -1475,32 +1504,38 @@ const docTemplate = `{
                 "operation_id": {
                     "type": "integer"
                 },
-                "payload": {
-                    "$ref": "#/definitions/core.MessagePayload"
-                },
-                "source": {
-                    "description": "TODO: join it",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/core.Transaction"
-                        }
-                    ]
-                },
-                "source_tx_hash": {
-                    "description": "SourceTx initiates outgoing message.\nFor external incoming messages SourceTx == nil.",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "source_tx_lt": {
-                    "type": "integer"
+                "operation_name": {
+                    "type": "string"
                 },
                 "src_address": {
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
+                },
+                "src_block_seq_no": {
+                    "type": "integer"
+                },
+                "src_contract": {
+                    "type": "string"
+                },
+                "src_shard": {
+                    "type": "integer"
+                },
+                "src_state": {
+                    "$ref": "#/definitions/core.AccountState"
+                },
+                "src_tx_hash": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "src_tx_lt": {
+                    "type": "integer"
+                },
+                "src_workchain": {
+                    "type": "integer"
                 },
                 "state_init_code": {
                     "type": "array",
@@ -1523,81 +1558,14 @@ const docTemplate = `{
                 }
             }
         },
-        "core.MessagePayload": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "$ref": "#/definitions/bunbig.Int"
-                },
-                "body_hash": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "created_lt": {
-                    "type": "integer"
-                },
-                "data": {
-                    "description": "TODO: https://github.com/uptrace/go-clickhouse/issues/22",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "dst_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "dst_contract": {
-                    "type": "string"
-                },
-                "error": {
-                    "type": "string"
-                },
-                "hash": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "minter_address": {
-                    "description": "can be used to show all jetton or nft item transfers",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "operation_id": {
-                    "type": "integer"
-                },
-                "operation_name": {
-                    "type": "string"
-                },
-                "src_address": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "src_contract": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
         "core.Transaction": {
             "type": "object",
             "properties": {
                 "account": {
                     "$ref": "#/definitions/core.AccountState"
+                },
+                "action_phase_result_code": {
+                    "type": "integer"
                 },
                 "address": {
                     "type": "array",
@@ -1608,10 +1576,7 @@ const docTemplate = `{
                 "block_seq_no": {
                     "type": "integer"
                 },
-                "block_shard": {
-                    "type": "integer"
-                },
-                "block_workchain": {
+                "compute_phase_exit_code": {
                     "type": "integer"
                 },
                 "created_at": {
@@ -1672,11 +1637,14 @@ const docTemplate = `{
                 "prev_tx_lt": {
                     "type": "integer"
                 },
-                "result_code": {
+                "shard": {
                     "type": "integer"
                 },
                 "total_fees": {
                     "$ref": "#/definitions/bunbig.Int"
+                },
+                "workchain": {
+                    "type": "integer"
                 }
             }
         },
