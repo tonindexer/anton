@@ -59,9 +59,13 @@ func (s *Service) callGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *
 	retStack, err := e.RunGetMethod(ctx, d.Name, argsStack, d.ReturnValues)
 
 	ret = abi.GetMethodExecution{
-		Name:      d.Name,
-		Arguments: argsStack,
-		Returns:   retStack,
+		Name: d.Name,
+	}
+	for i := range argsStack {
+		ret.Receives = append(ret.Receives, argsStack[i].Payload)
+	}
+	for i := range retStack {
+		ret.Returns = append(ret.Returns, retStack[i].Payload)
 	}
 	if err != nil {
 		ret.Error = errors.Wrap(err, "run get method").Error()
@@ -149,7 +153,7 @@ func (s *Service) getNFTItemContent(ctx context.Context, collection *core.Accoun
 		return
 	}
 
-	mapContentDataNFT(acc, exec.Returns[0].Payload)
+	mapContentDataNFT(acc, exec.Returns[0])
 }
 
 func (s *Service) callPossibleGetMethods(
@@ -179,12 +183,12 @@ func (s *Service) callPossibleGetMethods(
 
 			switch d.Name {
 			case "get_collection_data":
-				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-				mapContentDataNFT(acc, exec.Returns[1].Payload)
+				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+				mapContentDataNFT(acc, exec.Returns[1])
 
 			case "get_nft_data":
-				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[3].Payload.(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
+				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[3].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
 
 				if acc.MinterAddress == nil {
 					continue
@@ -194,15 +198,15 @@ func (s *Service) callPossibleGetMethods(
 					log.Error().Err(err).Msg("get nft collection state")
 					return
 				}
-				s.getNFTItemContent(ctx, collection, exec.Returns[1].Payload.(*big.Int), exec.Returns[4].Payload.(*cell.Cell), acc) //nolint:forcetypeassert // panic on wrong interface
+				s.getNFTItemContent(ctx, collection, exec.Returns[1].(*big.Int), exec.Returns[4].(*cell.Cell), acc) //nolint:forcetypeassert // panic on wrong interface
 
 			case "get_jetton_data":
-				mapContentDataNFT(acc, exec.Returns[3].Payload)
+				mapContentDataNFT(acc, exec.Returns[3])
 
 			case "get_wallet_data":
-				acc.JettonBalance = bunbig.FromMathBig(exec.Returns[0].Payload.(*big.Int))            //nolint:forcetypeassert // panic on wrong interface
-				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[1].Payload.(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
-				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+				acc.JettonBalance = bunbig.FromMathBig(exec.Returns[0].(*big.Int))            //nolint:forcetypeassert // panic on wrong interface
+				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[1].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
+				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
 			}
 		}
 	}

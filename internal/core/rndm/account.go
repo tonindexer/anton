@@ -58,15 +58,8 @@ func AddressState(a *addr.Address, t []abi.ContractName, minter *addr.Address) *
 		MinterAddress:   minter,
 		ExecutedGetMethods: map[abi.ContractName][]abi.GetMethodExecution{
 			"nft_item": {{
-				Name: "get_nft_data",
-				Returns: abi.VmStack{{
-					VmValueDesc: abi.VmValueDesc{
-						Name:      "init",
-						StackType: "int",
-						Format:    "bool",
-					},
-					Payload: true,
-				}},
+				Name:    "get_nft_data",
+				Returns: []any{true},
 			}},
 		},
 		FTWalletData:   core.FTWalletData{JettonBalance: BigInt()},
