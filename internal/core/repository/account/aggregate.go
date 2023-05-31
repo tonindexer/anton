@@ -44,8 +44,6 @@ func (r *Repository) aggregateNFTMinter(ctx context.Context, req *aggregate.Acco
 		return errors.Wrap(err, "count owners of nft minter")
 	}
 
-	// TODO: in rare cases grouping result is duplicated twice, report to go-ch
-
 	err = r.ch.NewSelect().
 		Model((*core.AccountState)(nil)).
 		ColumnExpr("address AS item_address").

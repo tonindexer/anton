@@ -93,5 +93,3 @@ func TestRepository_FilterMessages(t *testing.T) {
 		assert.Equal(t, []*core.Message{specialOperation}, res.Rows)
 	})
 }
-
-// TODO: benchmarks on filtering by msg payload

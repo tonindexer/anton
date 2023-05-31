@@ -9,8 +9,6 @@ import (
 	"github.com/tonindexer/anton/addr"
 )
 
-// TODO: contract addresses labels
-
 type ContractInterface struct {
 	bun.BaseModel `bun:"table:contract_interfaces" json:"-"`
 
