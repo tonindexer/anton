@@ -13,7 +13,7 @@ x-anton-service: &anton-service
     - clickhouse
     - postgres
   environment: &anton-env
-    DB_CH_URL: "clickhouse://clickhouse:9000/${DB_NAME}?sslmode=disable"
+    DB_CH_URL: "clickhouse://${DB_USERNAME}:${DB_PASSWORD}@clickhouse:9000/${DB_NAME}?sslmode=disable"
     DB_PG_URL: "postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
 
 services:
@@ -51,10 +51,10 @@ services:
     image: "clickhouse/clickhouse-server:22"
     healthcheck:
       test: wget --spider --no-verbose --tries=1 localhost:8123/ping || exit 1
-      interval: 30s
-      timeout: 30s
+      interval: 5s
+      timeout: 5s
       start_period: 60s
-      retries: 3
+      retries: 10
     networks:
       - indexer_network
     volumes:
@@ -66,14 +66,18 @@ services:
       nofile:
         soft: 262144
         hard: 262144
+    environment:
+      CLICKHOUSE_DB: "${DB_NAME}"
+      CLICKHOUSE_USER: "${DB_USERNAME}"
+      CLICKHOUSE_PASSWORD: "${DB_PASSWORD}"
   postgres:
     image: "postgres:15"
     healthcheck:
       test: pg_isready -U "${DB_USERNAME}" -d "${DB_NAME}" || exit 1
-      interval: 30s
-      timeout: 30s
+      interval: 5s
+      timeout: 5s
       start_period: 60s
-      retries: 3
+      retries: 10
     networks:
       - indexer_network
     volumes:
