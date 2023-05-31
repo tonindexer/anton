@@ -7,7 +7,7 @@ CREATE TABLE address_labels
 (
     address String,
     name String,
-    category LowCardinality(String)
+    categories Array(LowCardinality(String))
 )
 ENGINE = ReplacingMergeTree
 ORDER BY (address)

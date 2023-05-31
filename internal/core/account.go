@@ -33,9 +33,9 @@ type AddressLabel struct {
 	ch.CHModel    `ch:"address_labels" json:"-"`
 	bun.BaseModel `bun:"table:address_labels" json:"-"`
 
-	Address  addr.Address  `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"-"`
-	Name     string        `bun:"type:text" json:"name"`
-	Category LabelCategory `ch:",lc" bun:"type:label_category" json:"category,omitempty"`
+	Address    addr.Address    `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"-"`
+	Name       string          `bun:"type:text" json:"name"`
+	Categories []LabelCategory `ch:",lc" bun:"type:label_category[]" json:"categories,omitempty"`
 }
 
 type NFTContentData struct {

@@ -62,11 +62,11 @@ func unmarshalTonscanLabel(addrStr string, j json.RawMessage) (*core.AddressLabe
 		}
 		ret.Name = l.Name
 		if l.IsScam {
-			ret.Category = core.Scam
+			ret.Categories = append(ret.Categories, core.Scam)
 		}
 	}
 	if isCEX(ret.Name) {
-		ret.Category = core.CentralizedExchange
+		ret.Categories = append(ret.Categories, core.CentralizedExchange)
 	}
 
 	return &ret, nil
@@ -139,9 +139,9 @@ var Command = &cli.Command{
 			}
 
 			labels = append(labels, &core.AddressLabel{
-				Address:  *a,
-				Name:     ctx.Args().Get(1),
-				Category: core.LabelCategory(ctx.Args().Get(2)),
+				Address:    *a,
+				Name:       ctx.Args().Get(1),
+				Categories: []core.LabelCategory{core.LabelCategory(ctx.Args().Get(2))},
 			})
 		}
 
