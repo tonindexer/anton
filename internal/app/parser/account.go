@@ -116,14 +116,7 @@ func (s *Service) ParseAccountData(
 	}
 	acc.ExecutedGetMethods = map[abi.ContractName][]abi.GetMethodExecution{}
 
-	getters := []func(context.Context, *core.AccountState, func(context.Context, addr.Address) (*core.AccountState, error), []*core.ContractInterface){
-		s.getAccountDataNFT,
-		s.getAccountDataFT,
-		s.getAccountDataWallet,
-	}
-	for _, getter := range getters {
-		getter(ctx, acc, others, interfaces)
-	}
+	s.callPossibleGetMethods(ctx, acc, others, interfaces)
 
 	return nil
 }
