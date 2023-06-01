@@ -211,6 +211,10 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			continue
 		}
 
+		if len(insertBlocks) < s.InsertBlockBatch {
+			continue
+		}
+
 		if err := s.insertData(insertAcc, insertMsg, insertTx, insertBlocks); err != nil {
 			panic(err)
 		}

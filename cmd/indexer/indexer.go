@@ -68,12 +68,13 @@ var Command = &cli.Command{
 			Parser: p,
 		})
 		i := indexer.NewService(&app.IndexerConfig{
-			DB:        conn,
-			API:       api,
-			Parser:    p,
-			Fetcher:   f,
-			FromBlock: uint32(env.GetInt32("FROM_BLOCK", 1)),
-			Workers:   env.GetInt("WORKERS", 4),
+			DB:               conn,
+			API:              api,
+			Parser:           p,
+			Fetcher:          f,
+			FromBlock:        uint32(env.GetInt32("FROM_BLOCK", 1)),
+			Workers:          env.GetInt("WORKERS", 4),
+			InsertBlockBatch: env.GetInt("INSERT_BLOCK_BATCH", 10),
 		})
 		if err = i.Start(); err != nil {
 			return err

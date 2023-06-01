@@ -14,8 +14,9 @@ type IndexerConfig struct {
 	Fetcher FetcherService
 	Parser  ParserService
 
-	FromBlock uint32
-	Workers   int
+	FromBlock        uint32
+	Workers          int
+	InsertBlockBatch int
 }
 
 type IndexerService interface {
