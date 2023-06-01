@@ -53,7 +53,13 @@ func GetBlockchainConfig(ctx context.Context, api *ton.APIClient) (*cell.Cell, e
 			return nil, err
 		}
 
-		return state.McStateExtra.ConfigParams.Config.ToCell()
+		var mcStateExtra tlb.McStateExtra
+		err = tlb.LoadFromCell(&mcStateExtra, state.McStateExtra.BeginParse())
+		if err != nil {
+			return nil, err
+		}
+
+		return mcStateExtra.ConfigParams.Config.ToCell()
 
 	case ton.LSError:
 		return nil, t
