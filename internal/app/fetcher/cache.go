@@ -10,12 +10,12 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-var cacheInvalidation = time.Second
+var cacheInvalidation = time.Minute
 
 type blocksCache struct {
 	masterBlocks map[uint32]*ton.BlockIDExt
 	shardsInfo   map[uint32][]*ton.BlockIDExt
-	lastUsed     map[uint32]time.Time
+	lastCleared  time.Time
 	sync.Mutex
 }
 
@@ -23,17 +23,17 @@ func newBlocksCache() *blocksCache {
 	return &blocksCache{
 		masterBlocks: map[uint32]*ton.BlockIDExt{},
 		shardsInfo:   map[uint32][]*ton.BlockIDExt{},
-		lastUsed:     map[uint32]time.Time{},
+		lastCleared:  time.Now(),
 	}
 }
 
 func (c *blocksCache) clearCaches() {
-	for seq, ts := range c.lastUsed {
-		if ts.Add(cacheInvalidation).Before(time.Now()) {
-			delete(c.masterBlocks, seq)
-			delete(c.shardsInfo, seq)
-		}
+	if time.Since(c.lastCleared) < cacheInvalidation {
+		return
 	}
+	c.masterBlocks = map[uint32]*ton.BlockIDExt{}
+	c.shardsInfo = map[uint32][]*ton.BlockIDExt{}
+	c.lastCleared = time.Now()
 }
 
 func (c *blocksCache) getMaster(seqNo uint32) (*ton.BlockIDExt, bool) {
@@ -41,9 +41,6 @@ func (c *blocksCache) getMaster(seqNo uint32) (*ton.BlockIDExt, bool) {
 	defer c.Unlock()
 
 	m, ok := c.masterBlocks[seqNo]
-	if ok {
-		c.lastUsed[seqNo] = time.Now()
-	}
 	return m, ok
 }
 
@@ -52,7 +49,6 @@ func (c *blocksCache) setMaster(master *ton.BlockIDExt) {
 	defer c.Unlock()
 
 	c.masterBlocks[master.SeqNo] = master
-	c.lastUsed[master.SeqNo] = time.Now()
 	c.clearCaches()
 }
 
@@ -61,9 +57,6 @@ func (c *blocksCache) getShards(master *ton.BlockIDExt) ([]*ton.BlockIDExt, bool
 	defer c.Unlock()
 
 	m, ok := c.shardsInfo[master.SeqNo]
-	if ok {
-		c.lastUsed[master.SeqNo] = time.Now()
-	}
 	return m, ok
 }
 
@@ -72,29 +65,28 @@ func (c *blocksCache) setShards(master *ton.BlockIDExt, shards []*ton.BlockIDExt
 	defer c.Unlock()
 
 	c.shardsInfo[master.SeqNo] = shards
-	c.lastUsed[master.SeqNo] = time.Now()
 	c.clearCaches()
 }
 
 type accountCache struct {
-	m        map[core.BlockID]map[addr.Address]*core.AccountState
-	lastUsed map[core.BlockID]time.Time
+	m           map[core.BlockID]map[addr.Address]*core.AccountState
+	lastCleared time.Time
 	sync.Mutex
-}
-
-func (c *accountCache) clearCaches() {
-	for seq, ts := range c.lastUsed {
-		if ts.Add(cacheInvalidation).Before(time.Now()) {
-			delete(c.m, seq)
-		}
-	}
 }
 
 func newAccountCache() *accountCache {
 	return &accountCache{
-		m:        map[core.BlockID]map[addr.Address]*core.AccountState{},
-		lastUsed: map[core.BlockID]time.Time{},
+		m:           map[core.BlockID]map[addr.Address]*core.AccountState{},
+		lastCleared: time.Time{},
 	}
+}
+
+func (c *accountCache) clearCaches() {
+	if time.Since(c.lastCleared) < cacheInvalidation {
+		return
+	}
+	c.m = map[core.BlockID]map[addr.Address]*core.AccountState{}
+	c.lastCleared = time.Now()
 }
 
 func (c *accountCache) get(bExt *ton.BlockIDExt, a addr.Address) (*core.AccountState, bool) {
@@ -113,7 +105,6 @@ func (c *accountCache) get(bExt *ton.BlockIDExt, a addr.Address) (*core.AccountS
 		return nil, false
 	}
 
-	c.lastUsed[b] = time.Now()
 	return acc, true
 }
 
@@ -128,6 +119,5 @@ func (c *accountCache) set(bExt *ton.BlockIDExt, acc *core.AccountState) {
 	}
 
 	c.m[b][acc.Address] = acc
-	c.lastUsed[b] = time.Now()
 	c.clearCaches()
 }
