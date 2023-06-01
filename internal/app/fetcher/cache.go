@@ -10,7 +10,7 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-var cacheInvalidation = time.Minute
+var cacheInvalidation = time.Second
 
 type blocksCache struct {
 	masterBlocks map[uint32]*ton.BlockIDExt
