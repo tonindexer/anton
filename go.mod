@@ -25,6 +25,8 @@ require (
 	github.com/xssnick/tonutils-go v1.7.3
 )
 
+require github.com/gin-contrib/cors v1.4.0
+
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect

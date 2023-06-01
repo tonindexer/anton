@@ -3,6 +3,8 @@ package http
 import (
 	"net/http"
 
+	"github.com/gin-contrib/cors"
+
 	_ "github.com/tonindexer/anton/api/http"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -37,7 +39,11 @@ type Server struct {
 }
 
 func NewServer(host string) *Server {
-	return &Server{listenHost: host, router: gin.Default()}
+	router := gin.Default()
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	router.Use(cors.New(config))
+	return &Server{listenHost: host, router: router}
 }
 
 func (s *Server) RegisterRoutes(t QueryController) {
