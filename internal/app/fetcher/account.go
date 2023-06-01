@@ -37,11 +37,6 @@ func (s *Service) skipAccounts(_ *ton.BlockIDExt, a addr.Address) bool {
 }
 
 func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Address) (*core.AccountState, error) {
-	acc, ok := s.accounts.get(b, a)
-	if ok {
-		return acc, nil
-	}
-
 	if s.skipAccounts(b, a) {
 		return nil, errors.Wrap(core.ErrNotFound, "skip account")
 	}
@@ -53,7 +48,7 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 		return nil, errors.Wrapf(err, "get account")
 	}
 
-	acc = mapAccount(b, raw)
+	acc := mapAccount(b, raw)
 	if acc.Status != core.Active {
 		return nil, errors.Wrap(core.ErrNotFound, "account is not active")
 	}
@@ -62,10 +57,6 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 	// for example, to get nft item data
 	getOtherAccount := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 		// first attempt is to look for an account in this given block
-		acc, ok := s.accounts.get(b, a)
-		if ok {
-			return acc, nil
-		}
 		raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
 		if err == nil {
 			return mapAccount(b, raw), nil
@@ -78,6 +69,5 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 		return nil, errors.Wrapf(err, "parse account data (%s)", acc.Address.String())
 	}
 
-	s.accounts.set(b, acc)
 	return acc, nil
 }
