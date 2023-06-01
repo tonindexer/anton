@@ -1,14 +1,72 @@
 package indexer
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
 	"github.com/tonindexer/anton/addr"
+	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
+
+func (s *Service) insertData(
+	acc []*core.AccountState,
+	msg []*core.Message,
+	tx []*core.Transaction,
+	b []*core.Block,
+) error {
+	ctx := context.Background()
+
+	defer app.TimeTrack(time.Now(), fmt.Sprintf("insertData"))
+
+	dbTx, err := s.DB.PG.Begin()
+	if err != nil {
+		return errors.Wrap(err, "cannot begin db tx")
+	}
+	defer func() {
+		_ = dbTx.Rollback()
+	}()
+
+	for _, message := range msg {
+		err := s.Parser.ParseMessagePayload(ctx, message)
+		if errors.Is(err, app.ErrImpossibleParsing) {
+			continue
+		}
+		if err != nil {
+			log.Error().Err(err).
+				Hex("msg_hash", message.Hash).
+				Hex("src_tx_hash", message.SrcTxHash).
+				Str("src_addr", message.SrcAddress.String()).
+				Hex("dst_tx_hash", message.DstTxHash).
+				Str("dst_addr", message.DstAddress.String()).
+				Uint32("op_id", message.OperationID).
+				Msg("parse message payload")
+		}
+	}
+
+	if err := s.accountRepo.AddAccountStates(ctx, dbTx, acc); err != nil {
+		return errors.Wrap(err, "add account states")
+	}
+	if err := s.msgRepo.AddMessages(ctx, dbTx, msg); err != nil {
+		return errors.Wrap(err, "add messages")
+	}
+	if err := s.txRepo.AddTransactions(ctx, dbTx, tx); err != nil {
+		return errors.Wrap(err, "add transactions")
+	}
+	if err := s.blockRepo.AddBlocks(ctx, dbTx, b); err != nil {
+		return errors.Wrap(err, "add shard block")
+	}
+
+	if err := dbTx.Commit(); err != nil {
+		return errors.Wrap(err, "cannot commit db tx")
+	}
+
+	return nil
+}
 
 func (s *Service) uniqAccounts(transactions []*core.Transaction) []*core.AccountState {
 	var ret []*core.AccountState
