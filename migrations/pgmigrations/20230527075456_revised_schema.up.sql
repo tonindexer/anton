@@ -134,7 +134,7 @@ CREATE TABLE messages (
         ) OR (
             (type = 'INTERNAL') AND
             (src_workchain != -1 OR dst_workchain != -1) AND
-            (src_address IS NOT NULL) AND
+            -- (src_address IS NOT NULL) AND -- counterexample in testnet: cf86b1d575e0a34720abc911edc6ce303b2f8cf842117bafb0e18af709ca3b17
             (src_tx_lt IS NOT NULL) AND
             -- (dst_address IS NOT NULL) AND -- destination can be null (burn address)
             (dst_tx_lt IS NOT NULL)
