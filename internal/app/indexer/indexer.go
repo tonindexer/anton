@@ -76,7 +76,7 @@ func (s *Service) Start() error {
 	s.run = true
 	s.mx.Unlock()
 
-	blocksChan := make(chan processedMasterBlock, s.Workers)
+	blocksChan := make(chan processedMasterBlock, s.Workers*2)
 
 	s.wg.Add(1)
 	go s.fetchMasterLoop(fromBlock, blocksChan)
