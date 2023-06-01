@@ -21,7 +21,7 @@ func (s *Service) insertData(
 ) error {
 	ctx := context.Background()
 
-	defer app.TimeTrack(time.Now(), "insertData")
+	defer app.TimeTrack(time.Now(), fmt.Sprintf("insertData"))
 
 	dbTx, err := s.DB.PG.Begin()
 	if err != nil {

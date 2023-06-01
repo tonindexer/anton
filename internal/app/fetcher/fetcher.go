@@ -11,6 +11,9 @@ type Service struct {
 
 	masterWorkchain int32
 	masterShard     uint64
+
+	accounts *accountCache
+	blocks   *blocksCache
 }
 
 func NewService(cfg *app.FetcherConfig) *Service {
@@ -18,5 +21,7 @@ func NewService(cfg *app.FetcherConfig) *Service {
 		FetcherConfig:   cfg,
 		masterWorkchain: -1,
 		masterShard:     0x8000000000000000,
+		accounts:        newAccountCache(),
+		blocks:          newBlocksCache(),
 	}
 }

@@ -9,14 +9,24 @@ import (
 )
 
 func (s *Service) lookupMaster(ctx context.Context, seqNo uint32) (*ton.BlockIDExt, error) {
+	if master, ok := s.blocks.getMaster(seqNo); ok {
+		return master, nil
+	}
+
 	master, err := s.API.LookupBlock(ctx, s.masterWorkchain, int64(s.masterShard), seqNo)
 	if err != nil {
 		return nil, errors.Wrap(err, "lookup masterchain block")
 	}
+
+	s.blocks.setMaster(master)
 	return master, nil
 }
 
 func (s *Service) getShardsInfo(ctx context.Context, master *ton.BlockIDExt) ([]*ton.BlockIDExt, error) {
+	if shards, ok := s.blocks.getShards(master); ok {
+		return shards, nil
+	}
+
 	shards, err := s.API.GetBlockShardsInfo(ctx, master)
 	if err != nil {
 		return nil, errors.Wrap(err, "get masterchain shards info")
@@ -24,6 +34,8 @@ func (s *Service) getShardsInfo(ctx context.Context, master *ton.BlockIDExt) ([]
 	if len(shards) == 0 {
 		return nil, errors.Wrapf(err, "masterchain block %d has no shards", master.SeqNo)
 	}
+
+	s.blocks.setShards(master, shards)
 	return shards, nil
 }
 
