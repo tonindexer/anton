@@ -135,7 +135,7 @@ docker compose pull
 We have several options for compose run via [override files](https://docs.docker.com/compose/extends/#multiple-compose-files):
 * base (docker-compose.yml) - allows to run services with near default configuration;
 * dev (docker-compose.dev.yml) - allows to rebuild Anton image locally and exposes databases ports;
-* prod (docker-compose.prod.yml) - allows to configure and backup databases, requires at least 64GB RAM.
+* prod (docker-compose.prod.yml) - allows to configure and backup databases, requires at least 128GB RAM.
 
 You can combine it by your own. Also, there are optional [profiles](https://docs.docker.com/compose/profiles/):
 * migrate - runs optional migrations service.
@@ -149,7 +149,7 @@ docker compose up -d
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # run prod compose
-# WARNING: requires at least 64GB RAM
+# WARNING: requires at least 128GB RAM
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 

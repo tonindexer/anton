@@ -1,11 +1,12 @@
 version: "3.5"
 services:
   postgres:
-    shm_size: 64gb
+    shm_size: 128gb
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
     volumes:
       - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
   clickhouse:
+    shm_size: 128gb
     volumes:
       - ./config/clickhouse_backup_disk.xml:/etc/clickhouse-server/config.d/backup_disk.xml
       - ./backups/ch:/backups
