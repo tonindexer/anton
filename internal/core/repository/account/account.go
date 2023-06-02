@@ -177,9 +177,11 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		return nil
 	}
 
-	_, err := tx.NewInsert().Model(&accounts).Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "cannot insert new states")
+	for _, a := range accounts {
+		_, err := tx.NewInsert().Model(a).Exec(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "cannot insert new %s acc state", a.Address)
+		}
 	}
 
 	addrTxLT := make(map[addr.Address]uint64)
@@ -190,7 +192,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 	}
 
 	for a, lt := range addrTxLT {
-		_, err = tx.NewInsert().
+		_, err := tx.NewInsert().
 			Model(&core.LatestAccountState{
 				Address:  a,
 				LastTxLT: lt,
@@ -204,7 +206,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		}
 	}
 
-	_, err = r.ch.NewInsert().Model(&accounts).Exec(ctx)
+	_, err := r.ch.NewInsert().Model(&accounts).Exec(ctx)
 	if err != nil {
 		return err
 	}

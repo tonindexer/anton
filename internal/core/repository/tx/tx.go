@@ -104,11 +104,13 @@ func (r *Repository) AddTransactions(ctx context.Context, tx bun.Tx, transaction
 	if len(transactions) == 0 {
 		return nil
 	}
-	_, err := tx.NewInsert().Model(&transactions).Exec(ctx)
-	if err != nil {
-		return err
+	for _, t := range transactions {
+		_, err := tx.NewInsert().Model(t).Exec(ctx)
+		if err != nil {
+			return err
+		}
 	}
-	_, err = r.ch.NewInsert().Model(&transactions).Exec(ctx)
+	_, err := r.ch.NewInsert().Model(&transactions).Exec(ctx)
 	if err != nil {
 		return err
 	}
