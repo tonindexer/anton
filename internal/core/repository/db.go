@@ -39,7 +39,7 @@ func ConnectDB(ctx context.Context, dsnCH, dsnPG string, opts ...ch.Option) (*DB
 		return nil, errors.Wrap(err, "cannot ping ch")
 	}
 
-	sqlDB := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsnPG)))
+	sqlDB := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsnPG), pgdriver.WithWriteTimeout(time.Minute)))
 	pgDB := bun.NewDB(sqlDB, pgdialect.New())
 
 	for i := 0; i < 8; i++ { // wait for pg start
