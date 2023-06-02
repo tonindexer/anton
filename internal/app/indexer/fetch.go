@@ -113,7 +113,7 @@ func (s *Service) fetchMaster(seq uint32) (ret processedMasterBlock) {
 				Err(errBlock.err).
 				Int32("workchain", errBlock.block.Workchain).
 				Uint64("shard", uint64(errBlock.block.Shard)).
-				Uint32("seq", seq).
+				Uint32("seq", errBlock.block.SeqNo).
 				Msg("cannot process block")
 		} else {
 			return ret
