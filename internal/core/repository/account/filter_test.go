@@ -50,14 +50,11 @@ func TestRepository_FilterAccounts(t *testing.T) {
 			for j := 0; j < 10; j++ {
 				states = append(states, rndm.AccountStates(10)...)
 			}
-			data := rndm.AccountData(states)
 
 			// filter by address
 			address = &states[len(states)-10].Address
 			addressStates = states[len(states)-10:]
 
-			err = repo.AddAccountData(ctx, tx, data)
-			assert.Nil(t, err)
 			err = repo.AddAccountStates(ctx, tx, states)
 			assert.Nil(t, err)
 		}
@@ -72,14 +69,10 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 		// filter by contract interfaces
 		for i := 0; i < 15; i++ { // add 15 addresses with 10 states
-			states := rndm.AccountStates(10)
-			data := rndm.ContractsData(states, "special", nil)
+			states := rndm.AccountStatesContract(10, "special", nil)
 
 			specialState = states[len(states)-1]
-			specialState.StateData = data[len(data)-1]
 
-			err = repo.AddAccountData(ctx, tx, data)
-			assert.Nil(t, err)
 			err = repo.AddAccountStates(ctx, tx, states)
 			assert.Nil(t, err)
 		}
@@ -92,17 +85,9 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		tx, err := pg.Begin()
 		assert.Nil(t, err)
 
-		for i := 0; i < 5; i++ { // 50 states on some address
-			states := rndm.AddressStates(address, 10)
-			data := rndm.AccountData(states)
-
-			// filter by latest state
-			latestState = states[len(states)-1]
-			latestState.StateData = data[len(data)-1]
-
-			err := repo.AddAccountData(ctx, tx, data)
-			assert.Nil(t, err)
-			err = repo.AddAccountStates(ctx, tx, states)
+		for i := 0; i < 5; i++ {
+			latestState = rndm.AddressStateContract(address, "", nil)
+			err = repo.AddAccountStates(ctx, tx, []*core.AccountState{latestState})
 			assert.Nil(t, err)
 		}
 
@@ -116,13 +101,12 @@ func TestRepository_FilterAccounts(t *testing.T) {
 			Order:     "ASC", Limit: len(addressStates),
 		})
 		assert.Nil(t, err)
-		assert.Equal(t, 60, results.Total)
+		assert.Equal(t, 15, results.Total)
 		assert.Equal(t, addressStates, results.Rows)
 	})
 
 	t.Run("filter latest state by address and exclude columns", func(t *testing.T) {
 		latest := *latestState
-		latest.StateData = nil
 		latest.Code = nil
 
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
@@ -140,8 +124,8 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		latest.Code = nil
 
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			Addresses:   []*addr.Address{&latest.Address},
-			LatestState: true, WithData: true,
+			Addresses:     []*addr.Address{&latest.Address},
+			LatestState:   true,
 			ExcludeColumn: []string{"code"},
 		})
 		assert.Nil(t, err)
@@ -152,8 +136,8 @@ func TestRepository_FilterAccounts(t *testing.T) {
 	t.Run("filter latest state with data by contract types", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			ContractTypes: []abi.ContractName{"special"},
-			LatestState:   true, WithData: true,
-			Order: "DESC", Limit: 1,
+			LatestState:   true,
+			Order:         "DESC", Limit: 1,
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 15, results.Total)
@@ -162,18 +146,18 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 	t.Run("filter states by minter", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			WithData: true, MinterAddress: latestState.StateData.MinterAddress,
-			Order: "DESC", Limit: 1,
+			MinterAddress: latestState.MinterAddress,
+			Order:         "DESC", Limit: 1,
 		})
 		assert.Nil(t, err)
-		assert.Equal(t, 60, results.Total)
+		assert.Equal(t, 5, results.Total)
 		assert.Equal(t, []*core.AccountState{latestState}, results.Rows)
 	})
 
 	t.Run("filter states by owner", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			WithData: true, OwnerAddress: latestState.StateData.OwnerAddress,
-			Order: "DESC", Limit: 1,
+			OwnerAddress: latestState.OwnerAddress,
+			Order:        "DESC", Limit: 1,
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, results.Total)
@@ -182,9 +166,9 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 	t.Run("filter latest states by owner", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			LatestState: true,
-			WithData:    true, OwnerAddress: latestState.StateData.OwnerAddress,
-			Order: "DESC", Limit: 1,
+			LatestState:  true,
+			OwnerAddress: latestState.OwnerAddress,
+			Order:        "DESC", Limit: 1,
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, results.Total)
@@ -229,10 +213,7 @@ func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 
 		for i := 0; i < totalStates/100; i++ {
 			states := rndm.AccountStates(100)
-			data := rndm.AccountData(states)
 
-			err = repo.AddAccountData(ctx, tx, data)
-			assert.Nil(t, err)
 			err = repo.AddAccountStates(ctx, tx, states)
 			assert.Nil(t, err)
 
@@ -252,15 +233,9 @@ func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 		address = rndm.Address()
 
 		for i := 0; i < specialStates/100; i++ {
-			states := rndm.AddressStates(address, 100)
-			data := rndm.ContractsData(states, "special", nil)
+			specialState = rndm.AddressStateContract(address, "special", nil)
 
-			specialState = states[len(states)-1]
-			specialState.StateData = data[len(data)-1]
-
-			err = repo.AddAccountData(ctx, tx, data)
-			assert.Nil(t, err)
-			err = repo.AddAccountStates(ctx, tx, states)
+			err = repo.AddAccountStates(ctx, tx, []*core.AccountState{specialState})
 			assert.Nil(t, err)
 
 			if i%100 == 0 {
@@ -277,8 +252,8 @@ func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			ContractTypes: []abi.ContractName{"special"},
-			LatestState:   true, WithData: true,
-			Order: "DESC", Limit: 1,
+			LatestState:   true,
+			Order:         "DESC", Limit: 1,
 		})
 		assert.Nil(t, err)
 		assert.Equal(t, 1, results.Total)

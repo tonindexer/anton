@@ -20,7 +20,7 @@ import (
 
 // Address consists of flags (1 byte), workchain_id (1 byte) and account_id (32 byte).
 // https://docs.ton.org/learn/overviews/addresses#user-friendly-address-structure
-type Address [34]byte
+type Address [33]byte
 
 var (
 	_ json.Marshaler   = (*Address)(nil)
@@ -31,6 +31,10 @@ var (
 
 	_ fmt.Stringer = (*Address)(nil)
 )
+
+func (x *Address) Workchain() int8 {
+	return int8(x[0])
+}
 
 func (x *Address) ToTonutils() (*address.Address, error) {
 	return address.ParseAddr(x.Base64())
@@ -54,9 +58,8 @@ func (x *Address) FromTonutils(addr *address.Address) (*Address, error) {
 	if len(addr.Data()) != 32 {
 		return nil, fmt.Errorf("wrong addr data length %d", addr.Data())
 	}
-	x[0] = addr.FlagsToByte()
-	x[1] = byte(addr.Workchain())
-	copy(x[2:34], addr.Data())
+	x[0] = byte(addr.Workchain())
+	copy(x[1:33], addr.Data())
 	return x, nil
 }
 
@@ -71,11 +74,14 @@ func MustFromTonutils(a *address.Address) *Address {
 var crcTable = crc16.MakeTable(crc16.CRC16_XMODEM)
 
 func (x *Address) Checksum() uint16 {
-	return crc16.Checksum(x[:], crcTable)
+	var xFlags [34]byte
+	xFlags[0] = 0x11
+	copy(xFlags[1:34], x[:])
+	return crc16.Checksum(xFlags[:], crcTable)
 }
 
 func (x *Address) String() string {
-	return fmt.Sprintf("%d:%x", int8(x[1]), x[2:34])
+	return fmt.Sprintf("%d:%x", int8(x[0]), x[1:33])
 }
 
 func (x *Address) FromString(str string) (*Address, error) {
@@ -104,7 +110,8 @@ func MustFromString(str string) *Address {
 
 func (x *Address) Base64() string {
 	var xCheck [36]byte
-	copy(xCheck[0:34], x[:])
+	xCheck[0] = 0x11
+	copy(xCheck[1:34], x[:])
 	binary.BigEndian.PutUint16(xCheck[34:], x.Checksum())
 	return base64.RawURLEncoding.EncodeToString(xCheck[:])
 }
@@ -115,13 +122,13 @@ func (x *Address) FromBase64(b64 string) (*Address, error) {
 		return nil, errors.Wrap(err, "decode base64")
 	}
 	if len(d) != 36 {
-		return nil, errors.Wrap(err, "wrong decoded address length")
+		return nil, errors.New("wrong decoded address length")
 	}
 
-	copy(x[0:34], d[0:34])
+	copy(x[0:33], d[1:34])
 
 	if x.Checksum() != binary.BigEndian.Uint16(d[34:36]) {
-		return nil, errors.Wrap(err, "wrong address checksum")
+		return nil, errors.New("wrong address checksum")
 	}
 
 	return x, nil
@@ -164,6 +171,16 @@ func (x *Address) Value() (driver.Value, error) {
 	if x == nil {
 		return nil, nil
 	}
+	none := true
+	for _, i := range x {
+		if i != 0 {
+			none = false
+			break
+		}
+	}
+	if none {
+		return nil, nil
+	}
 	return x[:], nil
 }
 
@@ -180,11 +197,11 @@ func (x *Address) Scan(value interface{}) error {
 	if !i.Valid {
 		return fmt.Errorf("error converting type %T into address", value)
 	}
-	if l := len(i.String); l != 34 {
+	if l := len(i.String); l != 33 {
 		return fmt.Errorf("wrong address length %d", l)
 	}
 
-	copy(x[0:34], i.String)
+	copy(x[0:33], i.String)
 	return nil
 }
 

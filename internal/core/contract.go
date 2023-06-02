@@ -4,16 +4,12 @@ import (
 	"context"
 
 	"github.com/uptrace/bun"
-	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 )
 
-// TODO: contract addresses labels
-
 type ContractInterface struct {
-	ch.CHModel    `ch:"contract_interfaces" json:"-"`
 	bun.BaseModel `bun:"table:contract_interfaces" json:"-"`
 
 	Name            abi.ContractName    `bun:",pk" json:"name"`
@@ -24,14 +20,14 @@ type ContractInterface struct {
 }
 
 type ContractOperation struct {
-	ch.CHModel    `ch:"contract_operations" json:"-"`
 	bun.BaseModel `bun:"table:contract_operations" json:"-"`
 
-	Name         string            `json:"name"`
-	ContractName abi.ContractName  `bun:",pk" json:"contract_name"`
-	Outgoing     bool              `bun:",pk" json:"outgoing"` // if operation is going from contract
-	OperationID  uint32            `bun:",pk" json:"operation_id"`
-	Schema       abi.OperationDesc `bun:"type:jsonb" json:"schema"`
+	OperationName string            `json:"operation_name"`
+	ContractName  abi.ContractName  `bun:",pk" json:"contract_name"`
+	MessageType   MessageType       `bun:"type:message_type,notnull" json:"message_type"` // only internal is supported now
+	Outgoing      bool              `bun:",pk" json:"outgoing"`                           // if operation is going from contract
+	OperationID   uint32            `bun:",pk" json:"operation_id"`
+	Schema        abi.OperationDesc `bun:"type:jsonb" json:"schema"`
 }
 
 type ContractRepository interface {

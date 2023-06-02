@@ -20,16 +20,40 @@ import (
 
 type VmValue struct {
 	VmValueDesc
-	Payload any
+	Payload any `json:"payload"`
 }
 
 type VmStack []VmValue
+
+type GetMethodExecution struct {
+	Name string `json:"name,omitempty"`
+
+	Arguments []VmValueDesc `json:"arguments,omitempty"`
+	Receives  []any         `json:"receives,omitempty"`
+
+	ReturnValues []VmValueDesc `json:"return_values,omitempty"`
+	Returns      []any         `json:"returns,omitempty"`
+
+	Error string `json:"error,omitempty"`
+}
 
 var ErrWrongValueFormat = errors.New("wrong value for this format")
 
 type Emulator struct {
 	Emulator  *tvm.Emulator
 	AccountID tongo.AccountID
+}
+
+func newEmulator(addr *address.Address, e *tvm.Emulator) (*Emulator, error) {
+	err := e.SetVerbosityLevel(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "set verbosity level")
+	}
+	accId, err := tongo.AccountIDFromBase64Url(addr.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "parse address")
+	}
+	return &Emulator{Emulator: e, AccountID: accId}, nil
 }
 
 func NewEmulator(addr *address.Address, code, data, cfg *cell.Cell) (*Emulator, error) {
@@ -41,15 +65,15 @@ func NewEmulator(addr *address.Address, code, data, cfg *cell.Cell) (*Emulator, 
 	if err != nil {
 		return nil, err
 	}
-	err = e.SetVerbosityLevel(0)
+	return newEmulator(addr, e)
+}
+
+func NewEmulatorBase64(addr *address.Address, code, data, cfg string) (*Emulator, error) {
+	e, err := tvm.NewEmulatorFromBOCsBase64(code, data, cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "set verbosity level")
+		return nil, err
 	}
-	accId, err := tongo.AccountIDFromBase64Url(addr.String())
-	if err != nil {
-		return nil, errors.Wrap(err, "parse address")
-	}
-	return &Emulator{Emulator: e, AccountID: accId}, nil
+	return newEmulator(addr, e)
 }
 
 func vmMakeValueInt(v *VmValue) (ret tlb.VmStackValue, _ error) {

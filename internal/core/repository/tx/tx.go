@@ -47,7 +47,7 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Transaction{}).
-		Column("block_workchain", "block_shard", "block_seq_no").
+		Column("workchain", "shard", "block_seq_no").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "tx block id pg create unique index")
@@ -104,11 +104,13 @@ func (r *Repository) AddTransactions(ctx context.Context, tx bun.Tx, transaction
 	if len(transactions) == 0 {
 		return nil
 	}
-	_, err := tx.NewInsert().Model(&transactions).Exec(ctx)
-	if err != nil {
-		return err
+	for _, t := range transactions {
+		_, err := tx.NewInsert().Model(t).Exec(ctx)
+		if err != nil {
+			return err
+		}
 	}
-	_, err = r.ch.NewInsert().Model(&transactions).Exec(ctx)
+	_, err := r.ch.NewInsert().Model(&transactions).Exec(ctx)
 	if err != nil {
 		return err
 	}

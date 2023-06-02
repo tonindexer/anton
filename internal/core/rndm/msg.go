@@ -5,35 +5,39 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/uptrace/bun"
-	"github.com/uptrace/go-clickhouse/ch"
-
-	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
 
 var (
-	operationNames        = []string{"nft_item_transfer", "nft_collection_item_mint"}
-	msgLT          uint64 = 1000
-	msgTS                 = time.Now().UTC()
+	// operationNames        = []string{"nft_item_transfer", "nft_collection_item_mint"}
+	msgLT uint64 = 1000
+	msgTS        = time.Now().UTC()
 )
 
-func OperationName() string {
-	return operationNames[int(rand.Uint32())%len(operationNames)]
-}
+// func OperationName() string {
+// 	return operationNames[int(rand.Uint32())%len(operationNames)]
+// }
 
 func MessageFromTo(from, to *addr.Address) *core.Message {
 	msgLT++
 	msgTS = msgTS.Add(time.Minute)
 
+	src, dst := Block(0), Block(0)
+
 	return &core.Message{
 		Type:            core.Internal,
 		Hash:            Bytes(32),
 		SrcAddress:      *from,
+		SrcWorkchain:    src.Workchain,
+		SrcShard:        src.Shard,
+		SrcBlockSeqNo:   src.SeqNo,
+		SrcTxLT:         msgLT,
 		DstAddress:      *to,
-		SourceTxHash:    Bytes(32),
-		SourceTxLT:      msgLT,
+		DstWorkchain:    dst.Workchain,
+		DstShard:        dst.Shard,
+		DstBlockSeqNo:   dst.SeqNo,
+		DstTxLT:         msgLT,
 		Amount:          BigInt(),
 		IHRFee:          BigInt(),
 		FwdFee:          BigInt(),
@@ -41,6 +45,7 @@ func MessageFromTo(from, to *addr.Address) *core.Message {
 		BodyHash:        Bytes(32),
 		OperationID:     rand.Uint32(),
 		TransferComment: String(8),
+		DataJSON:        json.RawMessage(`{"new_owner": "new_owner_addr"}`),
 		StateInitCode:   Bytes(64),
 		StateInitData:   Bytes(64),
 		CreatedAt:       msgTS,
@@ -77,50 +82,6 @@ func MessagesTo(to *addr.Address, n int) (ret []*core.Message) {
 func Messages(n int) (ret []*core.Message) {
 	for i := 0; i < n; i++ {
 		ret = append(ret, Message())
-	}
-	return
-}
-
-func MessageOperationToContract(msg *core.Message, op string, to abi.ContractName) *core.MessagePayload {
-	return &core.MessagePayload{
-		CHModel:       ch.CHModel{},
-		BaseModel:     bun.BaseModel{},
-		Type:          msg.Type,
-		Hash:          msg.Hash,
-		SrcAddress:    msg.SrcAddress,
-		SrcContract:   ContractNames(&msg.SrcAddress)[0],
-		DstAddress:    msg.DstAddress,
-		DstContract:   to,
-		Amount:        msg.Amount,
-		BodyHash:      msg.BodyHash,
-		OperationID:   msg.OperationID,
-		OperationName: op,
-		DataJSON:      json.RawMessage(`{}`),
-		MinterAddress: Address(),
-		CreatedAt:     msg.CreatedAt,
-		CreatedLT:     msg.CreatedLT,
-		Error:         String(42),
-	}
-}
-
-func MessageToContract(msg *core.Message, to abi.ContractName) *core.MessagePayload {
-	return MessageOperationToContract(msg, OperationName(), to)
-}
-
-func MessagesToContract(msg []*core.Message, to abi.ContractName) (ret []*core.MessagePayload) {
-	for _, m := range msg {
-		ret = append(ret, MessageOperationToContract(m, OperationName(), to))
-	}
-	return
-}
-
-func MessagePayload(msg *core.Message) *core.MessagePayload {
-	return MessageToContract(msg, ContractNames(&msg.DstAddress)[0])
-}
-
-func MessagePayloads(messages []*core.Message) (ret []*core.MessagePayload) {
-	for _, msg := range messages {
-		ret = append(ret, MessagePayload(msg))
 	}
 	return
 }

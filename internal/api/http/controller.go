@@ -228,9 +228,7 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 	if req.WithTransactions {
 		req.WithTransactions = true
 		req.WithTransactionAccountState = true
-		req.WithTransactionAccountData = true
 		req.WithTransactionMessages = true
-		req.WithTransactionMessagePayloads = true
 	}
 
 	req.Order, err = unmarshalSorting(req.Order)
@@ -277,8 +275,6 @@ func (c *Controller) GetAccounts(ctx *gin.Context) {
 		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
-
-	req.WithData = true
 
 	req.Addresses, err = getAddresses(ctx, "address")
 	if err != nil {
@@ -430,9 +426,7 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 	}
 
 	req.WithAccountState = true
-	req.WithAccountData = true
 	req.WithMessages = true
-	req.WithMessagePayloads = true
 
 	req.Addresses, err = getAddresses(ctx, "address")
 	if err != nil {
@@ -507,7 +501,6 @@ func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
 //	@Param   		src_contract		query	[]string  	false	"source contract interface"
 //	@Param   		dst_contract		query	[]string  	false	"destination contract interface"
 //	@Param   		operation_name		query	[]string  	false	"filter by contract operation names"
-//	@Param   		minter_address		query	string  	false	"filter FT or NFT operations by minter address"
 //	@Param			order				query	string		false	"order by created_lt"						Enums(ASC, DESC) default(DESC)
 //	@Param   		after	     		query   int 		false	"start from this created_lt"
 //	@Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
@@ -541,11 +534,6 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 		paramErr(ctx, "dst_address", err)
 		return
 	}
-	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
-	if err != nil {
-		paramErr(ctx, "minter_address", err)
-		return
-	}
 
 	if op := ctx.Query("operation_id"); op != "" {
 		id, err := unmarshalOperationID(op)
@@ -555,8 +543,6 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 		}
 		req.OperationID = &id
 	}
-
-	req.WithPayload = true
 
 	req.Order, err = unmarshalSorting(req.Order)
 	if err != nil {

@@ -2,39 +2,82 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/xssnick/tonutils-go/tl"
+	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
-	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 var ErrImpossibleParsing = errors.New("parsing is impossible")
 
-type ServerAddr struct {
-	IPPort    string
-	PubKeyB64 string
+type ParserConfig struct {
+	BlockchainConfig *cell.Cell
+	ContractRepo     core.ContractRepository
 }
 
-type ParserConfig struct {
-	DB      *repository.DB
-	Servers []*ServerAddr
+func GetBlockchainConfig(ctx context.Context, api *ton.APIClient) (*cell.Cell, error) {
+	var res tl.Serializable
+
+	b, err := api.GetMasterchainInfo(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get masterchain info")
+	}
+
+	err = api.Client().QueryLiteserver(ctx, ton.GetConfigAll{Mode: 0, BlockID: b}, &res)
+	if err != nil {
+		return nil, err
+	}
+
+	switch t := res.(type) {
+	case ton.ConfigAll:
+		var state tlb.ShardStateUnsplit
+
+		c, err := cell.FromBOC(t.ConfigProof)
+		if err != nil {
+			return nil, err
+		}
+
+		ref, err := c.BeginParse().LoadRef()
+		if err != nil {
+			return nil, err
+		}
+
+		err = tlb.LoadFromCell(&state, ref)
+		if err != nil {
+			return nil, err
+		}
+
+		var mcStateExtra tlb.McStateExtra
+		err = tlb.LoadFromCell(&mcStateExtra, state.McStateExtra.BeginParse())
+		if err != nil {
+			return nil, err
+		}
+
+		return mcStateExtra.ConfigParams.Config.ToCell()
+
+	case ton.LSError:
+		return nil, t
+
+	default:
+		return nil, fmt.Errorf("got unknown response")
+	}
 }
 
 type ParserService interface {
-	API() *ton.APIClient
-
 	ParseAccountData(
 		ctx context.Context,
 		acc *core.AccountState,
-		others func(context.Context, *addr.Address) (*core.AccountState, error),
-	) (*core.AccountData, error)
+		others func(context.Context, addr.Address) (*core.AccountState, error),
+	) error
 
 	ParseMessagePayload(
 		ctx context.Context,
-		src, dst *core.AccountData,
-		message *core.Message,
-	) (*core.MessagePayload, error)
+		message *core.Message, // source and destination account states must be known
+	) error
 }

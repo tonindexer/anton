@@ -86,11 +86,11 @@ func parseOperationDesc(t abi.ContractName, d *abi.OperationDesc) (*core.Contrac
 	}
 
 	return &core.ContractOperation{
-		Name:         d.Name,
-		ContractName: t,
-		Outgoing:     false,
-		OperationID:  opId,
-		Schema:       *nd,
+		OperationName: d.Name,
+		ContractName:  t,
+		Outgoing:      false,
+		OperationID:   opId,
+		Schema:        *nd,
 	}, nil
 }
 
@@ -239,8 +239,9 @@ var Command = &cli.Command{
 			}
 		}
 		for _, op := range operations {
+			op.MessageType = core.Internal
 			if err := contract.NewRepository(pg).AddOperation(ctx.Context, op); err != nil {
-				return errors.Wrapf(err, "cannot insert %s %s contract operation", op.ContractName, op.Name)
+				return errors.Wrapf(err, "cannot insert %s %s contract operation", op.ContractName, op.OperationName)
 			}
 		}
 

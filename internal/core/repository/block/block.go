@@ -61,11 +61,13 @@ func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Bloc
 	if len(info) == 0 {
 		return nil
 	}
-	_, err := tx.NewInsert().Model(&info).Exec(ctx)
-	if err != nil {
-		return err
+	for _, b := range info {
+		_, err := tx.NewInsert().Model(b).Exec(ctx)
+		if err != nil {
+			return err
+		}
 	}
-	_, err = r.ch.NewInsert().Model(&info).Exec(ctx)
+	_, err := r.ch.NewInsert().Model(&info).Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -75,7 +77,7 @@ func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Bloc
 func (r *Repository) GetLastMasterBlock(ctx context.Context) (*core.Block, error) {
 	ret := new(core.Block)
 
-	err := r.ch.NewSelect().Model(ret).
+	err := r.pg.NewSelect().Model(ret).
 		Where("workchain = ?", -1).
 		Order("seq_no DESC").
 		Limit(1).

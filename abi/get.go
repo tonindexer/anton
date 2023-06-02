@@ -33,7 +33,7 @@ const (
 type VmValueDesc struct {
 	Name      string    `json:"name"`
 	StackType StackType `json:"stack_type"`
-	Format    StackType `json:"format"`
+	Format    StackType `json:"format,omitempty"`
 }
 
 type GetMethodDesc struct {

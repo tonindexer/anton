@@ -17,13 +17,9 @@ import (
 
 func TestRepository_AggregateAccounts_NFTCollection(t *testing.T) {
 	var (
-		itemCount = 15
-
+		itemCount        = 15
 		collectionStates []*core.AccountState
-		collectionData   []*core.AccountData
-
-		itemsStates []*core.AccountState
-		itemsData   []*core.AccountData
+		itemsStates      []*core.AccountState
 	)
 
 	initdb(t)
@@ -43,17 +39,13 @@ func TestRepository_AggregateAccounts_NFTCollection(t *testing.T) {
 		tx, err := pg.Begin()
 		assert.Nil(t, err)
 
-		collectionStates = rndm.AccountStates(100)
-		collectionData = rndm.ContractsData(collectionStates, known.NFTCollection, nil)
+		collectionStates = rndm.AccountStatesContract(100, known.NFTCollection, nil)
 
 		for i := 0; i < itemCount; i++ {
-			itemStates := rndm.AccountStates(100 / itemCount)
+			itemStates := rndm.AccountStatesContract(100/itemCount, known.NFTItem, &collectionStates[0].Address)
 			itemsStates = append(itemsStates, itemStates...)
-			itemsData = append(itemsData, rndm.ContractsData(itemStates, known.NFTItem, &collectionStates[0].Address)...)
 		}
 
-		err = repo.AddAccountData(ctx, tx, append(itemsData, collectionData...))
-		assert.Nil(t, err)
 		err = repo.AddAccountStates(ctx, tx, append(itemsStates, collectionStates...))
 		assert.Nil(t, err)
 
@@ -91,11 +83,8 @@ func TestRepository_AggregateAccounts_JettonMinter(t *testing.T) {
 		totalSupply  = new(bunbig.Int)
 		ownedBalance = make(map[addr.Address]*bunbig.Int)
 
-		minterStates []*core.AccountState
-		minterData   []*core.AccountData
-
+		minterStates  []*core.AccountState
 		walletsStates []*core.AccountState
-		walletsData   []*core.AccountData
 	)
 
 	initdb(t)
@@ -115,22 +104,17 @@ func TestRepository_AggregateAccounts_JettonMinter(t *testing.T) {
 		tx, err := pg.Begin()
 		assert.Nil(t, err)
 
-		minterStates = rndm.AccountStates(100)
-		minterData = rndm.ContractsData(minterStates, known.JettonMinter, nil)
+		minterStates = rndm.AccountStatesContract(100, known.JettonMinter, nil)
 
 		for i := 0; i < walletsCount; i++ {
-			walletStates := rndm.AccountStates(100 / walletsCount)
-
+			walletStates := rndm.AccountStatesContract(100/walletsCount, known.JettonWallet, &minterStates[0].Address)
 			walletsStates = append(walletsStates, walletStates...)
-			walletsData = append(walletsData, rndm.ContractsData(walletStates, known.JettonWallet, &minterStates[0].Address)...)
 
-			walletLatestData := walletsData[len(walletsData)-1]
+			walletLatestData := walletsStates[len(walletsStates)-1]
 			totalSupply = totalSupply.Add(walletLatestData.JettonBalance)
 			ownedBalance[*walletLatestData.OwnerAddress] = walletLatestData.JettonBalance
 		}
 
-		err = repo.AddAccountData(ctx, tx, append(walletsData, minterData...))
-		assert.Nil(t, err)
 		err = repo.AddAccountStates(ctx, tx, append(walletsStates, minterStates...))
 		assert.Nil(t, err)
 

@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
@@ -65,7 +66,7 @@ func matchByGetMethods(acc *core.AccountState, getMethodHashes []int32) bool {
 func (s *Service) determineInterfaces(ctx context.Context, acc *core.AccountState) ([]*core.ContractInterface, error) {
 	var ret []*core.ContractInterface
 
-	interfaces, err := s.contractRepo.GetInterfaces(ctx)
+	interfaces, err := s.ContractRepo.GetInterfaces(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get contract interfaces")
 	}
@@ -96,38 +97,26 @@ func (s *Service) determineInterfaces(ctx context.Context, acc *core.AccountStat
 func (s *Service) ParseAccountData(
 	ctx context.Context,
 	acc *core.AccountState,
-	others func(context.Context, *addr.Address) (*core.AccountState, error),
-) (*core.AccountData, error) {
+	others func(context.Context, addr.Address) (*core.AccountState, error),
+) error {
+	if s.ContractRepo == nil {
+		return errors.Wrap(app.ErrImpossibleParsing, "no contract repository")
+	}
+
 	interfaces, err := s.determineInterfaces(ctx, acc)
 	if err != nil {
-		return nil, errors.Wrapf(err, "determine contract interfaces")
+		return errors.Wrapf(err, "determine contract interfaces")
 	}
 	if len(interfaces) == 0 {
-		return nil, errors.Wrap(app.ErrImpossibleParsing, "unknown contract interfaces")
+		return errors.Wrap(app.ErrImpossibleParsing, "unknown contract interfaces")
 	}
 
-	data := new(core.AccountData)
-	data.Address = acc.Address
-	data.LastTxLT = acc.LastTxLT
-	data.LastTxHash = acc.LastTxHash
-	data.Balance = acc.Balance
 	for _, i := range interfaces {
-		data.Types = append(data.Types, i.Name)
+		acc.Types = append(acc.Types, i.Name)
 	}
-	data.UpdatedAt = acc.UpdatedAt
+	acc.ExecutedGetMethods = map[abi.ContractName][]abi.GetMethodExecution{}
 
-	getters := []func(context.Context, *core.AccountState, func(context.Context, *addr.Address) (*core.AccountState, error), []*core.ContractInterface, *core.AccountData){
-		s.getAccountDataNFT,
-		s.getAccountDataFT,
-		s.getAccountDataWallet,
-	}
-	for _, getter := range getters {
-		getter(ctx, acc, others, interfaces, data)
-	}
+	s.callPossibleGetMethods(ctx, acc, others, interfaces)
 
-	if data.Errors != nil {
-		log.Warn().Str("address", acc.Address.Base64()).Strs("errors", data.Errors).Msg("parse account data")
-	}
-
-	return data, nil
+	return nil
 }

@@ -13,22 +13,9 @@ import (
 
 func (r *Repository) AggregateMessagesHistory(ctx context.Context, req *history.MessagesReq) (*history.MessagesRes, error) {
 	var res history.MessagesRes
-	var payload, bigIntRes bool // do we need to count account_data or account_states
+	var bigIntRes bool // do we need to count account_data or account_states
 
-	q := r.ch.NewSelect()
-
-	if len(req.SrcContracts) > 0 {
-		q, payload = q.Where("src_contract IN (?)", ch.In(req.SrcContracts)), true
-	}
-	if len(req.DstContracts) > 0 {
-		q, payload = q.Where("dst_contract IN (?)", ch.In(req.DstContracts)), true
-	}
-	if len(req.OperationNames) > 0 {
-		q, payload = q.Where("operation_name IN (?)", ch.In(req.OperationNames)), true
-	}
-	if req.MinterAddress != nil {
-		q, payload = q.Where("minter_address = ?", req.MinterAddress), true
-	}
+	q := r.ch.NewSelect().Model((*core.Message)(nil))
 
 	if len(req.SrcAddresses) > 0 {
 		q = q.Where("src_address in (?)", ch.In(req.SrcAddresses))
@@ -36,11 +23,17 @@ func (r *Repository) AggregateMessagesHistory(ctx context.Context, req *history.
 	if len(req.DstAddresses) > 0 {
 		q = q.Where("dst_address in (?)", ch.In(req.DstAddresses))
 	}
-
-	if payload {
-		q = q.Model((*core.MessagePayload)(nil))
-	} else {
-		q = q.Model((*core.Message)(nil))
+	if len(req.SrcContracts) > 0 {
+		q = q.Where("src_contract IN (?)", ch.In(req.SrcContracts))
+	}
+	if len(req.DstContracts) > 0 {
+		q = q.Where("dst_contract IN (?)", ch.In(req.DstContracts))
+	}
+	if len(req.OperationNames) > 0 {
+		q = q.Where("operation_name IN (?)", ch.In(req.OperationNames))
+	}
+	if req.MinterAddress != nil {
+		q = q.Where("minter_address = ?", req.MinterAddress)
 	}
 
 	switch req.Metric {

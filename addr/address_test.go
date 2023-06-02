@@ -9,7 +9,10 @@ import (
 )
 
 func TestAddress_TypeKind(t *testing.T) {
-	a := MustFromBase64("Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF")
+	a, err := new(Address).FromBase64("Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF")
+	assert.Nil(t, err)
+	assert.Equal(t, int8(-1), a.Workchain())
+
 	v := reflect.ValueOf(a)
 	vt := v.Type()
 

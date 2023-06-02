@@ -32,20 +32,14 @@ func TestRepository_AggregateAccountsHistory(t *testing.T) {
 
 		for i := 0; i < 10; i++ {
 			states := rndm.AccountStates(10)
-			data := rndm.AccountData(states)
 
-			err = repo.AddAccountData(ctx, tx, data)
-			assert.Nil(t, err)
 			err = repo.AddAccountStates(ctx, tx, states)
 			assert.Nil(t, err)
 		}
 
 		for i := 0; i < 10; i++ {
-			states := rndm.AccountStates(10)
-			data := rndm.ContractsData(states, "special", nil)
+			states := rndm.AccountStatesContract(10, "special", nil)
 
-			err = repo.AddAccountData(ctx, tx, data)
-			assert.Nil(t, err)
 			err = repo.AddAccountStates(ctx, tx, states)
 			assert.Nil(t, err)
 		}

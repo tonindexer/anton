@@ -2,7 +2,7 @@ module github.com/tonindexer/anton
 
 go 1.19
 
-replace github.com/uptrace/go-clickhouse v0.3.0 => github.com/iam047801/go-clickhouse v0.0.0-20230302135744-fc217d428c55 // go-clickhouse branch with dirty fixes
+replace github.com/uptrace/go-clickhouse v0.3.0 => github.com/iam047801/go-clickhouse v0.0.0-20230531081532-4d11768422f0 // go-clickhouse branch with dirty fixes
 
 require (
 	github.com/allisson/go-env v0.3.0
@@ -22,8 +22,10 @@ require (
 	github.com/uptrace/bun/extra/bunbig v1.1.13-0.20230308071428-7cd855e64a02
 	github.com/uptrace/go-clickhouse v0.3.0
 	github.com/urfave/cli/v2 v2.25.1
-	github.com/xssnick/tonutils-go v1.7.3
+	github.com/xssnick/tonutils-go v1.7.4-0.20230602073040-7236a8d2ed40
 )
+
+require github.com/gin-contrib/cors v1.4.0
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect

@@ -19,7 +19,7 @@ import (
 var _ app.QueryService = (*Service)(nil)
 
 type Service struct {
-	cfg *app.QueryConfig
+	*app.QueryConfig
 
 	contractRepo core.ContractRepository
 	blockRepo    repository.Block
@@ -31,8 +31,8 @@ type Service struct {
 func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
 	var s = new(Service)
 
-	s.cfg = cfg
-	ch, pg := s.cfg.DB.CH, s.cfg.DB.PG
+	s.QueryConfig = cfg
+	ch, pg := s.DB.CH, s.DB.PG
 	s.txRepo = tx.NewRepository(ch, pg)
 	s.msgRepo = msg.NewRepository(ch, pg)
 	s.blockRepo = block.NewRepository(ch, pg)
@@ -43,7 +43,7 @@ func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
 }
 
 func (s *Service) GetStatistics(ctx context.Context) (*aggregate.Statistics, error) {
-	return aggregate.GetStatistics(ctx, s.cfg.DB.CH, s.cfg.DB.PG)
+	return aggregate.GetStatistics(ctx, s.DB.CH, s.DB.PG)
 }
 
 func (s *Service) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {

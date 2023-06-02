@@ -26,7 +26,7 @@ var (
 
 func initdb(t testing.TB) {
 	var (
-		dsnCH = "clickhouse://localhost:9000/testing?sslmode=disable"
+		dsnCH = "clickhouse://user:pass@localhost:9000/default?sslmode=disable"
 		dsnPG = "postgres://user:pass@localhost:5432/postgres?sslmode=disable"
 		err   error
 	)

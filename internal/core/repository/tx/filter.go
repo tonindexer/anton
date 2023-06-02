@@ -21,16 +21,11 @@ func (r *Repository) filterTx(ctx context.Context, f *filter.TransactionsReq) (r
 			}
 			return q
 		})
-		if f.WithAccountData {
-			q = q.Relation("Account.StateData")
-		}
 	}
 	if f.WithMessages {
 		q = q.
 			Relation("InMsg").
-			Relation("InMsg.Payload").
-			Relation("OutMsg").
-			Relation("OutMsg.Payload")
+			Relation("OutMsg")
 	}
 
 	if len(f.Hash) > 0 {
@@ -43,11 +38,11 @@ func (r *Repository) filterTx(ctx context.Context, f *filter.TransactionsReq) (r
 		q = q.Where("transaction.address in (?)", bun.In(f.Addresses))
 	}
 	if f.Workchain != nil {
-		q = q.Where("transaction.block_workchain = ?", f.Workchain)
+		q = q.Where("transaction.workchain = ?", f.Workchain)
 	}
 	if f.BlockID != nil {
-		q = q.Where("transaction.block_workchain = ?", f.BlockID.Workchain).
-			Where("transaction.block_shard = ?", f.BlockID.Shard).
+		q = q.Where("transaction.workchain = ?", f.BlockID.Workchain).
+			Where("transaction.shard = ?", f.BlockID.Shard).
 			Where("transaction.block_seq_no = ?", f.BlockID.SeqNo)
 	}
 
@@ -86,11 +81,11 @@ func (r *Repository) countTx(ctx context.Context, req *filter.TransactionsReq) (
 		q = q.Where("address in (?)", ch.In(req.Addresses))
 	}
 	if req.Workchain != nil {
-		q = q.Where("block_workchain = ?", *req.Workchain)
+		q = q.Where("workchain = ?", *req.Workchain)
 	}
 	if req.BlockID != nil {
-		q = q.Where("block_workchain = ?", req.BlockID.Workchain).
-			Where("block_shard = ?", req.BlockID.Shard).
+		q = q.Where("workchain = ?", req.BlockID.Workchain).
+			Where("shard = ?", req.BlockID.Shard).
 			Where("block_seq_no = ?", req.BlockID.SeqNo)
 	}
 

@@ -1,12 +1,8 @@
-DROP TABLE account_data;
+DROP TABLE address_labels;
 
 --migration:split
 
 DROP TABLE account_states;
-
---migration:split
-
-DROP TABLE message_payloads;
 
 --migration:split
 

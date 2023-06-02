@@ -1,4 +1,4 @@
-package indexer
+package fetcher
 
 import (
 	"time"
@@ -15,13 +15,45 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
+func mapAccount(b *ton.BlockIDExt, acc *tlb.Account) *core.AccountState {
+	ret := new(core.AccountState)
+
+	ret.Workchain = b.Workchain
+	ret.Shard = b.Shard
+	ret.BlockSeqNo = b.SeqNo
+
+	ret.IsActive = acc.IsActive
+	ret.Status = core.NonExist
+	if acc.State != nil {
+		if acc.State.Address != nil {
+			ret.Address = *addr.MustFromTonutils(acc.State.Address)
+		}
+		ret.Status = core.AccountStatus(acc.State.Status)
+		ret.Balance = bunbig.FromMathBig(acc.State.Balance.NanoTON())
+		ret.StateHash = acc.State.StateHash
+	}
+	if acc.Data != nil {
+		ret.Data = acc.Data.ToBOC()
+		ret.DataHash = acc.Data.Hash()
+	}
+	if acc.Code != nil {
+		ret.Code = acc.Code.ToBOC()
+		ret.CodeHash = acc.Code.Hash()
+		ret.GetMethodHashes, _ = abi.GetMethodHashes(acc.Code)
+	}
+	ret.LastTxLT = acc.LastTxLT
+	ret.LastTxHash = acc.LastTxHash
+
+	return ret
+}
+
 func mapMessageInternal(msg *core.Message, raw *tlb.InternalMessage) error {
 	msg.Type = core.Internal
 
-	src := addr.MustFromTonutils(raw.SrcAddr)
-	dst := addr.MustFromTonutils(raw.DstAddr)
-	msg.SrcAddress = *src
-	msg.DstAddress = *dst
+	msg.SrcAddress = *addr.MustFromTonutils(raw.SrcAddr)
+	msg.SrcWorkchain = int32(msg.SrcAddress.Workchain())
+	msg.DstAddress = *addr.MustFromTonutils(raw.DstAddr)
+	msg.DstWorkchain = int32(msg.DstAddress.Workchain())
 
 	msg.Bounce = raw.Bounce
 	msg.Bounced = raw.Bounced
@@ -48,13 +80,14 @@ func mapMessageInternal(msg *core.Message, raw *tlb.InternalMessage) error {
 	return nil
 }
 
-func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg *tlb.Message) error {
+func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg tlb.Message) error {
 	switch raw := rawMsg.Msg.(type) {
 	case *tlb.ExternalMessage:
 		msg.Type = core.ExternalIn
 
-		dst := addr.MustFromTonutils(raw.DstAddr)
-		msg.DstAddress = *dst
+		msg.DstAddress = *addr.MustFromTonutils(raw.DstAddr)
+		msg.DstWorkchain = int32(msg.DstAddress.Workchain())
+		msg.DstTxLT, msg.DstTxHash = rawTx.LT, rawTx.Hash
 
 		if raw.StateInit != nil && raw.StateInit.Code != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
@@ -72,14 +105,9 @@ func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg *tlb.M
 	case *tlb.ExternalMessageOut:
 		msg.Type = core.ExternalOut
 
-		src := addr.MustFromTonutils(raw.SrcAddr)
-		msg.SrcAddress = *src
-
-		msg.SourceTxHash = rawTx.Hash
-		msg.SourceTxLT = rawTx.LT
-
-		msg.CreatedLT = raw.CreatedLT
-		msg.CreatedAt = time.Unix(int64(raw.CreatedAt), 0)
+		msg.SrcAddress = *addr.MustFromTonutils(raw.SrcAddr)
+		msg.SrcWorkchain = int32(msg.SrcAddress.Workchain())
+		msg.SrcTxLT, msg.SrcTxHash = rawTx.LT, rawTx.Hash
 
 		if raw.StateInit != nil && raw.StateInit.Code != nil {
 			msg.StateInitCode = raw.StateInit.Code.ToBOC()
@@ -90,6 +118,9 @@ func mapMessageExternal(msg *core.Message, rawTx *tlb.Transaction, rawMsg *tlb.M
 
 		msg.Body = raw.Body.ToBOC()
 		msg.BodyHash = raw.Body.Hash()
+
+		msg.CreatedLT = raw.CreatedLT
+		msg.CreatedAt = time.Unix(int64(raw.CreatedAt), 0)
 	}
 
 	return nil
@@ -119,7 +150,7 @@ func parseOperationID(body []byte) (opId uint32, comment string, err error) {
 	return opId, comment, nil
 }
 
-func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error) {
+func mapMessage(tx *tlb.Transaction, message tlb.Message) (*core.Message, error) {
 	var (
 		msg = new(core.Message)
 		err error
@@ -152,44 +183,37 @@ func mapMessage(tx *tlb.Transaction, message *tlb.Message) (*core.Message, error
 	return msg, nil
 }
 
-func mapAccount(acc *tlb.Account) *core.AccountState {
-	ret := new(core.AccountState)
-
-	ret.IsActive = acc.IsActive
-	ret.Status = core.NonExist
-	if acc.State != nil {
-		if acc.State.Address != nil {
-			ret.Address = *addr.MustFromTonutils(acc.State.Address)
-		}
-		ret.Status = core.AccountStatus(acc.State.Status)
-		ret.Balance = bunbig.FromMathBig(acc.State.Balance.NanoTON())
-		ret.StateHash = acc.State.StateHash
+func mapTransactionComputePhase(phase tlb.ComputePhase, tx *core.Transaction) {
+	if p, ok := phase.Phase.(tlb.ComputePhaseVM); ok {
+		tx.ComputePhaseExitCode = p.Details.ExitCode
 	}
-	if acc.Data != nil {
-		ret.Data = acc.Data.ToBOC()
-		ret.DataHash = acc.Data.Hash()
-	}
-	if acc.Code != nil {
-		ret.Code = acc.Code.ToBOC()
-		ret.CodeHash = acc.Code.Hash()
-		ret.GetMethodHashes, _ = abi.GetMethodHashes(acc.Code)
-	}
-	ret.LastTxLT = acc.LastTxLT
-	ret.LastTxHash = acc.LastTxHash
-
-	return ret
 }
 
 func mapTransactionDescription(desc any, tx *core.Transaction) {
 	switch d := desc.(type) {
-	case *tlb.TransactionDescriptionOrdinary:
-		tx.ResultCode = d.ActionPhase.ResultCode
-	case *tlb.TransactionDescriptionTickTock:
-		tx.ResultCode = d.ActionPhase.ResultCode
-	case *tlb.TransactionDescriptionSplitPrepare:
-		tx.ResultCode = d.ActionPhase.ResultCode
-	case *tlb.TransactionDescriptionMergeInstall:
-		tx.ResultCode = d.ActionPhase.ResultCode
+	case tlb.TransactionDescriptionOrdinary:
+		if d.ActionPhase != nil {
+			tx.ActionPhaseResultCode = d.ActionPhase.ResultCode
+		}
+		mapTransactionComputePhase(d.ComputePhase, tx)
+
+	case tlb.TransactionDescriptionTickTock:
+		if d.ActionPhase != nil {
+			tx.ActionPhaseResultCode = d.ActionPhase.ResultCode
+		}
+		mapTransactionComputePhase(d.ComputePhase, tx)
+
+	case tlb.TransactionDescriptionSplitPrepare:
+		if d.ActionPhase != nil {
+			tx.ActionPhaseResultCode = d.ActionPhase.ResultCode
+		}
+		mapTransactionComputePhase(d.ComputePhase, tx)
+
+	case tlb.TransactionDescriptionMergeInstall:
+		if d.ActionPhase != nil {
+			tx.ActionPhaseResultCode = d.ActionPhase.ResultCode
+		}
+		mapTransactionComputePhase(d.ComputePhase, tx)
 	}
 }
 
@@ -215,18 +239,20 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 	}
 	if b != nil {
 		tx.Address = *addr.MustFromTonutils(address.NewAddress(0, byte(b.Workchain), raw.AccountAddr))
-		tx.BlockWorkchain = b.Workchain
-		tx.BlockShard = b.Shard
+		tx.Workchain = b.Workchain
+		tx.Shard = b.Shard
 		tx.BlockSeqNo = b.SeqNo
 	}
 	if raw.IO.In != nil && raw.IO.In.Msg != nil {
-		msgCell, err := tlb.ToCell(raw.IO.In)
+		in, err := mapMessage(raw, *raw.IO.In)
 		if err != nil {
-			return nil, errors.Wrap(err, "cannot convert in message to cell")
+			return nil, errors.Wrap(err, "map incoming message")
 		}
-		tx.InMsgHash = msgCell.Hash()
-		if in, ok := raw.IO.In.Msg.(*tlb.InternalMessage); ok {
-			tx.InAmount = bunbig.FromMathBig(in.Amount.NanoTON())
+		in.DstTxLT, in.DstTxHash = tx.CreatedLT, tx.Hash
+		in.DstWorkchain, in.DstShard, in.DstBlockSeqNo = b.Workchain, b.Shard, b.SeqNo
+		tx.InMsg, tx.InMsgHash = in, in.Hash
+		if in.Type == core.Internal {
+			tx.InAmount = in.Amount
 		}
 	}
 	if raw.IO.Out != nil {
@@ -235,8 +261,15 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 			return nil, errors.Wrap(err, "getting outgoing tx messages")
 		}
 		for _, m := range messages {
-			if out, ok := m.Msg.(*tlb.InternalMessage); ok {
-				tx.OutAmount = tx.OutAmount.Add(bunbig.FromMathBig(out.Amount.NanoTON()))
+			out, err := mapMessage(raw, m)
+			if err != nil {
+				return nil, errors.Wrap(err, "map outgoing message")
+			}
+			out.SrcTxLT, out.SrcTxHash = tx.CreatedLT, tx.Hash
+			out.SrcWorkchain, out.SrcShard, out.SrcBlockSeqNo = b.Workchain, b.Shard, b.SeqNo
+			tx.OutMsg = append(tx.OutMsg, out)
+			if out.Type == core.Internal {
+				tx.OutAmount = tx.OutAmount.Add(out.Amount)
 			}
 		}
 	}
@@ -250,18 +283,4 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 	}
 
 	return tx, nil
-}
-
-func mapTransactions(b *ton.BlockIDExt, blockTx []*tlb.Transaction) ([]*core.Transaction, error) {
-	var transactions []*core.Transaction
-
-	for _, raw := range blockTx {
-		tx, err := mapTransaction(b, raw)
-		if err != nil {
-			return nil, err
-		}
-		transactions = append(transactions, tx)
-	}
-
-	return transactions, nil
 }

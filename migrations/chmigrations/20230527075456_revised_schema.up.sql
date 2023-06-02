@@ -2,36 +2,16 @@
 -- Clickhouse SHOW CREATE TABLE
 --
 
-CREATE TABLE account_data (
+
+CREATE TABLE address_labels
+(
     address String,
-    last_tx_lt UInt64,
-    last_tx_hash String,
-    balance UInt256,
-    types Array(String),
-    owner_address String,
-    minter_address String,
-    next_item_index UInt256,
-    royalty_address String,
-    royalty_factor UInt16,
-    royalty_base UInt16,
-    content_uri String,
-    content_name String,
-    content_description String,
-    content_image String,
-    content_image_data String,
-    initialized Bool,
-    item_index UInt256,
-    editor_address String,
-    total_supply UInt256,
-    mintable Bool,
-    admin_address String,
-    jetton_balance UInt256,
-    errors Array(String),
-    updated_at DateTime
+    name String,
+    categories Array(LowCardinality(String))
 )
 ENGINE = ReplacingMergeTree
-PARTITION BY types
-ORDER BY (address, last_tx_lt);
+ORDER BY (address)
+SETTINGS index_granularity = 8192;
 
 
 --migration:split
@@ -40,6 +20,9 @@ ORDER BY (address, last_tx_lt);
 CREATE TABLE account_states
 (
     address String,
+    workchain Int32,
+    shard Int64,
+    block_seq_no UInt32,
     is_active Bool,
     status LowCardinality(String),
     balance UInt256,
@@ -51,36 +34,21 @@ CREATE TABLE account_states
     data String,
     data_hash String,
     get_method_hashes Array(UInt32),
+    types Array(String),
+    owner_address String,
+    minter_address String,
+    executed_get_methods String,
+    content_uri String,
+    content_name String,
+    content_description String,
+    content_image String,
+    content_image_data String,
+    jetton_balance UInt256,
     updated_at DateTime
 )
 ENGINE = ReplacingMergeTree
-PARTITION BY status
-ORDER BY (address, last_tx_lt);
-
-
---migration:split
-
-
-CREATE TABLE message_payloads
-(
-    type LowCardinality(String),
-    hash String,
-    src_address String,
-    src_contract LowCardinality(String),
-    dst_address String,
-    dst_contract LowCardinality(String),
-    amount UInt256,
-    body_hash String,
-    operation_id UInt32,
-    operation_name LowCardinality(String),
-    minter_address String,
-    created_at DateTime,
-    created_lt UInt64,
-    error String
-)
-ENGINE = ReplacingMergeTree
-PARTITION BY toYYYYMM(created_at)
-ORDER BY hash
+PARTITION BY toYYYYMM(updated_at)
+ORDER BY (address, last_tx_lt)
 SETTINGS index_granularity = 8192;
 
 
@@ -92,9 +60,15 @@ CREATE TABLE messages
     type LowCardinality(String),
     hash String,
     src_address String,
+    src_tx_lt UInt64,
+    src_workchain Int32,
+    src_shard Int64,
+    src_block_seq_no UInt32,
     dst_address String,
-    source_tx_hash String,
-    source_tx_lt UInt64,
+    dst_tx_lt UInt64,
+    dst_workchain Int32,
+    dst_shard Int64,
+    dst_block_seq_no UInt32,
     bounce Bool,
     bounced Bool,
     amount UInt256,
@@ -107,6 +81,11 @@ CREATE TABLE messages
     transfer_comment String,
     state_init_code String,
     state_init_data String,
+    src_contract LowCardinality(String),
+    dst_contract LowCardinality(String),
+    operation_name LowCardinality(String),
+    data_json String,
+    error String,
     created_at DateTime,
     created_lt UInt64
 )
@@ -123,8 +102,8 @@ CREATE TABLE transactions
 (
     address String,
     hash String,
-    block_workchain Int32,
-    block_shard Int64,
+    workchain Int32,
+    shard Int64,
     block_seq_no UInt32,
     prev_tx_hash String,
     prev_tx_lt UInt64,
@@ -133,8 +112,9 @@ CREATE TABLE transactions
     out_msg_count UInt16,
     out_amount UInt256,
     total_fees UInt256,
-    state_update String,
     description String,
+    compute_phase_exit_code Int32,
+    action_phase_result_code Int32,
     orig_status LowCardinality(String),
     end_status LowCardinality(String),
     created_at DateTime,
@@ -142,7 +122,8 @@ CREATE TABLE transactions
 )
 ENGINE = ReplacingMergeTree
 PARTITION BY toYYYYMM(created_at)
-ORDER BY (address, hash);
+ORDER BY (address, created_lt)
+SETTINGS index_granularity = 8192;
 
 
 --migration:split
@@ -154,8 +135,9 @@ CREATE TABLE block_info
     shard Int64,
     seq_no UInt32,
     file_hash String,
-    root_hash String
+    root_hash String,
+    scanned_at DateTime
 )
 ENGINE = ReplacingMergeTree
-PARTITION BY workchain
-ORDER BY (workchain, shard, seq_no);
+ORDER BY (workchain, shard, seq_no)
+SETTINGS index_granularity = 8192;

@@ -13,7 +13,6 @@ type AccountsReq struct {
 	LatestState bool            `form:"latest"`
 
 	// contract data filter
-	WithData      bool
 	ContractTypes []abi.ContractName `form:"interface"`
 	OwnerAddress  *addr.Address      // `form:"owner_address"`
 	MinterAddress *addr.Address      // `form:"minter_address"`

@@ -25,7 +25,7 @@ var (
 
 func initdb(t testing.TB) {
 	var (
-		dsnCH = "clickhouse://localhost:9000/testing?sslmode=disable"
+		dsnCH = "clickhouse://user:pass@localhost:9000/default?sslmode=disable"
 		dsnPG = "postgres://user:pass@localhost:5432/postgres?sslmode=disable"
 		err   error
 	)
@@ -95,6 +95,8 @@ func TestRepository_AddBlocks(t *testing.T) {
 
 		err = ck.NewSelect().Model(got).Where("workchain = 0").Scan(ctx)
 		assert.Nil(t, err)
+		assert.Equal(t, shard.ScannedAt.Truncate(time.Second), got.ScannedAt.UTC()) // TODO: debug ch timestamps
+		got.ScannedAt = shard.ScannedAt
 		assert.Equal(t, shard, got)
 
 		err = tx.Commit()

@@ -4,8 +4,6 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/uptrace/bun/extra/bunbig"
-
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/abi/known"
 	"github.com/tonindexer/anton/addr"
@@ -33,12 +31,17 @@ func ContractNames(a *addr.Address) (ret []abi.ContractName) {
 	return
 }
 
-func AddressState(a *addr.Address) *core.AccountState {
+func AddressState(a *addr.Address, t []abi.ContractName, minter *addr.Address) *core.AccountState {
 	lastTxLT++
 	timestamp = timestamp.Add(time.Minute)
 
+	b := Block(0)
+
 	s := &core.AccountState{
 		Address:         *a,
+		Workchain:       b.Workchain,
+		Shard:           b.Shard,
+		BlockSeqNo:      b.SeqNo,
 		IsActive:        true,
 		Status:          core.Active,
 		Balance:         BigInt(),
@@ -50,15 +53,43 @@ func AddressState(a *addr.Address) *core.AccountState {
 		Data:            Bytes(32),
 		DataHash:        Bytes(32),
 		GetMethodHashes: GetMethodHashes(),
-		UpdatedAt:       timestamp,
+		Types:           t,
+		OwnerAddress:    Address(),
+		MinterAddress:   minter,
+		ExecutedGetMethods: map[abi.ContractName][]abi.GetMethodExecution{
+			"nft_item": {{
+				Name:    "get_nft_data",
+				Returns: []any{true},
+			}},
+		},
+		FTWalletData:   core.FTWalletData{JettonBalance: BigInt()},
+		NFTContentData: core.NFTContentData{ContentImageData: []byte{}}, // TODO: i dunno why ",nullzero" tag does not work in pg
+		UpdatedAt:      timestamp,
 	}
 
 	return s
 }
 
+func AddressStateContract(a *addr.Address, t abi.ContractName, minter *addr.Address) *core.AccountState {
+	if minter == nil {
+		minter = new(addr.Address)
+		copy((*minter)[:], a[:])
+		minter[16] = '\xde'
+	}
+
+	var types []abi.ContractName
+	if t != "" {
+		types = append(types, t)
+	} else {
+		types = append(types, ContractNames(a)...)
+	}
+
+	return AddressState(a, types, minter)
+}
+
 func AddressStates(a *addr.Address, n int) (ret []*core.AccountState) {
 	for i := 0; i < n; i++ {
-		ret = append(ret, AddressState(a))
+		ret = append(ret, AddressState(a, nil, nil))
 	}
 	return ret
 }
@@ -67,44 +98,10 @@ func AccountStates(n int) (ret []*core.AccountState) {
 	return AddressStates(Address(), n)
 }
 
-func ContractData(s *core.AccountState, t abi.ContractName, minter *addr.Address) *core.AccountData {
-	if minter == nil {
-		minter = new(addr.Address)
-		copy((*minter)[:], s.Address[:])
-		minter[16] = '\xde'
-	}
-
-	data := &core.AccountData{
-		Address:           s.Address,
-		LastTxLT:          s.LastTxLT,
-		LastTxHash:        s.LastTxHash,
-		Balance:           s.Balance,
-		Types:             ContractNames(&s.Address),
-		OwnerAddress:      Address(),
-		MinterAddress:     minter,
-		NFTCollectionData: core.NFTCollectionData{NextItemIndex: BigInt()},
-		NFTRoyaltyData:    core.NFTRoyaltyData{RoyaltyAddress: Address()},
-		NFTContentData:    core.NFTContentData{ContentURI: String(16), ContentImageData: Bytes(128)},
-		NFTItemData:       core.NFTItemData{ItemIndex: BigInt()},
-		FTMasterData:      core.FTMasterData{TotalSupply: BigInt()},
-		FTWalletData:      core.FTWalletData{JettonBalance: bunbig.FromUInt64(uint64(rand.Uint32()))},
-		Errors:            []string{String(16)},
-		UpdatedAt:         s.UpdatedAt,
-	}
-	if t != "" {
-		data.Types = append(data.Types, t)
-	}
-
-	return data
-}
-
-func ContractsData(states []*core.AccountState, t abi.ContractName, minter *addr.Address) (ret []*core.AccountData) {
-	for _, s := range states {
-		ret = append(ret, ContractData(s, t, minter))
+func AccountStatesContract(n int, t abi.ContractName, minter *addr.Address) (ret []*core.AccountState) {
+	a := Address()
+	for i := 0; i < n; i++ {
+		ret = append(ret, AddressStateContract(a, t, minter))
 	}
 	return ret
-}
-
-func AccountData(states []*core.AccountState) (ret []*core.AccountData) {
-	return ContractsData(states, "", nil)
 }

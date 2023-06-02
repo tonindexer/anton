@@ -25,21 +25,14 @@ func getContractTypes(types []abi.ContractName) (ret []abi.ContractName) {
 
 func (r *Repository) AggregateAccountsHistory(ctx context.Context, req *history.AccountsReq) (*history.AccountsRes, error) {
 	var res history.AccountsRes
-	var data bool // do we need to count account_data or account_states
 
-	q := r.ch.NewSelect()
+	q := r.ch.NewSelect().Model((*core.AccountState)(nil))
 
 	if len(req.ContractTypes) > 0 {
-		q, data = q.Where("hasAny(types, [?])", ch.In(getContractTypes(req.ContractTypes))), true
+		q = q.Where("hasAny(types, [?])", ch.In(getContractTypes(req.ContractTypes)))
 	}
 	if req.MinterAddress != nil {
-		q, data = q.Where("minter_address = ?", req.MinterAddress), true
-	}
-
-	if data {
-		q = q.Model((*core.AccountData)(nil))
-	} else {
-		q = q.Model((*core.AccountState)(nil))
+		q = q.Where("minter_address = ?", req.MinterAddress)
 	}
 
 	switch req.Metric {

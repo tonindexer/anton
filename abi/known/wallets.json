@@ -22,8 +22,7 @@
     "interface_name": "wallet_v2r1",
     "code_boc": "te6cckEBAQEAVwAAqv8AIN0gggFMl7qXMO1E0NcLH+Ck8mCDCNcYINMf0x8B+CO78mPtRNDTH9P/0VExuvKhA/kBVBBC+RDyovgAApMg10qW0wfUAvsA6NGkyMsfy//J7VShNwu2",
     "get_methods": [
-      {"name": "seqno", "return_values": [{"name": "seqno", "stack_type": "int", "format": "uint32"}]},
-      {"name": "get_public_key", "return_values": [{"name": "key", "stack_type": "int", "format": "bytes"}]}
+      {"name": "seqno", "return_values": [{"name": "seqno", "stack_type": "int", "format": "uint32"}]}
     ]
   },
   {

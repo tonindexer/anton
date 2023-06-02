@@ -30,14 +30,21 @@ type Message struct {
 
 	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"  json:"hash"`
 
-	SrcAddress addr.Address `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
-	DstAddress addr.Address `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
+	SrcAddress    addr.Address  `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
+	SrcTxLT       uint64        `bun:",nullzero" json:"src_tx_lt,omitempty"`
+	SrcTxHash     []byte        `ch:"-" bun:"-" json:"src_tx_hash,omitempty"`
+	SrcWorkchain  int32         `bun:"type:integer,notnull" json:"src_workchain"`
+	SrcShard      int64         `bun:"type:bigint,notnull" json:"src_shard"`
+	SrcBlockSeqNo uint32        `bun:"type:integer,notnull" json:"src_block_seq_no"`
+	SrcState      *AccountState `ch:"-" bun:"rel:has-one,join:src_address=address,join:src_workchain=workchain,join:src_shard=shard,join:src_block_seq_no=block_seq_no" json:"src_state"`
 
-	// SourceTx initiates outgoing message.
-	// For external incoming messages SourceTx == nil.
-	SourceTxHash []byte       `bun:"type:bytea" json:"source_tx_hash,omitempty"`
-	SourceTxLT   uint64       `json:"source_tx_lt,omitempty"`
-	Source       *Transaction `ch:"-" bun:"-" json:"source,omitempty"` // TODO: join it
+	DstAddress    addr.Address  `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
+	DstTxLT       uint64        `bun:",nullzero" json:"dst_tx_lt,omitempty"`
+	DstTxHash     []byte        `ch:"-" bun:"-" json:"dst_tx_hash,omitempty"`
+	DstWorkchain  int32         `bun:"type:integer,notnull" json:"dst_workchain"`
+	DstShard      int64         `bun:"type:bigint,notnull" json:"dst_shard"`
+	DstBlockSeqNo uint32        `bun:"type:integer,notnull" json:"dst_block_seq_no"`
+	DstState      *AccountState `ch:"-" bun:"rel:has-one,join:dst_address=address,join:dst_workchain=workchain,join:dst_shard=shard,join:dst_block_seq_no=block_seq_no" json:"dst_state"`
 
 	Bounce  bool `bun:",notnull" json:"bounce"`
 	Bounced bool `bun:",notnull" json:"bounced"`
@@ -48,52 +55,25 @@ type Message struct {
 	IHRFee      *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"ihr_fee"`
 	FwdFee      *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"fwd_fee"`
 
-	Body            []byte          `bun:"type:bytea" json:"body"`
-	BodyHash        []byte          `bun:"type:bytea" json:"body_hash"`
-	OperationID     uint32          `json:"operation_id,omitempty"`
-	TransferComment string          `json:"transfer_comment,omitempty"`
-	Payload         *MessagePayload `ch:"-" bun:"rel:belongs-to,join:hash=hash,join:created_lt=created_lt" json:"payload,omitempty"`
+	Body            []byte `bun:"type:bytea" json:"body"`
+	BodyHash        []byte `bun:"type:bytea" json:"body_hash"`
+	OperationID     uint32 `json:"operation_id,omitempty"`
+	TransferComment string `json:"transfer_comment,omitempty"`
 
 	StateInitCode []byte `bun:"type:bytea" json:"state_init_code,omitempty"`
 	StateInitData []byte `bun:"type:bytea" json:"state_init_data,omitempty"`
 
-	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
-	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
+	SrcContract abi.ContractName `ch:",lc" bun:",nullzero" json:"src_contract,omitempty"`
+	DstContract abi.ContractName `ch:",lc" bun:",nullzero" json:"dst_contract,omitempty"`
 
-	Known bool `ch:"-" bun:"-" json:"-"`
-}
-
-type MessagePayload struct {
-	ch.CHModel    `ch:"message_payloads,partition:toYYYYMM(created_at)" json:"-"`
-	bun.BaseModel `bun:"table:message_payloads" json:"-"`
-
-	Type MessageType `ch:",lc" bun:"type:message_type,notnull" json:"type"`
-	Hash []byte      `ch:",pk" bun:"type:bytea,pk,notnull" json:"hash"`
-
-	SrcAddress  addr.Address     `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
-	SrcContract abi.ContractName `ch:",lc" json:"src_contract,omitempty"`
-	DstAddress  addr.Address     `ch:"type:String" bun:"type:bytea,nullzero" json:"dst_address,omitempty"`
-	DstContract abi.ContractName `ch:",lc" json:"dst_contract,omitempty"`
-
-	Amount *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"amount,omitempty"`
-
-	BodyHash      []byte          `bun:"type:bytea,notnull" json:"body_hash"`
-	OperationID   uint32          `bun:",notnull" json:"operation_id"`
-	OperationName string          `ch:",lc" bun:",notnull" json:"operation_name"`
-	DataJSON      json.RawMessage `ch:"-" bun:"type:jsonb" json:"data"` // TODO: https://github.com/uptrace/go-clickhouse/issues/22
-
-	// TODO: save fields from parsed data to payloads table
-
-	// can be used to show all jetton or nft item transfers
-	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
+	OperationName string          `ch:",lc" bun:",nullzero" json:"operation_name,omitempty"`
+	DataJSON      json.RawMessage `ch:"type:String" bun:"type:jsonb" json:"data,omitempty"`
+	Error         string          `json:"error,omitempty"`
 
 	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
 	CreatedLT uint64    `bun:",notnull" json:"created_lt"`
-
-	Error string `json:"error,omitempty"`
 }
 
 type MessageRepository interface {
 	AddMessages(ctx context.Context, tx bun.Tx, messages []*Message) error
-	AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads []*MessagePayload) error
 }

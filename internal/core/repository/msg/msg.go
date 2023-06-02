@@ -30,9 +30,8 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Message{}).
-		Column("src_address", "source_tx_lt").
-		Where("length(src_address) > 0").
-		Where("source_tx_lt > 0").
+		Column("src_address", "src_tx_lt").
+		Where("src_address IS NOT NULL").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "message src_address source_tx_lt pg create index")
@@ -40,19 +39,9 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Message{}).
-		Using("HASH").
-		Column("src_address").
-		Where("length(src_address) > 0").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "message src addr pg create index")
-	}
-
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.Message{}).
 		Unique().
 		Column("src_address", "created_lt").
-		Where("length(src_address) > 0").
+		Where("src_address IS NOT NULL").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "message src addr lt pg create unique index")
@@ -61,8 +50,18 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Message{}).
 		Using("HASH").
+		Column("src_address").
+		Where("src_address IS NOT NULL").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "message src addr pg create index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.Message{}).
+		Using("HASH").
 		Column("dst_address").
-		Where("length(dst_address) > 0").
+		Where("dst_address IS NOT NULL").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "message dst addr pg create index")
@@ -79,6 +78,7 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.Message{}).
+		Using("HASH").
 		Column("operation_id").
 		Exec(ctx)
 	if err != nil {
@@ -88,42 +88,33 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 	// message payloads
 
 	_, err = pgDB.NewCreateIndex().
-		Model(&core.MessagePayload{}).
+		Model(&core.Message{}).
 		Using("HASH").
 		Column("src_contract").
-		Where("length(src_contract) > 0").
+		Where("src_contract IS NOT NULL").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "message payload pg create src_contract index")
 	}
 
 	_, err = pgDB.NewCreateIndex().
-		Model(&core.MessagePayload{}).
+		Model(&core.Message{}).
 		Using("HASH").
 		Column("dst_contract").
-		Where("length(dst_contract) > 0").
+		Where("src_contract IS NOT NULL").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "message payload pg create dst_contract index")
 	}
 
 	_, err = pgDB.NewCreateIndex().
-		Model(&core.MessagePayload{}).
+		Model(&core.Message{}).
 		Using("HASH").
 		Column("operation_name").
+		Where("operation_name IS NOT NULL").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "message payload pg create operation name index")
-	}
-
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.MessagePayload{}).
-		Using("HASH").
-		Column("minter_address").
-		Where("length(minter_address) > 0").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "address state pg create unique index")
 	}
 
 	return nil
@@ -134,24 +125,6 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		core.ExternalIn, core.ExternalOut, core.Internal)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return errors.Wrap(err, "messages pg create enum")
-	}
-
-	_, err = chDB.NewCreateTable().
-		IfNotExists().
-		Engine("ReplacingMergeTree").
-		Model(&core.MessagePayload{}).
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "message payload ch create table")
-	}
-
-	_, err = pgDB.NewCreateTable().
-		Model(&core.MessagePayload{}).
-		IfNotExists().
-		WithForeignKeys().
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "message payload pg create table")
 	}
 
 	_, err = chDB.NewCreateTable().
@@ -172,54 +145,39 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "message pg create table")
 	}
 
-	if err := createIndexes(ctx, pgDB); err != nil {
-		return err
-	}
-
-	_, err = pgDB.ExecContext(ctx, "ALTER TABLE messages ADD CONSTRAINT messages_source_tx_hash_notnull "+
-		"CHECK (NOT (source_tx_hash IS NULL AND src_address != decode('11ff0000000000000000000000000000000000000000000000000000000000000000', 'hex')));")
+	_, err = pgDB.ExecContext(ctx, `
+ALTER TABLE messages
+ADD CONSTRAINT messages_tx_lt_notnull
+CHECK (
+    (type = 'EXTERNAL_OUT' AND src_address IS NOT NULL AND src_tx_lt IS NOT NULL AND dst_address IS NULL AND dst_tx_lt IS NULL) OR
+    (type = 'EXTERNAL_IN' AND src_address IS NULL AND src_tx_lt IS NULL AND dst_address IS NOT NULL AND dst_tx_lt IS NOT NULL) OR
+    (type = 'INTERNAL' AND (src_workchain != -1 OR dst_workchain != -1) AND src_tx_lt IS NOT NULL AND dst_tx_lt IS NOT NULL) OR
+    (type = 'INTERNAL' AND src_workchain = -1 AND dst_workchain = -1)
+)`)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return errors.Wrap(err, "messages pg create source tx hash check")
+	}
+
+	if err := createIndexes(ctx, pgDB); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*core.Message) error {
-	var unknown []*core.Message
-
-	for _, msg := range messages {
-		if msg.Known {
-			continue
+	if len(messages) == 0 {
+		return nil
+	}
+	for _, msg := range messages { // TODO: on conflict does not work with array (bun bug)
+		_, err := tx.NewInsert().Model(msg).
+			On("CONFLICT (hash) DO NOTHING"). // some external messages can be repeated with the same hash
+			Exec(ctx)
+		if err != nil {
+			return err
 		}
-		unknown = append(unknown, msg)
 	}
-
-	if len(unknown) == 0 {
-		return nil
-	}
-
-	_, err := tx.NewInsert().Model(&unknown).Exec(ctx)
-	if err != nil {
-		return err
-	}
-	_, err = r.ch.NewInsert().Model(&unknown).Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *Repository) AddMessagePayloads(ctx context.Context, tx bun.Tx, payloads []*core.MessagePayload) error {
-	if len(payloads) == 0 {
-		return nil
-	}
-	_, err := tx.NewInsert().Model(&payloads).Exec(ctx)
-	if err != nil {
-		return err
-	}
-	_, err = r.ch.NewInsert().Model(&payloads).Exec(ctx)
+	_, err := r.ch.NewInsert().Model(&messages).Exec(ctx)
 	if err != nil {
 		return err
 	}

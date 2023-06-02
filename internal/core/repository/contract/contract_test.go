@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -34,14 +34,16 @@ func initdb(t testing.TB) {
 
 	pg = bun.NewDB(sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsnPG))), pgdialect.New())
 	err = pg.Ping()
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	repo = contract.NewRepository(pg)
 }
 
 func createTables(t testing.TB) {
-	err := contract.CreateTables(context.Background(), pg)
-	assert.Nil(t, err)
+	_, err := pg.ExecContext(context.Background(), "CREATE TYPE message_type AS ENUM (?, ?, ?)", core.ExternalIn, core.ExternalOut, core.Internal)
+	require.Nil(t, err)
+	err = contract.CreateTables(context.Background(), pg)
+	require.Nil(t, err)
 }
 
 func dropTables(t testing.TB) {
@@ -49,9 +51,14 @@ func dropTables(t testing.TB) {
 	defer cancel()
 
 	_, err := pg.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
+
+	_, err = pg.ExecContext(context.Background(), "DROP TYPE message_type")
+	if err != nil && !strings.Contains(err.Error(), "does not exist") {
+		t.Fatal(err)
+	}
 }
 
 func TestRepository_AddContracts(t *testing.T) {
@@ -123,11 +130,12 @@ func TestRepository_AddContracts(t *testing.T) {
 	require.Nil(t, err)
 
 	op := &core.ContractOperation{
-		Name:         "nft_item_transfer",
-		ContractName: known.NFTItem,
-		Outgoing:     false,
-		OperationID:  0xdeadbeed,
-		Schema:       opSchema,
+		OperationName: "nft_item_transfer",
+		ContractName:  known.NFTItem,
+		MessageType:   core.Internal,
+		Outgoing:      false,
+		OperationID:   0xdeadbeed,
+		Schema:        opSchema,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -143,25 +151,25 @@ func TestRepository_AddContracts(t *testing.T) {
 
 	t.Run("insert interface", func(t *testing.T) {
 		err := repo.AddInterface(ctx, i)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 	})
 
 	t.Run("insert operation", func(t *testing.T) {
 		err := repo.AddOperation(ctx, op)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 	})
 
 	t.Run("get interfaces", func(t *testing.T) {
 		ret, err := repo.GetInterfaces(ctx)
-		assert.Nil(t, err)
-		assert.Equal(t, []*core.ContractInterface{i}, ret)
+		require.Nil(t, err)
+		require.Equal(t, []*core.ContractInterface{i}, ret)
 	})
 
 	t.Run("get operations", func(t *testing.T) {
 		ret, err := repo.GetOperations(ctx)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(ret))
-		assert.Equal(t, []*core.ContractOperation{op}, ret)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(ret))
+		require.Equal(t, []*core.ContractOperation{op}, ret)
 	})
 
 	t.Run("get operation by id", func(t *testing.T) {
@@ -171,7 +179,11 @@ func TestRepository_AddContracts(t *testing.T) {
 			op.Outgoing,
 			op.OperationID,
 		)
-		assert.Nil(t, err)
-		assert.Equal(t, op, ret)
+		require.Nil(t, err)
+		require.Equal(t, op, ret)
+	})
+
+	t.Run("drop tables", func(t *testing.T) {
+		dropTables(t)
 	})
 }

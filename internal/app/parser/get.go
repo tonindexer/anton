@@ -2,11 +2,12 @@ package parser
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"math/big"
-	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun/extra/bunbig"
 
 	"github.com/xssnick/tonutils-go/address"
@@ -29,15 +30,15 @@ func getMethodByName(i *core.ContractInterface, n string) *abi.GetMethodDesc {
 	return nil
 }
 
-func (s *Service) getMethodCall(ctx context.Context, d *abi.GetMethodDesc, acc *core.AccountState, args []any) (abi.VmStack, error) {
+func (s *Service) callGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *core.AccountState, args []any) (ret abi.GetMethodExecution, err error) {
 	var argsStack abi.VmStack
 
 	if len(acc.Code) == 0 || len(acc.Data) == 0 {
-		return nil, errors.Wrap(app.ErrImpossibleParsing, "no account code or data")
+		return ret, errors.Wrap(app.ErrImpossibleParsing, "no account code or data")
 	}
 
 	if len(d.Arguments) != len(args) {
-		return nil, errors.New("length of passed and described arguments does not match")
+		return ret, errors.New("length of passed and described arguments does not match")
 	}
 	for it := range args {
 		argsStack = append(argsStack, abi.VmValue{
@@ -46,32 +47,43 @@ func (s *Service) getMethodCall(ctx context.Context, d *abi.GetMethodDesc, acc *
 		})
 	}
 
-	code, err := cell.FromBOC(acc.Code)
+	codeBase64, dataBase64 :=
+		base64.StdEncoding.EncodeToString(acc.Code),
+		base64.StdEncoding.EncodeToString(acc.Data)
+
+	e, err := abi.NewEmulatorBase64(acc.Address.MustToTonutils(), codeBase64, dataBase64, s.bcConfigBase64)
 	if err != nil {
-		return nil, errors.Wrap(err, "account code from boc")
-	}
-	data, err := cell.FromBOC(acc.Data)
-	if err != nil {
-		return nil, errors.Wrap(err, "account data from boc")
+		return ret, errors.Wrap(err, "new emulator")
 	}
 
-	e, err := abi.NewEmulator(acc.Address.MustToTonutils(), code, data, s.bcConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "new emulator")
-	}
+	retStack, err := e.RunGetMethod(ctx, d.Name, argsStack, d.ReturnValues)
 
-	ret, err := e.RunGetMethod(ctx, d.Name, argsStack, d.ReturnValues)
-	if err != nil {
-		return nil, errors.Wrap(err, "run get method")
+	ret = abi.GetMethodExecution{
+		Name: d.Name,
 	}
-
+	for i := range argsStack {
+		ret.Receives = append(ret.Receives, argsStack[i].Payload)
+	}
+	for i := range retStack {
+		ret.Returns = append(ret.Returns, retStack[i].Payload)
+	}
+	if err != nil {
+		ret.Error = errors.Wrap(err, "run get method").Error()
+		log.Warn().Err(err).
+			Str("get_method", d.Name).
+			Str("address", acc.Address.Base64()).
+			Int32("workchain", acc.Workchain).
+			Int64("shard", acc.Shard).
+			Uint32("block_seq_no", acc.BlockSeqNo).
+			Msg("run get method")
+	}
 	return ret, nil
 }
 
 // TODO: map automatically by field names with reflect
 // TODO: check return values descriptors, do not panic on wrong type assertions
 
-func (s *Service) getMethodCallNoArgs(ctx context.Context, i *core.ContractInterface, gmName string, acc *core.AccountState) (abi.VmStack, error) {
+func (s *Service) callGetMethodNoArgs(ctx context.Context, i *core.ContractInterface, gmName string, acc *core.AccountState) (ret abi.GetMethodExecution, err error) {
 	gm := getMethodByName(i, gmName)
 	if gm == nil {
 		// we panic as contract interface was defined, but there are no standard get-method
@@ -82,15 +94,15 @@ func (s *Service) getMethodCallNoArgs(ctx context.Context, i *core.ContractInter
 		panic(fmt.Errorf("%s `%s` get-method has arguments", i.Name, gmName))
 	}
 
-	stack, err := s.getMethodCall(ctx, gm, acc, nil)
+	stack, err := s.callGetMethod(ctx, gm, acc, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "%s `%s`", i.Name, gmName)
+		return ret, errors.Wrapf(err, "%s `%s`", i.Name, gmName)
 	}
 
 	return stack, nil
 }
 
-func mapContentDataNFT(ret *core.AccountData, c any) {
+func mapContentDataNFT(ret *core.AccountState, c any) {
 	if c == nil {
 		return
 	}
@@ -113,8 +125,8 @@ func mapContentDataNFT(ret *core.AccountData, c any) {
 	}
 }
 
-func (s *Service) getNFTItemContent(ctx context.Context, collection *core.AccountState, idx *big.Int, itemContent *cell.Cell, ret *core.AccountData) {
-	stack, err := s.getMethodCall(ctx,
+func (s *Service) getNFTItemContent(ctx context.Context, collection *core.AccountState, idx *big.Int, itemContent *cell.Cell, acc *core.AccountState) {
+	exec, err := s.callGetMethod(ctx,
 		&abi.GetMethodDesc{
 			Name: "get_nft_content",
 			Arguments: []abi.VmValueDesc{{
@@ -133,136 +145,69 @@ func (s *Service) getNFTItemContent(ctx context.Context, collection *core.Accoun
 		collection, []any{idx, itemContent},
 	)
 	if err != nil {
-		ret.Errors = append(ret.Errors, err.Error())
+		log.Error().Err(err).Msg("execute get_nft_content nft_collection get-method")
 		return
 	}
-	mapContentDataNFT(ret, stack[0].Payload)
+	acc.ExecutedGetMethods[known.NFTCollection] = append(acc.ExecutedGetMethods[known.NFTCollection], exec)
+	if exec.Error != "" {
+		return
+	}
+
+	mapContentDataNFT(acc, exec.Returns[0])
 }
 
-func (s *Service) getAccountDataNFT(
+func (s *Service) callPossibleGetMethods(
 	ctx context.Context,
 	acc *core.AccountState,
-	others func(context.Context, *addr.Address) (*core.AccountState, error),
+	others func(context.Context, addr.Address) (*core.AccountState, error),
 	interfaces []*core.ContractInterface,
-	ret *core.AccountData,
 ) {
 	for _, i := range interfaces {
-		switch i.Name {
-		case known.NFTCollection:
-			stack, err := s.getMethodCallNoArgs(ctx, i, "get_collection_data", acc)
+		for it := range i.GetMethodsDesc {
+			d := &i.GetMethodsDesc[it]
+
+			if len(d.Arguments) != 0 {
+				continue
+			}
+
+			exec, err := s.callGetMethodNoArgs(ctx, i, d.Name, acc)
 			if err != nil {
-				ret.Errors = append(ret.Errors, err.Error())
+				log.Error().Err(err).Str("contract_name", string(i.Name)).Str("get_method", d.Name).Msg("execute get-method")
+				return
+			}
+
+			acc.ExecutedGetMethods[i.Name] = append(acc.ExecutedGetMethods[i.Name], exec)
+			if exec.Error != "" {
 				continue
 			}
 
-			ret.NFTCollectionData.NextItemIndex = bunbig.FromMathBig(stack[0].Payload.(*big.Int)) //nolint:forcetypeassert // panic on wrong interface
-			ret.OwnerAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address))         //nolint:forcetypeassert // panic on wrong interface
-			mapContentDataNFT(ret, stack[1].Payload)
+			switch d.Name {
+			case "get_collection_data":
+				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+				mapContentDataNFT(acc, exec.Returns[1])
 
-		case known.NFTRoyalty:
-			stack, err := s.getMethodCallNoArgs(ctx, i, "royalty_params", acc)
-			if err != nil {
-				ret.Errors = append(ret.Errors, err.Error())
-				continue
+			case "get_nft_data":
+				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[3].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
+
+				if acc.MinterAddress == nil {
+					continue
+				}
+				collection, err := others(ctx, *acc.MinterAddress)
+				if err != nil {
+					log.Error().Err(err).Msg("get nft collection state")
+					return
+				}
+				s.getNFTItemContent(ctx, collection, exec.Returns[1].(*big.Int), exec.Returns[4].(*cell.Cell), acc) //nolint:forcetypeassert // panic on wrong interface
+
+			case "get_jetton_data":
+				mapContentDataNFT(acc, exec.Returns[3])
+
+			case "get_wallet_data":
+				acc.JettonBalance = bunbig.FromMathBig(exec.Returns[0].(*big.Int))            //nolint:forcetypeassert // panic on wrong interface
+				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[1].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
+				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
 			}
-
-			ret.NFTRoyaltyData.RoyaltyBase = stack[0].Payload.(uint16)                                     //nolint:forcetypeassert // panic on wrong interface
-			ret.NFTRoyaltyData.RoyaltyFactor = stack[1].Payload.(uint16)                                   //nolint:forcetypeassert // panic on wrong interface
-			ret.NFTRoyaltyData.RoyaltyAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-
-		case known.NFTItem:
-			stack, err := s.getMethodCallNoArgs(ctx, i, "get_nft_data", acc)
-			if err != nil {
-				ret.Errors = append(ret.Errors, err.Error())
-				continue
-			}
-
-			ret.NFTItemData.Initialized = stack[0].Payload.(bool)                          //nolint:forcetypeassert // panic on wrong interface
-			ret.NFTItemData.ItemIndex = bunbig.FromMathBig(stack[1].Payload.(*big.Int))    //nolint:forcetypeassert // panic on wrong interface
-			ret.MinterAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-			ret.OwnerAddress = addr.MustFromTonutils(stack[3].Payload.(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
-
-			if ret.MinterAddress == nil {
-				continue
-			}
-			collection, err := others(ctx, ret.MinterAddress)
-			if err != nil {
-				ret.Errors = append(ret.Errors, errors.Wrap(err, "get nft collection state").Error())
-				continue
-			}
-			s.getNFTItemContent(ctx, collection, stack[1].Payload.(*big.Int), stack[4].Payload.(*cell.Cell), ret) //nolint:forcetypeassert // panic on wrong interface
-
-		case known.NFTEditable:
-			stack, err := s.getMethodCallNoArgs(ctx, i, "get_editor", acc)
-			if err != nil {
-				ret.Errors = append(ret.Errors, err.Error())
-				continue
-			}
-
-			ret.NFTEditable.EditorAddress = addr.MustFromTonutils(stack[0].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
 		}
-	}
-}
-
-func (s *Service) getAccountDataFT(
-	ctx context.Context,
-	acc *core.AccountState,
-	_ func(context.Context, *addr.Address) (*core.AccountState, error),
-	interfaces []*core.ContractInterface,
-	ret *core.AccountData) {
-	for _, i := range interfaces {
-		switch i.Name {
-		case known.JettonMinter:
-			stack, err := s.getMethodCallNoArgs(ctx, i, "get_jetton_data", acc)
-			if err != nil {
-				ret.Errors = append(ret.Errors, err.Error())
-				continue
-			}
-
-			ret.FTMasterData.TotalSupply = bunbig.FromMathBig(stack[0].Payload.(*big.Int))             //nolint:forcetypeassert // panic on wrong interface
-			ret.FTMasterData.Mintable = stack[1].Payload.(bool)                                        //nolint:forcetypeassert // panic on wrong interface
-			ret.FTMasterData.AdminAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-			mapContentDataNFT(ret, stack[3].Payload)
-
-		case known.JettonWallet:
-			stack, err := s.getMethodCallNoArgs(ctx, i, "get_wallet_data", acc)
-			if err != nil {
-				ret.Errors = append(ret.Errors, err.Error())
-				continue
-			}
-
-			ret.FTWalletData.JettonBalance = bunbig.FromMathBig(stack[0].Payload.(*big.Int)) //nolint:forcetypeassert // panic on wrong interface
-			ret.OwnerAddress = addr.MustFromTonutils(stack[1].Payload.(*address.Address))    //nolint:forcetypeassert // panic on wrong interface
-			ret.MinterAddress = addr.MustFromTonutils(stack[2].Payload.(*address.Address))   //nolint:forcetypeassert // panic on wrong interface
-		}
-	}
-}
-
-func (s *Service) getAccountDataWallet(
-	ctx context.Context,
-	acc *core.AccountState,
-	_ func(context.Context, *addr.Address) (*core.AccountState, error),
-	interfaces []*core.ContractInterface,
-	ret *core.AccountData,
-) {
-	for _, i := range interfaces {
-		if !strings.HasPrefix(string(i.Name), "wallet") {
-			continue
-		}
-		if len(i.GetMethodsDesc) == 0 {
-			continue
-		}
-
-		stack, err := s.getMethodCallNoArgs(ctx, i, "seqno", acc)
-		if err != nil {
-			ret.Errors = append(ret.Errors, err.Error())
-			continue
-		}
-		if len(stack) != 1 || stack[0].Format != "uint32" {
-			// we panic as standard contract interface has the wrong description
-			panic(fmt.Errorf("wrong wallet `seqno` get-method description"))
-		}
-
-		ret.WalletSeqNo = uint64(stack[0].Payload.(uint32)) //nolint:forcetypeassert // panic on wrong interface
 	}
 }

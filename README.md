@@ -55,6 +55,7 @@ To explore how Anton stores data, visit the [migrations' directory](/migrations)
 | `core/repository` | implements database repositories with filters and aggregation                    |
 | `app`             | contains all services interfaces and their configs                               |
 | `app/parser`      | service determines contract interfaces, parse contract data and message payloads | 
+| `app/fetcher`     | service concurrently fetches data from blockchain                                | 
 | `app/indexer`     | service scans blocks and save parsed data to databases                           |
 | `app/query`       | service aggregates database repositories                                         |
 | `api/http`        | implements the REST API                                                          |
@@ -102,16 +103,18 @@ cp .env.example .env
 nano .env
 ```
 
-| Name          | Description                       | Default  | Example                                                            |
-|---------------|-----------------------------------|----------|--------------------------------------------------------------------|
-| `DB_NAME`     | Database name                     |          | idx                                                                |
-| `DB_USERNAME` | Database username                 |          | user                                                               |
-| `DB_PASSWORD` | Database password                 |          | pass                                                               |
-| `DB_CH_URL`   | Clickhouse URL to connect to      |          | clickhouse://clickhouse:9000/db_name?sslmode=disable               |
-| `DB_PG_URL`   | PostgreSQL URL to connect to      |          | postgres://username:password@postgres:5432/db_name?sslmode=disable |
-| `FROM_BLOCK`  | Master chain seq_no to start from | 22222022 | 23532000                                                           |
-| `LITESERVERS` | Lite servers to connect to        |          | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=  |
-| `DEBUG_LOGS`  | Debug logs enabled                | false    | true                                                               |
+| Name                 | Description                       | Default | Example                                                            |
+|----------------------|-----------------------------------|---------|--------------------------------------------------------------------|
+| `DB_NAME`            | Database name                     |         | idx                                                                |
+| `DB_USERNAME`        | Database username                 |         | user                                                               |
+| `DB_PASSWORD`        | Database password                 |         | pass                                                               |
+| `DB_CH_URL`          | Clickhouse URL to connect to      |         | clickhouse://clickhouse:9000/db_name?sslmode=disable               |
+| `DB_PG_URL`          | PostgreSQL URL to connect to      |         | postgres://username:password@postgres:5432/db_name?sslmode=disable |
+| `FROM_BLOCK`         | Master chain seq_no to start from | 1       | 23532000                                                           |
+| `WORKERS`            | Number of indexer workers         | 4       | 8                                                                  |
+| `INSERT_BLOCK_BATCH` | Insert block data in batches      | 10      | 100                                                                |
+| `LITESERVERS`        | Lite servers to connect to        |         | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=  |
+| `DEBUG_LOGS`         | Debug logs enabled                | false   | true                                                               |
 
 ### Building
 
@@ -133,7 +136,7 @@ docker compose pull
 We have several options for compose run via [override files](https://docs.docker.com/compose/extends/#multiple-compose-files):
 * base (docker-compose.yml) - allows to run services with near default configuration;
 * dev (docker-compose.dev.yml) - allows to rebuild Anton image locally and exposes databases ports;
-* prod (docker-compose.prod.yml) - allows to configure and backup databases, requires at least 64GB RAM.
+* prod (docker-compose.prod.yml) - allows to configure and backup databases, requires at least 128GB RAM.
 
 You can combine it by your own. Also, there are optional [profiles](https://docs.docker.com/compose/profiles/):
 * migrate - runs optional migrations service.
@@ -147,7 +150,7 @@ docker compose up -d
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # run prod compose
-# WARNING: requires at least 64GB RAM
+# WARNING: requires at least 128GB RAM
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
@@ -228,3 +231,11 @@ docker compose exec web anton contract "/var/anton/known/tep81_dns.json"
 docker compose exec web anton contract delete "dns_nft_item"
 ```
 
+### Add address label
+
+```shell
+docker compose exec web anton label "EQDj5AA8mQvM5wJEQsFFFof79y3ZsuX6wowktWQFhz_Anton" "anton.tools"
+
+# known tonscan labels
+docker compose exec web anton label --tonscan
+```
