@@ -44,6 +44,14 @@ type Block struct {
 	ScannedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"scanned_at"`
 }
 
+func (b *Block) ID() BlockID {
+	return BlockID{
+		Workchain: b.Workchain,
+		Shard:     b.Shard,
+		SeqNo:     b.SeqNo,
+	}
+}
+
 type BlockRepository interface {
 	AddBlocks(ctx context.Context, tx bun.Tx, info []*Block) error
 	GetLastMasterBlock(ctx context.Context) (*Block, error)
