@@ -157,11 +157,15 @@ func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message
 
 func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 	var (
+		masterShardsMap = make(map[core.BlockID][]core.BlockID)
+		shardsMasterMap = make(map[core.BlockID]core.BlockID)
+
 		blockInfo = make(map[uint32][]*core.Block)
 		blockTx   = make(map[uint32][]*core.Transaction)
 		blockAcc  = make(map[uint32][]*core.AccountState)
 		blockMsg  = make(map[uint32][]*core.Message)
-		lastLog   = time.Now()
+
+		lastLog = time.Now()
 	)
 
 	t := time.NewTicker(100 * time.Millisecond)
@@ -186,7 +190,11 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 
 		var newBlocks = []*core.Block{newMaster}
 		for i := range b.shards {
-			newBlocks = append(newBlocks, b.shards[i].block)
+			newShard := b.shards[i].block
+			newBlocks = append(newBlocks, newShard)
+
+			masterShardsMap[newMaster.ID()] = append(masterShardsMap[newMaster.ID()], newShard.ID())
+			shardsMasterMap[newShard.ID()] = newMaster.ID()
 		}
 
 		var newTransactions []*core.Transaction
@@ -203,8 +211,22 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			continue
 		}
 
-		if len(s.unknownDstMsg) != 0 {
-			continue
+		var minMasterSeq uint32 = 1e9
+		for _, msg := range s.unknownDstMsg {
+			if msg.SrcWorkchain == -1 && msg.SrcBlockSeqNo < minMasterSeq {
+				minMasterSeq = msg.SrcBlockSeqNo
+				continue
+			}
+			blockID := core.BlockID{
+				Workchain: msg.SrcWorkchain,
+				Shard:     msg.SrcShard,
+				SeqNo:     msg.SrcBlockSeqNo,
+			}
+			master := shardsMasterMap[blockID]
+			if master.SeqNo < minMasterSeq {
+				minMasterSeq = master.SeqNo
+				continue
+			}
 		}
 
 		var (
@@ -213,20 +235,46 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			insertAcc    []*core.AccountState
 			insertMsg    []*core.Message
 		)
-		for _, blocks := range blockInfo {
+		for seq, blocks := range blockInfo {
+			if seq >= minMasterSeq {
+				continue
+			}
 			insertBlocks = append(insertBlocks, blocks...)
+			delete(blockInfo, seq)
 		}
-		for _, tx := range blockTx {
+		for seq, tx := range blockTx {
+			if seq >= minMasterSeq {
+				continue
+			}
 			insertTx = append(insertTx, tx...)
+			delete(blockTx, seq)
 		}
-		for _, acc := range blockAcc {
+		for seq, acc := range blockAcc {
+			if seq >= minMasterSeq {
+				continue
+			}
 			insertAcc = append(insertAcc, acc...)
+			delete(blockAcc, seq)
 		}
-		for _, msg := range blockMsg {
+		for seq, msg := range blockMsg {
+			if seq >= minMasterSeq {
+				continue
+			}
 			insertMsg = append(insertMsg, msg...)
+			delete(blockMsg, seq)
 		}
 		if err := s.insertData(insertAcc, insertMsg, insertTx, insertBlocks); err != nil {
 			panic(err)
+		}
+
+		for master, shards := range masterShardsMap {
+			if master.SeqNo >= minMasterSeq {
+				continue
+			}
+			for _, shard := range shards {
+				delete(shardsMasterMap, shard)
+			}
+			delete(masterShardsMap, master)
 		}
 
 		lvl := log.Debug()
