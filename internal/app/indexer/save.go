@@ -90,16 +90,10 @@ func (s *Service) uniqAccounts(transactions []*core.Transaction) []*core.Account
 func (s *Service) addMessage(msg *core.Message, uniqMsg map[string]*core.Message) {
 	id := string(msg.Hash)
 
-	for seq, m := range s.unknownDstMsg {
-		srcMsg, ok := m[id]
-		if !ok {
-			continue
-		}
+	srcMsg, ok := s.unknownDstMsg[id]
+	if ok {
 		uniqMsg[id] = srcMsg
-		delete(m, id)
-		if len(m) == 0 {
-			delete(s.unknownDstMsg, seq)
-		}
+		delete(s.unknownDstMsg, id)
 	}
 
 	if _, ok := uniqMsg[id]; !ok {
@@ -155,10 +149,7 @@ func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message
 		}
 
 		// unknown destination, waiting for next transactions
-		if _, ok := s.unknownDstMsg[msg.SrcBlockSeqNo]; !ok {
-			s.unknownDstMsg[msg.SrcBlockSeqNo] = make(map[string]*core.Message)
-		}
-		s.unknownDstMsg[msg.SrcBlockSeqNo][string(msg.Hash)] = msg
+		s.unknownDstMsg[string(msg.Hash)] = msg
 	}
 
 	return ret
@@ -166,11 +157,11 @@ func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message
 
 func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 	var (
-		insertBlocks []*core.Block
-		insertTx     []*core.Transaction
-		insertAcc    []*core.AccountState
-		insertMsg    []*core.Message
-		lastLog      = time.Now()
+		blockInfo = make(map[uint32][]*core.Block)
+		blockTx   = make(map[uint32][]*core.Transaction)
+		blockAcc  = make(map[uint32][]*core.AccountState)
+		blockMsg  = make(map[uint32][]*core.Message)
+		lastLog   = time.Now()
 	)
 
 	t := time.NewTicker(100 * time.Millisecond)
@@ -193,32 +184,50 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			Int("shards", len(b.shards)).
 			Msg("new master")
 
-		newBlocks := b.shards
-		newBlocks = append(newBlocks, b.master)
-		var newTransactions []*core.Transaction
-
-		for i := range newBlocks {
-			newBlock := newBlocks[i].block
-			insertBlocks = append(insertBlocks, newBlock)
-			newTransactions = append(newTransactions, newBlock.Transactions...)
+		var newBlocks = []*core.Block{newMaster}
+		for i := range b.shards {
+			newBlocks = append(newBlocks, b.shards[i].block)
 		}
 
-		insertTx = append(insertTx, newTransactions...)
-		insertAcc = append(insertAcc, s.uniqAccounts(newTransactions)...)
-		insertMsg = append(insertMsg, s.uniqMessages(newTransactions)...)
+		var newTransactions []*core.Transaction
+		for i := range newBlocks {
+			newTransactions = append(newTransactions, newBlocks[i].Transactions...)
+		}
+
+		blockInfo[newMaster.SeqNo] = newBlocks
+		blockTx[newMaster.SeqNo] = newTransactions
+		blockAcc[newMaster.SeqNo] = s.uniqAccounts(newTransactions)
+		blockMsg[newMaster.SeqNo] = s.uniqMessages(newTransactions)
+
+		if len(blockInfo) < s.InsertBlockBatch {
+			continue
+		}
 
 		if len(s.unknownDstMsg) != 0 {
 			continue
 		}
 
-		if len(insertBlocks) < s.InsertBlockBatch {
-			continue
+		var (
+			insertBlocks []*core.Block
+			insertTx     []*core.Transaction
+			insertAcc    []*core.AccountState
+			insertMsg    []*core.Message
+		)
+		for _, blocks := range blockInfo {
+			insertBlocks = append(insertBlocks, blocks...)
 		}
-
+		for _, tx := range blockTx {
+			insertTx = append(insertTx, tx...)
+		}
+		for _, acc := range blockAcc {
+			insertAcc = append(insertAcc, acc...)
+		}
+		for _, msg := range blockMsg {
+			insertMsg = append(insertMsg, msg...)
+		}
 		if err := s.insertData(insertAcc, insertMsg, insertTx, insertBlocks); err != nil {
 			panic(err)
 		}
-		insertAcc, insertMsg, insertTx, insertBlocks = nil, nil, nil, nil
 
 		lvl := log.Debug()
 		if time.Since(lastLog) > time.Minute {

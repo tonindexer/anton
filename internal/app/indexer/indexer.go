@@ -27,7 +27,7 @@ type Service struct {
 
 	threaded bool
 
-	unknownDstMsg map[uint32]map[string]*core.Message
+	unknownDstMsg map[string]*core.Message
 
 	run bool
 	mx  sync.RWMutex
@@ -47,7 +47,7 @@ func NewService(cfg *app.IndexerConfig) *Service {
 
 	s.threaded = true
 
-	s.unknownDstMsg = make(map[uint32]map[string]*core.Message)
+	s.unknownDstMsg = make(map[string]*core.Message)
 
 	return s
 }
