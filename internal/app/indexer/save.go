@@ -269,6 +269,9 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			insertMsg = append(insertMsg, msg...)
 			delete(blockMsg, seq)
 		}
+		if len(insertAcc) == 0 && len(insertMsg) == 0 && len(insertTx) == 0 && len(insertBlocks) == 0 {
+			continue
+		}
 		if err := s.insertData(insertAcc, insertMsg, insertTx, insertBlocks); err != nil {
 			panic(err)
 		}
@@ -294,6 +297,8 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			Int("pending_tx", len(blockTx)).
 			Int("pending_acc", len(blockAcc)).
 			Int("pending_msg", len(blockMsg)).
+			Int("unknownDstMsg", len(s.unknownDstMsg)).
+			Uint32("minMasterSeq", minMasterSeq).
 			Msg("inserted new block")
 	}
 }
