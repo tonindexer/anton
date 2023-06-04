@@ -270,6 +270,7 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			delete(blockMsg, seq)
 		}
 		if len(insertAcc) == 0 && len(insertMsg) == 0 && len(insertTx) == 0 && len(insertBlocks) == 0 {
+			log.Debug().Uint32("master_seq_no", newMaster.SeqNo).Uint32("min_master_seq", minMasterSeq).Msg("no data to insert")
 			continue
 		}
 		if err := s.insertData(insertAcc, insertMsg, insertTx, insertBlocks); err != nil {
@@ -297,8 +298,8 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			Int("pending_tx", len(blockTx)).
 			Int("pending_acc", len(blockAcc)).
 			Int("pending_msg", len(blockMsg)).
-			Int("unknownDstMsg", len(s.unknownDstMsg)).
-			Uint32("minMasterSeq", minMasterSeq).
+			Int("unknown_dst_msg", len(s.unknownDstMsg)).
+			Uint32("min_master_seq", minMasterSeq).
 			Msg("inserted new block")
 	}
 }
