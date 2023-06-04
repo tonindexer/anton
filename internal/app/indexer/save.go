@@ -287,6 +287,6 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			lvl = log.Info()
 			lastLog = time.Now()
 		}
-		lvl.Uint32("master_seq_no", newMaster.SeqNo).Msg("inserted new block")
+		lvl.Int("pending_blocks", len(blockInfo)).Uint32("master_seq_no", newMaster.SeqNo).Msg("inserted new block")
 	}
 }
