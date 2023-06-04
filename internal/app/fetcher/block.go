@@ -3,6 +3,7 @@ package fetcher
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/ton"
@@ -96,8 +97,11 @@ func (s *Service) UnseenBlocks(ctx context.Context, masterSeqNo uint32) (master 
 		shardLastSeqNo[getShardID(shard)] = shard.SeqNo
 	}
 
+	ctxNotSeen, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+
 	for _, shard := range curShards {
-		notSeen, err := s.getNotSeenShards(ctx, shard, shardLastSeqNo)
+		notSeen, err := s.getNotSeenShards(ctxNotSeen, shard, shardLastSeqNo)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "get not seen shards")
 		}

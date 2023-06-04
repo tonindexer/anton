@@ -24,6 +24,9 @@ func (s *Service) getTransaction(ctx context.Context, b *ton.BlockIDExt, id ton.
 		err error
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+
 	a := address.NewAddress(0, byte(b.Workchain), id.Account)
 
 	var wg sync.WaitGroup
@@ -124,6 +127,13 @@ func (s *Service) getTransactions(ctx context.Context, b *ton.BlockIDExt, ids []
 	return results, nil
 }
 
+func (s *Service) fetchTxIDs(ctx context.Context, b *ton.BlockIDExt, after *ton.TransactionID3) ([]ton.TransactionShortInfo, bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+
+	return s.API.GetBlockTransactionsV2(ctx, b, 100, after)
+}
+
 func (s *Service) BlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*core.Transaction, error) {
 	var (
 		after        *ton.TransactionID3
@@ -138,8 +148,7 @@ func (s *Service) BlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*
 	for more {
 		fetchedIDs, more, err = s.API.GetBlockTransactionsV2(ctx, b, 100, after)
 		if err != nil {
-			return nil, errors.Wrapf(err, "get b transactions (workchain = %d, seq = %d)",
-				b.Workchain, b.SeqNo)
+			return nil, errors.Wrapf(err, "get block transactions (workchain = %d, seq = %d)", b.Workchain, b.SeqNo)
 		}
 		if more {
 			after = fetchedIDs[len(fetchedIDs)-1].ID3()
