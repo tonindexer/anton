@@ -143,6 +143,7 @@ func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message
 
 		if msg.SrcTxLT == 0 && msg.DstTxLT != 0 {
 			if msg.SrcAddress.Workchain() == -1 && msg.DstAddress.Workchain() == -1 {
+				ret = append(ret, msg)
 				continue
 			}
 			_, err := s.msgRepo.FilterMessages(context.Background(), &filter.MessagesReq{Hash: msg.Hash})
