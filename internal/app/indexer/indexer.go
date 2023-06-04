@@ -9,6 +9,7 @@ import (
 
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/repository"
 	"github.com/tonindexer/anton/internal/core/repository/account"
 	"github.com/tonindexer/anton/internal/core/repository/block"
 	"github.com/tonindexer/anton/internal/core/repository/msg"
@@ -22,7 +23,7 @@ type Service struct {
 
 	blockRepo   core.BlockRepository
 	txRepo      core.TransactionRepository
-	msgRepo     core.MessageRepository
+	msgRepo     repository.Message
 	accountRepo core.AccountRepository
 
 	threaded bool

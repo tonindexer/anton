@@ -11,6 +11,7 @@ import (
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 )
 
 func (s *Service) insertData(
@@ -143,6 +144,10 @@ func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message
 		if msg.SrcTxLT == 0 && msg.DstTxLT != 0 {
 			if msg.SrcAddress.Workchain() == -1 && msg.DstAddress.Workchain() == -1 {
 				continue
+			}
+			_, err := s.msgRepo.FilterMessages(context.Background(), &filter.MessagesReq{Hash: msg.Hash})
+			if err == nil {
+				continue // message is already in a database
 			}
 			panic(fmt.Errorf("unknown source message with dst tx hash %x on block (%d, %x, %d) from %s to %s",
 				msg.DstTxHash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
