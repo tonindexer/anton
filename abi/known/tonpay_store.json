@@ -1,0 +1,473 @@
+{
+  "interface": "tonpay_store",
+  "addresses": [],
+  "code_boc": "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",
+  "definitions": {},
+  "in_messages": [
+    {
+      "op_name": "issue_invoice",
+      "op_code": "0x4b4e70b0",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        },
+        {
+          "name": "has_customer",
+          "tlb_type": "## 2",
+          "format": "int8"
+        },
+        {
+          "name": "customer_address",
+          "tlb_type": "^",
+          "format": "addr"
+        },
+        {
+          "name": "invoice_id",
+          "tlb_type": "^",
+          "format": "string"
+        },
+        {
+          "name": "metadata",
+          "tlb_type": "^",
+          "format": "string"
+        },
+        {
+          "name": "amount",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        },
+        {
+          "name": "accepts_jetton",
+          "tlb_type": "## 2",
+          "format": "int8"
+        },
+        {
+          "name": "jetton_master_address",
+          "tlb_type": "addr",
+          "format": "addr"
+        },
+        {
+          "name": "jetton_wallet_code",
+          "tlb_type": "^",
+          "format": "cell"
+        }
+      ]
+    },
+    {
+      "op_name": "jetton_transfer_notification",
+      "op_code": "0x7362d09c",
+      "body": [
+        {
+          "name": "jetton_amount_received",
+          "tlb_type": ".",
+          "format": "coins"
+        },
+        {
+          "name": "sender_user_address",
+          "tlb_type": "addr",
+          "format": "addr"
+        },
+        {
+          "name": "forward_payload",
+          "tlb_type": "either . ^",
+          "format": "struct",
+          "struct_fields": [
+            {
+              "name": "op_code",
+              "tlb_type": "## 32",
+              "format": "uint32"
+            },
+            {
+              "name": "jetton_wallet_code",
+              "tlb_type": "^",
+              "format": "cell"
+            },
+            {
+              "name": "jetton_master_address",
+              "tlb_type": "addr",
+              "format": "addr"
+            },
+            {
+              "name": "invoice_id",
+              "tlb_type": "^",
+              "format": "string"
+            },
+            {
+              "name": "metadata",
+              "tlb_type": "^",
+              "format": "string"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "op_name": "request_purchase",
+      "op_code": "0x36b795b5",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        },
+        {
+          "name": "invoice_id",
+          "tlb_type": "^",
+          "format": "string"
+        },
+        {
+          "name": "metadata",
+          "tlb_type": "^",
+          "format": "string"
+        },
+        {
+          "name": "amount",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        }
+      ]
+    },
+    {
+      "op_name": "edit_store",
+      "op_code": "0xa0b2b61d",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        },
+        {
+          "name": "new_name",
+          "tlb_type": "^",
+          "format": "string"
+        },
+        {
+          "name": "new_description",
+          "tlb_type": "^",
+          "format": "string"
+        },
+        {
+          "name": "new_image",
+          "tlb_type": "^",
+          "format": "string"
+        },
+        {
+          "name": "new_webhook",
+          "tlb_type": "^",
+          "format": "string"
+        },
+        {
+          "name": "new_mcc_code",
+          "tlb_type": "## 16",
+          "format": "uint16"
+        }
+      ]
+    },
+    {
+      "op_name": "deactivate_store",
+      "op_code": "0xf9bf9637",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        }
+      ]
+    },
+    {
+      "op_name": "activate_store",
+      "op_code": "0x97500daf",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        }
+      ]
+    },
+    {
+      "op_name": "upgrade_code_full",
+      "op_code": "0xb43bbb52",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        },
+        {
+          "name": "new_store_code",
+          "tlb_type": "^",
+          "format": "cell"
+        },
+        {
+          "name": "new_invoice_code",
+          "tlb_type": "^",
+          "format": "cell"
+        },
+        {
+          "name": "has_new_data",
+          "tlb_type": "## 2",
+          "format": "int8"
+        },
+        {
+          "name": "new_store_data",
+          "tlb_type": "^",
+          "format": "cell"
+        }
+      ]
+    },
+    {
+      "op_name": "upgrade_code_store",
+      "op_code": "0xacb08f28",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        },
+        {
+          "name": "new_store_code",
+          "tlb_type": "^",
+          "format": "cell"
+        },
+        {
+          "name": "has_new_data",
+          "tlb_type": "## 2",
+          "format": "int8"
+        },
+        {
+          "name": "new_store_data",
+          "tlb_type": "^",
+          "format": "cell"
+        }
+      ]
+    },
+    {
+      "op_name": "upgrade_code_invoice",
+      "op_code": "0xb5f1424f",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        },
+        {
+          "name": "new_invoice_code",
+          "tlb_type": "^",
+          "format": "cell"
+        }
+      ]
+    }
+  ],
+  "out_messages": [
+    {
+      "op_name": "pay_invoice",
+      "op_code": "0xf53a02d3",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        },
+        {
+          "name": "sender_address",
+          "tlb_type": "addr",
+          "format": "addr"
+        }
+      ]
+    },
+    {
+      "op_name": "jetton_transfer",
+      "op_code": "0xf8a7ea5",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        },
+        {
+          "name": "jetton_amount",
+          "tlb_type": ".",
+          "format": "coins"
+        },
+        {
+          "name": "recipient_address",
+          "tlb_type": "addr",
+          "format": "addr"
+        },
+        {
+          "name": "response_address",
+          "tlb_type": "addr",
+          "format": "addr"
+        },
+        {
+          "name": "response_payload",
+          "tlb_type": "maybe ^",
+          "format": "cell"
+        },
+        {
+          "name": "forward_fee",
+          "tlb_type": ".",
+          "format": "coins"
+        },
+        {
+          "name": "forward_payload",
+          "tlb_type": "either . ^",
+          "format": "cell"
+        }
+      ]
+    }
+  ],
+  "get_methods": [
+    {
+      "name": "get_store_data",
+      "arguments": [],
+      "return_values": [
+        {
+          "name": "owner",
+          "stack_type": "slice",
+          "format": "addr"
+        },
+        {
+          "name": "name",
+          "stack_type": "cell",
+          "format": "string"
+        },
+        {
+          "name": "description",
+          "stack_type": "cell",
+          "format": "string"
+        },
+        {
+          "name": "image",
+          "stack_type": "cell",
+          "format": "string"
+        },
+        {
+          "name": "webhook",
+          "stack_type": "cell",
+          "format": "string"
+        },
+        {
+          "name": "mcc_code",
+          "stack_type": "int",
+          "format": "uint16"
+        },
+        {
+          "name": "active",
+          "stack_type": "int",
+          "format": "int8"
+        },
+        {
+          "name": "invoice_code",
+          "stack_type": "cell"
+        },
+        {
+          "name": "contract_version",
+          "stack_type": "int",
+          "format": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "get_store_version",
+      "arguments": [],
+      "return_values": [
+        {
+          "name": "contract_version",
+          "stack_type": "int",
+          "format": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "get_store_owner",
+      "arguments": [],
+      "return_values": [
+        {
+          "name": "owner",
+          "stack_type": "slice",
+          "format": "addr"
+        }
+      ]
+    },
+    {
+      "name": "get_store_name",
+      "arguments": [],
+      "return_values": [
+        {
+          "name": "name",
+          "stack_type": "cell",
+          "format": "string"
+        }
+      ]
+    },
+    {
+      "name": "get_store_description",
+      "arguments": [],
+      "return_values": [
+        {
+          "name": "description",
+          "stack_type": "cell",
+          "format": "string"
+        }
+      ]
+    },
+    {
+      "name": "get_store_image",
+      "arguments": [],
+      "return_values": [
+        {
+          "name": "image",
+          "stack_type": "cell",
+          "format": "string"
+        }
+      ]
+    },
+    {
+      "name": "get_store_webhook",
+      "arguments": [],
+      "return_values": [
+        {
+          "name": "webhook",
+          "stack_type": "cell",
+          "format": "string"
+        }
+      ]
+    },
+    {
+      "name": "get_store_mcc_code",
+      "arguments": [],
+      "return_values": [
+        {
+          "name": "mcc_code",
+          "stack_type": "int",
+          "format": "uint16"
+        }
+      ]
+    },
+    {
+      "name": "get_store_active",
+      "arguments": [],
+      "return_values": [
+        {
+          "name": "active",
+          "stack_type": "int",
+          "format": "int8"
+        }
+      ]
+    },
+    {
+      "name": "get_store_invoice_code",
+      "arguments": [],
+      "return_values": [
+        {
+          "name": "invoice_code",
+          "stack_type": "cell"
+        }
+      ]
+    }
+  ]
+}
