@@ -48,28 +48,28 @@ func (s *Service) insertData(
 	}
 
 	if err := func() error {
-		defer app.TimeTrack(time.Now(), "AddAccountStates")
+		defer app.TimeTrack(time.Now(), "AddAccountStates(%d)", len(acc))
 		return s.accountRepo.AddAccountStates(ctx, dbTx, acc)
 	}(); err != nil {
 		return errors.Wrap(err, "add account states")
 	}
 
 	if err := func() error {
-		defer app.TimeTrack(time.Now(), "AddMessages")
+		defer app.TimeTrack(time.Now(), "AddMessages(%d)", len(msg))
 		return s.msgRepo.AddMessages(ctx, dbTx, msg)
 	}(); err != nil {
 		return errors.Wrap(err, "add messages")
 	}
 
 	if err := func() error {
-		defer app.TimeTrack(time.Now(), "AddTransactions")
+		defer app.TimeTrack(time.Now(), "AddTransactions(%d)", len(tx))
 		return s.txRepo.AddTransactions(ctx, dbTx, tx)
 	}(); err != nil {
 		return errors.Wrap(err, "add transactions")
 	}
 
 	if err := func() error {
-		defer app.TimeTrack(time.Now(), "AddBlocks")
+		defer app.TimeTrack(time.Now(), "AddBlocks(%d)", len(b))
 		return s.blockRepo.AddBlocks(ctx, dbTx, b)
 	}(); err != nil {
 		return errors.Wrap(err, "add blocks")
