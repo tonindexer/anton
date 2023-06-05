@@ -22,8 +22,6 @@ func (s *Service) insertData(
 ) error {
 	ctx := context.Background()
 
-	defer app.TimeTrack(time.Now(), "insertData")
-
 	dbTx, err := s.DB.PG.Begin()
 	if err != nil {
 		return errors.Wrap(err, "cannot begin db tx")
@@ -49,17 +47,32 @@ func (s *Service) insertData(
 		}
 	}
 
-	if err := s.accountRepo.AddAccountStates(ctx, dbTx, acc); err != nil {
+	if err := func() error {
+		defer app.TimeTrack(time.Now(), "AddAccountStates")
+		return s.accountRepo.AddAccountStates(ctx, dbTx, acc)
+	}(); err != nil {
 		return errors.Wrap(err, "add account states")
 	}
-	if err := s.msgRepo.AddMessages(ctx, dbTx, msg); err != nil {
+
+	if err := func() error {
+		defer app.TimeTrack(time.Now(), "AddMessages")
+		return s.msgRepo.AddMessages(ctx, dbTx, msg)
+	}(); err != nil {
 		return errors.Wrap(err, "add messages")
 	}
-	if err := s.txRepo.AddTransactions(ctx, dbTx, tx); err != nil {
+
+	if err := func() error {
+		defer app.TimeTrack(time.Now(), "AddTransactions")
+		return s.txRepo.AddTransactions(ctx, dbTx, tx)
+	}(); err != nil {
 		return errors.Wrap(err, "add transactions")
 	}
-	if err := s.blockRepo.AddBlocks(ctx, dbTx, b); err != nil {
-		return errors.Wrap(err, "add shard block")
+
+	if err := func() error {
+		defer app.TimeTrack(time.Now(), "AddBlocks")
+		return s.blockRepo.AddBlocks(ctx, dbTx, b)
+	}(); err != nil {
+		return errors.Wrap(err, "add blocks")
 	}
 
 	if err := dbTx.Commit(); err != nil {
@@ -67,6 +80,82 @@ func (s *Service) insertData(
 	}
 
 	return nil
+}
+
+var lastLog = time.Now()
+
+func (s *Service) dumpMatchedData() {
+	var (
+		minMasterSeq uint32 = 1e9
+		dumpMasters  []pendingMaster
+		insertBlocks []*core.Block
+		insertTx     []*core.Transaction
+		insertAcc    []*core.AccountState
+		insertMsg    []*core.Message
+	)
+
+	if len(s.pendingMasters) < s.InsertBlockBatch {
+		return
+	}
+
+	for _, msg := range s.unknownDstMsg {
+		if msg.SrcWorkchain == -1 && msg.SrcBlockSeqNo < minMasterSeq {
+			minMasterSeq = msg.SrcBlockSeqNo
+			continue
+		}
+		blockID := core.BlockID{
+			Workchain: msg.SrcWorkchain,
+			Shard:     msg.SrcShard,
+			SeqNo:     msg.SrcBlockSeqNo,
+		}
+		master := s.shardsMasterMap[blockID]
+		if master.SeqNo < minMasterSeq {
+			minMasterSeq = master.SeqNo
+			continue
+		}
+	}
+
+	for seq := range s.pendingMasters {
+		if seq >= minMasterSeq {
+			continue
+		}
+		dumpMasters = append(dumpMasters, s.pendingMasters[seq])
+		delete(s.pendingMasters, seq)
+	}
+	for master, shards := range s.masterShardsCache {
+		if master.SeqNo >= minMasterSeq {
+			continue
+		}
+		for _, shard := range shards {
+			delete(s.shardsMasterMap, shard)
+		}
+		delete(s.masterShardsCache, master)
+	}
+
+	if len(dumpMasters) == 0 {
+		return
+	}
+
+	for it := range dumpMasters {
+		insertBlocks = append(insertBlocks, dumpMasters[it].Info...)
+		insertTx = append(insertTx, dumpMasters[it].Tx...)
+		insertMsg = append(insertMsg, dumpMasters[it].Msg...)
+		insertAcc = append(insertAcc, dumpMasters[it].Acc...)
+	}
+
+	if err := s.insertData(insertAcc, insertMsg, insertTx, insertBlocks); err != nil {
+		panic(err)
+	}
+
+	lvl := log.Debug()
+	if time.Since(lastLog) > time.Minute {
+		lvl = log.Info()
+		lastLog = time.Now()
+	}
+	lvl.Int("pending_masters", len(s.pendingMasters)).
+		Int("unknown_dst_msg", len(s.unknownDstMsg)).
+		Uint32("min_master_seq", minMasterSeq).
+		Msg("inserted new block")
 }
 
 func (s *Service) uniqAccounts(transactions []*core.Transaction) []*core.AccountState {
@@ -161,24 +250,36 @@ func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message
 	return ret
 }
 
-func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
+func (s *Service) addPendingBlocks(master *core.Block) {
 	var (
-		masterShardsMap = make(map[core.BlockID][]core.BlockID)
-		shardsMasterMap = make(map[core.BlockID]core.BlockID)
-
-		blockInfo = make(map[uint32][]*core.Block)
-		blockTx   = make(map[uint32][]*core.Transaction)
-		blockAcc  = make(map[uint32][]*core.AccountState)
-		blockMsg  = make(map[uint32][]*core.Message)
-
-		lastLog = time.Now()
+		newBlocks       = []*core.Block{master}
+		newTransactions []*core.Transaction
 	)
 
+	for i := range master.Shards {
+		newBlocks = append(newBlocks, master.Shards[i])
+		s.masterShardsCache[master.ID()] = append(s.masterShardsCache[master.ID()], master.Shards[i].ID())
+		s.shardsMasterMap[master.Shards[i].ID()] = master.ID()
+	}
+
+	for i := range newBlocks {
+		newTransactions = append(newTransactions, newBlocks[i].Transactions...)
+	}
+
+	s.pendingMasters[master.SeqNo] = pendingMaster{
+		Info: newBlocks,
+		Tx:   newTransactions,
+		Acc:  s.uniqAccounts(newTransactions),
+		Msg:  s.uniqMessages(newTransactions),
+	}
+}
+
+func (s *Service) saveBlocksLoop(results <-chan *core.Block) {
 	t := time.NewTicker(100 * time.Millisecond)
 	defer t.Stop()
 
 	for s.running() {
-		var b processedMasterBlock
+		var b *core.Block
 
 		select {
 		case b = <-results:
@@ -186,120 +287,14 @@ func (s *Service) saveBlocksLoop(results <-chan processedMasterBlock) {
 			continue
 		}
 
-		newMaster := b.master.block
-
 		log.Debug().
-			Uint32("master_seq_no", newMaster.SeqNo).
-			Int("master_tx", len(newMaster.Transactions)).
-			Int("shards", len(b.shards)).
+			Uint32("master_seq_no", b.SeqNo).
+			Int("master_tx", len(b.Transactions)).
+			Int("shards", len(b.Shards)).
 			Msg("new master")
 
-		var newBlocks = []*core.Block{newMaster}
-		for i := range b.shards {
-			newShard := b.shards[i].block
-			newBlocks = append(newBlocks, newShard)
+		s.addPendingBlocks(b)
 
-			masterShardsMap[newMaster.ID()] = append(masterShardsMap[newMaster.ID()], newShard.ID())
-			shardsMasterMap[newShard.ID()] = newMaster.ID()
-		}
-
-		var newTransactions []*core.Transaction
-		for i := range newBlocks {
-			newTransactions = append(newTransactions, newBlocks[i].Transactions...)
-		}
-
-		blockInfo[newMaster.SeqNo] = newBlocks
-		blockTx[newMaster.SeqNo] = newTransactions
-		blockAcc[newMaster.SeqNo] = s.uniqAccounts(newTransactions)
-		blockMsg[newMaster.SeqNo] = s.uniqMessages(newTransactions)
-
-		if len(blockInfo) < s.InsertBlockBatch {
-			continue
-		}
-
-		var minMasterSeq uint32 = 1e9
-		for _, msg := range s.unknownDstMsg {
-			if msg.SrcWorkchain == -1 && msg.SrcBlockSeqNo < minMasterSeq {
-				minMasterSeq = msg.SrcBlockSeqNo
-				continue
-			}
-			blockID := core.BlockID{
-				Workchain: msg.SrcWorkchain,
-				Shard:     msg.SrcShard,
-				SeqNo:     msg.SrcBlockSeqNo,
-			}
-			master := shardsMasterMap[blockID]
-			if master.SeqNo < minMasterSeq {
-				minMasterSeq = master.SeqNo
-				continue
-			}
-		}
-
-		var (
-			insertBlocks []*core.Block
-			insertTx     []*core.Transaction
-			insertAcc    []*core.AccountState
-			insertMsg    []*core.Message
-		)
-		for seq, blocks := range blockInfo {
-			if seq >= minMasterSeq {
-				continue
-			}
-			insertBlocks = append(insertBlocks, blocks...)
-			delete(blockInfo, seq)
-		}
-		for seq, tx := range blockTx {
-			if seq >= minMasterSeq {
-				continue
-			}
-			insertTx = append(insertTx, tx...)
-			delete(blockTx, seq)
-		}
-		for seq, acc := range blockAcc {
-			if seq >= minMasterSeq {
-				continue
-			}
-			insertAcc = append(insertAcc, acc...)
-			delete(blockAcc, seq)
-		}
-		for seq, msg := range blockMsg {
-			if seq >= minMasterSeq {
-				continue
-			}
-			insertMsg = append(insertMsg, msg...)
-			delete(blockMsg, seq)
-		}
-		if len(insertAcc) == 0 && len(insertMsg) == 0 && len(insertTx) == 0 && len(insertBlocks) == 0 {
-			log.Debug().Uint32("master_seq_no", newMaster.SeqNo).Uint32("min_master_seq", minMasterSeq).Msg("no data to insert")
-			continue
-		}
-		if err := s.insertData(insertAcc, insertMsg, insertTx, insertBlocks); err != nil {
-			panic(err)
-		}
-
-		for master, shards := range masterShardsMap {
-			if master.SeqNo >= minMasterSeq {
-				continue
-			}
-			for _, shard := range shards {
-				delete(shardsMasterMap, shard)
-			}
-			delete(masterShardsMap, master)
-		}
-
-		lvl := log.Debug()
-		if time.Since(lastLog) > time.Minute {
-			lvl = log.Info()
-			lastLog = time.Now()
-		}
-		lvl.
-			Uint32("master_seq_no", newMaster.SeqNo).
-			Int("pending_blocks", len(blockInfo)).
-			Int("pending_tx", len(blockTx)).
-			Int("pending_acc", len(blockAcc)).
-			Int("pending_msg", len(blockMsg)).
-			Int("unknown_dst_msg", len(s.unknownDstMsg)).
-			Uint32("min_master_seq", minMasterSeq).
-			Msg("inserted new block")
+		s.dumpMatchedData()
 	}
 }

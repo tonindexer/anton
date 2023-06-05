@@ -2,7 +2,6 @@ package fetcher
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -97,7 +96,7 @@ func (s *Service) getTransactions(ctx context.Context, b *ton.BlockIDExt, ids []
 		err error
 	}
 
-	defer app.TimeTrack(time.Now(), fmt.Sprintf("getTransactions(%d, %d)", b.Workchain, b.SeqNo))
+	defer app.TimeTrack(time.Now(), "getTransactions(%d, %d)", b.Workchain, b.SeqNo)
 
 	ch := make(chan ret, len(ids))
 
@@ -143,10 +142,10 @@ func (s *Service) BlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*
 		err          error
 	)
 
-	defer app.TimeTrack(time.Now(), fmt.Sprintf("BlockTransactions(%d, %d)", b.Workchain, b.SeqNo))
+	defer app.TimeTrack(time.Now(), "BlockTransactions(%d, %d)", b.Workchain, b.SeqNo)
 
 	for more {
-		fetchedIDs, more, err = s.API.GetBlockTransactionsV2(ctx, b, 100, after)
+		fetchedIDs, more, err = s.fetchTxIDs(ctx, b, after)
 		if err != nil {
 			return nil, errors.Wrapf(err, "get block transactions (workchain = %d, seq = %d)", b.Workchain, b.SeqNo)
 		}

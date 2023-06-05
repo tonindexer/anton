@@ -2,7 +2,6 @@ package indexer
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -16,18 +15,13 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-type processedBlock struct {
-	block *core.Block
-	err   error
-}
+func (s *Service) fetchMaster(seq uint32) *core.Block {
+	type processedBlock struct {
+		block *core.Block
+		err   error
+	}
 
-type processedMasterBlock struct {
-	master processedBlock
-	shards []processedBlock
-}
-
-func (s *Service) fetchMaster(seq uint32) (ret processedMasterBlock) {
-	defer app.TimeTrack(time.Now(), fmt.Sprintf("fetchMaster(%d)", seq))
+	defer app.TimeTrack(time.Now(), "fetchMaster(%d)", seq)
 
 	for {
 		ctx := context.Background()
@@ -42,7 +36,6 @@ func (s *Service) fetchMaster(seq uint32) (ret processedMasterBlock) {
 			time.Sleep(300 * time.Millisecond)
 			continue
 		}
-		ret.master, ret.shards = processedBlock{}, nil
 
 		var wg sync.WaitGroup
 		wg.Add(len(shards) + 1)
@@ -97,15 +90,19 @@ func (s *Service) fetchMaster(seq uint32) (ret processedMasterBlock) {
 		wg.Wait()
 		close(ch)
 
-		var errBlock processedBlock
+		var (
+			errBlock  processedBlock
+			gotMaster *core.Block
+			gotShards []*core.Block
+		)
 		for i := range ch {
 			if i.err != nil {
 				errBlock = i
 			}
 			if i.block.Workchain == master.Workchain {
-				ret.master = i
+				gotMaster = i.block
 			} else {
-				ret.shards = append(ret.shards, i)
+				gotShards = append(gotShards, i.block)
 			}
 		}
 		if errBlock.err != nil {
@@ -115,19 +112,21 @@ func (s *Service) fetchMaster(seq uint32) (ret processedMasterBlock) {
 				Uint64("shard", uint64(errBlock.block.Shard)).
 				Uint32("seq", errBlock.block.SeqNo).
 				Msg("cannot process block")
+			time.Sleep(time.Second)
 		} else {
-			return ret
+			gotMaster.Shards = gotShards
+			return gotMaster
 		}
 	}
 }
 
-func (s *Service) fetchMastersConcurrent(fromBlock uint32) []processedMasterBlock {
-	var blocks []processedMasterBlock
+func (s *Service) fetchMastersConcurrent(fromBlock uint32) []*core.Block {
+	var blocks []*core.Block
 	var wg sync.WaitGroup
 
 	wg.Add(s.Workers)
 
-	ch := make(chan processedMasterBlock, s.Workers)
+	ch := make(chan *core.Block, s.Workers)
 
 	for i := 0; i < s.Workers; i++ {
 		go func(seq uint32) {
@@ -145,7 +144,7 @@ func (s *Service) fetchMastersConcurrent(fromBlock uint32) []processedMasterBloc
 	}
 
 	sort.Slice(blocks, func(i, j int) bool {
-		return blocks[i].master.block.SeqNo < blocks[j].master.block.SeqNo
+		return blocks[i].SeqNo < blocks[j].SeqNo
 	})
 
 	return blocks
@@ -168,14 +167,14 @@ func (s *Service) needThreads(latestProcessedBlock uint32) bool {
 	return s.threaded
 }
 
-func (s *Service) fetchMasterLoop(fromBlock uint32, results chan<- processedMasterBlock) {
+func (s *Service) fetchMasterLoop(fromBlock uint32, results chan<- *core.Block) {
 	defer s.wg.Done()
 
 	for s.running() {
 		if !s.needThreads(fromBlock) || s.Workers <= 1 {
 			block := s.fetchMaster(fromBlock)
 			results <- block
-			fromBlock = block.master.block.SeqNo + 1
+			fromBlock = block.SeqNo + 1
 			continue
 		}
 
@@ -183,6 +182,6 @@ func (s *Service) fetchMasterLoop(fromBlock uint32, results chan<- processedMast
 		for i := range blocks {
 			results <- blocks[i]
 		}
-		fromBlock = blocks[len(blocks)-1].master.block.SeqNo + 1
+		fromBlock = blocks[len(blocks)-1].SeqNo + 1
 	}
 }

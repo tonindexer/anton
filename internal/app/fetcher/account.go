@@ -2,7 +2,6 @@ package fetcher
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -46,7 +45,7 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 		return nil, errors.Wrap(core.ErrNotFound, "skip account")
 	}
 
-	defer app.TimeTrack(time.Now(), fmt.Sprintf("getAccount(%d, %d, %s)", b.Workchain, b.SeqNo, a.String()))
+	defer app.TimeTrack(time.Now(), "getAccount(%d, %d, %s)", b.Workchain, b.SeqNo, a.String())
 
 	raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
 	if err != nil {
