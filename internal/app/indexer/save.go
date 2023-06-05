@@ -86,6 +86,7 @@ var lastLog = time.Now()
 
 func (s *Service) dumpMatchedData() {
 	var (
+		seq          uint32
 		minMasterSeq uint32 = 1e9
 		dumpMasters  []pendingMaster
 		insertBlocks []*core.Block
@@ -115,7 +116,7 @@ func (s *Service) dumpMatchedData() {
 		}
 	}
 
-	for seq := range s.pendingMasters {
+	for seq = range s.pendingMasters {
 		if seq >= minMasterSeq {
 			continue
 		}
@@ -152,7 +153,8 @@ func (s *Service) dumpMatchedData() {
 		lvl = log.Info()
 		lastLog = time.Now()
 	}
-	lvl.Int("pending_masters", len(s.pendingMasters)).
+	lvl.Uint32("last_inserted_seq", seq).
+		Int("pending_masters", len(s.pendingMasters)).
 		Int("unknown_dst_msg", len(s.unknownDstMsg)).
 		Uint32("min_master_seq", minMasterSeq).
 		Msg("inserted new block")
