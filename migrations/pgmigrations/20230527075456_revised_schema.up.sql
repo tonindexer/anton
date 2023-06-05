@@ -214,10 +214,6 @@ CREATE INDEX account_states_types_idx ON account_states USING gin (types);
 
 
 --bun:split
-CREATE INDEX block_info_workchain_idx ON block_info USING hash (workchain);
-
-
---bun:split
 CREATE UNIQUE INDEX contract_interfaces_get_method_hashes_idx ON contract_interfaces USING btree (get_method_hashes) WHERE ((addresses IS NULL) AND (code IS NULL));
 
 --bun:split

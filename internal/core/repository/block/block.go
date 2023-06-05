@@ -23,19 +23,6 @@ func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
 	return &Repository{ch: ck, pg: pg}
 }
 
-func createIndexes(ctx context.Context, pgDB *bun.DB) error {
-	_, err := pgDB.NewCreateIndex().
-		Model(&core.Block{}).
-		Using("HASH").
-		Column("workchain").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "block workchain pg create index")
-	}
-
-	return nil
-}
-
 func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	_, err := chDB.NewCreateTable().
 		IfNotExists().
@@ -54,7 +41,7 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "block pg create table")
 	}
 
-	return createIndexes(ctx, pgDB)
+	return nil
 }
 
 func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Block) error {
