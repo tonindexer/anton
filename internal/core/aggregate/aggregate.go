@@ -57,7 +57,10 @@ func GetStatistics(ctx context.Context, ck *ch.DB, pg *bun.DB) (*Statistics, err
 	if err != nil {
 		return nil, errors.Wrap(err, "first and last masterchain blocks")
 	}
-	ret.BlockCount = ret.LastBlock - ret.FirstBlock + 1
+	ret.BlockCount, err = ck.NewSelect().Model((*core.Block)(nil)).Count(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "block count")
+	}
 
 	ret.AccountCount, err = ck.NewSelect().Model((*core.AccountState)(nil)).Count(ctx)
 	if err != nil {
@@ -103,6 +106,9 @@ func GetStatistics(ctx context.Context, ck *ch.DB, pg *bun.DB) (*Statistics, err
 		return nil, errors.Wrap(err, "account interfaces count")
 	}
 	for _, row := range ret.AccountTypesCount {
+		if len(row.Interfaces) == 0 {
+			continue
+		}
 		ret.ParsedAddressCount += row.Count
 	}
 
