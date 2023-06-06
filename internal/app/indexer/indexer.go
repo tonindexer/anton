@@ -33,8 +33,6 @@ type Service struct {
 	msgRepo     repository.Message
 	accountRepo core.AccountRepository
 
-	threaded bool
-
 	unknownDstMsg map[string]*core.Message
 
 	masterShardsCache map[core.BlockID][]core.BlockID
@@ -52,13 +50,22 @@ func NewService(cfg *app.IndexerConfig) *Service {
 
 	s.IndexerConfig = cfg
 
+	// validate config
+	if s.Workers < 1 {
+		s.Workers = 1
+	}
+	if s.InsertBlockBatch < 1 {
+		s.InsertBlockBatch = 1
+	}
+	if s.FromBlock < 2 {
+		s.FromBlock = 2
+	}
+
 	ch, pg := s.DB.CH, s.DB.PG
 	s.txRepo = tx.NewRepository(ch, pg)
 	s.msgRepo = msg.NewRepository(ch, pg)
 	s.blockRepo = block.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)
-
-	s.threaded = true
 
 	s.unknownDstMsg = make(map[string]*core.Message)
 

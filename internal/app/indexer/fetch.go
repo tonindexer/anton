@@ -28,12 +28,12 @@ func (s *Service) fetchMaster(seq uint32) *core.Block {
 
 		master, shards, err := s.Fetcher.UnseenBlocks(ctx, seq)
 		if err != nil {
-			lvl := log.Error()
 			if errors.Is(err, ton.ErrBlockNotFound) || (err != nil && strings.Contains(err.Error(), "block is not applied")) {
-				lvl = log.Debug()
+				log.Debug().Err(err).Uint32("master_seq", seq).Msg("skipping block")
+				return nil
 			}
-			lvl.Err(err).Uint32("master_seq", seq).Msg("cannot fetch unseen blocks")
-			time.Sleep(300 * time.Millisecond)
+			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot fetch unseen blocks")
+			time.Sleep(time.Second)
 			continue
 		}
 
@@ -131,8 +131,7 @@ func (s *Service) fetchMastersConcurrent(fromBlock uint32) []*core.Block {
 	for i := 0; i < s.Workers; i++ {
 		go func(seq uint32) {
 			defer wg.Done()
-			r := s.fetchMaster(seq)
-			ch <- r
+			ch <- s.fetchMaster(seq)
 		}(fromBlock + uint32(i))
 	}
 
@@ -140,6 +139,9 @@ func (s *Service) fetchMastersConcurrent(fromBlock uint32) []*core.Block {
 	close(ch)
 
 	for b := range ch {
+		if b == nil {
+			continue
+		}
 		blocks = append(blocks, b)
 	}
 
@@ -150,38 +152,17 @@ func (s *Service) fetchMastersConcurrent(fromBlock uint32) []*core.Block {
 	return blocks
 }
 
-func (s *Service) needThreads(latestProcessedBlock uint32) bool {
-	if !s.threaded {
-		return s.threaded
-	}
-
-	latest, err := s.API.GetMasterchainInfo(context.Background())
-	if err != nil {
-		log.Error().Err(err).Msg("cannot get masterchain info")
-		return false
-	}
-
-	if latestProcessedBlock > latest.SeqNo-16 {
-		s.threaded = false
-	}
-	return s.threaded
-}
-
 func (s *Service) fetchMasterLoop(fromBlock uint32, results chan<- *core.Block) {
 	defer s.wg.Done()
 
 	for s.running() {
-		if !s.needThreads(fromBlock) || s.Workers <= 1 {
-			block := s.fetchMaster(fromBlock)
-			results <- block
-			fromBlock = block.SeqNo + 1
-			continue
-		}
-
 		blocks := s.fetchMastersConcurrent(fromBlock)
 		for i := range blocks {
+			if fromBlock != blocks[i].SeqNo {
+				break
+			}
 			results <- blocks[i]
+			fromBlock++
 		}
-		fromBlock = blocks[len(blocks)-1].SeqNo + 1
 	}
 }
