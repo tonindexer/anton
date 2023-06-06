@@ -95,6 +95,18 @@ func vmMakeValueInt(v *VmValue) (ret tlb.VmStackValue, _ error) {
 	case "uint64":
 		ui, uok := v.Payload.(uint64)
 		bi, ok = big.NewInt(int64(ui)), uok
+	case "int8":
+		ui, uok := v.Payload.(int8)
+		bi, ok = big.NewInt(int64(ui)), uok
+	case "int16":
+		ui, uok := v.Payload.(int16)
+		bi, ok = big.NewInt(int64(ui)), uok
+	case "int32":
+		ui, uok := v.Payload.(int32)
+		bi, ok = big.NewInt(int64(ui)), uok
+	case "int64":
+		ui, uok := v.Payload.(int64)
+		bi, ok = big.NewInt(ui), uok
 	case "bytes":
 		ui, uok := v.Payload.([]byte)
 		bi, ok = new(big.Int).SetBytes(ui), uok
@@ -226,6 +238,14 @@ func vmParseValueInt(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		return uint32(bi.Uint64()), nil
 	case "uint64":
 		return bi.Uint64(), nil
+	case "int8":
+		return int8(bi.Int64()), nil
+	case "int16":
+		return int16(bi.Int64()), nil
+	case "int32":
+		return int32(bi.Int64()), nil
+	case "int64":
+		return bi.Int64(), nil
 	case VmBool:
 		return bi.Cmp(big.NewInt(0)) != 0, nil
 	case VmBytes:

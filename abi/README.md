@@ -77,15 +77,16 @@ Accepted types of `format`:
 2. `bytes` - byte slice, maps into `[]byte`
 3. `bool` - boolean (can be used only on `tlb_type = bool`)
 4. `uint8`, `uint16`, `uint32`, `uint64` - unsigned integers
-5. `bigInt` - integer with more than 64 bits, maps into `big.Int` wrapper
-6. `cell` - TL-B cell, maps into [`cell.Cell`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/cell.go#L11)
-7. `dict` - TL-B dictionary (hashmap), maps into [`cell.Dictionary`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/dict.go)
-8. `magic` - TL-B constructor prefix, must not be used
-9. `coins` - varInt 16, maps into `big.Int` wrapper
-10. `addr` - TON address, maps into [`address.Address`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/address/addr.go#L21) wrapper
-11. [TODO] `content_cell` - token data as in [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md); [implementation](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
-12. `string` - [string snake](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/builder.go#L317) is stored in the cell
-13. `telemintText` - variable length string with [this](https://github.com/TelegramMessenger/telemint/blob/main/telemint.tlb#L25) TL-B constructor
+5. `int8`, `int16`, `int32`, `int64` - unsigned integers
+6. `bigInt` - integer with more than 64 bits, maps into `big.Int` wrapper
+7. `cell` - TL-B cell, maps into [`cell.Cell`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/cell.go#L11)
+8. `dict` - TL-B dictionary (hashmap), maps into [`cell.Dictionary`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/dict.go)
+9. `magic` - TL-B constructor prefix, must not be used
+10. `coins` - varInt 16, maps into `big.Int` wrapper
+11. `addr` - TON address, maps into [`address.Address`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/address/addr.go#L21) wrapper
+12. [TODO] `content_cell` - token data as in [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md); [implementation](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
+13. `string` - [string snake](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/builder.go#L317) is stored in the cell
+14. `telemintText` - variable length string with [this](https://github.com/TelegramMessenger/telemint/blob/main/telemint.tlb#L25) TL-B constructor
 
 ### Shared TL-B constructors
 
@@ -198,10 +199,11 @@ Accepted types to map from or into in `format` field:
 1. `addr` - MsgAddress slice type
 2. `bool` - map int to boolean
 3. `uint8`, `uint16`, `uint32`, `uint64` - map int to an unsigned integer
-4. `bigInt` - map integer bigger than 64 bits
-5. `string` - load string snake from cell
-6. `bytes` - convert big int to bytes
-7. `content` - load [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md) standard token data into [`nft.ContentAny`](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
+4. `int8`, `int16`, `int32`, `int64` - map int to an signed integer
+5. `bigInt` - map integer bigger than 64 bits
+6. `string` - load string snake from cell
+7. `bytes` - convert big int to bytes
+8. `content` - load [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md) standard token data into [`nft.ContentAny`](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
 
 ## Known contracts
 
