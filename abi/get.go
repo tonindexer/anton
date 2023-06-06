@@ -22,7 +22,7 @@ const (
 
 // formats
 const (
-	VmAddrSlice   StackType = "addr"
+	VmAddr        StackType = "addr"
 	VmBool        StackType = "bool"
 	VmBigInt      StackType = "bigInt"
 	VmString      StackType = "string"
