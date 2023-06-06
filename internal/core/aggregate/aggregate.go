@@ -50,7 +50,7 @@ func GetStatistics(ctx context.Context, ck *ch.DB, pg *bun.DB) (*Statistics, err
 	var ret Statistics
 
 	err := ck.NewSelect().Model((*core.Block)(nil)).
-		ColumnExpr("count(seq_no) as first_masterchain_block").
+		ColumnExpr("count(seq_no) as masterchain_block_count").
 		ColumnExpr("min(seq_no) as first_masterchain_block").
 		ColumnExpr("max(seq_no) as last_masterchain_block").
 		Where("workchain = -1").
