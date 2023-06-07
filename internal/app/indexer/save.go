@@ -100,8 +100,10 @@ func (s *Service) dumpMatchedData() {
 	}
 
 	for _, msg := range s.unknownDstMsg {
-		if msg.SrcWorkchain == -1 && msg.SrcBlockSeqNo < minMasterSeq {
-			minMasterSeq = msg.SrcBlockSeqNo
+		if msg.SrcWorkchain == -1 {
+			if msg.SrcBlockSeqNo < minMasterSeq {
+				minMasterSeq = msg.SrcBlockSeqNo
+			}
 			continue
 		}
 		blockID := core.BlockID{
