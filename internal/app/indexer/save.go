@@ -155,7 +155,7 @@ func (s *Service) dumpMatchedData() {
 	}
 
 	lvl := log.Debug()
-	if time.Since(lastLog) > time.Minute {
+	if time.Since(lastLog) > 10*time.Minute {
 		lvl = log.Info()
 		lastLog = time.Now()
 	}
