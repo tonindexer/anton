@@ -68,7 +68,7 @@ func (s *Service) callGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *
 		ret.Returns = append(ret.Returns, retStack[i].Payload)
 	}
 	if err != nil {
-		ret.Error = errors.Wrap(err, "run get method").Error()
+		ret.Error = err.Error()
 		log.Warn().Err(err).
 			Str("get_method", d.Name).
 			Str("address", acc.Address.Base64()).
