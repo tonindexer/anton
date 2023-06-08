@@ -3,6 +3,7 @@ package parser
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -11,6 +12,32 @@ import (
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
+
+func parseBody(op *core.ContractOperation, payload *cell.Slice) (any, error) {
+	msgParsed, err := op.Schema.New()
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating struct from %s/%s schema", op.ContractName, op.OperationName)
+	}
+
+	if err = tlb.LoadFromCell(msgParsed, payload); err == nil {
+		return msgParsed, nil
+	}
+	if !strings.Contains(err.Error(), "not enough data in reader") {
+		return nil, errors.Wrap(err, "load from cell")
+	}
+
+	// skipping optional fields
+	msgParsed, err = op.Schema.New(true)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating struct from %s/%s schema (skip optional)", op.ContractName, op.OperationName)
+	}
+
+	if err = tlb.LoadFromCell(msgParsed, payload); err != nil {
+		return nil, errors.Wrap(err, "load from cell")
+	}
+
+	return msgParsed, nil
+}
 
 func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountState, msg *core.Message) error {
 	if acc == nil {
@@ -43,19 +70,15 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 		msg.DstContract = op.ContractName
 	}
 
-	msgParsed, err := op.Schema.New()
-	if err != nil {
-		return errors.Wrapf(err, "creating struct from %s/%s schema", op.ContractName, op.OperationName)
-	}
-
 	payloadCell, err := cell.FromBOC(msg.Body)
 	if err != nil {
 		return errors.Wrap(err, "msg body from boc")
 	}
 	payloadSlice := payloadCell.BeginParse()
 
-	if err = tlb.LoadFromCell(msgParsed, payloadSlice); err != nil {
-		return errors.Wrap(err, "load from cell")
+	msgParsed, err := parseBody(op, payloadSlice)
+	if err != nil {
+		return errors.Wrap(err, "msg body from boc")
 	}
 
 	msg.DataJSON, err = json.Marshal(msgParsed)

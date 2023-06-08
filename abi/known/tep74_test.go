@@ -1,8 +1,10 @@
 package known_test
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -175,5 +177,71 @@ func TestOperationDesc_JettonMinter(t *testing.T) {
 	for _, test := range testCases {
 		j := loadOperation(t, i, test.name, test.boc)
 		assert.Equal(t, test.expected, j)
+	}
+}
+
+func TestOperationDesc_JettonWallet_JettonBurn_Optional(t *testing.T) {
+	// issue #13
+	// tx hash 8ad6febf40eed096d8d911466c069ebc693e4d5e641a4e806a19d5831233141b
+
+	var (
+		interfaces []*abi.InterfaceDesc
+		i          *abi.InterfaceDesc
+	)
+
+	j, err := os.ReadFile("tep74_jetton.json")
+	require.Nil(t, err)
+
+	err = json.Unmarshal(j, &interfaces)
+	require.Nil(t, err)
+
+	for _, i = range interfaces {
+		if i.Name == "jetton_wallet" {
+			err := i.RegisterDefinitions()
+			require.Nil(t, err)
+			break
+		}
+	}
+
+	var testCases = []*struct {
+		name     string
+		boc      string
+		expected string
+	}{
+		{
+			// tx hash e5782dd2b1e2186038c1f92db2cdb709bd12eba25a295ec4db9561aa3928c317
+			name:     "jetton_burn",
+			boc:      `te6ccuEBAQEAMwBmAGFZXwe8AAAAAACFYI8walQ4AJvi30153Ex53ULaIU/S0hqruxuRQNfFygS/4vFtl92PwofAGw==`, // out msg
+			expected: `{"query_id":8741007,"amount":"435523","response_destination":"EQBN8W-mvO4mPO6hbRCn6WkNVd2NyKBr4uUCX_F4tsvux5oO"}`,
+		},
+	}
+
+	for _, test := range testCases {
+		dp := getOperationDescByName(i, test.name)
+		require.NotNilf(t, dp, "operation name %s", test.name)
+
+		boc, err := base64.StdEncoding.DecodeString(test.boc)
+		require.Nil(t, err)
+
+		c, err := cell.FromBOC(boc)
+		require.Nil(t, err)
+
+		op, err := dp.New()
+		require.Nil(t, err)
+
+		err = tlb.LoadFromCell(op, c.BeginParse())
+		require.NotNil(t, err)
+		require.True(t, strings.Contains(err.Error(), "not enough data in reader"))
+
+		op, err = dp.New(true)
+		require.Nil(t, err)
+
+		err = tlb.LoadFromCell(op, c.BeginParse())
+		require.Nil(t, err)
+
+		j, err := json.Marshal(op)
+		require.Nil(t, err)
+
+		assert.Equal(t, test.expected, string(j))
 	}
 }

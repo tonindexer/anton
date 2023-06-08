@@ -16,11 +16,13 @@
           },
           {
             "name": "forward_payload",
-            "tlb_type": "^"
+            "tlb_type": "^",
+            "optional": true
           },
           {
             "name": "with_content",
-            "tlb_type": "bool"
+            "tlb_type": "bool",
+            "optional": true
           }
         ]
       },
@@ -38,11 +40,13 @@
           },
           {
             "name": "forward_payload",
-            "tlb_type": "^"
+            "tlb_type": "^",
+            "optional": true
           },
           {
             "name": "with_content",
-            "tlb_type": "bool"
+            "tlb_type": "bool",
+            "optional": true
           }
         ]
       },

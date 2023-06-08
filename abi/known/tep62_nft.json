@@ -20,17 +20,20 @@
           },
           {
             "name": "custom_payload",
-            "tlb_type": "maybe ^"
+            "tlb_type": "maybe ^",
+            "optional": true
           },
           {
             "name": "forward_amount",
             "tlb_type": ".",
-            "format": "coins"
+            "format": "coins",
+            "optional": true
           },
           {
             "name": "forward_payload",
             "tlb_type": "either . ^",
-            "format": "cell"
+            "format": "cell",
+            "optional": true
           }
         ]
       },
@@ -60,7 +63,8 @@
           },
           {
             "name": "forward_payload",
-            "tlb_type": "either . ^"
+            "tlb_type": "either . ^",
+            "optional": true
           }
         ]
       },
@@ -377,17 +381,20 @@
           {
             "name": "custom_payload",
             "tlb_type": "maybe ^",
-            "format": "cell"
+            "format": "cell",
+            "optional": true
           },
           {
             "name": "forward_amount",
             "tlb_type": ".",
-            "format": "coins"
+            "format": "coins",
+            "optional": true
           },
           {
             "name": "forward_payload",
             "tlb_type": "either . ^",
-            "format": "cell"
+            "format": "cell",
+            "optional": true
           }
         ]
       },
@@ -408,7 +415,8 @@
           {
             "name": "forward_payload",
             "tlb_type": "either . ^",
-            "format": "cell"
+            "format": "cell",
+            "optional": true
           }
         ]
       }

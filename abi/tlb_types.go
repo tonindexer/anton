@@ -11,6 +11,8 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
+const structTypeName = "struct"
+
 type TelemintText struct {
 	Len  uint8  // ## 8
 	Text string // bits (len * 8)
@@ -45,8 +47,6 @@ func (x *StringSnake) LoadFromCell(loader *cell.Slice) error {
 }
 
 var (
-	structTypeName = "struct"
-
 	typeNameRMap = map[reflect.Type]string{
 		reflect.TypeOf([]uint8{}): "bytes",
 	}
@@ -70,6 +70,8 @@ var (
 		"string":       reflect.TypeOf((*StringSnake)(nil)),
 		"telemintText": reflect.TypeOf((*TelemintText)(nil)),
 	}
+
+	registeredDefinitions = map[string]TLBFieldsDesc{}
 )
 
 func init() {

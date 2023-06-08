@@ -75,12 +75,14 @@ func parseOperationDesc(t abi.ContractName, d *abi.OperationDesc) (*core.Contrac
 		opId = uint32(n)
 	}
 
+	d.MapRegisteredDefinitions()
+
 	// this is needed to map interface definitions into schema
 	x, err := d.New()
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating new operation structure")
 	}
-	nd, err := abi.NewOperationDesc(x)
+	_, err = abi.NewOperationDesc(x)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating new operation descriptor")
 	}
@@ -90,7 +92,7 @@ func parseOperationDesc(t abi.ContractName, d *abi.OperationDesc) (*core.Contrac
 		ContractName:  t,
 		Outgoing:      false,
 		OperationID:   opId,
-		Schema:        *nd,
+		Schema:        *d,
 	}, nil
 }
 
