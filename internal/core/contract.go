@@ -13,10 +13,10 @@ type ContractInterface struct {
 	bun.BaseModel `bun:"table:contract_interfaces" json:"-"`
 
 	Name            abi.ContractName    `bun:",pk" json:"name"`
-	Addresses       []*addr.Address     `bun:"type:bytea[],unique" json:"addresses"`
-	Code            []byte              `bun:"type:bytea,unique" json:"code"`
-	GetMethodsDesc  []abi.GetMethodDesc `bun:"type:text" json:"get_methods_descriptors"`
-	GetMethodHashes []int32             `bun:"type:integer[]" json:"get_method_hashes"`
+	Addresses       []*addr.Address     `bun:"type:bytea[],unique" json:"addresses,omitempty"`
+	Code            []byte              `bun:"type:bytea,unique" json:"code,omitempty"`
+	GetMethodsDesc  []abi.GetMethodDesc `bun:"type:text" json:"get_methods_descriptors,omitempty"`
+	GetMethodHashes []int32             `bun:"type:integer[]" json:"get_method_hashes,omitempty"`
 }
 
 type ContractOperation struct {
