@@ -78,10 +78,8 @@ var Command = &cli.Command{
 			Action: func(c *cli.Context) error {
 				name := strings.Join(c.Args().Slice(), "_")
 
-				mpg, mch, err := newMigrators()
-				if err != nil {
-					return err
-				}
+				mpg := migrate.NewMigrator(nil, pgmigrations.Migrations)
+				mch := chmigrate.NewMigrator(nil, chmigrations.Migrations)
 
 				pgFiles, err := mpg.CreateSQLMigrations(c.Context, name)
 				if err != nil {
