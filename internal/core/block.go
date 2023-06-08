@@ -41,7 +41,7 @@ type Block struct {
 
 	// TODO: block info data
 
-	ScannedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"-"`
+	ScannedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"scanned_at"`
 }
 
 func (b *Block) ID() BlockID {
