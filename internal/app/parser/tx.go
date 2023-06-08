@@ -13,13 +13,13 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-func parseBody(op *core.ContractOperation, payload *cell.Slice) (any, error) {
+func parseBody(op *core.ContractOperation, payload *cell.Cell) (any, error) {
 	msgParsed, err := op.Schema.New()
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating struct from %s/%s schema", op.ContractName, op.OperationName)
 	}
 
-	if err = tlb.LoadFromCell(msgParsed, payload); err == nil {
+	if err = tlb.LoadFromCell(msgParsed, payload.BeginParse()); err == nil {
 		return msgParsed, nil
 	}
 	if !strings.Contains(err.Error(), "not enough data in reader") {
@@ -32,7 +32,7 @@ func parseBody(op *core.ContractOperation, payload *cell.Slice) (any, error) {
 		return nil, errors.Wrapf(err, "creating struct from %s/%s schema (skip optional)", op.ContractName, op.OperationName)
 	}
 
-	if err = tlb.LoadFromCell(msgParsed, payload); err != nil {
+	if err = tlb.LoadFromCell(msgParsed, payload.BeginParse()); err != nil {
 		return nil, errors.Wrap(err, "load from cell")
 	}
 
@@ -74,9 +74,8 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 	if err != nil {
 		return errors.Wrap(err, "msg body from boc")
 	}
-	payloadSlice := payloadCell.BeginParse()
 
-	msgParsed, err := parseBody(op, payloadSlice)
+	msgParsed, err := parseBody(op, payloadCell)
 	if err != nil {
 		return errors.Wrap(err, "msg body from boc")
 	}
