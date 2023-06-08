@@ -22,7 +22,7 @@ func parseBody(op *core.ContractOperation, payload *cell.Cell) (any, error) {
 	if err = tlb.LoadFromCell(msgParsed, payload.BeginParse()); err == nil {
 		return msgParsed, nil
 	}
-	if !strings.Contains(err.Error(), "not enough data in reader") {
+	if !strings.Contains(err.Error(), "not enough data in reader") && !strings.Contains(err.Error(), "no more refs exists") {
 		return nil, errors.Wrap(err, "load from cell")
 	}
 
@@ -33,7 +33,7 @@ func parseBody(op *core.ContractOperation, payload *cell.Cell) (any, error) {
 	}
 
 	if err = tlb.LoadFromCell(msgParsed, payload.BeginParse()); err != nil {
-		return nil, errors.Wrap(err, "load from cell")
+		return nil, errors.Wrap(err, "load from cell (skip optional)")
 	}
 
 	return msgParsed, nil
