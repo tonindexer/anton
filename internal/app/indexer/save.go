@@ -88,6 +88,7 @@ func (s *Service) dumpMatchedData() {
 	var (
 		seq          uint32
 		minMasterSeq uint32 = 1e9
+		maxMasterSeq uint32 = 0
 		dumpMasters  []pendingMaster
 		insertBlocks []*core.Block
 		insertTx     []*core.Transaction
@@ -122,6 +123,9 @@ func (s *Service) dumpMatchedData() {
 		if seq >= minMasterSeq {
 			continue
 		}
+		if seq > maxMasterSeq {
+			maxMasterSeq = seq
+		}
 		dumpMasters = append(dumpMasters, s.pendingMasters[seq])
 		delete(s.pendingMasters, seq)
 	}
@@ -155,7 +159,7 @@ func (s *Service) dumpMatchedData() {
 		lvl = log.Info()
 		lastLog = time.Now()
 	}
-	lvl.Uint32("last_inserted_seq", seq).
+	lvl.Uint32("last_inserted_seq", maxMasterSeq).
 		Int("pending_masters", len(s.pendingMasters)).
 		Int("unknown_dst_msg", len(s.unknownDstMsg)).
 		Uint32("min_master_seq", minMasterSeq).
