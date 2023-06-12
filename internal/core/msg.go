@@ -59,7 +59,7 @@ type Message struct {
 
 	Body            []byte `bun:"type:bytea" json:"body"`
 	BodyHash        []byte `bun:"type:bytea" json:"body_hash"`
-	OperationID     uint32 `json:"operation_id,omitempty"`
+	OperationID     uint32 `json:"operation_id"`
 	TransferComment string `json:"transfer_comment,omitempty"`
 
 	StateInitCode []byte `bun:"type:bytea" json:"state_init_code,omitempty"`
