@@ -190,7 +190,8 @@ CREATE TABLE contract_operations (
     operation_id integer NOT NULL,
     schema jsonb,
     CONSTRAINT contract_operations_pkey PRIMARY KEY (contract_name, outgoing, operation_id),
-    CONSTRAINT contract_interfaces_uniq_name UNIQUE (operation_name, contract_name)
+    CONSTRAINT contract_interfaces_uniq_name UNIQUE (operation_name, contract_name),
+    CONSTRAINT contract_operations_contract_name_fkey FOREIGN KEY (contract_name) REFERENCES contract_interfaces(name)
 );
 
 
