@@ -3,7 +3,7 @@
     "interface_name": "tonpay_store",
     "in_messages": [
       {
-        "op_name": "issue_invoice",
+        "op_name": "tonpay_issue_invoice",
         "op_code": "0x4b4e70b0",
         "body": [
           {
@@ -54,7 +54,7 @@
         ]
       },
       {
-        "op_name": "jetton_transfer_notification",
+        "op_name": "tonpay_jetton_transfer_notification",
         "op_code": "0x7362d09c",
         "body": [
           {
@@ -102,7 +102,7 @@
         ]
       },
       {
-        "op_name": "request_purchase",
+        "op_name": "tonpay_request_purchase",
         "op_code": "0x36b795b5",
         "body": [
           {
@@ -128,7 +128,7 @@
         ]
       },
       {
-        "op_name": "edit_store",
+        "op_name": "tonpay_edit_store",
         "op_code": "0xa0b2b61d",
         "body": [
           {
@@ -164,7 +164,7 @@
         ]
       },
       {
-        "op_name": "deactivate_store",
+        "op_name": "tonpay_deactivate_store",
         "op_code": "0xf9bf9637",
         "body": [
           {
@@ -175,7 +175,7 @@
         ]
       },
       {
-        "op_name": "activate_store",
+        "op_name": "tonpay_activate_store",
         "op_code": "0x97500daf",
         "body": [
           {
@@ -186,7 +186,7 @@
         ]
       },
       {
-        "op_name": "upgrade_code_full",
+        "op_name": "tonpay_upgrade_code_full",
         "op_code": "0xb43bbb52",
         "body": [
           {
@@ -217,7 +217,7 @@
         ]
       },
       {
-        "op_name": "upgrade_code_store",
+        "op_name": "tonpay_upgrade_code_store",
         "op_code": "0xacb08f28",
         "body": [
           {
@@ -243,7 +243,7 @@
         ]
       },
       {
-        "op_name": "upgrade_code_invoice",
+        "op_name": "tonpay_upgrade_code_invoice",
         "op_code": "0xb5f1424f",
         "body": [
           {
@@ -261,7 +261,7 @@
     ],
     "out_messages": [
       {
-        "op_name": "pay_invoice",
+        "op_name": "tonpay_pay_invoice",
         "op_code": "0xf53a02d3",
         "body": [
           {
@@ -333,7 +333,7 @@
     "interface_name": "tonpay_invoice",
     "in_messages": [
       {
-        "op_name": "pay_invoice",
+        "op_name": "tonpay_pay_invoice",
         "op_code": "0xf53a02d3",
         "body": [
           {
@@ -350,7 +350,7 @@
         ]
       },
       {
-        "op_name": "edit_invoice",
+        "op_name": "tonpay_edit_invoice",
         "op_code": "0x48c504f3",
         "body": [
           {
@@ -396,7 +396,7 @@
         ]
       },
       {
-        "op_name": "deactivate_invoice",
+        "op_name": "tonpay_deactivate_invoice",
         "op_code": "0x1cc0b11e",
         "body": [
           {
@@ -407,7 +407,7 @@
         ]
       },
       {
-        "op_name": "activate_invoice",
+        "op_name": "tonpay_activate_invoice",
         "op_code": "0xc285952f",
         "body": [
           {
@@ -418,7 +418,7 @@
         ]
       },
       {
-        "op_name": "jetton_payment",
+        "op_name": "tonpay_jetton_payment",
         "op_code": "0x7362d09c",
         "body": [
           {
@@ -447,7 +447,7 @@
         ]
       },
       {
-        "op_name": "upgrade_code",
+        "op_name": "tonpay_upgrade_code",
         "op_code": "0x61bddf8b",
         "body": [
           {
