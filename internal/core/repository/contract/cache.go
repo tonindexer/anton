@@ -14,7 +14,7 @@ type cache struct {
 	interfaces  []*core.ContractInterface
 	operations  []*core.ContractOperation
 	lastCleared time.Time
-	sync.RWMutex
+	sync.Mutex
 }
 
 func newCache() *cache {
@@ -33,30 +33,40 @@ func (c *cache) clearCaches() {
 func (c *cache) setInterfaces(interfaces []*core.ContractInterface) {
 	c.Lock()
 	defer c.Unlock()
+
 	c.interfaces = interfaces
 }
 
 func (c *cache) getInterfaces() []*core.ContractInterface {
-	c.RLock()
-	defer c.RUnlock()
+	c.Lock()
+	defer c.Unlock()
+
+	c.clearCaches()
+
 	return c.interfaces
 }
 
 func (c *cache) setOperations(operations []*core.ContractOperation) {
 	c.Lock()
 	defer c.Unlock()
+
 	c.operations = operations
 }
 
 func (c *cache) getOperations() []*core.ContractOperation {
-	c.RLock()
-	defer c.RUnlock()
+	c.Lock()
+	defer c.Unlock()
+
+	c.clearCaches()
+
 	return c.operations
 }
 
 func (c *cache) getOperationByID(types []abi.ContractName, outgoing bool, id uint32) *core.ContractOperation {
-	c.RLock()
-	defer c.RUnlock()
+	c.Lock()
+	defer c.Unlock()
+
+	c.clearCaches()
 
 	for _, op := range c.operations {
 		if op.Outgoing != outgoing {
