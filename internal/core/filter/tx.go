@@ -24,6 +24,8 @@ type TransactionsReq struct {
 
 	Order string `form:"order"` // ASC, DESC
 
+	CreatedLT *uint64 `form:"created_lt"`
+
 	AfterTxLT *uint64 `form:"after"`
 	Limit     int     `form:"limit"`
 }

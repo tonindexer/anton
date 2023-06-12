@@ -822,7 +822,7 @@ const docTemplate = `{
                 "arguments": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/abi.VmValue"
+                        "$ref": "#/definitions/abi.VmValueDesc"
                     }
                 },
                 "error": {
@@ -831,11 +831,19 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "returns": {
+                "receives": {
+                    "type": "array",
+                    "items": {}
+                },
+                "return_values": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/abi.VmValue"
+                        "$ref": "#/definitions/abi.VmValueDesc"
                     }
+                },
+                "returns": {
+                    "type": "array",
+                    "items": {}
                 }
             }
         },
@@ -873,7 +881,7 @@ const docTemplate = `{
                 "VmInt",
                 "VmCell",
                 "VmSlice",
-                "VmAddrSlice",
+                "VmAddr",
                 "VmBool",
                 "VmBigInt",
                 "VmString",
@@ -889,6 +897,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "optional": {
+                    "type": "boolean"
                 },
                 "struct_fields": {
                     "description": "Format = \"struct\"",
@@ -907,21 +918,6 @@ const docTemplate = `{
             "type": "array",
             "items": {
                 "$ref": "#/definitions/abi.TLBFieldDesc"
-            }
-        },
-        "abi.VmValue": {
-            "type": "object",
-            "properties": {
-                "format": {
-                    "$ref": "#/definitions/abi.StackType"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "payload": {},
-                "stack_type": {
-                    "$ref": "#/definitions/abi.StackType"
-                }
             }
         },
         "abi.VmValueDesc": {
@@ -1291,8 +1287,11 @@ const docTemplate = `{
         "core.AddressLabel": {
             "type": "object",
             "properties": {
-                "category": {
-                    "type": "string"
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "name": {
                     "type": "string"
@@ -1389,6 +1388,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "operations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.ContractOperation"
+                    }
                 }
             }
         },

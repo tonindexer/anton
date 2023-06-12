@@ -11,57 +11,60 @@ import (
 	"github.com/tonindexer/anton/internal/core/filter"
 )
 
-func (r *Repository) filterTx(ctx context.Context, f *filter.TransactionsReq) (ret []*core.Transaction, err error) {
+func (r *Repository) filterTx(ctx context.Context, req *filter.TransactionsReq) (ret []*core.Transaction, err error) {
 	q := r.pg.NewSelect().Model(&ret)
 
-	if f.WithAccountState {
+	if req.WithAccountState {
 		q = q.Relation("Account", func(q *bun.SelectQuery) *bun.SelectQuery {
-			if len(f.ExcludeColumn) > 0 {
-				q = q.ExcludeColumn(f.ExcludeColumn...)
+			if len(req.ExcludeColumn) > 0 {
+				q = q.ExcludeColumn(req.ExcludeColumn...)
 			}
 			return q
 		})
 	}
-	if f.WithMessages {
+	if req.WithMessages {
 		q = q.
 			Relation("InMsg").
 			Relation("OutMsg")
 	}
 
-	if len(f.Hash) > 0 {
-		q = q.Where("transaction.hash = ?", f.Hash)
+	if len(req.Hash) > 0 {
+		q = q.Where("transaction.hash = ?", req.Hash)
 	}
-	if len(f.InMsgHash) > 0 {
-		q = q.Where("transaction.in_msg_hash = ?", f.InMsgHash)
+	if len(req.InMsgHash) > 0 {
+		q = q.Where("transaction.in_msg_hash = ?", req.InMsgHash)
 	}
-	if len(f.Addresses) > 0 {
-		q = q.Where("transaction.address in (?)", bun.In(f.Addresses))
+	if len(req.Addresses) > 0 {
+		q = q.Where("transaction.address in (?)", bun.In(req.Addresses))
 	}
-	if f.Workchain != nil {
-		q = q.Where("transaction.workchain = ?", f.Workchain)
+	if req.Workchain != nil {
+		q = q.Where("transaction.workchain = ?", req.Workchain)
 	}
-	if f.BlockID != nil {
-		q = q.Where("transaction.workchain = ?", f.BlockID.Workchain).
-			Where("transaction.shard = ?", f.BlockID.Shard).
-			Where("transaction.block_seq_no = ?", f.BlockID.SeqNo)
+	if req.BlockID != nil {
+		q = q.Where("transaction.workchain = ?", req.BlockID.Workchain).
+			Where("transaction.shard = ?", req.BlockID.Shard).
+			Where("transaction.block_seq_no = ?", req.BlockID.SeqNo)
+	}
+	if req.CreatedLT != nil {
+		q = q.Where("transaction.created_lt = ?", req.CreatedLT)
 	}
 
-	if f.AfterTxLT != nil {
-		if f.Order == "ASC" {
-			q = q.Where("transaction.created_lt > ?", f.AfterTxLT)
+	if req.AfterTxLT != nil {
+		if req.Order == "ASC" {
+			q = q.Where("transaction.created_lt > ?", req.AfterTxLT)
 		} else {
-			q = q.Where("transaction.created_lt < ?", f.AfterTxLT)
+			q = q.Where("transaction.created_lt < ?", req.AfterTxLT)
 		}
 	}
 
-	if f.Order != "" {
-		q = q.Order("transaction.created_lt " + strings.ToUpper(f.Order))
+	if req.Order != "" {
+		q = q.Order("transaction.created_lt " + strings.ToUpper(req.Order))
 	}
 
-	if f.Limit == 0 {
-		f.Limit = 3
+	if req.Limit == 0 {
+		req.Limit = 3
 	}
-	q = q.Limit(f.Limit)
+	q = q.Limit(req.Limit)
 
 	err = q.Scan(ctx)
 	return ret, err
@@ -87,6 +90,9 @@ func (r *Repository) countTx(ctx context.Context, req *filter.TransactionsReq) (
 		q = q.Where("workchain = ?", req.BlockID.Workchain).
 			Where("shard = ?", req.BlockID.Shard).
 			Where("block_seq_no = ?", req.BlockID.SeqNo)
+	}
+	if req.CreatedLT != nil {
+		q = q.Where("created_lt = ?", req.CreatedLT)
 	}
 
 	return q.Count(ctx)
