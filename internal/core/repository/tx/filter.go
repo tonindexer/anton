@@ -46,7 +46,7 @@ func (r *Repository) filterTx(ctx context.Context, req *filter.TransactionsReq) 
 			Where("transaction.block_seq_no = ?", req.BlockID.SeqNo)
 	}
 	if req.CreatedLT != nil {
-		q = q.Where("transaction.created_lt = ?", req.CreatedLT)
+		q = q.Where("transaction.created_lt = ?", *req.CreatedLT)
 	}
 
 	if req.AfterTxLT != nil {
@@ -92,7 +92,7 @@ func (r *Repository) countTx(ctx context.Context, req *filter.TransactionsReq) (
 			Where("block_seq_no = ?", req.BlockID.SeqNo)
 	}
 	if req.CreatedLT != nil {
-		q = q.Where("created_lt = ?", req.CreatedLT)
+		q = q.Where("created_lt = ?", *req.CreatedLT)
 	}
 
 	return q.Count(ctx)
