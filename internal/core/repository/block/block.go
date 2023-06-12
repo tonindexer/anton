@@ -23,6 +23,29 @@ func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
 	return &Repository{ch: ck, pg: pg}
 }
 
+func createIndexes(ctx context.Context, pgDB *bun.DB) error {
+	_, err := pgDB.NewCreateIndex().
+		Model(&core.Block{}).
+		Using("BTREE").
+		Column("workchain", "seq_no").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "block workchain pg create index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.Block{}).
+		Using("BTREE").
+		Column("master_workchain", "master_shard", "master_seq_no").
+		Where("workchain != -1").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "block workchain pg create index")
+	}
+
+	return nil
+}
+
 func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 	_, err := chDB.NewCreateTable().
 		IfNotExists().
@@ -41,7 +64,7 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "block pg create table")
 	}
 
-	return nil
+	return createIndexes(ctx, pgDB)
 }
 
 func (r *Repository) AddBlocks(ctx context.Context, tx bun.Tx, info []*core.Block) error {
