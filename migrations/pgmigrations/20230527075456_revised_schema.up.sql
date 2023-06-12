@@ -195,6 +195,13 @@ CREATE TABLE contract_operations (
 
 
 --bun:split
+CREATE INDEX block_info_workchain_seq_no_idx ON block_info USING btree (workchain, seq_no);
+
+--bun:split
+CREATE INDEX block_info_master_block_id_idx ON block_info USING btree (master_workchain, master_shard, master_seq_no) WHERE (workchain != -1);
+
+
+--bun:split
 CREATE INDEX account_states_address_idx ON account_states USING btree (address);
 
 --bun:split
