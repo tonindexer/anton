@@ -1,0 +1,550 @@
+[
+  {
+    "interface_name": "tonpay_store",
+    "in_messages": [
+      {
+        "op_name": "issue_invoice",
+        "op_code": "0x4b4e70b0",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "has_customer",
+            "tlb_type": "## 2",
+            "format": "int8"
+          },
+          {
+            "name": "customer_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "invoice_id",
+            "tlb_type": "^",
+            "format": "string"
+          },
+          {
+            "name": "metadata",
+            "tlb_type": "^",
+            "format": "string"
+          },
+          {
+            "name": "amount",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "accepts_jetton",
+            "tlb_type": "## 2",
+            "format": "int8"
+          },
+          {
+            "name": "jetton_master_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "jetton_wallet_code",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "jetton_transfer_notification",
+        "op_code": "0x7362d09c",
+        "body": [
+          {
+            "name": "jetton_amount_received",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "sender_user_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "op_code",
+                "tlb_type": "## 32",
+                "format": "uint32"
+              },
+              {
+                "name": "jetton_wallet_code",
+                "tlb_type": "^",
+                "format": "cell"
+              },
+              {
+                "name": "jetton_master_address",
+                "tlb_type": "addr",
+                "format": "addr"
+              },
+              {
+                "name": "invoice_id",
+                "tlb_type": "^",
+                "format": "string"
+              },
+              {
+                "name": "metadata",
+                "tlb_type": "^",
+                "format": "string"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op_name": "request_purchase",
+        "op_code": "0x36b795b5",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "invoice_id",
+            "tlb_type": "^",
+            "format": "string"
+          },
+          {
+            "name": "metadata",
+            "tlb_type": "^",
+            "format": "string"
+          },
+          {
+            "name": "amount",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "edit_store",
+        "op_code": "0xa0b2b61d",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_name",
+            "tlb_type": "^",
+            "format": "string"
+          },
+          {
+            "name": "new_description",
+            "tlb_type": "^",
+            "format": "string"
+          },
+          {
+            "name": "new_image",
+            "tlb_type": "^",
+            "format": "string"
+          },
+          {
+            "name": "new_webhook",
+            "tlb_type": "^",
+            "format": "string"
+          },
+          {
+            "name": "new_mcc_code",
+            "tlb_type": "## 16",
+            "format": "uint16"
+          }
+        ]
+      },
+      {
+        "op_name": "deactivate_store",
+        "op_code": "0xf9bf9637",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "activate_store",
+        "op_code": "0x97500daf",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "upgrade_code_full",
+        "op_code": "0xb43bbb52",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_store_code",
+            "tlb_type": "^",
+            "format": "cell"
+          },
+          {
+            "name": "new_invoice_code",
+            "tlb_type": "^",
+            "format": "cell"
+          },
+          {
+            "name": "has_new_data",
+            "tlb_type": "## 2",
+            "format": "int8"
+          },
+          {
+            "name": "new_store_data",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "upgrade_code_store",
+        "op_code": "0xacb08f28",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_store_code",
+            "tlb_type": "^",
+            "format": "cell"
+          },
+          {
+            "name": "has_new_data",
+            "tlb_type": "## 2",
+            "format": "int8"
+          },
+          {
+            "name": "new_store_data",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "upgrade_code_invoice",
+        "op_code": "0xb5f1424f",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_invoice_code",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "pay_invoice",
+        "op_code": "0xf53a02d3",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "sender_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_store_data",
+        "return_values": [
+          {
+            "name": "owner",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "name",
+            "stack_type": "cell",
+            "format": "string"
+          },
+          {
+            "name": "description",
+            "stack_type": "cell",
+            "format": "string"
+          },
+          {
+            "name": "image",
+            "stack_type": "cell",
+            "format": "string"
+          },
+          {
+            "name": "webhook",
+            "stack_type": "cell",
+            "format": "string"
+          },
+          {
+            "name": "mcc_code",
+            "stack_type": "int",
+            "format": "uint16"
+          },
+          {
+            "name": "active",
+            "stack_type": "int",
+            "format": "int8"
+          },
+          {
+            "name": "invoice_code",
+            "stack_type": "cell"
+          },
+          {
+            "name": "contract_version",
+            "stack_type": "int",
+            "format": "uint64"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "tonpay_invoice",
+    "in_messages": [
+      {
+        "op_name": "pay_invoice",
+        "op_code": "0xf53a02d3",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "sender_address",
+            "tlb_type": "addr",
+            "format": "addr",
+            "optional": true
+          }
+        ]
+      },
+      {
+        "op_name": "edit_invoice",
+        "op_code": "0x48c504f3",
+        "body": [
+          {
+            "name": "has_customer",
+            "tlb_type": "## 2",
+            "format": "int8"
+          },
+          {
+            "name": "customer",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "invoice_id",
+            "tlb_type": "^",
+            "format": "string"
+          },
+          {
+            "name": "metadata",
+            "tlb_type": "^",
+            "format": "string"
+          },
+          {
+            "name": "amount",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "accepts_jetton",
+            "tlb_type": "## 2",
+            "format": "int8"
+          },
+          {
+            "name": "jetton_master_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "jetton_wallet_code",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "deactivate_invoice",
+        "op_code": "0x1cc0b11e",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "activate_invoice",
+        "op_code": "0xc285952f",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "jetton_payment",
+        "op_code": "0x7362d09c",
+        "body": [
+          {
+            "name": "jetton_amount_received",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "sender_user_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "struct",
+            "optional": true,
+            "struct_fields": [
+              {
+                "name": "customer",
+                "tlb_type": "addr",
+                "format": "addr"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op_name": "upgrade_code",
+        "op_code": "0x61bddf8b",
+        "body": [
+          {
+            "name": "new_code",
+            "tlb_type": "^",
+            "format": "cell"
+          },
+          {
+            "name": "has_new_data",
+            "tlb_type": "## 2",
+            "format": "int8"
+          },
+          {
+            "name": "new_data",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_invoice_data",
+        "arguments": [],
+        "return_values": [
+          {
+            "name": "store",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "merchant",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "beneficiary",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "has_customer",
+            "stack_type": "int",
+            "format": "int8"
+          },
+          {
+            "name": "customer",
+            "stack_type": "cell",
+            "format": "addr"
+          },
+          {
+            "name": "invoice_id",
+            "stack_type": "cell",
+            "format": "string"
+          },
+          {
+            "name": "metadata",
+            "stack_type": "cell",
+            "format": "string"
+          },
+          {
+            "name": "amount",
+            "stack_type": "int",
+            "format": "uint64"
+          },
+          {
+            "name": "paid",
+            "stack_type": "int",
+            "format": "int8"
+          },
+          {
+            "name": "active",
+            "stack_type": "int",
+            "format": "int8"
+          },
+          {
+            "name": "accepts_jetton",
+            "stack_type": "int",
+            "format": "int8"
+          },
+          {
+            "name": "jetton_master_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "jetton_wallet_code",
+            "stack_type": "cell",
+            "format": "cell"
+          },
+          {
+            "name": "contract_version",
+            "stack_type": "int",
+            "format": "uint64"
+          }
+        ]
+      }
+    ]
+  }
+]
