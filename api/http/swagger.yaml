@@ -1125,6 +1125,10 @@ paths:
         in: query
         name: workchain
         type: integer
+      - description: search by created_lt
+        in: query
+        name: created_lt
+        type: integer
       - default: DESC
         description: order by created_lt
         enum:
