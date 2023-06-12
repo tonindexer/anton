@@ -25,21 +25,21 @@ func NewRepository(db *bun.DB) *Repository {
 
 func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 	_, err := pgDB.NewCreateTable().
-		Model(&core.ContractInterface{}).
-		IfNotExists().
-		WithForeignKeys().
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "contract interface pg create table")
-	}
-
-	_, err = pgDB.NewCreateTable().
 		Model(&core.ContractOperation{}).
 		IfNotExists().
 		WithForeignKeys().
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "contract operations pg create table")
+	}
+
+	_, err = pgDB.NewCreateTable().
+		Model(&core.ContractInterface{}).
+		IfNotExists().
+		WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "contract interface pg create table")
 	}
 
 	_, err = pgDB.NewCreateIndex().
