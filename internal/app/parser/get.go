@@ -69,7 +69,12 @@ func (s *Service) callGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *
 	}
 	if err != nil {
 		ret.Error = err.Error()
-		log.Warn().Err(err).
+
+		lvl := log.Warn()
+		if d.Name == "get_telemint_auction_state" && ret.Error == "tvm execution failed with code 219" {
+			lvl = log.Debug() // err::no_auction
+		}
+		lvl.Err(err).
 			Str("get_method", d.Name).
 			Str("address", acc.Address.Base64()).
 			Int32("workchain", acc.Workchain).
