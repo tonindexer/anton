@@ -62,6 +62,7 @@ services:
       - idx_ch_data:/var/lib/clickhouse
     expose:
       - "9000"
+      - "8123"
     ulimits:
       nproc: 65535
       nofile:
