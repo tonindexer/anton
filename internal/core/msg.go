@@ -31,6 +31,7 @@ type Message struct {
 	Hash []byte `ch:",pk" bun:"type:bytea,pk,notnull"  json:"hash"`
 
 	// TODO: migrate src/dst blocks to nullable fields
+	// TODO: null addresses in clickhouse
 
 	SrcAddress    addr.Address  `ch:"type:String" bun:"type:bytea,nullzero" json:"src_address,omitempty"`
 	SrcTxLT       uint64        `bun:",nullzero" json:"src_tx_lt,omitempty"`
