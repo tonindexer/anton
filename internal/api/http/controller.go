@@ -396,6 +396,7 @@ func (c *Controller) AggregateAccountsHistory(ctx *gin.Context) {
 //	@Param   		hash				query	string  	false	"search by tx hash"
 //	@Param   		in_msg_hash			query	string  	false	"search by incoming message hash"
 //	@Param   		workchain			query	int32  		false	"filter by workchain"
+//	@Param			created_lt			query	uint64		false	"search by created_lt"
 //	@Param			order				query	string		false	"order by created_lt"			Enums(ASC, DESC) default(DESC)
 //	@Param   		after	     		query   int 		false	"start from this created_lt"
 //	@Param   		limit	     		query   int 		false	"limit"							default(3) maximum(10000)

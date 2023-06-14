@@ -18,9 +18,10 @@ type Transaction struct {
 	ch.CHModel    `ch:"transactions,partition:toYYYYMM(created_at)" json:"-"`
 	bun.BaseModel `bun:"table:transactions" json:"-"`
 
-	Address addr.Address  `ch:"type:String,pk" bun:"type:bytea" json:"address"`
-	Hash    []byte        `bun:"type:bytea,pk,notnull" json:"hash"`
-	Account *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:created_lt=last_tx_lt" json:"account"`
+	Address   addr.Address  `ch:"type:String,pk" bun:"type:bytea" json:"address"`
+	Hash      []byte        `bun:"type:bytea,pk,notnull" json:"hash"`
+	CreatedLT uint64        `ch:",pk" bun:",notnull" json:"created_lt"`
+	Account   *AccountState `ch:"-" bun:"rel:has-one,join:address=address,join:created_lt=last_tx_lt" json:"account"`
 
 	Workchain  int32  `bun:"type:integer,notnull" json:"workchain"`
 	Shard      int64  `bun:"type:bigint,notnull" json:"shard"`
@@ -31,11 +32,11 @@ type Transaction struct {
 
 	InMsgHash []byte      `json:"in_msg_hash"`
 	InMsg     *Message    `ch:"-" bun:"rel:belongs-to,join:in_msg_hash=hash" json:"in_msg"`
-	InAmount  *bunbig.Int `ch:"type:UInt256" bun:"type:numeric,notnull" json:"in_amount"`
+	InAmount  *bunbig.Int `ch:"type:UInt256" bun:"type:numeric,notnull" json:"in_amount,omitempty"`
 
 	OutMsg      []*Message  `ch:"-" bun:"rel:has-many,join:address=src_address,join:created_lt=src_tx_lt" json:"out_msg,omitempty"`
 	OutMsgCount uint16      `bun:",notnull" json:"out_msg_count"`
-	OutAmount   *bunbig.Int `ch:"type:UInt256" bun:"type:numeric,notnull" json:"out_amount"`
+	OutAmount   *bunbig.Int `ch:"type:UInt256" bun:"type:numeric,notnull" json:"out_amount,omitempty"`
 
 	TotalFees *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"total_fees"`
 
@@ -48,7 +49,6 @@ type Transaction struct {
 	EndStatus  AccountStatus `ch:",lc" bun:"type:account_status,notnull" json:"end_status"`
 
 	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
-	CreatedLT uint64    `ch:",pk" bun:",notnull" json:"created_lt"`
 }
 
 func (tx *Transaction) LoadDescription() error { // TODO: optionally load description in API

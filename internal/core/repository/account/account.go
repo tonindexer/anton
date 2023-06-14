@@ -180,7 +180,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 	for _, a := range accounts {
 		_, err := tx.NewInsert().Model(a).Exec(ctx)
 		if err != nil {
-			return errors.Wrapf(err, "cannot insert new %s acc state", a.Address)
+			return errors.Wrapf(err, "cannot insert new %s acc state", a.Address.String())
 		}
 	}
 

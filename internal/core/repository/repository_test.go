@@ -261,7 +261,7 @@ func TestRelations(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, int(master.SeqNo), stats.FirstBlock)
 		assert.Equal(t, int(master.SeqNo), stats.LastBlock)
-		assert.Equal(t, 1, stats.BlockCount)
+		assert.Equal(t, 1, stats.MasterBlockCount)
 		assert.Equal(t, 1, stats.AddressCount)
 		assert.Equal(t, 1, stats.ParsedAddressCount)
 		assert.Equal(t, 1, stats.AccountCount)

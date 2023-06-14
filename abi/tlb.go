@@ -16,10 +16,11 @@ import (
 )
 
 type TLBFieldDesc struct {
-	Name   string        `json:"name"`
-	Type   string        `json:"tlb_type"`
-	Format string        `json:"format"`
-	Fields TLBFieldsDesc `json:"struct_fields,omitempty"` // Format = "struct"
+	Name     string        `json:"name"`
+	Type     string        `json:"tlb_type"`
+	Format   string        `json:"format,omitempty"`
+	Optional bool          `json:"optional,omitempty"`
+	Fields   TLBFieldsDesc `json:"struct_fields,omitempty"` // Format = "struct"
 }
 
 type TLBFieldsDesc []TLBFieldDesc
@@ -170,7 +171,7 @@ func tlbParseSettings(tag string) (reflect.Type, error) {
 	}
 }
 
-func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc) (reflect.Type, error) {
+func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc, skipOptional ...bool) (reflect.Type, error) {
 	var (
 		err error
 		ok  bool
@@ -178,6 +179,10 @@ func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc) (reflect.T
 
 	for i := range schema {
 		f := &schema[i]
+
+		if len(skipOptional) > 0 && skipOptional[0] && f.Optional {
+			continue
+		}
 
 		var sf = reflect.StructField{
 			Name: strcase.ToCamel(f.Name),
@@ -199,7 +204,7 @@ func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc) (reflect.T
 
 		// make new struct
 		if len(f.Fields) > 0 {
-			sf.Type, err = tlbParseDesc(nil, f.Fields)
+			sf.Type, err = tlbParseDesc(nil, f.Fields, skipOptional...)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", sf.Name, err)
 			}
@@ -220,12 +225,27 @@ func NewTLBDesc(x any) (TLBFieldsDesc, error) {
 	return tlbMakeDesc(rv.Type().Elem())
 }
 
-func (d TLBFieldsDesc) New() (any, error) {
-	t, err := tlbParseDesc(nil, d)
+func (desc TLBFieldsDesc) New(skipOptional ...bool) (any, error) {
+	t, err := tlbParseDesc(nil, desc, skipOptional...)
 	if err != nil {
 		return nil, err
 	}
 	return reflect.New(t).Interface(), nil
+}
+
+func (desc TLBFieldsDesc) MapRegisteredDefinitions() {
+	for i := range desc {
+		if desc[i].Format == structTypeName {
+			desc[i].Fields.MapRegisteredDefinitions()
+			continue
+		}
+		d, ok := registeredDefinitions[desc[i].Format]
+		if ok {
+			desc[i].Format = structTypeName
+			desc[i].Fields = d
+			continue
+		}
+	}
 }
 
 func operationID(t reflect.Type) (uint32, error) {
@@ -273,17 +293,21 @@ func NewOperationDesc(x any) (*OperationDesc, error) {
 	return &ret, nil
 }
 
-func (d *OperationDesc) New() (any, error) {
+func (desc *OperationDesc) New(skipOptional ...bool) (any, error) {
 	var fields = []reflect.StructField{
 		{
 			Name: "Op",
-			Tag:  reflect.StructTag(fmt.Sprintf("tlb:\"#%08s\" json:\"-\"", strings.ReplaceAll(d.Code, "0x", ""))),
+			Tag:  reflect.StructTag(fmt.Sprintf("tlb:\"#%08s\" json:\"-\"", strings.ReplaceAll(desc.Code, "0x", ""))),
 			Type: reflect.TypeOf(tlb.Magic{}),
 		},
 	}
-	t, err := tlbParseDesc(fields, d.Body)
+	t, err := tlbParseDesc(fields, desc.Body, skipOptional...)
 	if err != nil {
 		return nil, err
 	}
 	return reflect.New(t).Interface(), nil
+}
+
+func (desc *OperationDesc) MapRegisteredDefinitions() {
+	desc.Body.MapRegisteredDefinitions()
 }

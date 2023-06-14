@@ -37,11 +37,19 @@ type Block struct {
 	MasterID *BlockID `ch:"-" bun:"embed:master_" json:"master,omitempty"`
 	Shards   []*Block `ch:"-" bun:"rel:has-many,join:workchain=master_workchain,join:shard=master_shard,join:seq_no=master_seq_no" json:"shards,omitempty"`
 
-	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:workchain=workchain,join:shard=shard,join:seq_no=block_seq_no" json:"transactions"`
+	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:workchain=workchain,join:shard=shard,join:seq_no=block_seq_no" json:"transactions,omitempty"`
 
 	// TODO: block info data
 
 	ScannedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"scanned_at"`
+}
+
+func (b *Block) ID() BlockID {
+	return BlockID{
+		Workchain: b.Workchain,
+		Shard:     b.Shard,
+		SeqNo:     b.SeqNo,
+	}
 }
 
 type BlockRepository interface {

@@ -27,8 +27,8 @@ func (i *InterfaceDesc) RegisterDefinitions() error {
 		if err != nil {
 			return errors.Wrapf(err, "parse '%s' definition", dn)
 		}
-		t := reflect.TypeOf(v)
-		typeNameMap[dn] = t
+		typeNameMap[dn] = reflect.TypeOf(v)
+		registeredDefinitions[dn] = d
 	}
 	return nil
 }

@@ -26,8 +26,18 @@ func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
 func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 	_, err := pgDB.NewCreateIndex().
 		Model(&core.Block{}).
-		Using("HASH").
-		Column("workchain").
+		Using("BTREE").
+		Column("workchain", "seq_no").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "block workchain pg create index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.Block{}).
+		Using("BTREE").
+		Column("master_workchain", "master_shard", "master_seq_no").
+		Where("workchain != -1").
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "block workchain pg create index")

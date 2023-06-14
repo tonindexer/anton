@@ -190,12 +190,20 @@ CREATE TABLE contract_operations (
     operation_id integer NOT NULL,
     schema jsonb,
     CONSTRAINT contract_operations_pkey PRIMARY KEY (contract_name, outgoing, operation_id),
-    CONSTRAINT contract_interfaces_uniq_name UNIQUE (operation_name, contract_name)
+    CONSTRAINT contract_interfaces_uniq_name UNIQUE (operation_name, contract_name),
+    CONSTRAINT contract_operations_contract_name_fkey FOREIGN KEY (contract_name) REFERENCES contract_interfaces(name)
 );
 
 
 --bun:split
-CREATE INDEX account_states_address_idx ON account_states USING hash (address);
+CREATE INDEX block_info_workchain_seq_no_idx ON block_info USING btree (workchain, seq_no);
+
+--bun:split
+CREATE INDEX block_info_master_block_id_idx ON block_info USING btree (master_workchain, master_shard, master_seq_no) WHERE (workchain != -1);
+
+
+--bun:split
+CREATE INDEX account_states_address_idx ON account_states USING btree (address);
 
 --bun:split
 CREATE UNIQUE INDEX account_states_address_workchain_shard_block_seq_no_idx ON account_states USING btree (address, workchain, shard, block_seq_no);
@@ -204,17 +212,13 @@ CREATE UNIQUE INDEX account_states_address_workchain_shard_block_seq_no_idx ON a
 CREATE INDEX account_states_last_tx_lt_idx ON account_states USING btree (last_tx_lt);
 
 --bun:split
-CREATE INDEX account_states_minter_address_idx ON account_states USING hash (minter_address) WHERE (minter_address IS NOT NULL);
+CREATE INDEX account_states_minter_address_idx ON account_states USING btree (minter_address) WHERE (minter_address IS NOT NULL);
 
 --bun:split
-CREATE INDEX account_states_owner_address_idx ON account_states USING hash (owner_address) WHERE (owner_address IS NOT NULL);
+CREATE INDEX account_states_owner_address_idx ON account_states USING btree (owner_address) WHERE (owner_address IS NOT NULL);
 
 --bun:split
 CREATE INDEX account_states_types_idx ON account_states USING gin (types);
-
-
---bun:split
-CREATE INDEX block_info_workchain_idx ON block_info USING hash (workchain);
 
 
 --bun:split
@@ -228,22 +232,22 @@ CREATE INDEX latest_account_states_last_tx_lt_idx ON latest_account_states USING
 CREATE INDEX messages_created_lt_idx ON messages USING btree (created_lt);
 
 --bun:split
-CREATE INDEX messages_dst_address_idx ON messages USING hash (dst_address) WHERE (dst_address IS NOT NULL);
+CREATE INDEX messages_dst_address_idx ON messages USING btree (dst_address) WHERE (dst_address IS NOT NULL);
 
 --bun:split
-CREATE INDEX messages_src_address_idx ON messages USING hash (src_address) WHERE (src_address IS NOT NULL);
+CREATE INDEX messages_src_address_idx ON messages USING btree (src_address) WHERE (src_address IS NOT NULL);
 
 --bun:split
-CREATE INDEX messages_src_contract_idx ON messages USING hash (src_contract) WHERE (src_contract IS NOT NULL);
+CREATE INDEX messages_src_contract_idx ON messages USING btree (src_contract) WHERE (src_contract IS NOT NULL);
 
 --bun:split
-CREATE INDEX messages_dst_contract_idx ON messages USING hash (dst_contract) WHERE (src_contract IS NOT NULL);
+CREATE INDEX messages_dst_contract_idx ON messages USING btree (dst_contract) WHERE (src_contract IS NOT NULL);
 
 --bun:split
-CREATE INDEX messages_operation_id_idx ON messages USING hash (operation_id);
+CREATE INDEX messages_operation_id_idx ON messages USING btree (operation_id);
 
 --bun:split
-CREATE INDEX messages_operation_name_idx ON messages USING hash (operation_name) WHERE (operation_name IS NOT NULL);
+CREATE INDEX messages_operation_name_idx ON messages USING btree (operation_name) WHERE (operation_name IS NOT NULL);
 
 --bun:split
 CREATE UNIQUE INDEX messages_src_address_created_lt_idx ON messages USING btree (src_address, created_lt) WHERE (src_address IS NOT NULL);
@@ -256,7 +260,7 @@ CREATE INDEX messages_src_address_src_tx_lt_idx ON messages USING btree (src_add
 CREATE UNIQUE INDEX transactions_address_created_lt_idx ON transactions USING btree (address, created_lt);
 
 --bun:split
-CREATE INDEX transactions_address_idx ON transactions USING hash (address);
+CREATE INDEX transactions_address_idx ON transactions USING btree (address);
 
 --bun:split
 CREATE INDEX transactions_created_lt_idx ON transactions USING btree (created_lt);

@@ -17,15 +17,21 @@ definitions:
     properties:
       arguments:
         items:
-          $ref: '#/definitions/abi.VmValue'
+          $ref: '#/definitions/abi.VmValueDesc'
         type: array
       error:
         type: string
       name:
         type: string
-      returns:
+      receives:
+        items: {}
+        type: array
+      return_values:
         items:
-          $ref: '#/definitions/abi.VmValue'
+          $ref: '#/definitions/abi.VmValueDesc'
+        type: array
+      returns:
+        items: {}
         type: array
     type: object
   abi.OperationDesc:
@@ -55,7 +61,7 @@ definitions:
     - VmInt
     - VmCell
     - VmSlice
-    - VmAddrSlice
+    - VmAddr
     - VmBool
     - VmBigInt
     - VmString
@@ -67,6 +73,8 @@ definitions:
         type: string
       name:
         type: string
+      optional:
+        type: boolean
       struct_fields:
         allOf:
         - $ref: '#/definitions/abi.TLBFieldsDesc'
@@ -78,16 +86,6 @@ definitions:
     items:
       $ref: '#/definitions/abi.TLBFieldDesc'
     type: array
-  abi.VmValue:
-    properties:
-      format:
-        $ref: '#/definitions/abi.StackType'
-      name:
-        type: string
-      payload: {}
-      stack_type:
-        $ref: '#/definitions/abi.StackType'
-    type: object
   abi.VmValueDesc:
     properties:
       format:
@@ -330,8 +328,10 @@ definitions:
     type: object
   core.AddressLabel:
     properties:
-      category:
-        type: string
+      categories:
+        items:
+          type: string
+        type: array
       name:
         type: string
     type: object
@@ -395,6 +395,10 @@ definitions:
         type: array
       name:
         type: string
+      operations:
+        items:
+          $ref: '#/definitions/core.ContractOperation'
+        type: array
     type: object
   core.ContractOperation:
     properties:
@@ -1120,6 +1124,10 @@ paths:
       - description: filter by workchain
         in: query
         name: workchain
+        type: integer
+      - description: search by created_lt
+        in: query
+        name: created_lt
         type: integer
       - default: DESC
         description: order by created_lt

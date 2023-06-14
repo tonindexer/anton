@@ -3,6 +3,8 @@ package query
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
@@ -79,6 +81,9 @@ func (s *Service) AggregateTransactionsHistory(ctx context.Context, req *history
 }
 
 func (s *Service) FilterMessages(ctx context.Context, req *filter.MessagesReq) (*filter.MessagesRes, error) {
+	if req.OperationID != nil && len(req.OperationNames) > 0 {
+		return nil, errors.Wrap(core.ErrInvalidArg, "filter is available either on operation name or operation id")
+	}
 	return s.msgRepo.FilterMessages(ctx, req)
 }
 

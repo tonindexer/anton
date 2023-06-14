@@ -9,6 +9,7 @@ import (
 
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/repository"
 	"github.com/tonindexer/anton/internal/core/repository/account"
 	"github.com/tonindexer/anton/internal/core/repository/block"
 	"github.com/tonindexer/anton/internal/core/repository/msg"
@@ -17,17 +18,27 @@ import (
 
 var _ app.IndexerService = (*Service)(nil)
 
+type pendingMaster struct {
+	Info []*core.Block
+	Tx   []*core.Transaction
+	Acc  []*core.AccountState
+	Msg  []*core.Message
+}
+
 type Service struct {
 	*app.IndexerConfig
 
 	blockRepo   core.BlockRepository
 	txRepo      core.TransactionRepository
-	msgRepo     core.MessageRepository
+	msgRepo     repository.Message
 	accountRepo core.AccountRepository
 
-	threaded bool
+	unknownDstMsg map[string]*core.Message
 
-	unknownDstMsg map[uint32]map[string]*core.Message
+	masterShardsCache map[core.BlockID][]core.BlockID
+	shardsMasterMap   map[core.BlockID]core.BlockID
+
+	pendingMasters map[uint32]pendingMaster
 
 	run bool
 	mx  sync.RWMutex
@@ -39,15 +50,29 @@ func NewService(cfg *app.IndexerConfig) *Service {
 
 	s.IndexerConfig = cfg
 
+	// validate config
+	if s.Workers < 1 {
+		s.Workers = 1
+	}
+	if s.InsertBlockBatch < 1 {
+		s.InsertBlockBatch = 1
+	}
+	if s.FromBlock < 2 {
+		s.FromBlock = 2
+	}
+
 	ch, pg := s.DB.CH, s.DB.PG
 	s.txRepo = tx.NewRepository(ch, pg)
 	s.msgRepo = msg.NewRepository(ch, pg)
 	s.blockRepo = block.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)
 
-	s.threaded = true
+	s.unknownDstMsg = make(map[string]*core.Message)
 
-	s.unknownDstMsg = make(map[uint32]map[string]*core.Message)
+	s.masterShardsCache = make(map[core.BlockID][]core.BlockID)
+	s.shardsMasterMap = make(map[core.BlockID]core.BlockID)
+
+	s.pendingMasters = make(map[uint32]pendingMaster)
 
 	return s
 }
@@ -76,7 +101,7 @@ func (s *Service) Start() error {
 	s.run = true
 	s.mx.Unlock()
 
-	blocksChan := make(chan processedMasterBlock, s.Workers*2)
+	blocksChan := make(chan *core.Block, s.Workers*2)
 
 	s.wg.Add(1)
 	go s.fetchMasterLoop(fromBlock, blocksChan)
@@ -84,7 +109,11 @@ func (s *Service) Start() error {
 	s.wg.Add(1)
 	go s.saveBlocksLoop(blocksChan)
 
-	log.Info().Uint32("from_block", fromBlock).Msg("started")
+	log.Info().
+		Uint32("from_block", fromBlock).
+		Int("workers", s.Workers).
+		Int("insert_block_batch", s.InsertBlockBatch).
+		Msg("started")
 
 	return nil
 }

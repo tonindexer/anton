@@ -15,32 +15,31 @@ import (
 var _ repository.Contract = (*Repository)(nil)
 
 type Repository struct {
-	pg         *bun.DB
-	interfaces []*core.ContractInterface
-	operations []*core.ContractOperation
+	pg    *bun.DB
+	cache *cache
 }
 
 func NewRepository(db *bun.DB) *Repository {
-	return &Repository{pg: db}
+	return &Repository{pg: db, cache: newCache()}
 }
 
 func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 	_, err := pgDB.NewCreateTable().
-		Model(&core.ContractInterface{}).
-		IfNotExists().
-		WithForeignKeys().
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "contract interface pg create table")
-	}
-
-	_, err = pgDB.NewCreateTable().
 		Model(&core.ContractOperation{}).
 		IfNotExists().
 		WithForeignKeys().
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "contract operations pg create table")
+	}
+
+	_, err = pgDB.NewCreateTable().
+		Model(&core.ContractInterface{}).
+		IfNotExists().
+		WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "contract interface pg create table")
 	}
 
 	_, err = pgDB.NewCreateIndex().
@@ -108,10 +107,8 @@ func (r *Repository) DelInterface(ctx context.Context, name string) error {
 func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
 	var ret []*core.ContractInterface
 
-	// TODO: clear cache
-
-	if len(r.interfaces) > 0 {
-		return r.interfaces, nil
+	if i := r.cache.getInterfaces(); i != nil {
+		return i, nil
 	}
 
 	err := r.pg.NewSelect().Model(&ret).Scan(ctx)
@@ -119,9 +116,7 @@ func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterfa
 		return nil, err
 	}
 
-	if len(ret) > 0 {
-		r.interfaces = ret
-	}
+	r.cache.setInterfaces(ret)
 
 	return ret, nil
 }
@@ -129,10 +124,8 @@ func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterfa
 func (r *Repository) GetOperations(ctx context.Context) ([]*core.ContractOperation, error) {
 	var ret []*core.ContractOperation
 
-	// TODO: clear cache
-
-	if len(r.operations) > 0 {
-		return r.operations, nil
+	if op := r.cache.getOperations(); op != nil {
+		return op, nil
 	}
 
 	err := r.pg.NewSelect().Model(&ret).Scan(ctx)
@@ -140,9 +133,7 @@ func (r *Repository) GetOperations(ctx context.Context) ([]*core.ContractOperati
 		return nil, err
 	}
 
-	if len(ret) > 0 {
-		r.operations = ret
-	}
+	r.cache.setOperations(ret)
 
 	return ret, nil
 }
@@ -152,6 +143,10 @@ func (r *Repository) GetOperationByID(ctx context.Context, types []abi.ContractN
 
 	if len(types) == 0 {
 		return nil, errors.Wrap(core.ErrNotFound, "no contract types")
+	}
+
+	if op := r.cache.getOperationByID(types, outgoing, id); op != nil {
+		return op, nil
 	}
 
 	err := r.pg.NewSelect().Model(&ret).

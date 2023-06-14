@@ -12,9 +12,9 @@ import (
 )
 
 type Statistics struct {
-	FirstBlock int `json:"first_masterchain_block"`
-	LastBlock  int `json:"last_masterchain_block"`
-	BlockCount int `json:"masterchain_block_count"`
+	FirstBlock       int `json:"first_masterchain_block"`
+	LastBlock        int `json:"last_masterchain_block"`
+	MasterBlockCount int `json:"masterchain_block_count"`
 
 	AddressCount       int `json:"address_count"`
 	ParsedAddressCount int `json:"parsed_address_count"`
@@ -50,14 +50,14 @@ func GetStatistics(ctx context.Context, ck *ch.DB, pg *bun.DB) (*Statistics, err
 	var ret Statistics
 
 	err := ck.NewSelect().Model((*core.Block)(nil)).
+		ColumnExpr("count(seq_no) as masterchain_block_count").
 		ColumnExpr("min(seq_no) as first_masterchain_block").
 		ColumnExpr("max(seq_no) as last_masterchain_block").
 		Where("workchain = -1").
-		Scan(ctx, &ret.FirstBlock, &ret.LastBlock)
+		Scan(ctx, &ret.MasterBlockCount, &ret.FirstBlock, &ret.LastBlock)
 	if err != nil {
 		return nil, errors.Wrap(err, "first and last masterchain blocks")
 	}
-	ret.BlockCount = ret.LastBlock - ret.FirstBlock + 1
 
 	ret.AccountCount, err = ck.NewSelect().Model((*core.AccountState)(nil)).Count(ctx)
 	if err != nil {
@@ -103,6 +103,9 @@ func GetStatistics(ctx context.Context, ck *ch.DB, pg *bun.DB) (*Statistics, err
 		return nil, errors.Wrap(err, "account interfaces count")
 	}
 	for _, row := range ret.AccountTypesCount {
+		if len(row.Interfaces) == 0 {
+			continue
+		}
 		ret.ParsedAddressCount += row.Count
 	}
 
