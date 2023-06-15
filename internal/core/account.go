@@ -47,7 +47,7 @@ type NFTContentData struct {
 }
 
 type FTWalletData struct {
-	JettonBalance *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"balance,omitempty" swaggertype:"string"`
+	JettonBalance *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"jetton_balance,omitempty" swaggertype:"string"`
 }
 
 type AccountState struct {
