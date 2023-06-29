@@ -372,7 +372,7 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "description": "filter by categories",
-                        "name": "interface",
+                        "name": "category",
                         "in": "query"
                     },
                     {

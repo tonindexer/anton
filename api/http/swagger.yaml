@@ -943,7 +943,7 @@ paths:
         in: query
         items:
           type: string
-        name: interface
+        name: category
         type: array
       - description: offset
         in: query
