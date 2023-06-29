@@ -68,14 +68,6 @@ func (r *Repository) AddInterface(ctx context.Context, i *core.ContractInterface
 	return nil
 }
 
-func (r *Repository) AddOperation(ctx context.Context, op *core.ContractOperation) error {
-	_, err := r.pg.NewInsert().Model(op).Exec(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (r *Repository) DelInterface(ctx context.Context, name string) error {
 	_, err := r.pg.NewDelete().
 		Model((*core.ContractOperation)(nil)).
@@ -119,6 +111,37 @@ func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterfa
 	r.cache.setInterfaces(ret)
 
 	return ret, nil
+}
+
+func (r *Repository) GetMethodDescription(ctx context.Context, name abi.ContractName, method string) (abi.GetMethodDesc, error) {
+	if d, ok := r.cache.getMethodDesc(name, method); ok {
+		return d, nil
+	}
+
+	var i core.ContractInterface
+
+	err := r.pg.NewSelect().Model(&i).
+		Where("name = ?", name).
+		Scan(ctx)
+	if err != nil {
+		return abi.GetMethodDesc{}, err
+	}
+
+	for _, d := range i.GetMethodsDesc {
+		if d.Name == method {
+			return d, nil
+		}
+	}
+
+	return abi.GetMethodDesc{}, core.ErrNotFound
+}
+
+func (r *Repository) AddOperation(ctx context.Context, op *core.ContractOperation) error {
+	_, err := r.pg.NewInsert().Model(op).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *Repository) GetOperations(ctx context.Context) ([]*core.ContractOperation, error) {

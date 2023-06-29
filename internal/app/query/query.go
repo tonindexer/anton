@@ -149,12 +149,31 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 	return nil
 }
 
+func (s *Service) addGetMethodDescription(ctx context.Context, rows []*core.AccountState) error {
+	for _, r := range rows {
+		for name, methods := range r.ExecutedGetMethods {
+			for it, m := range methods {
+				d, err := s.contractRepo.GetMethodDescription(ctx, name, m.Name)
+				if err != nil {
+					return errors.Wrapf(err, "cannot get %s get-method description of contract %s", m.Name, name)
+				}
+				methods[it].Arguments = d.Arguments
+				methods[it].ReturnValues = d.ReturnValues
+			}
+		}
+	}
+	return nil
+}
+
 func (s *Service) FilterAccounts(ctx context.Context, req *filter.AccountsReq) (*filter.AccountsRes, error) {
 	res, err := s.accountRepo.FilterAccounts(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	if err := s.fetchSkippedAccounts(ctx, req, res); err != nil {
+		return nil, err
+	}
+	if err := s.addGetMethodDescription(ctx, res.Rows); err != nil {
 		return nil, err
 	}
 	return res, nil
