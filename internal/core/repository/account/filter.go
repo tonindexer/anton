@@ -12,6 +12,63 @@ import (
 	"github.com/tonindexer/anton/internal/core/filter"
 )
 
+func (r *Repository) filterAddressLabels(ctx context.Context, f *filter.LabelsReq) (ret []*core.AddressLabel, err error) {
+	q := r.pg.NewSelect().Model(&ret)
+
+	if f.Name != "" {
+		q = q.Where("name ILIKE ?", "%"+f.Name+"%")
+	}
+	if len(f.Categories) > 0 {
+		q = q.Where("categories && ?", pgdialect.Array(f.Categories))
+	}
+
+	q.Order("name ASC")
+
+	if f.Limit == 0 {
+		f.Limit = 3
+	}
+	q = q.Limit(f.Limit)
+
+	err = q.Scan(ctx)
+
+	return ret, err
+}
+
+func (r *Repository) countAddressLabels(ctx context.Context, f *filter.LabelsReq) (int, error) {
+	q := r.ch.NewSelect().Model((*core.AddressLabel)(nil))
+
+	if f.Name != "" {
+		q = q.Where("positionCaseInsensitive(name, ?) > 0", f.Name)
+	}
+	if len(f.Categories) > 0 {
+		q = q.Where("hasAny(categories, [?])", ch.In(f.Categories))
+	}
+
+	return q.Count(ctx)
+}
+
+func (r *Repository) FilterLabels(ctx context.Context, f *filter.LabelsReq) (*filter.LabelsRes, error) {
+	var (
+		res = new(filter.LabelsRes)
+		err error
+	)
+
+	res.Rows, err = r.filterAddressLabels(ctx, f)
+	if err != nil {
+		return res, err
+	}
+	if len(res.Rows) == 0 {
+		return res, nil
+	}
+
+	res.Total, err = r.countAddressLabels(ctx, f)
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
 func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq) (ret []*core.AccountState, err error) {
 	var (
 		q                   *bun.SelectQuery

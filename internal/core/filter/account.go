@@ -8,6 +8,17 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
+type LabelsReq struct {
+	Name       string               `form:"name"`
+	Categories []core.LabelCategory `form:"category"`
+	Limit      int                  `form:"limit"`
+}
+
+type LabelsRes struct {
+	Total int                  `json:"total"`
+	Rows  []*core.AddressLabel `json:"results"`
+}
+
 type AccountsReq struct {
 	Addresses   []*addr.Address // `form:"addresses"`
 	LatestState bool            `form:"latest"`
@@ -31,5 +42,6 @@ type AccountsRes struct {
 }
 
 type AccountRepository interface {
+	FilterLabels(context.Context, *LabelsReq) (*LabelsRes, error)
 	FilterAccounts(context.Context, *AccountsReq) (*AccountsRes, error)
 }
