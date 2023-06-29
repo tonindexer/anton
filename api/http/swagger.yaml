@@ -95,6 +95,22 @@ definitions:
       stack_type:
         $ref: '#/definitions/abi.StackType'
     type: object
+  aggregate.AccountStatusCount:
+    properties:
+      count:
+        type: integer
+      status:
+        type: string
+    type: object
+  aggregate.AccountTypesCount:
+    properties:
+      count:
+        type: integer
+      interfaces:
+        items:
+          type: string
+        type: array
+    type: object
   aggregate.AccountsRes:
     properties:
       items:
@@ -188,23 +204,11 @@ definitions:
         type: integer
       account_count_by_interfaces:
         items:
-          properties:
-            count:
-              type: integer
-            interfaces:
-              items:
-                type: string
-              type: array
-          type: object
+          $ref: '#/definitions/aggregate.AccountTypesCount'
         type: array
       account_count_by_status:
         items:
-          properties:
-            count:
-              type: integer
-            status:
-              type: string
-          type: object
+          $ref: '#/definitions/aggregate.AccountStatusCount'
         type: array
       address_count:
         type: integer
@@ -941,6 +945,10 @@ paths:
           type: string
         name: interface
         type: array
+      - description: offset
+        in: query
+        name: offset
+        type: integer
       - default: 3
         description: limit
         in: query

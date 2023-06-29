@@ -376,6 +376,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
                         "maximum": 10000,
                         "type": "integer",
                         "default": 3,
@@ -1011,6 +1017,31 @@ const docTemplate = `{
                 }
             }
         },
+        "aggregate.AccountStatusCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "aggregate.AccountTypesCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "interfaces": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "aggregate.AccountsRes": {
             "type": "object",
             "properties": {
@@ -1153,32 +1184,13 @@ const docTemplate = `{
                 "account_count_by_interfaces": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "properties": {
-                            "count": {
-                                "type": "integer"
-                            },
-                            "interfaces": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
+                        "$ref": "#/definitions/aggregate.AccountTypesCount"
                     }
                 },
                 "account_count_by_status": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "properties": {
-                            "count": {
-                                "type": "integer"
-                            },
-                            "status": {
-                                "type": "string"
-                            }
-                        }
+                        "$ref": "#/definitions/aggregate.AccountStatusCount"
                     }
                 },
                 "address_count": {
