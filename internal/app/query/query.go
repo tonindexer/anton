@@ -89,6 +89,7 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 		if core.SkipAddress(*a) {
 			// fetch heavy skipped account states
 			skipped = append(skipped, a)
+			continue
 		}
 		c, err := s.txRepo.CountTransactions(ctx, *a)
 		if err != nil {
@@ -97,6 +98,7 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 		if c > 0 {
 			// we have transactions on the address, but no state in the database (uninit account state)
 			skipped = append(skipped, a)
+			continue
 		}
 	}
 	if len(skipped) == 0 {
