@@ -75,6 +75,9 @@ func marshalInterfacesKey(interfaces []abi.ContractName) string {
 func unmarshalInterfacesKey(raw string) (ret []abi.ContractName) {
 	str := strings.Split(raw, ",")
 	for _, s := range str {
+		if s == "" {
+			continue
+		}
 		ret = append(ret, abi.ContractName(s))
 	}
 	return ret
@@ -143,8 +146,8 @@ func getAccountStatistics(ctx context.Context, ck *ch.DB, ret *Statistics) error
 		ret.AccountTypesCount = append(ret.AccountTypesCount, AccountTypesCount{Interfaces: unmarshalInterfacesKey(i), Count: c})
 	}
 
-	sort.Slice(ret.AccountStatusCount, func(i, j int) bool { return ret.AccountStatusCount[i].Count < ret.AccountStatusCount[j].Count })
-	sort.Slice(ret.AccountTypesCount, func(i, j int) bool { return ret.AccountTypesCount[i].Count < ret.AccountTypesCount[j].Count })
+	sort.Slice(ret.AccountStatusCount, func(i, j int) bool { return ret.AccountStatusCount[i].Count > ret.AccountStatusCount[j].Count })
+	sort.Slice(ret.AccountTypesCount, func(i, j int) bool { return ret.AccountTypesCount[i].Count > ret.AccountTypesCount[j].Count })
 
 	for _, row := range ret.AccountStatusCount {
 		ret.AddressCount += row.Count
