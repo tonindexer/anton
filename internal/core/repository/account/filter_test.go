@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -46,6 +47,13 @@ func TestRepository_FilterLabels(t *testing.T) {
 
 		err = repo.AddAddressLabel(ctx, beef)
 		require.Nil(t, err)
+
+		l, err := repo.GetAddressLabel(ctx, dead.Address)
+		require.Nil(t, err)
+		require.Equal(t, dead, l)
+
+		_, err = repo.GetAddressLabel(ctx, *rndm.Address())
+		require.True(t, errors.Is(err, core.ErrNotFound))
 	})
 
 	t.Run("filter by name", func(t *testing.T) {

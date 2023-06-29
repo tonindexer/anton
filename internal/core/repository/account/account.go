@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -170,6 +171,20 @@ func (r *Repository) AddAddressLabel(ctx context.Context, label *core.AddressLab
 		return errors.Wrap(err, "ch insert label")
 	}
 	return nil
+}
+
+func (r *Repository) GetAddressLabel(ctx context.Context, a addr.Address) (*core.AddressLabel, error) {
+	var label = core.AddressLabel{Address: a}
+
+	err := r.pg.NewSelect().Model(&label).WherePK().Scan(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, core.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &label, nil
 }
 
 func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts []*core.AccountState) error {

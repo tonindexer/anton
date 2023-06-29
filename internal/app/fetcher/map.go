@@ -15,7 +15,7 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-func mapAccount(b *ton.BlockIDExt, acc *tlb.Account) *core.AccountState {
+func MapAccount(b *ton.BlockIDExt, acc *tlb.Account) *core.AccountState {
 	ret := new(core.AccountState)
 
 	ret.Workchain = b.Workchain

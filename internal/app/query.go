@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 
+	"github.com/xssnick/tonutils-go/ton"
+
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
 	"github.com/tonindexer/anton/internal/core/aggregate/history"
@@ -12,6 +14,8 @@ import (
 
 type QueryConfig struct {
 	DB *repository.DB
+
+	API *ton.APIClient
 }
 
 type QueryService interface {
