@@ -60,6 +60,14 @@ func (s *Service) FilterBlocks(ctx context.Context, req *filter.BlocksReq) (*fil
 	return s.blockRepo.FilterBlocks(ctx, req)
 }
 
+func (s *Service) GetLabelCategories(_ context.Context) ([]core.LabelCategory, error) {
+	return []core.LabelCategory{core.Scam, core.CentralizedExchange}, nil
+}
+
+func (s *Service) FilterLabels(ctx context.Context, req *filter.LabelsReq) (*filter.LabelsRes, error) {
+	return s.accountRepo.FilterLabels(ctx, req)
+}
+
 func (s *Service) FilterAccounts(ctx context.Context, req *filter.AccountsReq) (*filter.AccountsRes, error) {
 	return s.accountRepo.FilterAccounts(ctx, req)
 }

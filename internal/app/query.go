@@ -21,6 +21,9 @@ type QueryService interface {
 	GetOperations(ctx context.Context) ([]*core.ContractOperation, error)
 
 	filter.BlockRepository
+
+	GetLabelCategories(context.Context) ([]core.LabelCategory, error)
+
 	filter.AccountRepository
 	filter.TransactionRepository
 	filter.MessageRepository
