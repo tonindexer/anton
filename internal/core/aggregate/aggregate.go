@@ -143,7 +143,11 @@ func getAccountStatistics(ctx context.Context, ck *ch.DB, ret *Statistics) error
 		ret.AccountStatusCount = append(ret.AccountStatusCount, AccountStatusCount{Status: s, Count: c})
 	}
 	for i, c := range accountTypes {
-		ret.AccountTypesCount = append(ret.AccountTypesCount, AccountTypesCount{Interfaces: unmarshalInterfacesKey(i), Count: c})
+		r := AccountTypesCount{Interfaces: unmarshalInterfacesKey(i), Count: c}
+		if len(r.Interfaces) == 0 {
+			continue
+		}
+		ret.AccountTypesCount = append(ret.AccountTypesCount, r)
 	}
 
 	sort.Slice(ret.AccountStatusCount, func(i, j int) bool { return ret.AccountStatusCount[i].Count > ret.AccountStatusCount[j].Count })
