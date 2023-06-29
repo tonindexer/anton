@@ -158,7 +158,7 @@ type GetInterfacesRes struct {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200		{object}		GetInterfacesRes
-//	@Router			/contract/interfaces [get]
+//	@Router			/contracts/interfaces [get]
 func (c *Controller) GetInterfaces(ctx *gin.Context) {
 	ret, err := c.svc.GetInterfaces(ctx)
 	if err != nil {
@@ -181,7 +181,7 @@ type GetOperationsRes struct {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200		{object}		GetOperationsRes
-//	@Router			/contract/operations [get]
+//	@Router			/contracts/operations [get]
 func (c *Controller) GetOperations(ctx *gin.Context) {
 	ret, err := c.svc.GetOperations(ctx)
 	if err != nil {

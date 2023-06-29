@@ -895,7 +895,7 @@ paths:
       summary: block info
       tags:
       - block
-  /contract/interfaces:
+  /contracts/interfaces:
     get:
       consumes:
       - application/json
@@ -910,7 +910,7 @@ paths:
       summary: contract interfaces
       tags:
       - contract
-  /contract/operations:
+  /contracts/operations:
     get:
       consumes:
       - application/json

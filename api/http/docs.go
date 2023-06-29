@@ -300,7 +300,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/contract/interfaces": {
+        "/contracts/interfaces": {
             "get": {
                 "description": "Returns known contract interfaces",
                 "consumes": [
@@ -323,7 +323,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/contract/operations": {
+        "/contracts/operations": {
             "get": {
                 "description": "Returns known contract message payloads schema",
                 "consumes": [
