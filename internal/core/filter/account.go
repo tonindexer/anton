@@ -11,6 +11,7 @@ import (
 type LabelsReq struct {
 	Name       string               `form:"name"`
 	Categories []core.LabelCategory `form:"category"`
+	Offset     int                  `form:"offset"`
 	Limit      int                  `form:"limit"`
 }
 

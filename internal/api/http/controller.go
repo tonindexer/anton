@@ -279,6 +279,7 @@ func (c *Controller) GetLabelCategories(ctx *gin.Context) {
 //	@Produce		json
 //	@Param   		name				query	string  	false	"filter labels by its name"
 //	@Param   		interface			query	[]string  	false	"filter by categories"
+//	@Param   		offset	     		query   int 		false	"offset"
 //	@Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
 //	@Success		200		{object}	filter.LabelsRes
 //	@Router			/labels [get]

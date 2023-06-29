@@ -22,7 +22,9 @@ func (r *Repository) filterAddressLabels(ctx context.Context, f *filter.LabelsRe
 		q = q.Where("categories && ?", pgdialect.Array(f.Categories))
 	}
 
-	q.Order("name ASC")
+	q = q.Order("name ASC")
+
+	q = q.Offset(f.Offset)
 
 	if f.Limit == 0 {
 		f.Limit = 3
