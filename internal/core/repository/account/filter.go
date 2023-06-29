@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/go-clickhouse/ch"
@@ -57,6 +58,9 @@ func (r *Repository) FilterLabels(ctx context.Context, f *filter.LabelsReq) (*fi
 
 	res.Rows, err = r.filterAddressLabels(ctx, f)
 	if err != nil {
+		if strings.Contains(err.Error(), "invalid input value for enum label_category") {
+			return nil, errors.Wrap(core.ErrInvalidArg, "invalid input value for enum label_category")
+		}
 		return res, err
 	}
 	if len(res.Rows) == 0 {
