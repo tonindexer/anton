@@ -246,6 +246,64 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, ret)
 }
 
+type GetLabelCategoriesRes struct {
+	Total   int                  `json:"total"`
+	Results []core.LabelCategory `json:"results"`
+}
+
+// GetLabelCategories godoc
+//
+//	@Summary		address label categories
+//	@Description	Returns all possible label categories
+//	@Tags			label
+//	@Accept			json
+//	@Produce		json
+//	@Success		200		{object}	GetLabelCategoriesRes
+//	@Router			/labels/categories [get]
+func (c *Controller) GetLabelCategories(ctx *gin.Context) {
+	ret, err := c.svc.GetLabelCategories(ctx)
+	if err != nil {
+		internalErr(ctx, err)
+		return
+	}
+
+	ctx.IndentedJSON(http.StatusOK, GetLabelCategoriesRes{Total: len(ret), Results: ret})
+}
+
+// GetLabels godoc
+//
+//	@Summary		address labels
+//	@Description	Search addresses by label name or category
+//	@Tags			label
+//	@Accept			json
+//	@Produce		json
+//	@Param   		name				query	string  	false	"filter labels by its name"
+//	@Param   		interface			query	[]string  	false	"filter by categories"
+//	@Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
+//	@Success		200		{object}	filter.LabelsRes
+//	@Router			/labels [get]
+func (c *Controller) GetLabels(ctx *gin.Context) {
+	var req filter.LabelsReq
+
+	err := ctx.ShouldBindQuery(&req)
+	if err != nil {
+		paramErr(ctx, "label_filter", err)
+		return
+	}
+	if req.Limit > 10000 {
+		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		return
+	}
+
+	ret, err := c.svc.FilterLabels(ctx, &req)
+	if err != nil {
+		internalErr(ctx, err)
+		return
+	}
+
+	ctx.IndentedJSON(http.StatusOK, ret)
+}
+
 // GetAccounts godoc
 //
 //	@Summary		account data

@@ -247,7 +247,7 @@ definitions:
           type: integer
         type: array
       balance:
-        type: string
+        $ref: '#/definitions/bunbig.Int'
       block_seq_no:
         type: integer
       code:
@@ -290,6 +290,8 @@ definitions:
         type: array
       is_active:
         type: boolean
+      jetton_balance:
+        type: string
       label:
         $ref: '#/definitions/core.AddressLabel'
       last_tx_hash:
@@ -328,6 +330,10 @@ definitions:
     type: object
   core.AddressLabel:
     properties:
+      address:
+        items:
+          type: integer
+        type: array
       categories:
         items:
           type: string
@@ -589,6 +595,15 @@ definitions:
       total:
         type: integer
     type: object
+  filter.LabelsRes:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.AddressLabel'
+        type: array
+      total:
+        type: integer
+    type: object
   filter.MessagesRes:
     properties:
       results:
@@ -657,6 +672,15 @@ definitions:
       results:
         items:
           $ref: '#/definitions/core.ContractInterface'
+        type: array
+      total:
+        type: integer
+    type: object
+  http.GetLabelCategoriesRes:
+    properties:
+      results:
+        items:
+          type: string
         type: array
       total:
         type: integer
@@ -901,6 +925,53 @@ paths:
       summary: contract operations
       tags:
       - contract
+  /labels:
+    get:
+      consumes:
+      - application/json
+      description: Search addresses by label name or category
+      parameters:
+      - description: filter labels by its name
+        in: query
+        name: name
+        type: string
+      - description: filter by categories
+        in: query
+        items:
+          type: string
+        name: interface
+        type: array
+      - default: 3
+        description: limit
+        in: query
+        maximum: 10000
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/filter.LabelsRes'
+      summary: address labels
+      tags:
+      - label
+  /labels/categories:
+    get:
+      consumes:
+      - application/json
+      description: Returns all possible label categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.GetLabelCategoriesRes'
+      summary: address label categories
+      tags:
+      - label
   /messages:
     get:
       consumes:

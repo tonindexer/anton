@@ -18,9 +18,12 @@ type QueryController interface {
 
 	GetBlocks(*gin.Context)
 
+	GetLabelCategories(*gin.Context)
+	GetLabels(*gin.Context)
+
 	GetAccounts(*gin.Context)
-	AggregateAccounts(ctx *gin.Context)
-	AggregateAccountsHistory(ctx *gin.Context)
+	AggregateAccounts(*gin.Context)
+	AggregateAccountsHistory(*gin.Context)
 
 	GetTransactions(*gin.Context)
 	AggregateTransactionsHistory(*gin.Context)
@@ -52,6 +55,9 @@ func (s *Server) RegisterRoutes(t QueryController) {
 	base.GET("/statistics", t.GetStatistics)
 
 	base.GET("/blocks", t.GetBlocks)
+
+	base.GET("/labels", t.GetLabels)
+	base.GET("/labels/categories", t.GetLabelCategories)
 
 	base.GET("/accounts", t.GetAccounts)
 	base.GET("/accounts/aggregated", t.AggregateAccounts)

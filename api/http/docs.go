@@ -346,6 +346,77 @@ const docTemplate = `{
                 }
             }
         },
+        "/labels": {
+            "get": {
+                "description": "Search addresses by label name or category",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "label"
+                ],
+                "summary": "address labels",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter labels by its name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter by categories",
+                        "name": "interface",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 10000,
+                        "type": "integer",
+                        "default": 3,
+                        "description": "limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/filter.LabelsRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/labels/categories": {
+            "get": {
+                "description": "Returns all possible label categories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "label"
+                ],
+                "summary": "address label categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.GetLabelCategoriesRes"
+                        }
+                    }
+                }
+            }
+        },
         "/messages": {
             "get": {
                 "description": "Returns filtered messages",
@@ -1172,7 +1243,7 @@ const docTemplate = `{
                     }
                 },
                 "balance": {
-                    "type": "string"
+                    "$ref": "#/definitions/bunbig.Int"
                 },
                 "block_seq_no": {
                     "type": "integer"
@@ -1237,6 +1308,9 @@ const docTemplate = `{
                 "is_active": {
                     "type": "boolean"
                 },
+                "jetton_balance": {
+                    "type": "string"
+                },
                 "label": {
                     "$ref": "#/definitions/core.AddressLabel"
                 },
@@ -1293,6 +1367,12 @@ const docTemplate = `{
         "core.AddressLabel": {
             "type": "object",
             "properties": {
+                "address": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "categories": {
                     "type": "array",
                     "items": {
@@ -1687,6 +1767,20 @@ const docTemplate = `{
                 }
             }
         },
+        "filter.LabelsRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.AddressLabel"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "filter.MessagesRes": {
             "type": "object",
             "properties": {
@@ -1793,6 +1887,20 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/core.ContractInterface"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "http.GetLabelCategoriesRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
                 },
                 "total": {
