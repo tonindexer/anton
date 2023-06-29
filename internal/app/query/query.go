@@ -77,8 +77,8 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 	}
 
 	found := make(map[addr.Address]bool)
-	for _, r := range res.Rows {
-		found[r.Address] = true
+	for _, a := range req.Addresses {
+		found[*a] = true
 	}
 
 	var skipped []*addr.Address
