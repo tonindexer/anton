@@ -76,22 +76,27 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 		return nil // historical states are not available for skipped accounts
 	}
 
+	all := make(map[addr.Address]bool)
+	for _, a := range req.Addresses {
+		all[*a] = true
+	}
+
 	found := make(map[addr.Address]bool)
 	for _, r := range res.Rows {
 		found[r.Address] = true
 	}
 
-	var skipped []*addr.Address
-	for _, a := range req.Addresses {
-		if found[*a] {
+	var skipped []addr.Address
+	for a := range all {
+		if found[a] {
 			continue
 		}
-		if core.SkipAddress(*a) {
+		if core.SkipAddress(a) {
 			// fetch heavy skipped account states
 			skipped = append(skipped, a)
 			continue
 		}
-		c, err := s.txRepo.CountTransactions(ctx, *a)
+		c, err := s.txRepo.CountTransactions(ctx, a)
 		if err != nil {
 			return errors.Wrapf(err, "count transactions for %s", a.Base64())
 		}
@@ -130,7 +135,7 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 
 		parsed := fetcher.MapAccount(master, acc)
 
-		parsed.Label, err = s.accountRepo.GetAddressLabel(ctx, *a)
+		parsed.Label, err = s.accountRepo.GetAddressLabel(ctx, a)
 		if err != nil && !errors.Is(err, core.ErrNotFound) {
 			return errors.Wrap(err, "get address label")
 		}
@@ -138,6 +143,8 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 		res.Total += 1
 		res.Rows = append(res.Rows, parsed)
 	}
+
+	// TODO: sort and limit inserted accounts
 
 	return nil
 }
