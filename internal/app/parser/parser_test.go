@@ -37,23 +37,21 @@ type mockContractRepo struct {
 func (m *mockContractRepo) AddInterface(_ context.Context, _ *core.ContractInterface) error {
 	panic("implement me")
 }
-
 func (m *mockContractRepo) AddOperation(_ context.Context, _ *core.ContractOperation) error {
 	panic("implement me")
 }
-
 func (m *mockContractRepo) DelInterface(ctx context.Context, name string) error {
 	panic("implement me")
 }
-
 func (m *mockContractRepo) GetInterfaces(_ context.Context) ([]*core.ContractInterface, error) {
 	return m.interfaces, nil
 }
-
+func (m *mockContractRepo) GetMethodDescription(context.Context, abi.ContractName, string) (abi.GetMethodDesc, error) {
+	panic("implement me")
+}
 func (m *mockContractRepo) GetOperations(_ context.Context) ([]*core.ContractOperation, error) {
 	panic("implement me")
 }
-
 func (m *mockContractRepo) GetOperationByID(_ context.Context, _ []abi.ContractName, _ bool, _ uint32) (*core.ContractOperation, error) {
 	panic("implement me")
 }
@@ -121,8 +119,34 @@ func newService(t *testing.T) *Service {
 		nftItem.GetMethodHashes = append(nftItem.GetMethodHashes, abi.MethodNameHash(nftItem.GetMethodsDesc[it].Name))
 	}
 
+	jettonWallet := core.ContractInterface{
+		Name: "jetton_wallet",
+		GetMethodsDesc: []abi.GetMethodDesc{{
+			Name:      "get_wallet_data",
+			Arguments: []abi.VmValueDesc{},
+			ReturnValues: []abi.VmValueDesc{{
+				Name:      "balance",
+				StackType: "int",
+			}, {
+				Name:      "owner_address",
+				StackType: "slice",
+				Format:    "addr",
+			}, {
+				Name:      "jetton_master_address",
+				StackType: "slice",
+				Format:    "addr",
+			}, {
+				Name:      "jetton_wallet_code",
+				StackType: "cell",
+			}},
+		}},
+	}
+	for it := range jettonWallet.GetMethodsDesc {
+		jettonWallet.GetMethodHashes = append(jettonWallet.GetMethodHashes, abi.MethodNameHash(jettonWallet.GetMethodsDesc[it].Name))
+	}
+
 	contractRepo := &mockContractRepo{
-		interfaces: []*core.ContractInterface{&walletV3R2, &walletV4R2, &nftItem},
+		interfaces: []*core.ContractInterface{&walletV3R2, &walletV4R2, &nftItem, &jettonWallet},
 	}
 
 	return NewService(&app.ParserConfig{
