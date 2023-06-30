@@ -284,7 +284,7 @@ func (s *Service) callPossibleGetMethods(
 				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[1].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
 				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
 
-				if acc.MinterAddress == nil {
+				if acc.MinterAddress == nil || acc.OwnerAddress == nil {
 					continue
 				}
 				minter, err := others(ctx, *acc.MinterAddress)
