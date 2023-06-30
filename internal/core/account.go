@@ -102,6 +102,8 @@ type LatestAccountState struct {
 
 func SkipAddress(a addr.Address) bool {
 	switch a.Base64() {
+	case "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c": // burn address
+		return true
 	case "Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU": // system contract
 		return true
 	case "Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF": // elector contract
