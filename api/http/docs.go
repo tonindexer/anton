@@ -1311,6 +1311,9 @@ const docTemplate = `{
                         }
                     }
                 },
+                "fake": {
+                    "type": "boolean"
+                },
                 "get_method_hashes": {
                     "type": "array",
                     "items": {

@@ -288,6 +288,8 @@ definitions:
             $ref: '#/definitions/abi.GetMethodExecution'
           type: array
         type: object
+      fake:
+        type: boolean
       get_method_hashes:
         items:
           type: integer
