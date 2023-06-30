@@ -18,6 +18,7 @@ func (r *Repository) makeLastItemStateQuery(minter *addr.Address) *ch.SelectQuer
 		Model((*core.AccountState)(nil)).
 		ColumnExpr("argMax(address, last_tx_lt) as item_address").
 		Where("minter_address = ?", minter).
+		Where("fake = ?", false).
 		Group("address")
 }
 
