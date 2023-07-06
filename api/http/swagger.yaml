@@ -95,22 +95,6 @@ definitions:
       stack_type:
         $ref: '#/definitions/abi.StackType'
     type: object
-  aggregate.AccountStatusCount:
-    properties:
-      count:
-        type: integer
-      status:
-        type: string
-    type: object
-  aggregate.AccountTypesCount:
-    properties:
-      count:
-        type: integer
-      interfaces:
-        items:
-          type: string
-        type: array
-    type: object
   aggregate.AccountsRes:
     properties:
       items:
@@ -161,6 +145,22 @@ definitions:
         description: FT minter
         type: integer
     type: object
+  aggregate.AddressStatusCount:
+    properties:
+      count:
+        type: integer
+      status:
+        type: string
+    type: object
+  aggregate.AddressTypesCount:
+    properties:
+      count:
+        type: integer
+      interfaces:
+        items:
+          type: string
+        type: array
+    type: object
   aggregate.MessagesRes:
     properties:
       received_count:
@@ -202,16 +202,16 @@ definitions:
     properties:
       account_count:
         type: integer
-      account_count_by_interfaces:
-        items:
-          $ref: '#/definitions/aggregate.AccountTypesCount'
-        type: array
-      account_count_by_status:
-        items:
-          $ref: '#/definitions/aggregate.AccountStatusCount'
-        type: array
       address_count:
         type: integer
+      address_count_by_interfaces:
+        items:
+          $ref: '#/definitions/aggregate.AddressTypesCount'
+        type: array
+      address_count_by_status:
+        items:
+          $ref: '#/definitions/aggregate.AddressStatusCount'
+        type: array
       contract_interface_count:
         type: integer
       contract_operation_count:

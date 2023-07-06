@@ -13,12 +13,12 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-type AccountStatusCount struct {
+type AddressStatusCount struct {
 	Status core.AccountStatus `json:"status"`
 	Count  int                `json:"count"`
 }
 
-type AccountTypesCount struct {
+type AddressTypesCount struct {
 	Interfaces []abi.ContractName `json:"interfaces"`
 	Count      int                `json:"count"`
 }
@@ -42,9 +42,9 @@ type Statistics struct {
 	ContractInterfaceCount int `json:"contract_interface_count"`
 	ContractOperationCount int `json:"contract_operation_count"`
 
-	AccountStatusCount []AccountStatusCount `json:"account_count_by_status"`
+	AddressStatusCount []AddressStatusCount `json:"address_count_by_status"`
 
-	AccountTypesCount []AccountTypesCount `json:"account_count_by_interfaces"`
+	AddressTypesCount []AddressTypesCount `json:"address_count_by_interfaces"`
 
 	MessageTypesCount []struct {
 		Operation string `json:"operation"`
@@ -140,23 +140,23 @@ func getAccountStatistics(ctx context.Context, ck *ch.DB, ret *Statistics) error
 	}
 
 	for s, c := range accountStatuses {
-		ret.AccountStatusCount = append(ret.AccountStatusCount, AccountStatusCount{Status: s, Count: c})
+		ret.AddressStatusCount = append(ret.AddressStatusCount, AddressStatusCount{Status: s, Count: c})
 	}
 	for i, c := range accountTypes {
-		r := AccountTypesCount{Interfaces: unmarshalInterfacesKey(i), Count: c}
+		r := AddressTypesCount{Interfaces: unmarshalInterfacesKey(i), Count: c}
 		if len(r.Interfaces) == 0 {
 			continue
 		}
-		ret.AccountTypesCount = append(ret.AccountTypesCount, r)
+		ret.AddressTypesCount = append(ret.AddressTypesCount, r)
 	}
 
-	sort.Slice(ret.AccountStatusCount, func(i, j int) bool { return ret.AccountStatusCount[i].Count > ret.AccountStatusCount[j].Count })
-	sort.Slice(ret.AccountTypesCount, func(i, j int) bool { return ret.AccountTypesCount[i].Count > ret.AccountTypesCount[j].Count })
+	sort.Slice(ret.AddressStatusCount, func(i, j int) bool { return ret.AddressStatusCount[i].Count > ret.AddressStatusCount[j].Count })
+	sort.Slice(ret.AddressTypesCount, func(i, j int) bool { return ret.AddressTypesCount[i].Count > ret.AddressTypesCount[j].Count })
 
-	for _, row := range ret.AccountStatusCount {
+	for _, row := range ret.AddressStatusCount {
 		ret.AddressCount += row.Count
 	}
-	for _, row := range ret.AccountTypesCount {
+	for _, row := range ret.AddressTypesCount {
 		if len(row.Interfaces) == 0 {
 			continue
 		}

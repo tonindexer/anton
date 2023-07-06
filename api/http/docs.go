@@ -1017,31 +1017,6 @@ const docTemplate = `{
                 }
             }
         },
-        "aggregate.AccountStatusCount": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "aggregate.AccountTypesCount": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "interfaces": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "aggregate.AccountsRes": {
             "type": "object",
             "properties": {
@@ -1118,6 +1093,31 @@ const docTemplate = `{
                 }
             }
         },
+        "aggregate.AddressStatusCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "aggregate.AddressTypesCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "interfaces": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "aggregate.MessagesRes": {
             "type": "object",
             "properties": {
@@ -1181,20 +1181,20 @@ const docTemplate = `{
                 "account_count": {
                     "type": "integer"
                 },
-                "account_count_by_interfaces": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/aggregate.AccountTypesCount"
-                    }
-                },
-                "account_count_by_status": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/aggregate.AccountStatusCount"
-                    }
-                },
                 "address_count": {
                     "type": "integer"
+                },
+                "address_count_by_interfaces": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/aggregate.AddressTypesCount"
+                    }
+                },
+                "address_count_by_status": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/aggregate.AddressStatusCount"
+                    }
                 },
                 "contract_interface_count": {
                     "type": "integer"
