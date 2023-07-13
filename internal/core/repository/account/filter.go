@@ -126,10 +126,12 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 	if total < 100000 && f.LatestState {
 		// firstly, select all latest states, then apply limit
 		// https://ottertune.com/blog/how-to-fix-slow-postgresql-queries
-		err = r.pg.NewSelect().With("q", q).Table("q").Limit(f.Limit).Scan(ctx, &ret)
-	} else {
-		err = q.Limit(f.Limit).Scan(ctx)
+		q = r.pg.NewSelect().With("q", q).Table("q")
 	}
+	if f.Limit < total {
+		q = q.Limit(f.Limit)
+	}
+	err = q.Scan(ctx, &ret)
 
 	if f.LatestState {
 		for _, a := range latest {
@@ -189,9 +191,6 @@ func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) 
 	}
 	if res.Total == 0 {
 		return res, nil
-	}
-	if res.Total < f.Limit {
-		f.Limit = res.Total
 	}
 
 	res.Rows, err = r.filterAccountStates(ctx, f, res.Total)
