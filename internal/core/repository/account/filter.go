@@ -75,7 +75,7 @@ func (r *Repository) FilterLabels(ctx context.Context, f *filter.LabelsReq) (*fi
 	return res, nil
 }
 
-func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq) (ret []*core.AccountState, err error) {
+func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq, total int) (ret []*core.AccountState, err error) {
 	var (
 		q                   *bun.SelectQuery
 		prefix, statesTable string
@@ -123,9 +123,13 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 		q = q.Order(statesTable + "last_tx_lt " + strings.ToUpper(f.Order))
 	}
 
-	q = q.Limit(f.Limit)
-
-	err = q.Scan(ctx)
+	if total < 100000 && f.LatestState {
+		// firstly, select all latest states, then apply limit
+		// https://ottertune.com/blog/how-to-fix-slow-postgresql-queries
+		err = r.pg.NewSelect().With("q", q).Table("q").Limit(f.Limit).Scan(ctx, &ret)
+	} else {
+		err = q.Limit(f.Limit).Scan(ctx)
+	}
 
 	if f.LatestState {
 		for _, a := range latest {
@@ -190,7 +194,7 @@ func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) 
 		f.Limit = res.Total
 	}
 
-	res.Rows, err = r.filterAccountStates(ctx, f)
+	res.Rows, err = r.filterAccountStates(ctx, f, res.Total)
 	if err != nil {
 		return res, err
 	}
