@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -126,12 +127,17 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 	if total < 100000 && f.LatestState {
 		// firstly, select all latest states, then apply limit
 		// https://ottertune.com/blog/how-to-fix-slow-postgresql-queries
-		q = r.pg.NewSelect().With("q", q).Table("q")
+		rawQuery := "WITH q AS MATERIALIZED (?) SELECT * FROM q"
+		if f.Limit < total {
+			rawQuery += fmt.Sprintf(" LIMIT %d", f.Limit)
+		}
+		err = r.pg.NewRaw(rawQuery, q).Scan(ctx, &ret)
+	} else {
+		if f.Limit < total {
+			q = q.Limit(f.Limit)
+		}
+		err = q.Scan(ctx)
 	}
-	if f.Limit < total {
-		q = q.Limit(f.Limit)
-	}
-	err = q.Scan(ctx, &ret)
 
 	if f.LatestState {
 		for _, a := range latest {
