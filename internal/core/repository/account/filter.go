@@ -123,9 +123,6 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 		q = q.Order(statesTable + "last_tx_lt " + strings.ToUpper(f.Order))
 	}
 
-	if f.Limit == 0 {
-		f.Limit = 3
-	}
 	q = q.Limit(f.Limit)
 
 	err = q.Scan(ctx)
@@ -178,15 +175,22 @@ func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) 
 		err error
 	)
 
-	res.Rows, err = r.filterAccountStates(ctx, f)
-	if err != nil {
-		return res, err
-	}
-	if len(res.Rows) == 0 {
-		return res, nil
+	if f.Limit == 0 {
+		f.Limit = 3
 	}
 
 	res.Total, err = r.countAccountStates(ctx, f)
+	if err != nil {
+		return res, err
+	}
+	if res.Total == 0 {
+		return res, nil
+	}
+	if res.Total < f.Limit {
+		f.Limit = res.Total
+	}
+
+	res.Rows, err = r.filterAccountStates(ctx, f)
 	if err != nil {
 		return res, err
 	}
