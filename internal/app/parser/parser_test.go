@@ -40,7 +40,7 @@ func (m *mockContractRepo) AddInterface(_ context.Context, _ *core.ContractInter
 func (m *mockContractRepo) AddOperation(_ context.Context, _ *core.ContractOperation) error {
 	panic("implement me")
 }
-func (m *mockContractRepo) DelInterface(ctx context.Context, name string) error {
+func (m *mockContractRepo) DelInterface(_ context.Context, _ string) error {
 	panic("implement me")
 }
 func (m *mockContractRepo) GetInterfaces(_ context.Context) ([]*core.ContractInterface, error) {
@@ -52,7 +52,7 @@ func (m *mockContractRepo) GetMethodDescription(context.Context, abi.ContractNam
 func (m *mockContractRepo) GetOperations(_ context.Context) ([]*core.ContractOperation, error) {
 	panic("implement me")
 }
-func (m *mockContractRepo) GetOperationByID(_ context.Context, _ []abi.ContractName, _ bool, _ uint32) (*core.ContractOperation, error) {
+func (m *mockContractRepo) GetOperationByID(_ context.Context, _ core.MessageType, _ []abi.ContractName, _ bool, _ uint32) (*core.ContractOperation, error) {
 	panic("implement me")
 }
 

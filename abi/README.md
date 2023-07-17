@@ -32,6 +32,7 @@ Also, it is possible to define similarly described embedded structures in each f
 {
    "op_name": "nft_start_auction",  // operation name
    "op_code": "0x5fcc3d14",         // TL-B constructor prefix code (operation code)
+   "type": "external_out",          // message type: internal, external_in, external_out
    "body": [
       {                             // fields definitions
          "name": "query_id",        // field name

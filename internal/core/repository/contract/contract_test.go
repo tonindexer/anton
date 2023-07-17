@@ -175,6 +175,7 @@ func TestRepository_AddContracts(t *testing.T) {
 	t.Run("get operation by id", func(t *testing.T) {
 		ret, err := repo.GetOperationByID(
 			ctx,
+			core.Internal,
 			[]abi.ContractName{op.ContractName},
 			op.Outgoing,
 			op.OperationID,
