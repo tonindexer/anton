@@ -43,8 +43,8 @@ func (c *cache) setInterfaces(interfaces []*core.ContractInterface) {
 		if _, ok := c.getMethods[i.Name]; !ok {
 			c.getMethods[i.Name] = map[string]abi.GetMethodDesc{}
 		}
-		for _, d := range i.GetMethodsDesc {
-			c.getMethods[i.Name][d.Name] = d
+		for it := range i.GetMethodsDesc {
+			c.getMethods[i.Name][i.GetMethodsDesc[it].Name] = i.GetMethodsDesc[it]
 		}
 	}
 

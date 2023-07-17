@@ -152,10 +152,10 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 func (s *Service) addGetMethodDescription(ctx context.Context, rows []*core.AccountState) error {
 	for _, r := range rows {
 		for name, methods := range r.ExecutedGetMethods {
-			for it, m := range methods {
-				d, err := s.contractRepo.GetMethodDescription(ctx, name, m.Name)
+			for it := range methods {
+				d, err := s.contractRepo.GetMethodDescription(ctx, name, methods[it].Name)
 				if err != nil {
-					return errors.Wrapf(err, "cannot get %s get-method description of contract %s", m.Name, name)
+					return errors.Wrapf(err, "cannot get %s get-method description of contract %s", methods[it].Name, name)
 				}
 				methods[it].Arguments = d.Arguments
 				methods[it].ReturnValues = d.ReturnValues

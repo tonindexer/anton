@@ -127,9 +127,9 @@ func (r *Repository) GetMethodDescription(ctx context.Context, name abi.Contract
 		return abi.GetMethodDesc{}, err
 	}
 
-	for _, d := range i.GetMethodsDesc {
-		if d.Name == method {
-			return d, nil
+	for it := range i.GetMethodsDesc {
+		if i.GetMethodsDesc[it].Name == method {
+			return i.GetMethodsDesc[it], nil
 		}
 	}
 
@@ -161,20 +161,21 @@ func (r *Repository) GetOperations(ctx context.Context) ([]*core.ContractOperati
 	return ret, nil
 }
 
-func (r *Repository) GetOperationByID(ctx context.Context, types []abi.ContractName, outgoing bool, id uint32) (*core.ContractOperation, error) {
+func (r *Repository) GetOperationByID(ctx context.Context, t core.MessageType, interfaces []abi.ContractName, outgoing bool, id uint32) (*core.ContractOperation, error) {
 	var ret []*core.ContractOperation
 
-	if len(types) == 0 {
-		return nil, errors.Wrap(core.ErrNotFound, "no contract types")
+	if len(interfaces) == 0 {
+		return nil, errors.Wrap(core.ErrNotFound, "no contract interfaces")
 	}
 
-	if op := r.cache.getOperationByID(types, outgoing, id); op != nil {
+	if op := r.cache.getOperationByID(interfaces, outgoing, id); op != nil {
 		return op, nil
 	}
 
 	err := r.pg.NewSelect().Model(&ret).
-		Where("contract_name IN (?)", bun.In(types)).
+		Where("contract_name IN (?)", bun.In(interfaces)).
 		Where("outgoing IS ?", outgoing).
+		Where("message_type = ?", t).
 		Where("operation_id = ?", id).
 		Scan(ctx)
 	if err != nil {
