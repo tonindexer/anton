@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAddress_TypeKind(t *testing.T) {
@@ -64,4 +65,18 @@ func TestAddress_FromBase64(t *testing.T) {
 		addrFromTU := MustFromTonutils(addrTU)
 		assert.Equal(t, c.b64, addrFromTU.Base64())
 	}
+}
+
+func TestAddress_JSON(t *testing.T) {
+	a, err := new(Address).FromBase64("EQCcLpOBWyOrE_mL9C2Ss4KZVxvwSSIjE6jOba69PeFHIgt1")
+	require.Nil(t, err)
+
+	j, err := a.MarshalJSON()
+	require.Nil(t, err)
+
+	n := new(Address)
+	err = n.UnmarshalJSON(j)
+	require.Nil(t, err)
+
+	require.True(t, a.Base64() == n.Base64())
 }
