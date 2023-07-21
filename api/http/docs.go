@@ -10,7 +10,7 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {
-            "name": "Dat Boi",
+            "name": "Anton",
             "url": "https://anton.tools"
         },
         "license": {
@@ -943,6 +943,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "op_name": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }

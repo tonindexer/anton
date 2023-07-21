@@ -7,7 +7,7 @@
         "description": "Project fetches data from TON blockchain.",
         "title": "Anton",
         "contact": {
-            "name": "Dat Boi",
+            "name": "Anton",
             "url": "https://anton.tools"
         },
         "license": {
@@ -940,6 +940,9 @@
                     "type": "string"
                 },
                 "op_name": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }

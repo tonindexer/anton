@@ -44,6 +44,8 @@ definitions:
         type: string
       op_name:
         type: string
+      type:
+        type: string
     type: object
   abi.StackType:
     enum:
@@ -703,7 +705,7 @@ definitions:
 host: anton.tools
 info:
   contact:
-    name: Dat Boi
+    name: Anton
     url: https://anton.tools
   description: Project fetches data from TON blockchain.
   license:

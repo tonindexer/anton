@@ -23,7 +23,7 @@ import (
 // @version     	0.1
 // @description 	Project fetches data from TON blockchain.
 
-// @contact.name   	Dat Boi
+// @contact.name   	Anton
 // @contact.url    	https://anton.tools
 
 // @license.name  	Apache 2.0
