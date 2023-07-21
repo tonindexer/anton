@@ -7,7 +7,6 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
-	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository"
 )
@@ -116,8 +115,4 @@ func (r *Repository) AddTransactions(ctx context.Context, tx bun.Tx, transaction
 		return err
 	}
 	return nil
-}
-
-func (r *Repository) CountTransactions(ctx context.Context, a addr.Address) (int, error) {
-	return r.ch.NewSelect().Model((*core.Transaction)(nil)).Where("address = ?", &a).Count(ctx)
 }

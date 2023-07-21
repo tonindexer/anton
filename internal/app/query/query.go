@@ -96,15 +96,6 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 			skipped = append(skipped, a)
 			continue
 		}
-		c, err := s.txRepo.CountTransactions(ctx, a)
-		if err != nil {
-			return errors.Wrapf(err, "count transactions for %s", a.Base64())
-		}
-		if c > 0 {
-			// we have transactions on the address, but no state in the database (uninit account state)
-			skipped = append(skipped, a)
-			continue
-		}
 	}
 	if len(skipped) == 0 {
 		return nil

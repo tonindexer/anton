@@ -101,16 +101,6 @@ func TestRepository_AddTransactions(t *testing.T) {
 		assert.Equal(t, transactions[0], got)
 	})
 
-	t.Run("count transactions", func(t *testing.T) {
-		c, err := repo.CountTransactions(ctx, transactions[0].Address)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, c)
-
-		c, err = repo.CountTransactions(ctx, *rndm.Address())
-		assert.Nil(t, err)
-		assert.Equal(t, 0, c)
-	})
-
 	t.Run("commit transaction", func(t *testing.T) {
 		err := dbtx.Commit()
 		assert.Nil(t, err)
