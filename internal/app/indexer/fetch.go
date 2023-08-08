@@ -15,6 +15,28 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
+func (s *Service) getUnseenBlocks(ctx context.Context, seq uint32) (master *ton.BlockIDExt, shards []*ton.BlockIDExt, err error) {
+	master, shards, err = s.Fetcher.UnseenBlocks(ctx, seq)
+	if err != nil {
+		if !errors.Is(err, ton.ErrBlockNotFound) && !(err != nil && strings.Contains(err.Error(), "block is not applied")) {
+			return nil, nil, errors.Wrap(err, "cannot fetch unseen blocks")
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+
+		master, err = s.Fetcher.LookupMaster(ctx, s.API.WaitForBlock(seq), seq)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "wait for master block")
+		}
+		shards, err = s.Fetcher.UnseenShards(ctx, master)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "get unseen shards")
+		}
+	}
+	return master, shards, nil
+}
+
 func (s *Service) fetchMaster(seq uint32) *core.Block {
 	type processedBlock struct {
 		block *core.Block
@@ -26,13 +48,9 @@ func (s *Service) fetchMaster(seq uint32) *core.Block {
 	for {
 		ctx := context.Background()
 
-		master, shards, err := s.Fetcher.UnseenBlocks(ctx, seq)
+		master, shards, err := s.getUnseenBlocks(ctx, seq)
 		if err != nil {
-			if errors.Is(err, ton.ErrBlockNotFound) || (err != nil && strings.Contains(err.Error(), "block is not applied")) {
-				log.Debug().Err(err).Uint32("master_seq", seq).Msg("skipping block")
-				return nil
-			}
-			log.Error().Err(err).Uint32("master_seq", seq).Msg("cannot fetch unseen blocks")
+			log.Error().Err(err).Uint32("master_seq", seq).Msg("get unseen blocks")
 			time.Sleep(time.Second)
 			continue
 		}

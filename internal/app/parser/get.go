@@ -231,7 +231,7 @@ func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountSta
 	}
 }
 
-func (s *Service) callPossibleGetMethods(
+func (s *Service) callPossibleGetMethods( //nolint:gocognit // yeah, it's too long
 	ctx context.Context,
 	acc *core.AccountState,
 	others func(context.Context, addr.Address) (*core.AccountState, error),
