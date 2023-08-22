@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -37,7 +38,7 @@ var Command = &cli.Command{
 		for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
 			split := strings.Split(addr, "|")
 			if len(split) != 2 {
-				return errors.Wrapf(err, "wrong server address format '%s'", addr)
+				return fmt.Errorf("wrong server address format '%s'", addr)
 			}
 			host, key := split[0], split[1]
 			if err := client.AddConnection(ctx.Context, host, key); err != nil {
