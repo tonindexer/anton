@@ -18,13 +18,6 @@ import (
 
 var _ app.IndexerService = (*Service)(nil)
 
-type pendingMaster struct {
-	Info []*core.Block
-	Tx   []*core.Transaction
-	Acc  []*core.AccountState
-	Msg  []*core.Message
-}
-
 type Service struct {
 	*app.IndexerConfig
 
@@ -32,13 +25,6 @@ type Service struct {
 	txRepo      core.TransactionRepository
 	msgRepo     repository.Message
 	accountRepo core.AccountRepository
-
-	unknownDstMsg map[string]*core.Message
-
-	masterShardsCache map[core.BlockID][]core.BlockID
-	shardsMasterMap   map[core.BlockID]core.BlockID
-
-	pendingMasters map[uint32]pendingMaster
 
 	run bool
 	mx  sync.RWMutex
@@ -54,9 +40,6 @@ func NewService(cfg *app.IndexerConfig) *Service {
 	if s.Workers < 1 {
 		s.Workers = 1
 	}
-	if s.InsertBlockBatch < 1 {
-		s.InsertBlockBatch = 1
-	}
 	if s.FromBlock < 2 {
 		s.FromBlock = 2
 	}
@@ -66,13 +49,6 @@ func NewService(cfg *app.IndexerConfig) *Service {
 	s.msgRepo = msg.NewRepository(ch, pg)
 	s.blockRepo = block.NewRepository(ch, pg)
 	s.accountRepo = account.NewRepository(ch, pg)
-
-	s.unknownDstMsg = make(map[string]*core.Message)
-
-	s.masterShardsCache = make(map[core.BlockID][]core.BlockID)
-	s.shardsMasterMap = make(map[core.BlockID]core.BlockID)
-
-	s.pendingMasters = make(map[uint32]pendingMaster)
 
 	return s
 }
@@ -112,7 +88,6 @@ func (s *Service) Start() error {
 	log.Info().
 		Uint32("from_block", fromBlock).
 		Int("workers", s.Workers).
-		Int("insert_block_batch", s.InsertBlockBatch).
 		Msg("started")
 
 	return nil

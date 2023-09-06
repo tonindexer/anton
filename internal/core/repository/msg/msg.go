@@ -2,6 +2,7 @@ package msg
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -170,8 +171,22 @@ func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*cor
 		return nil
 	}
 	for _, msg := range messages { // TODO: on conflict does not work with array (bun bug)
+		// some external messages can be repeated with the same hash
+
+		// if some message has been already inserted,
+		// we update destination transaction and parsed data
+
 		_, err := tx.NewInsert().Model(msg).
-			On("CONFLICT (hash) DO NOTHING"). // some external messages can be repeated with the same hash
+			On("CONFLICT (hash) DO UPDATE").
+			Set("dst_tx_lt = ?dst_tx_lt").
+			Set("dst_workchain = ?dst_workchain").
+			Set("dst_shard = ?dst_shard").
+			Set("dst_block_seq_no = ?dst_block_seq_no").
+			Set("src_contract = ?src_contract").
+			Set("dst_contract = ?dst_contract").
+			Set("operation_name = ?operation_name").
+			Set("data_json = ?data_json").
+			Set("error = ?error").
 			Exec(ctx)
 		if err != nil {
 			return err
@@ -182,4 +197,22 @@ func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*cor
 		return err
 	}
 	return nil
+}
+
+func (r *Repository) GetMessage(ctx context.Context, hash []byte) (*core.Message, error) {
+	var ret core.Message
+
+	err := r.pg.NewSelect().Model(&ret).
+		Relation("SrcState").
+		Relation("DstState").
+		Where("hash = ?", hash).
+		Scan(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, core.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret, nil
 }

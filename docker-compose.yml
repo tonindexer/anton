@@ -28,7 +28,6 @@ services:
       <<: *anton-env
       FROM_BLOCK: ${FROM_BLOCK}
       WORKERS: ${WORKERS}
-      INSERT_BLOCK_BATCH: ${INSERT_BLOCK_BATCH}
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
   web:
