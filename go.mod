@@ -15,7 +15,7 @@ require (
 	github.com/swaggo/files v1.0.0
 	github.com/swaggo/gin-swagger v1.5.3
 	github.com/swaggo/swag v1.8.10
-	github.com/tonkeeper/tongo v1.0.14
+	github.com/tonkeeper/tongo v1.1.2
 	github.com/uptrace/bun v1.1.12
 	github.com/uptrace/bun/dialect/pgdialect v1.1.12
 	github.com/uptrace/bun/driver/pgdriver v1.1.12
@@ -26,6 +26,8 @@ require (
 )
 
 require github.com/gin-contrib/cors v1.4.0
+
+require github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect

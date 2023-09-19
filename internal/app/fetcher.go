@@ -26,6 +26,8 @@ func TimeTrack(start time.Time, fun string, args ...any) {
 }
 
 type FetcherService interface {
+	LookupMaster(ctx context.Context, api ton.APIClientWaiter, seqNo uint32) (*ton.BlockIDExt, error)
 	UnseenBlocks(ctx context.Context, masterSeqNo uint32) (master *ton.BlockIDExt, shards []*ton.BlockIDExt, err error)
+	UnseenShards(ctx context.Context, master *ton.BlockIDExt) (shards []*ton.BlockIDExt, err error)
 	BlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*core.Transaction, error)
 }

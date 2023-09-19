@@ -72,6 +72,11 @@ func dropTables(t testing.TB) {
 	_, err = pg.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 
+	_, err = ck.NewDropTable().Model((*core.AddressLabel)(nil)).IfExists().Exec(ctx)
+	assert.Nil(t, err)
+	_, err = pg.NewDropTable().Model((*core.AddressLabel)(nil)).IfExists().Exec(ctx)
+	assert.Nil(t, err)
+
 	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS account_status")
 	assert.Nil(t, err)
 
@@ -269,11 +274,11 @@ func TestRelations(t *testing.T) {
 		assert.Equal(t, 1, stats.TransactionCount)
 		assert.Equal(t, 2, stats.MessageCount)
 		assert.Equal(t, 1, stats.ParsedMessageCount)
-		assert.Equal(t, 1, len(stats.AccountStatusCount))
-		assert.Equal(t, core.Active, stats.AccountStatusCount[0].Status)
-		assert.Equal(t, 1, stats.AccountStatusCount[0].Count)
-		assert.Equal(t, state.Types, stats.AccountTypesCount[0].Interfaces)
-		assert.Equal(t, 1, stats.AccountTypesCount[0].Count)
+		assert.Equal(t, 1, len(stats.AddressStatusCount))
+		assert.Equal(t, core.Active, stats.AddressStatusCount[0].Status)
+		assert.Equal(t, 1, stats.AddressStatusCount[0].Count)
+		assert.Equal(t, state.Types, stats.AddressTypesCount[0].Interfaces)
+		assert.Equal(t, 1, stats.AddressTypesCount[0].Count)
 		assert.Equal(t, operation, stats.MessageTypesCount[0].Operation)
 		assert.Equal(t, 1, stats.MessageTypesCount[0].Count)
 	})

@@ -18,9 +18,12 @@ type QueryController interface {
 
 	GetBlocks(*gin.Context)
 
+	GetLabelCategories(*gin.Context)
+	GetLabels(*gin.Context)
+
 	GetAccounts(*gin.Context)
-	AggregateAccounts(ctx *gin.Context)
-	AggregateAccountsHistory(ctx *gin.Context)
+	AggregateAccounts(*gin.Context)
+	AggregateAccountsHistory(*gin.Context)
 
 	GetTransactions(*gin.Context)
 	AggregateTransactionsHistory(*gin.Context)
@@ -53,6 +56,9 @@ func (s *Server) RegisterRoutes(t QueryController) {
 
 	base.GET("/blocks", t.GetBlocks)
 
+	base.GET("/labels", t.GetLabels)
+	base.GET("/labels/categories", t.GetLabelCategories)
+
 	base.GET("/accounts", t.GetAccounts)
 	base.GET("/accounts/aggregated", t.AggregateAccounts)
 	base.GET("/accounts/aggregated/history", t.AggregateAccountsHistory)
@@ -64,8 +70,11 @@ func (s *Server) RegisterRoutes(t QueryController) {
 	base.GET("/messages/aggregated", t.AggregateMessages)
 	base.GET("/messages/aggregated/history", t.AggregateMessagesHistory)
 
-	base.GET("/contract/interfaces", t.GetInterfaces)
-	base.GET("/contract/operations", t.GetOperations)
+	base.GET("/contract/interfaces", t.GetInterfaces) // DEPRECATED
+	base.GET("/contract/operations", t.GetOperations) // DEPRECATED
+
+	base.GET("/contracts/interfaces", t.GetInterfaces)
+	base.GET("/contracts/operations", t.GetOperations)
 
 	base.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerFiles.Handler,

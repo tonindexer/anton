@@ -44,6 +44,8 @@ definitions:
         type: string
       op_name:
         type: string
+      type:
+        type: string
     type: object
   abi.StackType:
     enum:
@@ -145,6 +147,22 @@ definitions:
         description: FT minter
         type: integer
     type: object
+  aggregate.AddressStatusCount:
+    properties:
+      count:
+        type: integer
+      status:
+        type: string
+    type: object
+  aggregate.AddressTypesCount:
+    properties:
+      count:
+        type: integer
+      interfaces:
+        items:
+          type: string
+        type: array
+    type: object
   aggregate.MessagesRes:
     properties:
       received_count:
@@ -186,28 +204,16 @@ definitions:
     properties:
       account_count:
         type: integer
-      account_count_by_interfaces:
-        items:
-          properties:
-            count:
-              type: integer
-            interfaces:
-              items:
-                type: string
-              type: array
-          type: object
-        type: array
-      account_count_by_status:
-        items:
-          properties:
-            count:
-              type: integer
-            status:
-              type: string
-          type: object
-        type: array
       address_count:
         type: integer
+      address_count_by_interfaces:
+        items:
+          $ref: '#/definitions/aggregate.AddressTypesCount'
+        type: array
+      address_count_by_status:
+        items:
+          $ref: '#/definitions/aggregate.AddressStatusCount'
+        type: array
       contract_interface_count:
         type: integer
       contract_operation_count:
@@ -247,7 +253,7 @@ definitions:
           type: integer
         type: array
       balance:
-        type: string
+        $ref: '#/definitions/bunbig.Int'
       block_seq_no:
         type: integer
       code:
@@ -284,12 +290,16 @@ definitions:
             $ref: '#/definitions/abi.GetMethodExecution'
           type: array
         type: object
+      fake:
+        type: boolean
       get_method_hashes:
         items:
           type: integer
         type: array
       is_active:
         type: boolean
+      jetton_balance:
+        type: string
       label:
         $ref: '#/definitions/core.AddressLabel'
       last_tx_hash:
@@ -328,6 +338,10 @@ definitions:
     type: object
   core.AddressLabel:
     properties:
+      address:
+        items:
+          type: integer
+        type: array
       categories:
         items:
           type: string
@@ -589,6 +603,15 @@ definitions:
       total:
         type: integer
     type: object
+  filter.LabelsRes:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/core.AddressLabel'
+        type: array
+      total:
+        type: integer
+    type: object
   filter.MessagesRes:
     properties:
       results:
@@ -661,6 +684,15 @@ definitions:
       total:
         type: integer
     type: object
+  http.GetLabelCategoriesRes:
+    properties:
+      results:
+        items:
+          type: string
+        type: array
+      total:
+        type: integer
+    type: object
   http.GetOperationsRes:
     properties:
       results:
@@ -673,7 +705,7 @@ definitions:
 host: anton.tools
 info:
   contact:
-    name: Dat Boi
+    name: Anton
     url: https://anton.tools
   description: Project fetches data from TON blockchain.
   license:
@@ -871,7 +903,7 @@ paths:
       summary: block info
       tags:
       - block
-  /contract/interfaces:
+  /contracts/interfaces:
     get:
       consumes:
       - application/json
@@ -886,7 +918,7 @@ paths:
       summary: contract interfaces
       tags:
       - contract
-  /contract/operations:
+  /contracts/operations:
     get:
       consumes:
       - application/json
@@ -901,6 +933,57 @@ paths:
       summary: contract operations
       tags:
       - contract
+  /labels:
+    get:
+      consumes:
+      - application/json
+      description: Search addresses by label name or category
+      parameters:
+      - description: filter labels by its name
+        in: query
+        name: name
+        type: string
+      - description: filter by categories
+        in: query
+        items:
+          type: string
+        name: category
+        type: array
+      - description: offset
+        in: query
+        name: offset
+        type: integer
+      - default: 3
+        description: limit
+        in: query
+        maximum: 10000
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/filter.LabelsRes'
+      summary: address labels
+      tags:
+      - label
+  /labels/categories:
+    get:
+      consumes:
+      - application/json
+      description: Returns all possible label categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.GetLabelCategoriesRes'
+      summary: address label categories
+      tags:
+      - label
   /messages:
     get:
       consumes:

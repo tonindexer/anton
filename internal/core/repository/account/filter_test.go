@@ -5,7 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
@@ -13,6 +15,83 @@ import (
 	"github.com/tonindexer/anton/internal/core/filter"
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
+
+func TestRepository_FilterLabels(t *testing.T) {
+	initdb(t)
+
+	dead := &core.AddressLabel{
+		Address:    *rndm.Address(),
+		Name:       "dead",
+		Categories: []core.LabelCategory{core.CentralizedExchange},
+	}
+	beef := &core.AddressLabel{
+		Address:    *rndm.Address(),
+		Name:       "beef",
+		Categories: []core.LabelCategory{core.CentralizedExchange},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	t.Run("drop tables", func(t *testing.T) {
+		dropTables(t)
+	})
+
+	t.Run("create tables", func(t *testing.T) {
+		createTables(t)
+	})
+
+	t.Run("insert test data", func(t *testing.T) {
+		err := repo.AddAddressLabel(ctx, dead)
+		require.Nil(t, err)
+
+		err = repo.AddAddressLabel(ctx, beef)
+		require.Nil(t, err)
+
+		l, err := repo.GetAddressLabel(ctx, dead.Address)
+		require.Nil(t, err)
+		require.Equal(t, dead, l)
+
+		_, err = repo.GetAddressLabel(ctx, *rndm.Address())
+		require.True(t, errors.Is(err, core.ErrNotFound))
+	})
+
+	t.Run("filter by name", func(t *testing.T) {
+		res, err := repo.FilterLabels(ctx, &filter.LabelsReq{Name: "be"})
+		require.Nil(t, err)
+		require.Equal(t, 1, res.Total)
+		require.Equal(t, 1, len(res.Rows))
+		require.Equal(t, beef, res.Rows[0])
+
+		res, err = repo.FilterLabels(ctx, &filter.LabelsReq{Name: "E", Categories: []core.LabelCategory{core.CentralizedExchange}})
+		require.Nil(t, err)
+		require.Equal(t, 2, res.Total)
+		require.Equal(t, 2, len(res.Rows))
+		require.Equal(t, []*core.AddressLabel{beef, dead}, res.Rows)
+
+		res, err = repo.FilterLabels(ctx, &filter.LabelsReq{Name: "feeb"})
+		require.Nil(t, err)
+		require.Equal(t, 0, res.Total)
+		require.Equal(t, 0, len(res.Rows))
+	})
+
+	t.Run("filter by categories", func(t *testing.T) {
+		res, err := repo.FilterLabels(ctx, &filter.LabelsReq{Categories: []core.LabelCategory{core.CentralizedExchange}})
+		require.Nil(t, err)
+		require.Equal(t, 2, res.Total)
+		require.Equal(t, 2, len(res.Rows))
+		require.Equal(t, []*core.AddressLabel{beef, dead}, res.Rows)
+
+		res, err = repo.FilterLabels(ctx, &filter.LabelsReq{Categories: []core.LabelCategory{core.Scam}})
+		require.Nil(t, err)
+		require.Equal(t, 0, res.Total)
+		require.Equal(t, 0, len(res.Rows))
+	})
+
+	t.Run("drop tables again", func(t *testing.T) {
+		dropTables(t)
+	})
+}
 
 func TestRepository_FilterAccounts(t *testing.T) {
 	var (

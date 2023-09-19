@@ -112,7 +112,6 @@ nano .env
 | `DB_PG_URL`          | PostgreSQL URL to connect to      |         | postgres://username:password@postgres:5432/db_name?sslmode=disable |
 | `FROM_BLOCK`         | Master chain seq_no to start from | 1       | 23532000                                                           |
 | `WORKERS`            | Number of indexer workers         | 4       | 8                                                                  |
-| `INSERT_BLOCK_BATCH` | Insert block data in batches      | 10      | 100                                                                |
 | `LITESERVERS`        | Lite servers to connect to        |         | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=  |
 | `DEBUG_LOGS`         | Debug logs enabled                | false   | true                                                               |
 

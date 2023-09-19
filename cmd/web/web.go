@@ -1,13 +1,17 @@
 package web
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
+	"github.com/xssnick/tonutils-go/liteclient"
+	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/tonindexer/anton/internal/api/http"
 	"github.com/tonindexer/anton/internal/app"
@@ -29,8 +33,22 @@ var Command = &cli.Command{
 			return errors.Wrap(err, "cannot connect to a database")
 		}
 
+		client := liteclient.NewConnectionPool()
+		api := ton.NewAPIClient(client)
+		for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
+			split := strings.Split(addr, "|")
+			if len(split) != 2 {
+				return fmt.Errorf("wrong server address format '%s'", addr)
+			}
+			host, key := split[0], split[1]
+			if err := client.AddConnection(ctx.Context, host, key); err != nil {
+				return errors.Wrapf(err, "cannot add connection with %s host and %s key", host, key)
+			}
+		}
+
 		qs, err := query.NewService(ctx.Context, &app.QueryConfig{
-			DB: conn,
+			DB:  conn,
+			API: api,
 		})
 		if err != nil {
 			return err

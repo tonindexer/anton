@@ -12,13 +12,17 @@ var cacheInvalidation = 10 * time.Second
 
 type cache struct {
 	interfaces  []*core.ContractInterface
+	getMethods  map[abi.ContractName]map[string]abi.GetMethodDesc
 	operations  []*core.ContractOperation
 	lastCleared time.Time
 	sync.Mutex
 }
 
 func newCache() *cache {
-	return &cache{lastCleared: time.Now()}
+	return &cache{
+		getMethods:  map[abi.ContractName]map[string]abi.GetMethodDesc{},
+		lastCleared: time.Now(),
+	}
 }
 
 func (c *cache) clearCaches() {
@@ -27,12 +31,22 @@ func (c *cache) clearCaches() {
 	}
 	c.interfaces = nil
 	c.operations = nil
+	c.getMethods = map[abi.ContractName]map[string]abi.GetMethodDesc{}
 	c.lastCleared = time.Now()
 }
 
 func (c *cache) setInterfaces(interfaces []*core.ContractInterface) {
 	c.Lock()
 	defer c.Unlock()
+
+	for _, i := range interfaces {
+		if _, ok := c.getMethods[i.Name]; !ok {
+			c.getMethods[i.Name] = map[string]abi.GetMethodDesc{}
+		}
+		for it := range i.GetMethodsDesc {
+			c.getMethods[i.Name][i.GetMethodsDesc[it].Name] = i.GetMethodsDesc[it]
+		}
+	}
 
 	c.interfaces = interfaces
 }
@@ -44,6 +58,18 @@ func (c *cache) getInterfaces() []*core.ContractInterface {
 	c.clearCaches()
 
 	return c.interfaces
+}
+
+func (c *cache) getMethodDesc(name abi.ContractName, method string) (abi.GetMethodDesc, bool) {
+	c.Lock()
+	defer c.Unlock()
+
+	if _, ok := c.getMethods[name]; !ok {
+		return abi.GetMethodDesc{}, false
+	}
+
+	d, ok := c.getMethods[name][method]
+	return d, ok
 }
 
 func (c *cache) setOperations(operations []*core.ContractOperation) {

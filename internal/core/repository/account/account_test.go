@@ -60,6 +60,11 @@ func dropTables(t testing.TB) {
 	_, err = pg.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
 	assert.Nil(t, err)
 
+	_, err = ck.NewDropTable().Model((*core.AddressLabel)(nil)).IfExists().Exec(ctx)
+	assert.Nil(t, err)
+	_, err = pg.NewDropTable().Model((*core.AddressLabel)(nil)).IfExists().Exec(ctx)
+	assert.Nil(t, err)
+
 	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS account_status")
 	assert.Nil(t, err)
 }

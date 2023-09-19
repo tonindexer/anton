@@ -4,8 +4,11 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/xssnick/tonutils-go/ton"
 
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
+	"github.com/tonindexer/anton/internal/app/fetcher"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
 	"github.com/tonindexer/anton/internal/core/aggregate/history"
@@ -60,8 +63,111 @@ func (s *Service) FilterBlocks(ctx context.Context, req *filter.BlocksReq) (*fil
 	return s.blockRepo.FilterBlocks(ctx, req)
 }
 
+func (s *Service) GetLabelCategories(_ context.Context) ([]core.LabelCategory, error) {
+	return []core.LabelCategory{core.Scam, core.CentralizedExchange}, nil
+}
+
+func (s *Service) FilterLabels(ctx context.Context, req *filter.LabelsReq) (*filter.LabelsRes, error) {
+	return s.accountRepo.FilterLabels(ctx, req)
+}
+
+func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.AccountsReq, res *filter.AccountsRes) error {
+	if !req.LatestState {
+		return nil // historical states are not available for skipped accounts
+	}
+
+	all := make(map[addr.Address]bool)
+	for _, a := range req.Addresses {
+		all[*a] = true
+	}
+
+	found := make(map[addr.Address]bool)
+	for _, r := range res.Rows {
+		found[r.Address] = true
+	}
+
+	var skipped []addr.Address
+	for a := range all {
+		if found[a] {
+			continue
+		}
+		if core.SkipAddress(a) {
+			// fetch heavy skipped account states
+			skipped = append(skipped, a)
+			continue
+		}
+	}
+	if len(skipped) == 0 {
+		return nil
+	}
+
+	b, err := s.blockRepo.GetLastMasterBlock(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get last master block")
+	}
+	master := &ton.BlockIDExt{
+		Workchain: b.Workchain,
+		Shard:     b.Shard,
+		SeqNo:     b.SeqNo,
+		RootHash:  b.RootHash,
+		FileHash:  b.FileHash,
+	}
+
+	for _, a := range skipped {
+		tu, err := a.ToTonutils()
+		if err != nil {
+			return errors.Wrap(err, "parse address")
+		}
+
+		acc, err := s.API.GetAccount(ctx, master, tu)
+		if err != nil {
+			return errors.Wrapf(err, "get %s account", a.Base64())
+		}
+
+		parsed := fetcher.MapAccount(master, acc)
+
+		parsed.Label, err = s.accountRepo.GetAddressLabel(ctx, a)
+		if err != nil && !errors.Is(err, core.ErrNotFound) {
+			return errors.Wrap(err, "get address label")
+		}
+
+		res.Total += 1
+		res.Rows = append(res.Rows, parsed)
+	}
+
+	// TODO: sort and limit inserted accounts
+
+	return nil
+}
+
+func (s *Service) addGetMethodDescription(ctx context.Context, rows []*core.AccountState) error {
+	for _, r := range rows {
+		for name, methods := range r.ExecutedGetMethods {
+			for it := range methods {
+				d, err := s.contractRepo.GetMethodDescription(ctx, name, methods[it].Name)
+				if err != nil {
+					return errors.Wrapf(err, "cannot get %s get-method description of contract %s", methods[it].Name, name)
+				}
+				methods[it].Arguments = d.Arguments
+				methods[it].ReturnValues = d.ReturnValues
+			}
+		}
+	}
+	return nil
+}
+
 func (s *Service) FilterAccounts(ctx context.Context, req *filter.AccountsReq) (*filter.AccountsRes, error) {
-	return s.accountRepo.FilterAccounts(ctx, req)
+	res, err := s.accountRepo.FilterAccounts(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.fetchSkippedAccounts(ctx, req, res); err != nil {
+		return nil, err
+	}
+	if err := s.addGetMethodDescription(ctx, res.Rows); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (s *Service) AggregateAccounts(ctx context.Context, req *aggregate.AccountsReq) (*aggregate.AccountsRes, error) {

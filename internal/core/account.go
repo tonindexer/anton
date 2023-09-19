@@ -33,7 +33,7 @@ type AddressLabel struct {
 	ch.CHModel    `ch:"address_labels" json:"-"`
 	bun.BaseModel `bun:"table:address_labels" json:"-"`
 
-	Address    addr.Address    `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"-"`
+	Address    addr.Address    `ch:"type:String,pk" bun:"type:bytea,pk,notnull" json:"address"`
 	Name       string          `bun:"type:text" json:"name"`
 	Categories []LabelCategory `ch:",lc" bun:"type:label_category[]" json:"categories,omitempty"`
 }
@@ -83,6 +83,8 @@ type AccountState struct {
 	OwnerAddress  *addr.Address `ch:"type:String" bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
 	MinterAddress *addr.Address `ch:"type:String" bun:"type:bytea" json:"minter_address,omitempty"`
 
+	Fake bool `ch:"type:Bool" bun:"type:boolean" json:"fake,omitempty"`
+
 	ExecutedGetMethods map[abi.ContractName][]abi.GetMethodExecution `ch:"type:String" bun:"type:jsonb" json:"executed_get_methods,omitempty"`
 
 	// TODO: remove this
@@ -100,8 +102,36 @@ type LatestAccountState struct {
 	AccountState *AccountState `bun:"rel:has-one,join:address=address,join:last_tx_lt=last_tx_lt" json:"account"`
 }
 
+func SkipAddress(a addr.Address) bool {
+	switch a.Base64() {
+	case "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c": // burn address
+		return true
+	case "Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU": // system contract
+		return true
+	case "Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF": // elector contract
+		return true
+	case "Ef80UXx731GHxVr0-LYf3DIViMerdo3uJLAG3ykQZFjXz2kW": // log tests contract
+		return true
+	case "Ef9VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVbxn": // config contract
+		return true
+	case "EQAHI1vGuw7d4WG-CtfDrWqEPNtmUuKjKFEFeJmZaqqfWTvW": // BSC Bridge Collector
+		return true
+	case "EQCuzvIOXLjH2tv35gY4tzhIvXCqZWDuK9kUhFGXKLImgxT5": // ETH Bridge Collector
+		return true
+	case "EQA2u5Z5Fn59EUvTI-TIrX8PIGKQzNj3qLixdCPPujfJleXC",
+		"EQA2Pnxp0rMB9L6SU2z1VqfMIFIfutiTjQWFEXnwa_zPh0P3",
+		"EQDhIloDu1FWY9WFAgQDgw0RjuT5bLkf15Rmd5LCG3-0hyoe": // strange heavy testnet address
+		return true
+	case "EQAWBIxrfQDExJSfFmE5UL1r9drse0dQx_eaV8w9S77VK32F": // tongo emulator segmentation fault
+		return true
+	default:
+		return false
+	}
+}
+
 type AccountRepository interface {
 	AddAddressLabel(context.Context, *AddressLabel) error
+	GetAddressLabel(context.Context, addr.Address) (*AddressLabel, error)
 
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
 }

@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -47,7 +48,7 @@ var Command = &cli.Command{
 		for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
 			split := strings.Split(addr, "|")
 			if len(split) != 2 {
-				return errors.Wrapf(err, "wrong server address format '%s'", addr)
+				return fmt.Errorf("wrong server address format '%s'", addr)
 			}
 			host, key := split[0], split[1]
 			if err := client.AddConnection(ctx.Context, host, key); err != nil {
@@ -68,13 +69,12 @@ var Command = &cli.Command{
 			Parser: p,
 		})
 		i := indexer.NewService(&app.IndexerConfig{
-			DB:               conn,
-			API:              api,
-			Parser:           p,
-			Fetcher:          f,
-			FromBlock:        uint32(env.GetInt32("FROM_BLOCK", 1)),
-			Workers:          env.GetInt("WORKERS", 4),
-			InsertBlockBatch: env.GetInt("INSERT_BLOCK_BATCH", 10),
+			DB:        conn,
+			API:       api,
+			Parser:    p,
+			Fetcher:   f,
+			FromBlock: uint32(env.GetInt32("FROM_BLOCK", 1)),
+			Workers:   env.GetInt("WORKERS", 4),
 		})
 		if err = i.Start(); err != nil {
 			return err

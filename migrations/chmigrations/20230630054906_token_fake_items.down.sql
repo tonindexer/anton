@@ -1,0 +1,1 @@
+ALTER TABLE account_states DROP COLUMN fake Bool;

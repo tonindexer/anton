@@ -2,8 +2,10 @@ package account
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/go-clickhouse/ch"
@@ -12,7 +14,69 @@ import (
 	"github.com/tonindexer/anton/internal/core/filter"
 )
 
-func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq) (ret []*core.AccountState, err error) {
+func (r *Repository) filterAddressLabels(ctx context.Context, f *filter.LabelsReq) (ret []*core.AddressLabel, err error) {
+	q := r.pg.NewSelect().Model(&ret)
+
+	if f.Name != "" {
+		q = q.Where("name ILIKE ?", "%"+f.Name+"%")
+	}
+	if len(f.Categories) > 0 {
+		q = q.Where("categories && ?", pgdialect.Array(f.Categories))
+	}
+
+	q = q.Order("name ASC")
+
+	q = q.Offset(f.Offset)
+
+	if f.Limit == 0 {
+		f.Limit = 3
+	}
+	q = q.Limit(f.Limit)
+
+	err = q.Scan(ctx)
+
+	return ret, err
+}
+
+func (r *Repository) countAddressLabels(ctx context.Context, f *filter.LabelsReq) (int, error) {
+	q := r.ch.NewSelect().Model((*core.AddressLabel)(nil))
+
+	if f.Name != "" {
+		q = q.Where("positionCaseInsensitive(name, ?) > 0", f.Name)
+	}
+	if len(f.Categories) > 0 {
+		q = q.Where("hasAny(categories, [?])", ch.In(f.Categories))
+	}
+
+	return q.Count(ctx)
+}
+
+func (r *Repository) FilterLabels(ctx context.Context, f *filter.LabelsReq) (*filter.LabelsRes, error) {
+	var (
+		res = new(filter.LabelsRes)
+		err error
+	)
+
+	res.Rows, err = r.filterAddressLabels(ctx, f)
+	if err != nil {
+		if strings.Contains(err.Error(), "invalid input value for enum label_category") {
+			return nil, errors.Wrap(core.ErrInvalidArg, "invalid input value for enum label_category")
+		}
+		return res, err
+	}
+	if len(res.Rows) == 0 {
+		return res, nil
+	}
+
+	res.Total, err = r.countAddressLabels(ctx, f)
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
+func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq, total int) (ret []*core.AccountState, err error) {
 	var (
 		q                   *bun.SelectQuery
 		prefix, statesTable string
@@ -60,12 +124,20 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 		q = q.Order(statesTable + "last_tx_lt " + strings.ToUpper(f.Order))
 	}
 
-	if f.Limit == 0 {
-		f.Limit = 3
+	if total < 100000 && f.LatestState {
+		// firstly, select all latest states, then apply limit
+		// https://ottertune.com/blog/how-to-fix-slow-postgresql-queries
+		rawQuery := "WITH q AS MATERIALIZED (?) SELECT * FROM q"
+		if f.Limit < total {
+			rawQuery += fmt.Sprintf(" LIMIT %d", f.Limit)
+		}
+		err = r.pg.NewRaw(rawQuery, q).Scan(ctx, &ret)
+	} else {
+		if f.Limit < total {
+			q = q.Limit(f.Limit)
+		}
+		err = q.Scan(ctx)
 	}
-	q = q.Limit(f.Limit)
-
-	err = q.Scan(ctx)
 
 	if f.LatestState {
 		for _, a := range latest {
@@ -115,15 +187,19 @@ func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) 
 		err error
 	)
 
-	res.Rows, err = r.filterAccountStates(ctx, f)
-	if err != nil {
-		return res, err
-	}
-	if len(res.Rows) == 0 {
-		return res, nil
+	if f.Limit == 0 {
+		f.Limit = 3
 	}
 
 	res.Total, err = r.countAccountStates(ctx, f)
+	if err != nil {
+		return res, err
+	}
+	if res.Total == 0 {
+		return res, nil
+	}
+
+	res.Rows, err = r.filterAccountStates(ctx, f, res.Total)
 	if err != nil {
 		return res, err
 	}

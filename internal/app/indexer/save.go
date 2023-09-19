@@ -11,7 +11,6 @@ import (
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
-	"github.com/tonindexer/anton/internal/core/filter"
 )
 
 func (s *Service) insertData(
@@ -82,90 +81,6 @@ func (s *Service) insertData(
 	return nil
 }
 
-var lastLog = time.Now()
-
-func (s *Service) dumpMatchedData() {
-	var (
-		seq          uint32
-		minMasterSeq uint32 = 1e9
-		maxMasterSeq uint32 = 0
-		dumpMasters  []pendingMaster
-		insertBlocks []*core.Block
-		insertTx     []*core.Transaction
-		insertAcc    []*core.AccountState
-		insertMsg    []*core.Message
-	)
-
-	if len(s.pendingMasters) < s.InsertBlockBatch {
-		return
-	}
-
-	for _, msg := range s.unknownDstMsg {
-		if msg.SrcWorkchain == -1 {
-			if msg.SrcBlockSeqNo < minMasterSeq {
-				minMasterSeq = msg.SrcBlockSeqNo
-			}
-			continue
-		}
-		blockID := core.BlockID{
-			Workchain: msg.SrcWorkchain,
-			Shard:     msg.SrcShard,
-			SeqNo:     msg.SrcBlockSeqNo,
-		}
-		master := s.shardsMasterMap[blockID]
-		if master.SeqNo < minMasterSeq {
-			minMasterSeq = master.SeqNo
-			continue
-		}
-	}
-
-	for seq = range s.pendingMasters {
-		if seq >= minMasterSeq {
-			continue
-		}
-		if seq > maxMasterSeq {
-			maxMasterSeq = seq
-		}
-		dumpMasters = append(dumpMasters, s.pendingMasters[seq])
-		delete(s.pendingMasters, seq)
-	}
-	for master, shards := range s.masterShardsCache {
-		if master.SeqNo >= minMasterSeq {
-			continue
-		}
-		for _, shard := range shards {
-			delete(s.shardsMasterMap, shard)
-		}
-		delete(s.masterShardsCache, master)
-	}
-
-	if len(dumpMasters) == 0 {
-		return
-	}
-
-	for it := range dumpMasters {
-		insertBlocks = append(insertBlocks, dumpMasters[it].Info...)
-		insertTx = append(insertTx, dumpMasters[it].Tx...)
-		insertMsg = append(insertMsg, dumpMasters[it].Msg...)
-		insertAcc = append(insertAcc, dumpMasters[it].Acc...)
-	}
-
-	if err := s.insertData(insertAcc, insertMsg, insertTx, insertBlocks); err != nil {
-		panic(err)
-	}
-
-	lvl := log.Debug()
-	if time.Since(lastLog) > 10*time.Minute {
-		lvl = log.Info()
-		lastLog = time.Now()
-	}
-	lvl.Uint32("last_inserted_seq", maxMasterSeq).
-		Int("pending_masters", len(s.pendingMasters)).
-		Int("unknown_dst_msg", len(s.unknownDstMsg)).
-		Uint32("min_master_seq", minMasterSeq).
-		Msg("inserted new block")
-}
-
 func (s *Service) uniqAccounts(transactions []*core.Transaction) []*core.AccountState {
 	var ret []*core.AccountState
 
@@ -187,12 +102,6 @@ func (s *Service) uniqAccounts(transactions []*core.Transaction) []*core.Account
 
 func (s *Service) addMessage(msg *core.Message, uniqMsg map[string]*core.Message) {
 	id := string(msg.Hash)
-
-	srcMsg, ok := s.unknownDstMsg[id]
-	if ok {
-		uniqMsg[id] = srcMsg
-		delete(s.unknownDstMsg, id)
-	}
 
 	if _, ok := uniqMsg[id]; !ok {
 		uniqMsg[id] = msg
@@ -233,53 +142,49 @@ func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message
 	}
 
 	for _, msg := range uniqMsg {
-		if (msg.Type != core.Internal) || (msg.SrcTxLT != 0 && msg.DstTxLT != 0) {
-			ret = append(ret, msg)
-			continue
-		}
-
-		if msg.SrcTxLT == 0 && msg.DstTxLT != 0 {
-			if msg.SrcAddress.Workchain() == -1 && msg.DstAddress.Workchain() == -1 {
-				ret = append(ret, msg)
-				continue
+		if msg.Type == core.Internal && (msg.SrcTxLT == 0 && msg.DstTxLT != 0) {
+			// unknown source transaction, fill in source contract state
+			source, err := s.msgRepo.GetMessage(context.Background(), msg.Hash)
+			if err != nil && !errors.Is(err, core.ErrNotFound) {
+				panic(errors.Wrap(err, "get message error"))
 			}
-			_, err := s.msgRepo.FilterMessages(context.Background(), &filter.MessagesReq{Hash: msg.Hash})
+			// some masterchain messages does not have source
+			if errors.Is(err, core.ErrNotFound) && !(msg.SrcAddress.Workchain() == -1 && msg.DstAddress.Workchain() == -1) {
+				panic(fmt.Errorf("unknown source message with dst tx hash %x on block (%d, %x, %d) from %s to %s",
+					msg.DstTxHash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
+			}
 			if err == nil {
-				continue // message is already in a database
+				msg.SrcTxLT, msg.SrcShard, msg.SrcBlockSeqNo, msg.SrcState =
+					source.SrcTxLT, source.SrcShard, source.SrcBlockSeqNo, source.SrcState
 			}
-			panic(fmt.Errorf("unknown source message with dst tx hash %x on block (%d, %x, %d) from %s to %s",
-				msg.DstTxHash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
 		}
 
-		// unknown destination, waiting for next transactions
-		s.unknownDstMsg[string(msg.Hash)] = msg
+		ret = append(ret, msg)
 	}
 
 	return ret
 }
 
-func (s *Service) addPendingBlocks(master *core.Block) {
-	var (
-		newBlocks       = []*core.Block{master}
-		newTransactions []*core.Transaction
-	)
+var lastLog = time.Now()
 
-	for i := range master.Shards {
-		newBlocks = append(newBlocks, master.Shards[i])
-		s.masterShardsCache[master.ID()] = append(s.masterShardsCache[master.ID()], master.Shards[i].ID())
-		s.shardsMasterMap[master.Shards[i].ID()] = master.ID()
-	}
+func (s *Service) saveBlock(master *core.Block) {
+	newBlocks := append([]*core.Block{master}, master.Shards...)
 
+	var newTransactions []*core.Transaction
 	for i := range newBlocks {
 		newTransactions = append(newTransactions, newBlocks[i].Transactions...)
 	}
 
-	s.pendingMasters[master.SeqNo] = pendingMaster{
-		Info: newBlocks,
-		Tx:   newTransactions,
-		Acc:  s.uniqAccounts(newTransactions),
-		Msg:  s.uniqMessages(newTransactions),
+	if err := s.insertData(s.uniqAccounts(newTransactions), s.uniqMessages(newTransactions), newTransactions, newBlocks); err != nil {
+		panic(err)
 	}
+
+	lvl := log.Debug()
+	if time.Since(lastLog) > 10*time.Minute {
+		lvl = log.Info()
+		lastLog = time.Now()
+	}
+	lvl.Uint32("last_inserted_seq", master.SeqNo).Msg("inserted new block")
 }
 
 func (s *Service) saveBlocksLoop(results <-chan *core.Block) {
@@ -301,8 +206,6 @@ func (s *Service) saveBlocksLoop(results <-chan *core.Block) {
 			Int("shards", len(b.Shards)).
 			Msg("new master")
 
-		s.addPendingBlocks(b)
-
-		s.dumpMatchedData()
+		s.saveBlock(b)
 	}
 }

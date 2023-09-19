@@ -10,7 +10,7 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {
-            "name": "Dat Boi",
+            "name": "Anton",
             "url": "https://anton.tools"
         },
         "license": {
@@ -300,7 +300,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/contract/interfaces": {
+        "/contracts/interfaces": {
             "get": {
                 "description": "Returns known contract interfaces",
                 "consumes": [
@@ -323,7 +323,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/contract/operations": {
+        "/contracts/operations": {
             "get": {
                 "description": "Returns known contract message payloads schema",
                 "consumes": [
@@ -341,6 +341,83 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/http.GetOperationsRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/labels": {
+            "get": {
+                "description": "Search addresses by label name or category",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "label"
+                ],
+                "summary": "address labels",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter labels by its name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter by categories",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 10000,
+                        "type": "integer",
+                        "default": 3,
+                        "description": "limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/filter.LabelsRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/labels/categories": {
+            "get": {
+                "description": "Returns all possible label categories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "label"
+                ],
+                "summary": "address label categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.GetLabelCategoriesRes"
                         }
                     }
                 }
@@ -867,6 +944,9 @@ const docTemplate = `{
                 },
                 "op_name": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -1016,6 +1096,31 @@ const docTemplate = `{
                 }
             }
         },
+        "aggregate.AddressStatusCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "aggregate.AddressTypesCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "interfaces": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "aggregate.MessagesRes": {
             "type": "object",
             "properties": {
@@ -1079,39 +1184,20 @@ const docTemplate = `{
                 "account_count": {
                     "type": "integer"
                 },
-                "account_count_by_interfaces": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "count": {
-                                "type": "integer"
-                            },
-                            "interfaces": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                },
-                "account_count_by_status": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "count": {
-                                "type": "integer"
-                            },
-                            "status": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                },
                 "address_count": {
                     "type": "integer"
+                },
+                "address_count_by_interfaces": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/aggregate.AddressTypesCount"
+                    }
+                },
+                "address_count_by_status": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/aggregate.AddressStatusCount"
+                    }
                 },
                 "contract_interface_count": {
                     "type": "integer"
@@ -1172,7 +1258,7 @@ const docTemplate = `{
                     }
                 },
                 "balance": {
-                    "type": "string"
+                    "$ref": "#/definitions/bunbig.Int"
                 },
                 "block_seq_no": {
                     "type": "integer"
@@ -1228,6 +1314,9 @@ const docTemplate = `{
                         }
                     }
                 },
+                "fake": {
+                    "type": "boolean"
+                },
                 "get_method_hashes": {
                     "type": "array",
                     "items": {
@@ -1236,6 +1325,9 @@ const docTemplate = `{
                 },
                 "is_active": {
                     "type": "boolean"
+                },
+                "jetton_balance": {
+                    "type": "string"
                 },
                 "label": {
                     "$ref": "#/definitions/core.AddressLabel"
@@ -1293,6 +1385,12 @@ const docTemplate = `{
         "core.AddressLabel": {
             "type": "object",
             "properties": {
+                "address": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "categories": {
                     "type": "array",
                     "items": {
@@ -1687,6 +1785,20 @@ const docTemplate = `{
                 }
             }
         },
+        "filter.LabelsRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.AddressLabel"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "filter.MessagesRes": {
             "type": "object",
             "properties": {
@@ -1793,6 +1905,20 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/core.ContractInterface"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "http.GetLabelCategoriesRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
                 },
                 "total": {

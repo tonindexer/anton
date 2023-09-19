@@ -55,7 +55,7 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 		msg.DstContract = acc.Types[0]
 	}
 
-	op, err := s.ContractRepo.GetOperationByID(ctx, acc.Types, outgoing, msg.OperationID)
+	op, err := s.ContractRepo.GetOperationByID(ctx, msg.Type, acc.Types, outgoing, msg.OperationID)
 	if errors.Is(err, core.ErrNotFound) {
 		return errors.Wrap(app.ErrImpossibleParsing, "unknown operation")
 	}

@@ -68,14 +68,6 @@ func (r *Repository) AddInterface(ctx context.Context, i *core.ContractInterface
 	return nil
 }
 
-func (r *Repository) AddOperation(ctx context.Context, op *core.ContractOperation) error {
-	_, err := r.pg.NewInsert().Model(op).Exec(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (r *Repository) DelInterface(ctx context.Context, name string) error {
 	_, err := r.pg.NewDelete().
 		Model((*core.ContractOperation)(nil)).
@@ -121,6 +113,37 @@ func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterfa
 	return ret, nil
 }
 
+func (r *Repository) GetMethodDescription(ctx context.Context, name abi.ContractName, method string) (abi.GetMethodDesc, error) {
+	if d, ok := r.cache.getMethodDesc(name, method); ok {
+		return d, nil
+	}
+
+	var i core.ContractInterface
+
+	err := r.pg.NewSelect().Model(&i).
+		Where("name = ?", name).
+		Scan(ctx)
+	if err != nil {
+		return abi.GetMethodDesc{}, err
+	}
+
+	for it := range i.GetMethodsDesc {
+		if i.GetMethodsDesc[it].Name == method {
+			return i.GetMethodsDesc[it], nil
+		}
+	}
+
+	return abi.GetMethodDesc{}, core.ErrNotFound
+}
+
+func (r *Repository) AddOperation(ctx context.Context, op *core.ContractOperation) error {
+	_, err := r.pg.NewInsert().Model(op).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *Repository) GetOperations(ctx context.Context) ([]*core.ContractOperation, error) {
 	var ret []*core.ContractOperation
 
@@ -138,20 +161,21 @@ func (r *Repository) GetOperations(ctx context.Context) ([]*core.ContractOperati
 	return ret, nil
 }
 
-func (r *Repository) GetOperationByID(ctx context.Context, types []abi.ContractName, outgoing bool, id uint32) (*core.ContractOperation, error) {
+func (r *Repository) GetOperationByID(ctx context.Context, t core.MessageType, interfaces []abi.ContractName, outgoing bool, id uint32) (*core.ContractOperation, error) {
 	var ret []*core.ContractOperation
 
-	if len(types) == 0 {
-		return nil, errors.Wrap(core.ErrNotFound, "no contract types")
+	if len(interfaces) == 0 {
+		return nil, errors.Wrap(core.ErrNotFound, "no contract interfaces")
 	}
 
-	if op := r.cache.getOperationByID(types, outgoing, id); op != nil {
+	if op := r.cache.getOperationByID(interfaces, outgoing, id); op != nil {
 		return op, nil
 	}
 
 	err := r.pg.NewSelect().Model(&ret).
-		Where("contract_name IN (?)", bun.In(types)).
+		Where("contract_name IN (?)", bun.In(interfaces)).
 		Where("outgoing IS ?", outgoing).
+		Where("message_type = ?", t).
 		Where("operation_id = ?", id).
 		Scan(ctx)
 	if err != nil {

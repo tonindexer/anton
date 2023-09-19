@@ -28,7 +28,6 @@ services:
       <<: *anton-env
       FROM_BLOCK: ${FROM_BLOCK}
       WORKERS: ${WORKERS}
-      INSERT_BLOCK_BATCH: ${INSERT_BLOCK_BATCH}
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
   web:
@@ -44,6 +43,7 @@ services:
     command: web
     environment:
       <<: *anton-env
+      LITESERVERS: ${LITESERVERS}
       GIN_MODE: "release"
   migrations:
     <<: *anton-service

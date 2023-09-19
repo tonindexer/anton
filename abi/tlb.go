@@ -28,6 +28,7 @@ type TLBFieldsDesc []TLBFieldDesc
 type OperationDesc struct {
 	Name string        `json:"op_name"`
 	Code string        `json:"op_code"`
+	Type string        `json:"type,omitempty"`
 	Body TLBFieldsDesc `json:"body"`
 }
 

@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 
+	"github.com/xssnick/tonutils-go/ton"
+
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
 	"github.com/tonindexer/anton/internal/core/aggregate/history"
@@ -12,6 +14,8 @@ import (
 
 type QueryConfig struct {
 	DB *repository.DB
+
+	API *ton.APIClient
 }
 
 type QueryService interface {
@@ -21,6 +25,9 @@ type QueryService interface {
 	GetOperations(ctx context.Context) ([]*core.ContractOperation, error)
 
 	filter.BlockRepository
+
+	GetLabelCategories(context.Context) ([]core.LabelCategory, error)
+
 	filter.AccountRepository
 	filter.TransactionRepository
 	filter.MessageRepository

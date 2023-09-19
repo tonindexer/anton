@@ -151,6 +151,23 @@ func (x *Address) MarshalJSON() ([]byte, error) {
 
 func (x *Address) UnmarshalJSON(raw []byte) error {
 	s := strings.Replace(string(raw), "\"", "", 2)
+	s = strings.TrimSpace(s)
+	if len(s) > 0 && s[0] == '{' {
+		var bothAddr struct {
+			Hex    string `json:"hex"`
+			Base64 string `json:"base64"`
+		}
+		if err := json.Unmarshal(raw, &bothAddr); err != nil {
+			return err
+		}
+		if _, err := x.FromBase64(bothAddr.Base64); err == nil {
+			return nil
+		}
+		if _, err := x.FromString(bothAddr.Hex); err == nil {
+			return nil
+		}
+		return fmt.Errorf("cannot unmarshal %s to address", s)
+	}
 	if _, err := x.FromBase64(s); err == nil {
 		return nil
 	}

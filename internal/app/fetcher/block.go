@@ -9,12 +9,12 @@ import (
 	"github.com/xssnick/tonutils-go/ton"
 )
 
-func (s *Service) lookupMaster(ctx context.Context, seqNo uint32) (*ton.BlockIDExt, error) {
+func (s *Service) LookupMaster(ctx context.Context, api ton.APIClientWaiter, seqNo uint32) (*ton.BlockIDExt, error) {
 	if master, ok := s.blocks.getMaster(seqNo); ok {
 		return master, nil
 	}
 
-	master, err := s.API.LookupBlock(ctx, s.masterWorkchain, int64(s.masterShard), seqNo)
+	master, err := api.LookupBlock(ctx, s.masterWorkchain, int64(s.masterShard), seqNo)
 	if err != nil {
 		return nil, errors.Wrap(err, "lookup masterchain block")
 	}
@@ -72,24 +72,28 @@ func (s *Service) getNotSeenShards(ctx context.Context, shard *ton.BlockIDExt, s
 }
 
 func (s *Service) UnseenBlocks(ctx context.Context, masterSeqNo uint32) (master *ton.BlockIDExt, shards []*ton.BlockIDExt, err error) {
-	var newShards []*ton.BlockIDExt
-
-	curMaster, err := s.lookupMaster(ctx, masterSeqNo)
+	curMaster, err := s.LookupMaster(ctx, s.API, masterSeqNo)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "lookup master")
 	}
-	curShards, err := s.getShardsInfo(ctx, curMaster)
+
+	shards, err = s.UnseenShards(ctx, curMaster)
+	return curMaster, shards, err
+}
+
+func (s *Service) UnseenShards(ctx context.Context, master *ton.BlockIDExt) (shards []*ton.BlockIDExt, err error) {
+	curShards, err := s.getShardsInfo(ctx, master)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "get masterchain shards info")
+		return nil, errors.Wrap(err, "get masterchain shards info")
 	}
 
-	prevMaster, err := s.lookupMaster(ctx, masterSeqNo-1)
+	prevMaster, err := s.LookupMaster(ctx, s.API, master.SeqNo-1)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "lookup master")
+		return nil, errors.Wrap(err, "lookup master")
 	}
 	prevShards, err := s.getShardsInfo(ctx, prevMaster)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "get masterchain shards info")
+		return nil, errors.Wrap(err, "get masterchain shards info")
 	}
 
 	shardLastSeqNo := map[string]uint32{}
@@ -103,10 +107,10 @@ func (s *Service) UnseenBlocks(ctx context.Context, masterSeqNo uint32) (master 
 	for _, shard := range curShards {
 		notSeen, err := s.getNotSeenShards(ctxNotSeen, shard, shardLastSeqNo)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "get not seen shards")
+			return nil, errors.Wrap(err, "get not seen shards")
 		}
-		newShards = append(newShards, notSeen...)
+		shards = append(shards, notSeen...)
 	}
 
-	return curMaster, newShards, nil
+	return shards, nil
 }
