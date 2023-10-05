@@ -84,17 +84,22 @@ func (s *Service) insertData(
 func (s *Service) uniqAccounts(transactions []*core.Transaction) []*core.AccountState {
 	var ret []*core.AccountState
 
-	uniqAcc := make(map[addr.Address]*core.AccountState)
+	uniqAcc := make(map[addr.Address]map[uint64]*core.AccountState)
 
-	for j := range transactions {
-		tx := transactions[j]
-		if tx.Account != nil {
-			uniqAcc[tx.Account.Address] = tx.Account
+	for _, tx := range transactions {
+		if tx.Account == nil {
+			continue
 		}
+		if uniqAcc[tx.Account.Address] == nil {
+			uniqAcc[tx.Account.Address] = map[uint64]*core.AccountState{}
+		}
+		uniqAcc[tx.Account.Address][tx.Account.LastTxLT] = tx.Account
 	}
 
-	for _, a := range uniqAcc {
-		ret = append(ret, a)
+	for _, accounts := range uniqAcc {
+		for _, a := range accounts {
+			ret = append(ret, a)
+		}
 	}
 
 	return ret
