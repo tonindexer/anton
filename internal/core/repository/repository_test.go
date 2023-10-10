@@ -164,6 +164,7 @@ func TestRelations(t *testing.T) {
 	transaction.Workchain = shard.Workchain
 	transaction.Shard = shard.Shard
 	transaction.BlockSeqNo = shard.SeqNo
+	shard.TransactionsCount++
 
 	shard.Transactions = []*core.Transaction{transaction}
 	shard.MasterID = &core.BlockID{Workchain: master.Workchain, Shard: master.Shard, SeqNo: master.SeqNo}

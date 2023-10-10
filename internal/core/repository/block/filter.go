@@ -28,6 +28,63 @@ func loadTransactions(q *bun.SelectQuery, prefix string, f *filter.BlocksReq) *b
 	return q
 }
 
+func (r *Repository) countTransactions(ctx context.Context, ret []*core.Block) error {
+	var blockIDs [][]int64
+	for _, m := range ret {
+		for _, s := range m.Shards {
+			blockIDs = append(blockIDs, []int64{int64(s.Workchain), s.Shard, int64(s.SeqNo)})
+		}
+		blockIDs = append(blockIDs, []int64{int64(m.Workchain), m.Shard, int64(m.SeqNo)})
+	}
+
+	var res []struct {
+		Workchain         int32
+		Shard             int64
+		SeqNo             uint32 `bun:"block_seq_no"`
+		TransactionsCount int
+	}
+	err := r.pg.NewSelect().
+		TableExpr("transactions AS tx").
+		Column("workchain", "shard", "block_seq_no").
+		ColumnExpr("COUNT(*) as transactions_count").
+		Where("(workchain, shard, block_seq_no) IN (?)", bun.In(blockIDs)).
+		Group("workchain", "shard", "block_seq_no").
+		Scan(ctx, &res)
+	if err != nil {
+		return err
+	}
+
+	var counts = make(map[int32]map[int64]map[uint32]int)
+	for _, r := range res {
+		if counts[r.Workchain] == nil {
+			counts[r.Workchain] = map[int64]map[uint32]int{}
+		}
+		if counts[r.Workchain][r.Shard] == nil {
+			counts[r.Workchain][r.Shard] = map[uint32]int{}
+		}
+		counts[r.Workchain][r.Shard][r.SeqNo] = r.TransactionsCount
+	}
+
+	getCount := func(workchain int32, shard int64, seqNo uint32) int {
+		if counts[workchain] == nil {
+			return 0
+		}
+		if counts[workchain][shard] == nil {
+			return 0
+		}
+		return counts[workchain][shard][seqNo]
+	}
+
+	for _, m := range ret {
+		for _, s := range m.Shards {
+			s.TransactionsCount = getCount(s.Workchain, s.Shard, s.SeqNo)
+		}
+		m.TransactionsCount = getCount(m.Workchain, m.Shard, m.SeqNo)
+	}
+
+	return nil
+}
+
 func (r *Repository) filterBlocks(ctx context.Context, f *filter.BlocksReq) (ret []*core.Block, err error) {
 	q := r.pg.NewSelect().Model(&ret)
 
@@ -72,8 +129,15 @@ func (r *Repository) filterBlocks(ctx context.Context, f *filter.BlocksReq) (ret
 	}
 	q = q.Limit(f.Limit)
 
-	err = q.Scan(ctx)
-	return ret, err
+	if err := q.Scan(ctx); err != nil {
+		return nil, err
+	}
+
+	if err = r.countTransactions(ctx, ret); err != nil {
+		return nil, err
+	}
+
+	return ret, nil
 }
 
 func (r *Repository) countBlocks(ctx context.Context, f *filter.BlocksReq) (int, error) {

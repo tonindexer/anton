@@ -1441,6 +1441,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/core.Transaction"
                     }
                 },
+                "transactions_count": {
+                    "type": "integer"
+                },
                 "workchain": {
                     "type": "integer"
                 }
