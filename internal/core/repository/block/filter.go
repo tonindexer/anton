@@ -133,7 +133,7 @@ func (r *Repository) filterBlocks(ctx context.Context, f *filter.BlocksReq) (ret
 		return nil, err
 	}
 
-	if err = r.countTransactions(ctx, ret); err != nil {
+	if err := r.countTransactions(ctx, ret); err != nil {
 		return nil, err
 	}
 
