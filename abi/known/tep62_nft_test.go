@@ -5,13 +5,13 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
+
+	"github.com/goccy/go-json"
+
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/tonindexer/anton/abi"
 )
@@ -70,7 +70,7 @@ func TestNewOperationDesc_NFTCollection(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		require.Nil(t, err)
-		assert.Equal(t, test.expected, string(got))
+		require.Equal(t, test.expected, string(got))
 	}
 }
 
@@ -123,7 +123,7 @@ func TestLoadOperation_NFTCollection(t *testing.T) {
 		j, err := json.Marshal(op)
 		require.Nil(t, err)
 
-		assert.Equal(t, test.expected, string(j))
+		require.Equal(t, test.expected, string(j))
 	}
 }
 
@@ -159,7 +159,7 @@ func TestNewOperationDesc_NFTRoyalty(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		require.Nil(t, err)
-		assert.Equal(t, test.expected, string(got))
+		require.Equal(t, test.expected, string(got))
 	}
 }
 
@@ -223,7 +223,7 @@ func TestNewOperationDesc_NFTItem(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		require.Nil(t, err)
-		assert.Equal(t, test.expected, string(got))
+		require.Equal(t, test.expected, string(got))
 	}
 }
 
@@ -272,6 +272,6 @@ func TestNewOperationDesc_NFTEditable(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		require.Nil(t, err)
-		assert.Equal(t, test.expected, string(got))
+		require.Equal(t, test.expected, string(got))
 	}
 }

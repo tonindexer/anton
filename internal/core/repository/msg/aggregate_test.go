@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/uptrace/bun/extra/bunbig"
 
 	"github.com/tonindexer/anton/addr"
@@ -49,17 +50,17 @@ func TestRepository_AggregateMessages(t *testing.T) {
 
 	t.Run("insert test data", func(t *testing.T) {
 		tx, err := pg.Begin()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		err = repo.AddMessages(ctx, tx, rndm.Messages(100))
-		assert.Nil(t, err)
+		require.Nil(t, err)
 		err = repo.AddMessages(ctx, tx, messagesTo)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 		err = repo.AddMessages(ctx, tx, messagesFrom)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		err = tx.Commit()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 	})
 
 	t.Run("aggregate by address", func(t *testing.T) {
@@ -68,22 +69,22 @@ func TestRepository_AggregateMessages(t *testing.T) {
 			OrderBy: "amount",
 			Limit:   150,
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, recvCount, res.RecvCount)
-		assert.Equal(t, recvAmount, res.RecvAmount)
+		require.Nil(t, err)
+		require.Equal(t, recvCount, res.RecvCount)
+		require.Equal(t, recvAmount, res.RecvAmount)
 		for _, r := range res.RecvByAddress {
-			assert.True(t, r.Sender != nil)
-			assert.True(t, r.Amount != nil && r.Amount.ToUInt64() > 0)
-			assert.Equal(t, recvFromAddress[*r.Sender], r.Amount)
-			assert.Equal(t, 1, r.Count)
+			require.True(t, r.Sender != nil)
+			require.True(t, r.Amount != nil && r.Amount.ToUInt64() > 0)
+			require.Equal(t, recvFromAddress[*r.Sender], r.Amount)
+			require.Equal(t, 1, r.Count)
 		}
-		assert.Equal(t, sentCount, res.SentCount)
-		assert.Equal(t, sentAmount, res.SentAmount)
+		require.Equal(t, sentCount, res.SentCount)
+		require.Equal(t, sentAmount, res.SentAmount)
 		for _, r := range res.SentByAddress {
-			assert.True(t, r.Receiver != nil)
-			assert.True(t, r.Amount != nil && r.Amount.ToUInt64() > 0)
-			assert.Equal(t, sentToAddress[*r.Receiver], r.Amount)
-			assert.Equal(t, 1, r.Count)
+			require.True(t, r.Receiver != nil)
+			require.True(t, r.Amount != nil && r.Amount.ToUInt64() > 0)
+			require.Equal(t, sentToAddress[*r.Receiver], r.Amount)
+			require.Equal(t, 1, r.Count)
 		}
 	})
 }

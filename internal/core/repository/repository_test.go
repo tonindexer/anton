@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
@@ -55,43 +55,43 @@ func dropTables(t testing.TB) {
 	ck, pg := db.CH, db.PG
 
 	_, err := ck.NewDropTable().Model((*core.Transaction)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.Transaction)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	_, err = ck.NewDropTable().Model((*core.Message)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.Message)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	_, err = pg.NewDropTable().Model((*core.LatestAccountState)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	_, err = ck.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	_, err = ck.NewDropTable().Model((*core.AddressLabel)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.AddressLabel)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS account_status")
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	_, err = ck.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	_, err = pg.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS message_type")
-	assert.Nil(t, err)
+	require.Nil(t, err)
 }
 
 func createTables(t testing.TB) {
@@ -99,19 +99,19 @@ func createTables(t testing.TB) {
 	defer cancel()
 
 	err := block.CreateTables(ctx, db.CH, db.PG)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	err = account.CreateTables(ctx, db.CH, db.PG)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	err = tx.CreateTables(ctx, db.CH, db.PG)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	err = msg.CreateTables(ctx, db.CH, db.PG)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	err = contract.CreateTables(ctx, db.PG)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 }
 
 func TestInsertKnownInterfaces(t *testing.T) {
@@ -188,19 +188,19 @@ func TestRelations(t *testing.T) {
 
 	t.Run("insert related data", func(t *testing.T) {
 		dbtx, err := db.PG.Begin()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		err = accountRepo.AddAccountStates(ctx, dbtx, states)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 		err = msgRepo.AddMessages(ctx, dbtx, messages)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 		err = txRepo.AddTransactions(ctx, dbtx, transactions)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 		err = blockRepo.AddBlocks(ctx, dbtx, blocks)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		err = dbtx.Commit()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 	})
 
 	t.Run("get account states with data", func(t *testing.T) {
@@ -208,23 +208,23 @@ func TestRelations(t *testing.T) {
 			Addresses:   addresses,
 			LatestState: true,
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, res.Total)
-		assert.Equal(t, states, res.Rows)
+		require.Nil(t, err)
+		require.Equal(t, 1, res.Total)
+		require.Equal(t, states, res.Rows)
 	})
 
 	t.Run("get messages with payloads", func(t *testing.T) {
 		res, err := msgRepo.FilterMessages(ctx, &filter.MessagesReq{
 			DstAddresses: addresses,
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, res.Total)
-		assert.Equal(t, len(messagesTo), len(res.Rows))
+		require.Nil(t, err)
+		require.Equal(t, 1, res.Total)
+		require.Equal(t, len(messagesTo), len(res.Rows))
 		for i := range messagesTo {
-			assert.JSONEq(t, string(messagesTo[i].DataJSON), string(res.Rows[i].DataJSON))
+			require.JSONEq(t, string(messagesTo[i].DataJSON), string(res.Rows[i].DataJSON))
 			res.Rows[i].DataJSON = messagesTo[i].DataJSON
 		}
-		assert.Equal(t, messagesTo, res.Rows)
+		require.Equal(t, messagesTo, res.Rows)
 	})
 
 	t.Run("get transactions with states and messages", func(t *testing.T) {
@@ -233,13 +233,13 @@ func TestRelations(t *testing.T) {
 			WithAccountState: true,
 			WithMessages:     true,
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, res.Total)
-		assert.Equal(t, 1, len(res.Rows))
-		assert.NotNil(t, res.Rows[0].InMsg)
-		assert.JSONEq(t, string(messagesTo[0].DataJSON), string(res.Rows[0].InMsg.DataJSON))
+		require.Nil(t, err)
+		require.Equal(t, 1, res.Total)
+		require.Equal(t, 1, len(res.Rows))
+		require.NotNil(t, res.Rows[0].InMsg)
+		require.JSONEq(t, string(messagesTo[0].DataJSON), string(res.Rows[0].InMsg.DataJSON))
 		res.Rows[0].InMsg.DataJSON = messagesTo[0].DataJSON
-		assert.Equal(t, transactions, res.Rows)
+		require.Equal(t, transactions, res.Rows)
 	})
 
 	t.Run("get master block with shards and transactions", func(t *testing.T) {
@@ -251,37 +251,37 @@ func TestRelations(t *testing.T) {
 			WithTransactionAccountState: true,
 			WithTransactionMessages:     true,
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, res.Total)
-		assert.Equal(t, 1, len(res.Rows))
-		assert.Equal(t, 1, len(res.Rows[0].Shards))
-		assert.Equal(t, 1, len(res.Rows[0].Shards[0].Transactions))
-		assert.NotNil(t, res.Rows[0].Shards[0].Transactions[0].InMsg)
-		assert.JSONEq(t, string(messagesTo[0].DataJSON), string(res.Rows[0].Shards[0].Transactions[0].InMsg.DataJSON))
+		require.Nil(t, err)
+		require.Equal(t, 1, res.Total)
+		require.Equal(t, 1, len(res.Rows))
+		require.Equal(t, 1, len(res.Rows[0].Shards))
+		require.Equal(t, 1, len(res.Rows[0].Shards[0].Transactions))
+		require.NotNil(t, res.Rows[0].Shards[0].Transactions[0].InMsg)
+		require.JSONEq(t, string(messagesTo[0].DataJSON), string(res.Rows[0].Shards[0].Transactions[0].InMsg.DataJSON))
 		res.Rows[0].Shards[0].Transactions[0].InMsg.DataJSON = messagesTo[0].DataJSON
-		assert.Equal(t, blocks[1:], res.Rows)
+		require.Equal(t, blocks[1:], res.Rows)
 	})
 
 	t.Run("get statistics", func(t *testing.T) {
 		stats, err := aggregate.GetStatistics(ctx, db.CH, db.PG)
-		assert.Nil(t, err)
-		assert.Equal(t, int(master.SeqNo), stats.FirstBlock)
-		assert.Equal(t, int(master.SeqNo), stats.LastBlock)
-		assert.Equal(t, 1, stats.MasterBlockCount)
-		assert.Equal(t, 1, stats.AddressCount)
-		assert.Equal(t, 1, stats.ParsedAddressCount)
-		assert.Equal(t, 1, stats.AccountCount)
-		assert.Equal(t, 1, stats.ParsedAccountCount)
-		assert.Equal(t, 1, stats.TransactionCount)
-		assert.Equal(t, 2, stats.MessageCount)
-		assert.Equal(t, 1, stats.ParsedMessageCount)
-		assert.Equal(t, 1, len(stats.AddressStatusCount))
-		assert.Equal(t, core.Active, stats.AddressStatusCount[0].Status)
-		assert.Equal(t, 1, stats.AddressStatusCount[0].Count)
-		assert.Equal(t, state.Types, stats.AddressTypesCount[0].Interfaces)
-		assert.Equal(t, 1, stats.AddressTypesCount[0].Count)
-		assert.Equal(t, operation, stats.MessageTypesCount[0].Operation)
-		assert.Equal(t, 1, stats.MessageTypesCount[0].Count)
+		require.Nil(t, err)
+		require.Equal(t, int(master.SeqNo), stats.FirstBlock)
+		require.Equal(t, int(master.SeqNo), stats.LastBlock)
+		require.Equal(t, 1, stats.MasterBlockCount)
+		require.Equal(t, 1, stats.AddressCount)
+		require.Equal(t, 1, stats.ParsedAddressCount)
+		require.Equal(t, 1, stats.AccountCount)
+		require.Equal(t, 1, stats.ParsedAccountCount)
+		require.Equal(t, 1, stats.TransactionCount)
+		require.Equal(t, 2, stats.MessageCount)
+		require.Equal(t, 1, stats.ParsedMessageCount)
+		require.Equal(t, 1, len(stats.AddressStatusCount))
+		require.Equal(t, core.Active, stats.AddressStatusCount[0].Status)
+		require.Equal(t, 1, stats.AddressStatusCount[0].Count)
+		require.Equal(t, state.Types, stats.AddressTypesCount[0].Interfaces)
+		require.Equal(t, 1, stats.AddressTypesCount[0].Count)
+		require.Equal(t, operation, stats.MessageTypesCount[0].Operation)
+		require.Equal(t, 1, stats.MessageTypesCount[0].Count)
 	})
 
 	t.Run("drop tables again", func(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/core/aggregate/history"
@@ -28,24 +28,24 @@ func TestRepository_AggregateAccountsHistory(t *testing.T) {
 
 	t.Run("insert test data", func(t *testing.T) {
 		tx, err := pg.Begin()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		for i := 0; i < 10; i++ {
 			states := rndm.AccountStates(10)
 
 			err = repo.AddAccountStates(ctx, tx, states)
-			assert.Nil(t, err)
+			require.Nil(t, err)
 		}
 
 		for i := 0; i < 10; i++ {
 			states := rndm.AccountStatesContract(10, "special", nil)
 
 			err = repo.AddAccountStates(ctx, tx, states)
-			assert.Nil(t, err)
+			require.Nil(t, err)
 		}
 
 		err = tx.Commit()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 	})
 
 	t.Run("count active addresses", func(t *testing.T) {
@@ -57,10 +57,10 @@ func TestRepository_AggregateAccountsHistory(t *testing.T) {
 				Interval: 24 * time.Hour,
 			},
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(res.CountRes))
+		require.Nil(t, err)
+		require.Equal(t, 1, len(res.CountRes))
 		for _, c := range res.CountRes {
-			assert.Equal(t, 10, c.Value)
+			require.Equal(t, 10, c.Value)
 		}
 	})
 

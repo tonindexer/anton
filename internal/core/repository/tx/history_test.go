@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core/aggregate/history"
@@ -33,16 +33,16 @@ func TestRepository_AggregateTransactionsHistory(t *testing.T) {
 
 	t.Run("add transactions", func(t *testing.T) {
 		dbtx, err := pg.Begin()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		err = repo.AddTransactions(ctx, dbtx, transactions)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		err = repo.AddTransactions(ctx, dbtx, addrTransactions)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		err = dbtx.Commit()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 	})
 
 	t.Run("transaction count", func(t *testing.T) {
@@ -50,9 +50,9 @@ func TestRepository_AggregateTransactionsHistory(t *testing.T) {
 			Metric:    history.TransactionCount,
 			ReqParams: history.ReqParams{Interval: 4 * time.Hour},
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(res.CountRes))
-		assert.Equal(t, 30, res.CountRes[0].Value)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(res.CountRes))
+		require.Equal(t, 30, res.CountRes[0].Value)
 	})
 
 	t.Run("transaction count by workchain", func(t *testing.T) {
@@ -61,9 +61,9 @@ func TestRepository_AggregateTransactionsHistory(t *testing.T) {
 			Workchain: new(int32),
 			ReqParams: history.ReqParams{Interval: 4 * time.Hour},
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(res.CountRes))
-		assert.Equal(t, 20, res.CountRes[0].Value)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(res.CountRes))
+		require.Equal(t, 20, res.CountRes[0].Value)
 	})
 
 	t.Run("transaction count by workchain", func(t *testing.T) {
@@ -72,9 +72,9 @@ func TestRepository_AggregateTransactionsHistory(t *testing.T) {
 			Addresses: []*addr.Address{a},
 			ReqParams: history.ReqParams{Interval: 4 * time.Hour},
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(res.CountRes))
-		assert.Equal(t, 20, res.CountRes[0].Value)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(res.CountRes))
+		require.Equal(t, 20, res.CountRes[0].Value)
 	})
 
 	t.Run("drop tables again", func(t *testing.T) {
