@@ -996,6 +996,14 @@ paths:
         in: query
         name: hash
         type: string
+      - description: filter by source workchain
+        in: query
+        name: src_workchain
+        type: integer
+      - description: filter by destination workchain
+        in: query
+        name: dst_workchain
+        type: integer
       - description: source address
         in: query
         items:

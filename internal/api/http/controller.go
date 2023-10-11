@@ -555,6 +555,8 @@ func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param   		hash				query	string  	false	"msg hash"
+//	@Param   		src_workchain     	query  	int32  		false	"filter by source workchain"
+//	@Param   		dst_workchain     	query  	int32  		false	"filter by destination workchain"
 //	@Param   		src_address     	query   []string 	false   "source address"
 //	@Param   		dst_address     	query   []string 	false   "destination address"
 //	@Param   		operation_id     	query   string 		false   "operation id in hex format or as int32"

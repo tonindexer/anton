@@ -28,6 +28,12 @@ func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (re
 	if len(req.DstAddresses) > 0 {
 		q = q.Where("dst_address in (?)", bun.In(req.DstAddresses))
 	}
+	if req.SrcWorkchain != nil {
+		q = q.Where("src_workchain = ?", *req.SrcWorkchain)
+	}
+	if req.DstWorkchain != nil {
+		q = q.Where("dst_workchain = ?", *req.DstWorkchain)
+	}
 	if req.OperationID != nil {
 		q = q.Where("operation_id = ?", *req.OperationID)
 	}
@@ -74,6 +80,12 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 	}
 	if len(req.DstAddresses) > 0 {
 		q = q.Where("dst_address in (?)", ch.In(req.DstAddresses))
+	}
+	if req.SrcWorkchain != nil {
+		q = q.Where("src_workchain = ?", *req.SrcWorkchain)
+	}
+	if req.DstWorkchain != nil {
+		q = q.Where("dst_workchain = ?", *req.DstWorkchain)
 	}
 	if req.OperationID != nil {
 		q = q.Where("operation_id = ?", *req.OperationID)

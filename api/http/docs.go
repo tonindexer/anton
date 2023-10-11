@@ -444,6 +444,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "filter by source workchain",
+                        "name": "src_workchain",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "filter by destination workchain",
+                        "name": "dst_workchain",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "type": "string"
