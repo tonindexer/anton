@@ -126,15 +126,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "address on which statistics are calculated",
                         "name": "address",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "NFT collection or FT master address",
                         "name": "minter_address",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "maximum": 1000000,

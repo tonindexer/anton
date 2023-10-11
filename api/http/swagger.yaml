@@ -792,12 +792,10 @@ paths:
       - description: address on which statistics are calculated
         in: query
         name: address
-        required: true
         type: string
       - description: NFT collection or FT master address
         in: query
         name: minter_address
-        required: true
         type: string
       - default: 25
         description: limit

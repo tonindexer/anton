@@ -373,8 +373,8 @@ func (c *Controller) GetAccounts(ctx *gin.Context) {
 //	@Tags			account
 //	@Accept			json
 //	@Produce		json
-//	@Param   		address				query	string  	true	"address on which statistics are calculated"
-//	@Param   		minter_address		query	string  	true	"NFT collection or FT master address"
+//	@Param   		address				query	string  	false	"address on which statistics are calculated"
+//	@Param   		minter_address		query	string  	false	"NFT collection or FT master address"
 //	@Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
 //	@Success		200		{object}	aggregate.AccountsRes
 //	@Router			/accounts/aggregated [get]
