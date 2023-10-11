@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/go-clickhouse/ch"
@@ -24,34 +25,32 @@ func (r *Repository) aggregateAddressStatistics(ctx context.Context, req *aggreg
 		return errors.Wrap(err, "count transactions")
 	}
 
+	var countByInterfaces []struct {
+		Types []abi.ContractName
+		Count int
+	}
 	err = r.ch.NewSelect().
 		Model((*core.AccountState)(nil)).
-		ColumnExpr("uniqExact(address)").
+		Column("types").
+		ColumnExpr("uniqExact(address) as count").
 		Where("owner_address = ?", req.Address).
-		Where("hasAny(types, [?])", ch.In([]abi.ContractName{known.NFTItem})).
-		Scan(ctx, &res.OwnedNFTItems)
+		Group("types").
+		Scan(ctx, &countByInterfaces)
 	if err != nil {
 		return errors.Wrap(err, "count owned nft items")
 	}
 
-	err = r.ch.NewSelect().
-		Model((*core.AccountState)(nil)).
-		ColumnExpr("uniqExact(address)").
-		Where("owner_address = ?", req.Address).
-		Where("hasAny(types, [?])", ch.In([]abi.ContractName{known.NFTCollection})).
-		Scan(ctx, &res.OwnedNFTCollections)
-	if err != nil {
-		return errors.Wrap(err, "count owned nft collections")
-	}
-
-	err = r.ch.NewSelect().
-		Model((*core.AccountState)(nil)).
-		ColumnExpr("uniqExact(address)").
-		Where("owner_address = ?", req.Address).
-		Where("hasAny(types, [?])", ch.In([]abi.ContractName{known.JettonWallet})).
-		Scan(ctx, &res.OwnedJettonWallets)
-	if err != nil {
-		return errors.Wrap(err, "count owned jetton wallets")
+	for _, x := range countByInterfaces {
+		for _, t := range x.Types {
+			switch t {
+			case known.NFTItem:
+				res.OwnedNFTItems += x.Count
+			case known.NFTCollection:
+				res.OwnedNFTCollections += x.Count
+			case known.JettonWallet:
+				res.OwnedJettonWallets += x.Count
+			}
+		}
 	}
 
 	return nil
@@ -156,6 +155,9 @@ func (r *Repository) aggregateMinterStatistics(ctx context.Context, req *aggrega
 		Where("address = ?", req.MinterAddress).
 		Group("address").
 		Scan(ctx, &interfaces)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
