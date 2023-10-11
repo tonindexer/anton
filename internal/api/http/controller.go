@@ -373,6 +373,7 @@ func (c *Controller) GetAccounts(ctx *gin.Context) {
 //	@Tags			account
 //	@Accept			json
 //	@Produce		json
+//	@Param   		address				query	string  	true	"address on which statistics are calculated"
 //	@Param   		minter_address		query	string  	true	"NFT collection or FT master address"
 //	@Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
 //	@Success		200		{object}	aggregate.AccountsRes
@@ -387,6 +388,12 @@ func (c *Controller) AggregateAccounts(ctx *gin.Context) {
 	}
 	if req.Limit > 1000000 {
 		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		return
+	}
+
+	req.Address, err = unmarshalAddress(ctx.Query("address"))
+	if err != nil {
+		paramErr(ctx, "address", err)
 		return
 	}
 

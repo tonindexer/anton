@@ -789,6 +789,11 @@ paths:
       - application/json
       description: Aggregates FT or NFT data filtered by minter address
       parameters:
+      - description: address on which statistics are calculated
+        in: query
+        name: address
+        required: true
+        type: string
       - description: NFT collection or FT master address
         in: query
         name: minter_address

@@ -124,6 +124,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "address on which statistics are calculated",
+                        "name": "address",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "NFT collection or FT master address",
                         "name": "minter_address",
                         "in": "query",
