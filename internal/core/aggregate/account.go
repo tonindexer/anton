@@ -18,10 +18,10 @@ type AccountsReq struct {
 
 type AccountsRes struct {
 	// Address statistics
-	TransactionsCount   int `json:"transactions_count"`
-	OwnedNFTItems       int `json:"owned_nft_items"`
-	OwnedNFTCollections int `json:"owned_nft_collections"`
-	OwnedJettonWallets  int `json:"owned_jetton_wallets"`
+	TransactionsCount   int `json:"transactions_count,omitempty"`
+	OwnedNFTItems       int `json:"owned_nft_items,omitempty"`
+	OwnedNFTCollections int `json:"owned_nft_collections,omitempty"`
+	OwnedJettonWallets  int `json:"owned_jetton_wallets,omitempty"`
 
 	// NFT minter
 	Items       int `json:"items,omitempty"`
