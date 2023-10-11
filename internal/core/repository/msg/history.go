@@ -23,6 +23,12 @@ func (r *Repository) AggregateMessagesHistory(ctx context.Context, req *history.
 	if len(req.DstAddresses) > 0 {
 		q = q.Where("dst_address in (?)", ch.In(req.DstAddresses))
 	}
+	if req.SrcWorkchain != nil {
+		q = q.Where("src_workchain = ?", *req.SrcWorkchain)
+	}
+	if req.DstWorkchain != nil {
+		q = q.Where("dst_workchain = ?", *req.DstWorkchain)
+	}
 	if len(req.SrcContracts) > 0 {
 		q = q.Where("src_contract IN (?)", ch.In(req.SrcContracts))
 	}

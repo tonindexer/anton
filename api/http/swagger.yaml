@@ -1128,6 +1128,14 @@ paths:
           type: string
         name: dst_address
         type: array
+      - description: source workchain
+        in: query
+        name: src_workchain
+        type: integer
+      - description: destination workchain
+        in: query
+        name: dst_workchain
+        type: integer
       - description: source contract interface
         in: query
         items:
@@ -1140,7 +1148,7 @@ paths:
           type: string
         name: dst_contract
         type: array
-      - description: filter by contract operation names
+      - description: contract operation names
         in: query
         items:
           type: string

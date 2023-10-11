@@ -677,9 +677,11 @@ func (c *Controller) AggregateMessages(ctx *gin.Context) {
 //	@Param   		metric				query	string  	true	"metric to show"								Enums(message_count, message_amount_sum)
 //	@Param   		src_address     	query   []string 	false   "source address"
 //	@Param   		dst_address     	query   []string 	false   "destination address"
+//	@Param   		src_workchain     	query  	int32  		false	"source workchain"
+//	@Param   		dst_workchain     	query  	int32  		false	"destination workchain"
 //	@Param   		src_contract		query	[]string  	false	"source contract interface"
 //	@Param   		dst_contract		query	[]string  	false	"destination contract interface"
-//	@Param   		operation_name		query	[]string  	false	"filter by contract operation names"
+//	@Param   		operation_name		query	[]string  	false	"contract operation names"
 //	@Param   		minter_address		query	string  	false	"filter FT or NFT operations by minter address"
 //	@Param   		from				query	string  	false	"from timestamp"
 //	@Param   		to					query	string  	false	"to timestamp"

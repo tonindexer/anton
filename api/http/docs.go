@@ -638,6 +638,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "source workchain",
+                        "name": "src_workchain",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "destination workchain",
+                        "name": "dst_workchain",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -660,7 +672,7 @@ const docTemplate = `{
                         "items": {
                             "type": "string"
                         },
-                        "description": "filter by contract operation names",
+                        "description": "contract operation names",
                         "name": "operation_name",
                         "in": "query"
                     },
