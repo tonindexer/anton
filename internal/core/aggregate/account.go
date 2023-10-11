@@ -9,12 +9,20 @@ import (
 )
 
 type AccountsReq struct {
+	Address *addr.Address
+
 	MinterAddress *addr.Address // NFT or FT minter
 
 	Limit int `form:"limit"`
 }
 
 type AccountsRes struct {
+	// Address statistics
+	TransactionsCount   int `json:"transactions_count"`
+	OwnedNFTItems       int `json:"owned_nft_items"`
+	OwnedNFTCollections int `json:"owned_nft_collections"`
+	OwnedJettonWallets  int `json:"owned_jetton_wallets"`
+
 	// NFT minter
 	Items       int `json:"items,omitempty"`
 	OwnersCount int `json:"owners_count,omitempty"`

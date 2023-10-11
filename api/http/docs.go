@@ -1091,11 +1091,24 @@ const docTemplate = `{
                         }
                     }
                 },
+                "owned_jetton_wallets": {
+                    "type": "integer"
+                },
+                "owned_nft_collections": {
+                    "type": "integer"
+                },
+                "owned_nft_items": {
+                    "type": "integer"
+                },
                 "owners_count": {
                     "type": "integer"
                 },
                 "total_supply": {
                     "$ref": "#/definitions/bunbig.Int"
+                },
+                "transactions_count": {
+                    "description": "Address statistics",
+                    "type": "integer"
                 },
                 "unique_owners": {
                     "type": "array",
