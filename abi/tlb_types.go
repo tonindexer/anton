@@ -11,7 +11,18 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-const structTypeName = "struct"
+type TLBType string
+
+const (
+	TLBAddr        TLBType = "addr"
+	TLBBool        TLBType = "bool"
+	TLBBigInt      TLBType = "bigInt"
+	TLBString      TLBType = "string"
+	TLBBytes       TLBType = "bytes"
+	TLBCell        TLBType = "cell"
+	TLBContentCell TLBType = "content"
+	TLBStructCell  TLBType = "struct"
+)
 
 type TelemintText struct {
 	Len  uint8  // ## 8
@@ -47,11 +58,11 @@ func (x *StringSnake) LoadFromCell(loader *cell.Slice) error {
 }
 
 var (
-	typeNameRMap = map[reflect.Type]string{
-		reflect.TypeOf([]uint8{}): "bytes",
+	typeNameRMap = map[reflect.Type]TLBType{
+		reflect.TypeOf([]uint8{}): TLBBytes,
 	}
-	typeNameMap = map[string]reflect.Type{
-		"bool":         reflect.TypeOf(false),
+	typeNameMap = map[TLBType]reflect.Type{
+		TLBBool:        reflect.TypeOf(false),
 		"int8":         reflect.TypeOf(int8(0)),
 		"int16":        reflect.TypeOf(int16(0)),
 		"int32":        reflect.TypeOf(int32(0)),
@@ -60,18 +71,18 @@ var (
 		"uint16":       reflect.TypeOf(uint16(0)),
 		"uint32":       reflect.TypeOf(uint32(0)),
 		"uint64":       reflect.TypeOf(uint64(0)),
-		"bytes":        reflect.TypeOf([]byte{}),
-		"bigInt":       reflect.TypeOf(big.NewInt(0)),
-		"cell":         reflect.TypeOf((*cell.Cell)(nil)),
+		TLBBytes:       reflect.TypeOf([]byte{}),
+		TLBBigInt:      reflect.TypeOf(big.NewInt(0)),
+		TLBCell:        reflect.TypeOf((*cell.Cell)(nil)),
 		"dict":         reflect.TypeOf((*cell.Dictionary)(nil)),
 		"magic":        reflect.TypeOf(tlb.Magic{}),
 		"coins":        reflect.TypeOf(tlb.Coins{}),
-		"addr":         reflect.TypeOf((*address.Address)(nil)),
-		"string":       reflect.TypeOf((*StringSnake)(nil)),
+		TLBAddr:        reflect.TypeOf((*address.Address)(nil)),
+		TLBString:      reflect.TypeOf((*StringSnake)(nil)),
 		"telemintText": reflect.TypeOf((*TelemintText)(nil)),
 	}
 
-	registeredDefinitions = map[string]TLBFieldsDesc{}
+	registeredDefinitions = map[TLBType]TLBFieldsDesc{}
 )
 
 func init() {

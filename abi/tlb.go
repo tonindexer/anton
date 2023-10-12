@@ -18,7 +18,7 @@ import (
 type TLBFieldDesc struct {
 	Name     string        `json:"name"`
 	Type     string        `json:"tlb_type"`
-	Format   string        `json:"format,omitempty"`
+	Format   TLBType       `json:"format,omitempty"`
 	Optional bool          `json:"optional,omitempty"`
 	Fields   TLBFieldsDesc `json:"struct_fields,omitempty"` // Format = "struct"
 }
@@ -51,14 +51,14 @@ func tlbMakeDesc(t reflect.Type) (ret TLBFieldsDesc, err error) {
 			schema.Format = ft
 
 		case f.Type.Kind() == reflect.Pointer && f.Type.Elem().Kind() == reflect.Struct:
-			schema.Format = structTypeName
+			schema.Format = TLBStructCell
 			schema.Fields, err = tlbMakeDesc(f.Type.Elem())
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", f.Name, err)
 			}
 
 		case f.Type.Kind() == reflect.Struct:
-			schema.Format = structTypeName
+			schema.Format = TLBStructCell
 			schema.Fields, err = tlbMakeDesc(f.Type)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", f.Name, err)
@@ -193,7 +193,7 @@ func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc, skipOption
 		// get type from `format` field
 		sf.Type, ok = typeNameMap[f.Format]
 		if !ok {
-			if f.Format != "" && f.Format != structTypeName {
+			if f.Format != "" && f.Format != TLBStructCell {
 				return nil, fmt.Errorf("unknown format '%s'", f.Format)
 			}
 			// parse tlb tag and get default type
@@ -236,17 +236,41 @@ func (desc TLBFieldsDesc) New(skipOptional ...bool) (any, error) {
 
 func (desc TLBFieldsDesc) MapRegisteredDefinitions() {
 	for i := range desc {
-		if desc[i].Format == structTypeName {
+		if desc[i].Format == TLBStructCell {
 			desc[i].Fields.MapRegisteredDefinitions()
 			continue
 		}
 		d, ok := registeredDefinitions[desc[i].Format]
 		if ok {
-			desc[i].Format = structTypeName
+			desc[i].Format = TLBStructCell
 			desc[i].Fields = d
 			continue
 		}
 	}
+}
+
+func (desc TLBFieldsDesc) FromCell(c *cell.Cell) (any, error) {
+	parsed, err := desc.New()
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating struct")
+	}
+	if err := tlb.LoadFromCell(parsed, c.BeginParse()); err == nil {
+		return parsed, nil
+	}
+	if !strings.Contains(err.Error(), "not enough data in reader") && !strings.Contains(err.Error(), "no more refs exists") {
+		return nil, errors.Wrap(err, "load from cell")
+	}
+
+	// skipping optional fields
+	parsed, err = desc.New(true)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating struct (skip optional)")
+	}
+	if err := tlb.LoadFromCell(parsed, c.BeginParse()); err != nil {
+		return nil, errors.Wrap(err, "load from cell (skip optional)")
+	}
+
+	return parsed, nil
 }
 
 func operationID(t reflect.Type) (uint32, error) {
@@ -311,4 +335,28 @@ func (desc *OperationDesc) New(skipOptional ...bool) (any, error) {
 
 func (desc *OperationDesc) MapRegisteredDefinitions() {
 	desc.Body.MapRegisteredDefinitions()
+}
+
+func (desc *OperationDesc) FromCell(c *cell.Cell) (any, error) {
+	parsed, err := desc.New()
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating struct")
+	}
+	if err = tlb.LoadFromCell(parsed, c.BeginParse()); err == nil {
+		return parsed, nil
+	}
+	if !strings.Contains(err.Error(), "not enough data in reader") && !strings.Contains(err.Error(), "no more refs exists") {
+		return nil, errors.Wrap(err, "load from cell")
+	}
+
+	// skipping optional fields
+	parsed, err = desc.New(true)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating struct (skip optional)")
+	}
+	if err = tlb.LoadFromCell(parsed, c.BeginParse()); err != nil {
+		return nil, errors.Wrap(err, "load from cell (skip optional)")
+	}
+
+	return parsed, nil
 }

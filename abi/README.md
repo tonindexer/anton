@@ -12,13 +12,13 @@ you should define contract addresses in the network or a contract code Bag of Ce
 
 ```json5
 {
-   "interface_name": "",  // name of the contract
-   "addresses": [],       // optional contract addresses
-   "code_boc": "",        // optional contract code BoC
-   "definitions": {},     // map definition name to cell schema
-   "in_messages": [],     // possible incoming messages schema
-   "out_messages": [],    // possible outgoing messages schema
-   "get_methods": []      // get-method names, return values and arguments
+  "interface_name": "",  // name of the contract
+  "addresses": [],       // optional contract addresses
+  "code_boc": "",        // optional contract code BoC
+  "definitions": {},     // map definition name to cell schema
+  "in_messages": [],     // possible incoming messages schema
+  "out_messages": [],    // possible outgoing messages schema
+  "get_methods": []      // get-method names, return values and arguments
 }
 ```
 
@@ -30,28 +30,28 @@ Also, it is possible to define similarly described embedded structures in each f
 
 ```json5
 {
-   "op_name": "nft_start_auction",  // operation name
-   "op_code": "0x5fcc3d14",         // TL-B constructor prefix code (operation code)
-   "type": "external_out",          // message type: internal, external_in, external_out
-   "body": [
-      {                             // fields definitions
-         "name": "query_id",        // field name
-         "tlb_type": "## 64",       // field TL-B type
-         "format": "uint64"         // describes how we should parse the field
-      }, 
-      {
-         "name": "auction_config",
-         "tlb_type": "^",
-         "format": "struct",
-         "struct_fields": [         // fields of inner structure
-            {
-               "name": "beneficiary_address",
-               "tlb_type": "addr",
-               "format": "addr"
-            }
-         ]
-      }
-   ]
+  "op_name": "nft_start_auction",  // operation name
+  "op_code": "0x5fcc3d14",         // TL-B constructor prefix code (operation code)
+  "type": "external_out",          // message type: internal, external_in, external_out
+  "body": [
+    {                              // fields definitions
+      "name": "query_id",          // field name
+      "tlb_type": "## 64",         // field TL-B type
+      "format": "uint64"           // describes how we should parse the field
+    }, 
+    {
+      "name": "auction_config",
+      "tlb_type": "^",
+      "format": "struct",
+      "struct_fields": [           // fields of inner structure
+        {
+          "name": "beneficiary_address", 
+          "tlb_type": "addr", 
+          "format": "addr"
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -89,96 +89,52 @@ Accepted types of `format`:
 13. `string` - [string snake](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/builder.go#L317) is stored in the cell
 14. `telemintText` - variable length string with [this](https://github.com/TelegramMessenger/telemint/blob/main/telemint.tlb#L25) TL-B constructor
 
-### Shared TL-B constructors
-
-You can define some cell schema in contract interface `definitions` field and use it later in messages or contract data schemas.
-
-```json
-{
-   "interface_name": "telemint_nft_item",
-   "addresses": [
-      "EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N",
-      "EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi"
-   ],
-   "definitions": {
-      "auction_config": [
-         {
-            "name": "beneficiary_address",
-            "tlb_type": "addr"
-         }
-      ]
-   },
-   "in_messages": [
-      {
-         "op_name": "teleitem_start_auction",
-         "op_code": "0x487a8e81",
-         "body": [
-            {
-               "name": "query_id",
-               "tlb_type": "## 64"
-            },
-            {
-               "name": "auction_config",
-               "tlb_type": "^",
-               "format": "auction_config"
-            }
-         ]
-      }
-   ]
-}
-```
-
-## Converting Golang struct to JSON schema
-
-You can convert Golang struct with described tlb tags to the JSON schema by using `abi.NewTLBDesc` and `abi.NewOperationDesc` functions.
-See an example in [`tlb_test.go`](/abi/tlb_test.go) file.
-
 ### Get-methods
 
 Each get-method consists of name (which is then used to get `method_id`), arguments and return values.
 
 ```json5
 {
-   "interface_name": "jetton_minter",
-   "get_methods": [
-      {
-         "name": "get_wallet_address",          // get-method name
-         "arguments": [
-            {
-               "name": "owner_address",         // argument name
-               "stack_type": "slice",
-               "format": "addr"
-            }
-         ],
-         "return_values": [
-            {
-               "name": "jetton_wallet_address", // return value name
-               "stack_type": "slice",           // type we load
-               "format": "addr"                 // type we parse into
-            }
-         ]
-      },
-      {
-         "name": "get_jetton_data",
-         "return_values": [
-            {
-               "name": "total_supply",
-               "stack_type": "int",
-               "format": "bigInt"
-            },
-            {
-               "name": "mintable",
-               "stack_type": "int",
-               "format": "bool"
-            },
-            {
-               "name": "admin_address",
-               "stack_type": "slice",
-               "format": "addr"
-            }
-         ]
-      }
-   ]
+  "interface_name": "jetton_minter",
+  "get_methods": [
+    {
+      "name": "get_wallet_address",         // get-method name
+      "arguments": [
+        {
+          "name": "owner_address",          // argument name
+          "stack_type": "slice",
+          "format": "addr"
+        }
+      ],
+      "return_values": [
+        {
+          "name": "jetton_wallet_address",  // return value name
+          "stack_type": "slice",            // type we load
+          "format": "addr"                  // type we parse into
+        }
+      ]
+    },
+    {
+      "name": "get_jetton_data",
+      "return_values": [
+        {
+          "name": "total_supply",
+          "stack_type": "int",
+          "format": "bigInt"
+        },
+        {
+          "name": "mintable",
+          "stack_type": "int",
+          "format": "bool"
+        },
+        {
+          "name": "admin_address",
+          "stack_type": "slice",
+          "format": "addr"
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -205,6 +161,7 @@ Accepted types to map from or into in `format` field:
 6. `string` - load string snake from cell
 7. `bytes` - convert big int to bytes
 8. `content` - load [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md) standard token data into [`nft.ContentAny`](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
+9. `struct` - define struct_fields to parse cell
 
 ## Known contracts
 
@@ -218,3 +175,80 @@ Accepted types to map from or into in `format` field:
 8. [STON.fi](https://ston.fi) DEX: [architecture](https://docs.ston.fi/docs/developer-section/architecture), [contract code](https://github.com/ston-fi/dex-core)
 9. [Megaton.fi](https://megaton.fi) DEX: [architecture](https://docs.megaton.fi/developers/contract)
 10. [Tonpay](https://thetonpay.app): [go-sdk](https://github.com/TheTonpay/tonpay-go-sdk), [js-sdk](https://github.com/TheTonpay/tonpay-js-sdk)
+
+### Shared TL-B constructors
+
+You can define some cell schema in `definitions` field of contract interface.
+
+You can use those definitions in message schemas:
+
+```json
+{
+  "interface_name": "telemint_nft_item",
+  "addresses": [
+    "EQAOQdwdw8kGftJCSFgOErM1mBjYPe4DBPq8-AhF6vr9si5N",
+    "EQCA14o1-VWhS2efqoh_9M1b_A9DtKTuoqfmkn83AbJzwnPi"
+  ],
+  "definitions": {
+    "auction_config": [
+      {
+        "name": "beneficiary_address",
+        "tlb_type": "addr"
+      }
+    ]
+  },
+  "in_messages": [
+    {
+      "op_name": "teleitem_start_auction",
+      "op_code": "0x487a8e81",
+      "body": [
+        {
+          "name": "query_id", 
+          "tlb_type": "## 64"
+        },
+        {
+          "name": "auction_config",
+          "tlb_type": "^",
+          "format": "auction_config"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Or get-method stack values schemas:
+
+```json5
+{
+  "interface_name": "amm",
+  "definitions": {
+    "amm_state": [
+      {
+        "name": "quote_asset_reserve",
+        "tlb_type": ".",
+        "format": "coins"
+      },
+      // ...
+    ]
+  }, 
+  "get_methods": [
+    {
+      "name": "get_amm_data", 
+      "return_values": [
+        // ...
+        {
+          "name": "amm_state",
+          "stack_type": "cell",
+          "format": "amm_state"
+        },
+      ]
+    }
+  ]
+}
+```
+
+## Converting Golang struct to JSON schema
+
+You can convert Golang struct with described tlb tags to the JSON schema by using `abi.NewTLBDesc` and `abi.NewOperationDesc` functions.
+See an example in [`tlb_test.go`](/abi/tlb_test.go) file.

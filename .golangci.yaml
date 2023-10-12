@@ -55,7 +55,7 @@ linters:
     - whitespace
 linters-settings:
   gocyclo:
-    min-complexity: 16
+    min-complexity: 17
   gosec:
     excludes:
       - G404

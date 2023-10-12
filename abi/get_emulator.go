@@ -14,6 +14,7 @@ import (
 	"github.com/tonkeeper/tongo/tvm"
 
 	"github.com/xssnick/tonutils-go/address"
+	tutlb "github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/nft"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -81,7 +82,7 @@ func vmMakeValueInt(v *VmValue) (ret tlb.VmStackValue, _ error) {
 	var ok bool
 
 	switch v.Format {
-	case "", VmBigInt:
+	case "", TLBBigInt:
 		bi, ok = v.Payload.(*big.Int)
 	case "uint8":
 		ui, uok := v.Payload.(uint8)
@@ -126,9 +127,9 @@ func vmMakeValueCell(v *VmValue) (tlb.VmStackValue, error) {
 	var ok bool
 
 	switch v.Format {
-	case "", VmCell:
+	case "", TLBCell:
 		c, ok = v.Payload.(*cell.Cell)
-	case VmAddr:
+	case TLBAddr:
 		a, aok := v.Payload.(*address.Address)
 		if aok {
 			b := cell.BeginCell()
@@ -137,7 +138,7 @@ func vmMakeValueCell(v *VmValue) (tlb.VmStackValue, error) {
 			}
 			c, ok = b.EndCell(), aok
 		}
-	case VmString:
+	case TLBString:
 		s, sok := v.Payload.(string)
 		if sok {
 			b := cell.BeginCell()
@@ -145,6 +146,12 @@ func vmMakeValueCell(v *VmValue) (tlb.VmStackValue, error) {
 				return tlb.VmStackValue{}, errors.Wrap(err, "store string snake")
 			}
 			c, ok = b.EndCell(), sok
+		}
+	case TLBStructCell:
+		var err error
+		c, err = tutlb.ToCell(v.Payload)
+		if err != nil {
+			return tlb.VmStackValue{}, err
 		}
 	}
 	if !ok {
@@ -169,9 +176,9 @@ func vmMakeValueSlice(v *VmValue) (tlb.VmStackValue, error) {
 	var ok bool
 
 	switch v.Format {
-	case "", VmSlice:
+	case "", TLBType(VmSlice):
 		s, ok = v.Payload.(*cell.Slice)
-	case VmAddr:
+	case TLBAddr:
 		a, aok := v.Payload.(*address.Address)
 		if aok {
 			b := cell.BeginCell()
@@ -180,7 +187,7 @@ func vmMakeValueSlice(v *VmValue) (tlb.VmStackValue, error) {
 			}
 			s, ok = b.EndCell().BeginParse(), aok
 		}
-	case VmString:
+	case TLBString:
 		a, aok := v.Payload.(string)
 		if aok {
 			b := cell.BeginCell()
@@ -189,6 +196,12 @@ func vmMakeValueSlice(v *VmValue) (tlb.VmStackValue, error) {
 			}
 			s, ok = b.EndCell().BeginParse(), aok
 		}
+	case TLBStructCell:
+		c, err := tutlb.ToCell(v.Payload)
+		if err != nil {
+			return tlb.VmStackValue{}, err
+		}
+		s = c.BeginParse()
 	}
 	if !ok {
 		return tlb.VmStackValue{}, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.StackType, v.Format)
@@ -237,7 +250,7 @@ func vmParseValueInt(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	}
 
 	switch d.Format {
-	case "", VmBigInt:
+	case "", TLBBigInt:
 		return bi, nil
 	case "uint8":
 		return uint8(bi.Uint64()), nil
@@ -255,9 +268,9 @@ func vmParseValueInt(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		return int32(bi.Int64()), nil
 	case "int64":
 		return bi.Int64(), nil
-	case VmBool:
+	case TLBBool:
 		return bi.Cmp(big.NewInt(0)) != 0, nil
-	case VmBytes:
+	case TLBBytes:
 		return bi.Bytes(), nil
 	default:
 		return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
@@ -268,11 +281,11 @@ func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	switch v.SumType {
 	case "VmStkNull":
 		switch d.Format {
-		case "", VmCell:
+		case "", TLBCell, TLBStructCell:
 			return (*cell.Cell)(nil), nil
-		case VmString:
+		case TLBString:
 			return "", nil
-		case VmContentCell:
+		case TLBContentCell:
 			return nft.ContentAny(nil), nil
 		default:
 			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
@@ -295,26 +308,32 @@ func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	}
 
 	switch d.Format {
-	case "", VmCell:
+	case "", TLBCell:
 		return c, nil
-	case VmString:
+	case TLBString:
 		s, err := c.BeginParse().LoadStringSnake()
 		if err != nil {
 			return nil, errors.Wrap(err, "load string snake")
 		}
 		return s, nil
-	case VmAddr:
+	case TLBAddr:
 		a, err := c.BeginParse().LoadAddr()
 		if err != nil {
 			return nil, errors.Wrap(err, "load address")
 		}
 		return a, nil
-	case VmContentCell:
+	case TLBContentCell:
 		content, err := nft.ContentFromCell(c)
 		if err != nil {
 			return nil, errors.Wrap(err, "load content from cell")
 		}
 		return content, nil
+	case TLBStructCell:
+		parsed, err := d.Fields.FromCell(c)
+		if err != nil {
+			return nil, errors.Wrapf(err, "load struct from cell on %s value description schema", d.Name)
+		}
+		return parsed, nil
 	default:
 		return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
 	}
@@ -324,11 +343,11 @@ func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	switch v.SumType {
 	case "VmStkNull":
 		switch d.Format {
-		case "", VmSlice:
+		case "":
 			return (*cell.Slice)(nil), nil
-		case VmAddr:
+		case TLBAddr:
 			return address.NewAddressNone(), nil
-		case VmString:
+		case TLBString:
 			return "", nil
 		default:
 			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
@@ -351,11 +370,11 @@ func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	}
 
 	switch d.Format {
-	case "", VmSlice:
+	case "":
 		return c.BeginParse(), nil
-	case VmString:
+	case TLBString:
 		return c.BeginParse().LoadStringSnake()
-	case VmAddr:
+	case TLBAddr:
 		a, err := c.BeginParse().LoadAddr()
 		if err != nil {
 			return nil, errors.Wrap(err, "load address")
