@@ -36,7 +36,7 @@ COPY abi /go/src/github.com/tonindexer/anton/abi
 COPY internal /go/src/github.com/tonindexer/anton/internal
 COPY main.go /go/src/github.com/tonindexer/anton
 
-RUN rm /go/pkg/mod/github.com/tonkeeper/tongo@v1.1.2/lib/linux/libemulator.so
+RUN rm /go/pkg/mod/github.com/tonkeeper/tongo@v1.3.0/lib/linux/libemulator.so
 COPY --from=emulator-builder /output/libemulator.so /lib/libemulator.so
 
 RUN swag init \
