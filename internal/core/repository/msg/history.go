@@ -11,12 +11,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/aggregate/history"
 )
 
-func (r *Repository) AggregateMessagesHistory(ctx context.Context, req *history.MessagesReq) (*history.MessagesRes, error) {
-	var res history.MessagesRes
-	var bigIntRes bool // do we need to count account_data or account_states
-
-	q := r.ch.NewSelect().Model((*core.Message)(nil))
-
+func addMessagesHistoryFilters(q *ch.SelectQuery, req *history.MessagesReq) *ch.SelectQuery {
 	if len(req.SrcAddresses) > 0 {
 		q = q.Where("src_address in (?)", ch.In(req.SrcAddresses))
 	}
@@ -41,6 +36,14 @@ func (r *Repository) AggregateMessagesHistory(ctx context.Context, req *history.
 	if req.MinterAddress != nil {
 		q = q.Where("minter_address = ?", req.MinterAddress)
 	}
+	return q
+}
+
+func (r *Repository) AggregateMessagesHistory(ctx context.Context, req *history.MessagesReq) (*history.MessagesRes, error) {
+	var res history.MessagesRes
+	var bigIntRes bool // do we need to count account_data or account_states
+
+	q := addMessagesHistoryFilters(r.ch.NewSelect().Model((*core.Message)(nil)), req)
 
 	switch req.Metric {
 	case history.MessageCount:

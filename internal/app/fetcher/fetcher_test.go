@@ -40,7 +40,7 @@ func newService(t *testing.T) *Service {
 	if err != nil {
 		t.Fatal(err)
 	}
-	api := ton.NewAPIClient(client)
+	api := ton.NewAPIClient(client, ton.ProofCheckPolicyUnsafe).WithRetry()
 
 	return NewService(&app.FetcherConfig{
 		API:    api,

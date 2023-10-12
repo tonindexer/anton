@@ -22,12 +22,10 @@ require (
 	github.com/uptrace/bun/extra/bunbig v1.1.13-0.20230308071428-7cd855e64a02
 	github.com/uptrace/go-clickhouse v0.3.0
 	github.com/urfave/cli/v2 v2.25.1
-	github.com/xssnick/tonutils-go v1.7.4-0.20230602073040-7236a8d2ed40
+	github.com/xssnick/tonutils-go v1.8.4
 )
 
 require github.com/gin-contrib/cors v1.4.0
-
-require github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect

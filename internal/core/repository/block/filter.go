@@ -29,6 +29,10 @@ func loadTransactions(q *bun.SelectQuery, prefix string, f *filter.BlocksReq) *b
 }
 
 func (r *Repository) countTransactions(ctx context.Context, ret []*core.Block) error {
+	if len(ret) == 0 {
+		return nil
+	}
+
 	var blockIDs [][]int64
 	for _, m := range ret {
 		for _, s := range m.Shards {

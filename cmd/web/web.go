@@ -34,7 +34,7 @@ var Command = &cli.Command{
 		}
 
 		client := liteclient.NewConnectionPool()
-		api := ton.NewAPIClient(client)
+		api := ton.NewAPIClient(client, ton.ProofCheckPolicyUnsafe).WithRetry()
 		for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
 			split := strings.Split(addr, "|")
 			if len(split) != 2 {

@@ -9,7 +9,7 @@ import (
 	"github.com/xssnick/tonutils-go/ton"
 )
 
-func (s *Service) LookupMaster(ctx context.Context, api ton.APIClientWaiter, seqNo uint32) (*ton.BlockIDExt, error) {
+func (s *Service) LookupMaster(ctx context.Context, api ton.APIClientWrapped, seqNo uint32) (*ton.BlockIDExt, error) {
 	if master, ok := s.blocks.getMaster(seqNo); ok {
 		return master, nil
 	}

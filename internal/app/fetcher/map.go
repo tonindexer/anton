@@ -29,7 +29,7 @@ func MapAccount(b *ton.BlockIDExt, acc *tlb.Account) *core.AccountState {
 			ret.Address = *addr.MustFromTonutils(acc.State.Address)
 		}
 		ret.Status = core.AccountStatus(acc.State.Status)
-		ret.Balance = bunbig.FromMathBig(acc.State.Balance.NanoTON())
+		ret.Balance = bunbig.FromMathBig(acc.State.Balance.Nano())
 		ret.StateHash = acc.State.StateHash
 	}
 	if acc.Data != nil {
@@ -58,11 +58,11 @@ func mapMessageInternal(msg *core.Message, raw *tlb.InternalMessage) error {
 	msg.Bounce = raw.Bounce
 	msg.Bounced = raw.Bounced
 
-	msg.Amount = bunbig.FromMathBig(raw.Amount.NanoTON())
+	msg.Amount = bunbig.FromMathBig(raw.Amount.Nano())
 
 	msg.IHRDisabled = raw.IHRDisabled
-	msg.IHRFee = bunbig.FromMathBig(raw.IHRFee.NanoTON())
-	msg.FwdFee = bunbig.FromMathBig(raw.FwdFee.NanoTON())
+	msg.IHRFee = bunbig.FromMathBig(raw.IHRFee.Nano())
+	msg.FwdFee = bunbig.FromMathBig(raw.FwdFee.Nano())
 
 	msg.Body = raw.Body.ToBOC()
 	msg.BodyHash = raw.Body.Hash()
@@ -156,7 +156,7 @@ func mapMessage(tx *tlb.Transaction, message tlb.Message) (*core.Message, error)
 		err error
 	)
 
-	msgCell, err := tlb.ToCell(message)
+	msgCell, err := tlb.ToCell(message.Msg)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot convert message to cell")
 	}
@@ -229,7 +229,7 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 		InAmount:  bunbig.NewInt(),
 		OutAmount: bunbig.NewInt(),
 
-		TotalFees: bunbig.FromMathBig(raw.TotalFees.Coins.NanoTON()),
+		TotalFees: bunbig.FromMathBig(raw.TotalFees.Coins.Nano()),
 
 		OrigStatus: core.AccountStatus(raw.OrigStatus),
 		EndStatus:  core.AccountStatus(raw.EndStatus),

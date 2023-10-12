@@ -15,7 +15,7 @@ import (
 type QueryConfig struct {
 	DB *repository.DB
 
-	API *ton.APIClient
+	API ton.APIClientWrapped
 }
 
 type QueryService interface {

@@ -21,7 +21,7 @@ type ParserConfig struct {
 	ContractRepo     core.ContractRepository
 }
 
-func GetBlockchainConfig(ctx context.Context, api *ton.APIClient) (*cell.Cell, error) {
+func GetBlockchainConfig(ctx context.Context, api ton.APIClientWrapped) (*cell.Cell, error) {
 	var res tl.Serializable
 
 	b, err := api.GetMasterchainInfo(ctx)
@@ -38,12 +38,7 @@ func GetBlockchainConfig(ctx context.Context, api *ton.APIClient) (*cell.Cell, e
 	case ton.ConfigAll:
 		var state tlb.ShardStateUnsplit
 
-		c, err := cell.FromBOC(t.ConfigProof)
-		if err != nil {
-			return nil, err
-		}
-
-		ref, err := c.BeginParse().LoadRef()
+		ref, err := t.ConfigProof.BeginParse().LoadRef()
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +54,7 @@ func GetBlockchainConfig(ctx context.Context, api *ton.APIClient) (*cell.Cell, e
 			return nil, err
 		}
 
-		return mcStateExtra.ConfigParams.Config.ToCell()
+		return mcStateExtra.ConfigParams.Config.Params.ToCell()
 
 	case ton.LSError:
 		return nil, t
