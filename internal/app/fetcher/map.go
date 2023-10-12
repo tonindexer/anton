@@ -10,7 +10,6 @@ import (
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
-	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
@@ -39,7 +38,6 @@ func MapAccount(b *ton.BlockIDExt, acc *tlb.Account) *core.AccountState {
 	if acc.Code != nil {
 		ret.Code = acc.Code.ToBOC()
 		ret.CodeHash = acc.Code.Hash()
-		ret.GetMethodHashes, _ = abi.GetMethodHashes(acc.Code)
 	}
 	ret.LastTxLT = acc.LastTxLT
 	ret.LastTxHash = acc.LastTxHash

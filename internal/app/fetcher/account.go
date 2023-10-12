@@ -2,6 +2,8 @@ package fetcher
 
 import (
 	"context"
+	"github.com/tonindexer/anton/abi"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 	"time"
 
 	"github.com/pkg/errors"
@@ -30,6 +32,35 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 	}
 
 	acc = MapAccount(b, raw)
+
+	if raw.Code != nil {
+		libs, err := s.GetAccountLibraries(ctx, raw)
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "get account libraries")
+		}
+
+		if libs != nil {
+			acc.Libraries = libs.ToBOC()
+		}
+
+		if raw.Code.GetType() == cell.LibraryCellType {
+			hash, err := getLibraryHash(raw.Code)
+
+			if err != nil {
+				return nil, errors.Wrap(err, "get library hash")
+			}
+
+			lib := s.libraries.get(hash)
+
+			if lib != nil {
+				acc.GetMethodHashes, _ = abi.GetMethodHashes(lib.Lib)
+			}
+		} else {
+			acc.GetMethodHashes, _ = abi.GetMethodHashes(raw.Code)
+		}
+	}
+
 	if acc.Status == core.NonExist {
 		return nil, errors.Wrap(core.ErrNotFound, "account does not exists")
 	}
