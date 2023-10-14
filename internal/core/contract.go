@@ -12,8 +12,8 @@ import (
 type ContractDefinition struct {
 	bun.BaseModel `bun:"table:contract_definitions" json:"-"`
 
-	Name   abi.TLBType       `bun:",pk" json:"name"`
-	Schema abi.TLBFieldsDesc `json:"schema"`
+	Name   abi.TLBType       `bun:",pk,notnull" json:"name"`
+	Schema abi.TLBFieldsDesc `bun:"type:jsonb,notnull" json:"schema"`
 }
 
 type ContractInterface struct {
