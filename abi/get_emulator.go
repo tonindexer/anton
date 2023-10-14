@@ -307,6 +307,10 @@ func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		return nil, errors.Wrap(err, "convert boc to cell")
 	}
 
+	if d.Format == "" && len(d.Fields) > 0 {
+		d.Format = TLBStructCell
+	}
+
 	switch d.Format {
 	case "", TLBCell:
 		return c, nil
@@ -369,6 +373,10 @@ func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		return nil, errors.Wrap(err, "convert boc to cell")
 	}
 
+	if d.Format == "" && len(d.Fields) > 0 {
+		d.Format = TLBStructCell
+	}
+
 	switch d.Format {
 	case "":
 		return c.BeginParse(), nil
@@ -380,6 +388,12 @@ func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 			return nil, errors.Wrap(err, "load address")
 		}
 		return a, nil
+	case TLBStructCell:
+		parsed, err := d.Fields.FromCell(c)
+		if err != nil {
+			return nil, errors.Wrapf(err, "load struct from slice on %s value description schema", d.Name)
+		}
+		return parsed, nil
 	default:
 		return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
 	}
