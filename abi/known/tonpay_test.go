@@ -29,7 +29,7 @@ func TestOperationDesc_TonpayStore(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "tonpay_store" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -95,7 +95,7 @@ func TestGetMethodDesc_TonpayStore(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "tonpay_store" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -177,7 +177,7 @@ func TestOperationDesc_TonpayInvoice(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "tonpay_invoice" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -216,7 +216,7 @@ func TestGetMethodDesc_TonpayInvoice(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "tonpay_invoice" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}

@@ -155,7 +155,7 @@ func TestOperationDesc_JettonMinter(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "jetton_minter" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -197,7 +197,7 @@ func TestOperationDesc_JettonWallet_JettonBurn_Optional(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "jetton_wallet" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}

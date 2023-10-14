@@ -32,7 +32,7 @@ type OperationDesc struct {
 	Body TLBFieldsDesc `json:"body"`
 }
 
-func tlbMakeDesc(t reflect.Type) (ret TLBFieldsDesc, err error) {
+func tlbMakeDesc(t reflect.Type, skipMagic ...bool) (ret TLBFieldsDesc, err error) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 
@@ -41,7 +41,7 @@ func tlbMakeDesc(t reflect.Type) (ret TLBFieldsDesc, err error) {
 			Type: f.Tag.Get("tlb"),
 		}
 
-		if i == 0 && f.Type == reflect.TypeOf(tlb.Magic{}) {
+		if len(skipMagic) > 0 && skipMagic[0] && i == 0 && f.Type == reflect.TypeOf(tlb.Magic{}) {
 			continue // skip tlb constructor tag as it has to be inside OperationDesc
 		}
 
@@ -139,6 +139,19 @@ func tlbParseSettings(tag string) (reflect.Type, error) {
 		return nil, nil
 	}
 
+	if strings.HasPrefix(settings[0], "[") && strings.HasSuffix(settings[0], "]") {
+		for _, dn := range strings.Split(tag[1:len(tag)-1], ",") {
+			// iterate through union definitions
+			// check that all definitions are known
+			_, ok := registeredDefinitions[TLBType(dn)]
+			if !ok {
+				return nil, fmt.Errorf("cannot find definition for '%s' type inside union", dn)
+			}
+		}
+		var v any
+		return reflect.ValueOf(&v).Type().Elem(), nil // return type with interface kind
+	}
+
 	switch settings[0] {
 	case "maybe":
 		return reflect.TypeOf((*cell.Cell)(nil)), nil
@@ -172,11 +185,36 @@ func tlbParseSettings(tag string) (reflect.Type, error) {
 	}
 }
 
+func tlbMapFormat(format TLBType, tag reflect.StructTag) (reflect.Type, error) {
+	t, ok := typeNameMap[format]
+	if ok {
+		return t, nil
+	}
+
+	switch format {
+	case "":
+		// parse tlb tag and get default type
+		t, err := tlbParseSettings(tag.Get("tlb"))
+		if t == nil || err != nil {
+			return nil, fmt.Errorf("parse tlb settings with tag %s: %w", tag.Get("tlb"), err)
+		}
+		return t, nil
+
+	default:
+		d, ok := registeredDefinitions[format]
+		if !ok {
+			return nil, fmt.Errorf("cannot find definition for '%s' format", format)
+		}
+		t, err := tlbParseDesc(nil, d)
+		if err != nil {
+			return nil, errors.Wrap(err, "creating new type from definition")
+		}
+		return reflect.PointerTo(t), nil
+	}
+}
+
 func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc, skipOptional ...bool) (reflect.Type, error) {
-	var (
-		err error
-		ok  bool
-	)
+	var err error
 
 	for i := range schema {
 		f := &schema[i]
@@ -184,32 +222,26 @@ func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc, skipOption
 		if len(skipOptional) > 0 && skipOptional[0] && f.Optional {
 			continue
 		}
+		if len(f.Fields) > 0 && f.Format == "" {
+			f.Format = TLBStructCell
+		}
 
 		var sf = reflect.StructField{
 			Name: strcase.ToCamel(f.Name),
 			Tag:  reflect.StructTag(fmt.Sprintf("tlb:%q json:%q", f.Type, strcase.ToSnake(f.Name))),
 		}
 
-		// get type from `format` field
-		sf.Type, ok = typeNameMap[f.Format]
-		if !ok {
-			if f.Format != "" && f.Format != TLBStructCell {
-				return nil, fmt.Errorf("unknown format '%s'", f.Format)
-			}
-			// parse tlb tag and get default type
-			sf.Type, err = tlbParseSettings(sf.Tag.Get("tlb"))
-			if sf.Type == nil || err != nil {
-				return nil, fmt.Errorf("%s (tag = %s) parse tlb settings: %w", sf.Name, sf.Tag.Get("tlb"), err)
-			}
-		}
-
-		// make new struct
-		if len(f.Fields) > 0 {
+		if f.Format == TLBStructCell {
 			sf.Type, err = tlbParseDesc(nil, f.Fields, skipOptional...)
 			if err != nil {
-				return nil, fmt.Errorf("%s: %w", sf.Name, err)
+				return nil, fmt.Errorf("%s field with struct: %w", sf.Name, err)
 			}
 			sf.Type = reflect.PointerTo(sf.Type)
+		} else {
+			sf.Type, err = tlbMapFormat(f.Format, sf.Tag)
+			if err != nil {
+				return nil, errors.Wrapf(err, "%s field", f.Name)
+			}
 		}
 
 		fields = append(fields, sf)
@@ -232,21 +264,6 @@ func (desc TLBFieldsDesc) New(skipOptional ...bool) (any, error) {
 		return nil, err
 	}
 	return reflect.New(t).Interface(), nil
-}
-
-func (desc TLBFieldsDesc) MapRegisteredDefinitions() {
-	for i := range desc {
-		if desc[i].Format == TLBStructCell {
-			desc[i].Fields.MapRegisteredDefinitions()
-			continue
-		}
-		d, ok := registeredDefinitions[desc[i].Format]
-		if ok {
-			desc[i].Format = TLBStructCell
-			desc[i].Fields = d
-			continue
-		}
-	}
 }
 
 func (desc TLBFieldsDesc) FromCell(c *cell.Cell) (any, error) {
@@ -310,7 +327,7 @@ func NewOperationDesc(x any) (*OperationDesc, error) {
 	}
 	ret.Code = fmt.Sprintf("0x%x", opCode)
 
-	ret.Body, err = tlbMakeDesc(t)
+	ret.Body, err = tlbMakeDesc(t, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "make tlb schema")
 	}
@@ -331,10 +348,6 @@ func (desc *OperationDesc) New(skipOptional ...bool) (any, error) {
 		return nil, err
 	}
 	return reflect.New(t).Interface(), nil
-}
-
-func (desc *OperationDesc) MapRegisteredDefinitions() {
-	desc.Body.MapRegisteredDefinitions()
 }
 
 func (desc *OperationDesc) FromCell(c *cell.Cell) (any, error) {

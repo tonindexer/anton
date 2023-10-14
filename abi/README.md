@@ -82,7 +82,7 @@ Accepted types of `format`:
 6. `bigInt` - integer with more than 64 bits, maps into `big.Int` wrapper
 7. `cell` - TL-B cell, maps into [`cell.Cell`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/cell.go#L11)
 8. `dict` - TL-B dictionary (hashmap), maps into [`cell.Dictionary`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tvm/cell/dict.go)
-9. `magic` - TL-B constructor prefix, must not be used
+9. `tag` - TL-B constructor prefix
 10. `coins` - varInt 16, maps into `big.Int` wrapper
 11. `addr` - TON address, maps into [`address.Address`](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/address/addr.go#L21) wrapper
 12. [TODO] `content_cell` - token data as in [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md); [implementation](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
@@ -163,19 +163,6 @@ Accepted types to map from or into in `format` field:
 8. `content` - load [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md) standard token data into [`nft.ContentAny`](https://github.com/xssnick/tonutils-go/blob/b839942a7b7bc431cc610f2ca3d9ff0e03079586/ton/nft/content.go#L10)
 9. `struct` - define struct_fields to parse cell
 
-## Known contracts
-
-1. TEP-62 NFT Standard: [interfaces](/abi/known/tep62_nft.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md), [contract code](https://github.com/ton-blockchain/token-contract/tree/main/nft)
-2. TEP-74 Fungible tokens (Jettons) standard: [interfaces](/abi/known/tep74_jetton.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md), [contract code](https://github.com/ton-blockchain/token-contract/tree/main/ft)
-3. TEP-81 DNS contracts: [interface](/abi/known/tep81_dns.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md)
-4. TEP-85 NFT SBT tokens: [interfaces](/abi/known/tep85_nft_sbt.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0085-sbt-standard.md)
-5. Telemint contracts: [interfaces](/abi/known/telemint.json), [contract code](https://github.com/TelegramMessenger/telemint)
-6. Getgems contracts: [interfaces](/abi/known/getgems.json), [contract code](https://github.com/getgems-io/nft-contracts/blob/main/packages/contracts/sources)
-7. Wallets: [interfaces](/abi/known/wallets.json), [tonweb](https://github.com/toncenter/tonweb/tree/0a5effd36a3f342f4aacabab728b1f9747085ad1/src/contract/wallet)
-8. [STON.fi](https://ston.fi) DEX: [architecture](https://docs.ston.fi/docs/developer-section/architecture), [contract code](https://github.com/ston-fi/dex-core)
-9. [Megaton.fi](https://megaton.fi) DEX: [architecture](https://docs.megaton.fi/developers/contract)
-10. [Tonpay](https://thetonpay.app): [go-sdk](https://github.com/TheTonpay/tonpay-go-sdk), [js-sdk](https://github.com/TheTonpay/tonpay-js-sdk)
-
 ### Shared TL-B constructors
 
 You can define some cell schema in `definitions` field of contract interface.
@@ -247,6 +234,147 @@ Or get-method stack values schemas:
   ]
 }
 ```
+
+### Union of TLB types
+
+You can make some definitions with tags in the beginning of cell and use them later in unions. See the following example:
+
+```json5
+{
+  "interface": "jetton_vault",
+  "definitions": {
+    "native_asset": [
+      {
+        "name": "native_asset",
+        "tlb_type": "$0000",
+        "format": "tag"
+      }
+    ],
+    "jetton_asset": [
+      {
+        "name": "jetton_asset",
+        "tlb_type": "$0001",
+        "format": "tag"
+      },
+      // ...
+    ],
+    "pool_params": [
+      // ...
+      {
+        "name": "asset0",
+        "tlb_type": "[native_asset,jetton_asset]"
+      },
+      // ...
+    ],
+    "deposit_liquidity": [
+      {
+        "name": "deposit_liquidity",
+        "tlb_type": "#40e108d6",
+        "format": "tag"
+      },
+      {
+        "name": "pool_params",
+        "tlb_type": ".",
+        "format": "pool_params"
+      },
+      // ...
+    ],
+    "swap": [
+      {
+        "name": "swap",
+        "tlb_type": "#e3a0d482",
+        "format": "tag"
+      },
+      {
+        "name": "swap_step",
+        "tlb_type": ".",
+        "format": "swap_step"
+      },
+      // ...
+    ]
+  },
+  "in_messages": [
+    {
+      "op_name": "jetton_transfer_notification",
+      "op_code": "0x7362d09c",
+      "body": [
+        {
+          "name": "query_id",
+          "tlb_type": "## 64",
+          "format": "uint64"
+        },
+        {
+          "name": "amount",
+          "tlb_type": ".",
+          "format": "coins"
+        },
+        {
+          "name": "sender",
+          "tlb_type": "addr",
+          "format": "addr"
+        },
+        {
+          "name": "forward_payload", 
+          "tlb_type": "either . ^", 
+          "format": "struct", 
+          "struct_fields": [{
+            "name": "value", 
+            "tlb_type": "[deposit_liquidity,swap]"
+          }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Here we define two structs in the interface: `deposit_liquidity` and `swap`.
+Then our contract interface accepts incoming `jetton_transfer_notification`.
+Inside forward payload there may be a cell, which corresponds to either `deposit_liquidity`, either `swap`.
+If Anton finds a message with `jetton_transfer_notification` operation, he will try to determine the structure 
+of forward payload by tag in the beginning of cell.  
+
+After parsing `deposit_liquidity` transfer notification message body will look like this:
+
+```json
+{
+  "query_id": 3638120226682551939,
+  "amount": "1253854400825677",
+  "sender": "EQDz0wQL6EEdgbPkFgS7nNmywzr468AvgLyhH7PIMALxPB6G",
+  "forward_payload": {
+    "value": {
+      "deposit_liquidity": {},
+      "pool_params": {
+        "is_stable": false,
+        "asset_0": {
+          "native_asset": {}
+        },
+        "asset_1": {
+          "jetton_asset": {},
+          "workchain_id": 0,
+          "jetton_address": 2422642597
+        }
+      },
+      "min_lp_amount": "49289848313582100",
+      "asset_0_target_balance": "135747634478277169790071850",
+      "asset_1_target_balance": "30291957672135140790470162860"
+    }
+  }
+}
+```
+
+## Known contracts
+
+1. TEP-62 NFT Standard: [interfaces](/abi/known/tep62_nft.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md), [contract code](https://github.com/ton-blockchain/token-contract/tree/main/nft)
+2. TEP-74 Fungible tokens (Jettons) standard: [interfaces](/abi/known/tep74_jetton.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md), [contract code](https://github.com/ton-blockchain/token-contract/tree/main/ft)
+3. TEP-81 DNS contracts: [interface](/abi/known/tep81_dns.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md)
+4. TEP-85 NFT SBT tokens: [interfaces](/abi/known/tep85_nft_sbt.json), [description](https://github.com/ton-blockchain/TEPs/blob/master/text/0085-sbt-standard.md)
+5. Telemint contracts: [interfaces](/abi/known/telemint.json), [contract code](https://github.com/TelegramMessenger/telemint)
+6. Getgems contracts: [interfaces](/abi/known/getgems.json), [contract code](https://github.com/getgems-io/nft-contracts/blob/main/packages/contracts/sources)
+7. Wallets: [interfaces](/abi/known/wallets.json), [tonweb](https://github.com/toncenter/tonweb/tree/0a5effd36a3f342f4aacabab728b1f9747085ad1/src/contract/wallet)
+8. [STON.fi](https://ston.fi) DEX: [architecture](https://docs.ston.fi/docs/developer-section/architecture), [contract code](https://github.com/ston-fi/dex-core)
+9. [Megaton.fi](https://megaton.fi) DEX: [architecture](https://docs.megaton.fi/developers/contract)
+10. [Tonpay](https://thetonpay.app): [go-sdk](https://github.com/TheTonpay/tonpay-go-sdk), [js-sdk](https://github.com/TheTonpay/tonpay-js-sdk)
 
 ## Converting Golang struct to JSON schema
 

@@ -160,7 +160,7 @@ func TestOperationDesc_TelemintNFTCollection(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "telemint_nft_collection" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -209,7 +209,7 @@ func TestGetMethodDesc_TelemintNFTItem(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "telemint_nft_item" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}

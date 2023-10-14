@@ -33,33 +33,6 @@ type GetMethodDesc struct {
 	ReturnValues []VmValueDesc `json:"return_values"`
 }
 
-func (desc *GetMethodDesc) MapRegisteredDefinitions() {
-	for i := range desc.Arguments {
-		if desc.Arguments[i].Format == TLBStructCell {
-			desc.Arguments[i].Fields.MapRegisteredDefinitions()
-			continue
-		}
-		d, ok := registeredDefinitions[desc.Arguments[i].Format]
-		if ok {
-			desc.Arguments[i].Format = TLBStructCell
-			desc.Arguments[i].Fields = d
-			continue
-		}
-	}
-	for i := range desc.ReturnValues {
-		if desc.ReturnValues[i].Format == TLBStructCell {
-			desc.ReturnValues[i].Fields.MapRegisteredDefinitions()
-			continue
-		}
-		d, ok := registeredDefinitions[desc.ReturnValues[i].Format]
-		if ok {
-			desc.ReturnValues[i].Format = TLBStructCell
-			desc.ReturnValues[i].Fields = d
-			continue
-		}
-	}
-}
-
 func MethodNameHash(name string) int32 {
 	// https://github.com/ton-blockchain/ton/blob/24dc184a2ea67f9c47042b4104bbb4d82289fac1/crypto/smc-envelope/SmartContract.h#L75
 	return int32(crc16.Checksum([]byte(name), crc16.MakeTable(crc16.CRC16_XMODEM))) | 0x10000

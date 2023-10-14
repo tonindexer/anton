@@ -22,6 +22,7 @@ const (
 	TLBCell        TLBType = "cell"
 	TLBContentCell TLBType = "content"
 	TLBStructCell  TLBType = "struct"
+	TLBTag         TLBType = "tag"
 )
 
 type TelemintText struct {
@@ -75,7 +76,7 @@ var (
 		TLBBigInt:      reflect.TypeOf(big.NewInt(0)),
 		TLBCell:        reflect.TypeOf((*cell.Cell)(nil)),
 		"dict":         reflect.TypeOf((*cell.Dictionary)(nil)),
-		"magic":        reflect.TypeOf(tlb.Magic{}),
+		TLBTag:         reflect.TypeOf(tlb.Magic{}),
 		"coins":        reflect.TypeOf(tlb.Coins{}),
 		TLBAddr:        reflect.TypeOf((*address.Address)(nil)),
 		TLBString:      reflect.TypeOf((*StringSnake)(nil)),
