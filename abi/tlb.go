@@ -64,6 +64,9 @@ func tlbMakeDesc(t reflect.Type, skipMagic ...bool) (ret TLBFieldsDesc, err erro
 				return nil, fmt.Errorf("%s: %w", f.Name, err)
 			}
 
+		case strings.HasPrefix(schema.Type, "[") && strings.HasSuffix(schema.Type, "]"):
+			// no format for union
+
 		default:
 			return nil, fmt.Errorf("%s: unknown structField type %s", f.Name, f.Type)
 		}
