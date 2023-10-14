@@ -9,6 +9,13 @@ import (
 	"github.com/tonindexer/anton/addr"
 )
 
+type ContractDefinition struct {
+	bun.BaseModel `bun:"table:contract_definitions" json:"-"`
+
+	Name   abi.TLBType       `bun:",pk" json:"name"`
+	Schema abi.TLBFieldsDesc `json:"schema"`
+}
+
 type ContractInterface struct {
 	bun.BaseModel `bun:"table:contract_interfaces" json:"-"`
 
@@ -32,15 +39,15 @@ type ContractOperation struct {
 }
 
 type ContractRepository interface {
+	AddDefinition(context.Context, abi.TLBType, abi.TLBFieldsDesc) error
+	GetDefinitions(context.Context) (map[abi.TLBType]abi.TLBFieldsDesc, error)
+
 	AddInterface(context.Context, *ContractInterface) error
-
 	DelInterface(ctx context.Context, name string) error
-
 	GetInterfaces(context.Context) ([]*ContractInterface, error)
 	GetMethodDescription(ctx context.Context, name abi.ContractName, method string) (abi.GetMethodDesc, error)
 
 	AddOperation(context.Context, *ContractOperation) error
-
 	GetOperations(context.Context) ([]*ContractOperation, error)
 	GetOperationByID(context.Context, MessageType, []abi.ContractName, bool, uint32) (*ContractOperation, error)
 }

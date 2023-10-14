@@ -13,6 +13,7 @@ import (
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/ton"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/app/fetcher"
 	"github.com/tonindexer/anton/internal/app/indexer"
@@ -35,12 +36,23 @@ var Command = &cli.Command{
 			return errors.Wrap(err, "cannot connect to a database")
 		}
 
-		interfaces, err := contract.NewRepository(conn.PG).GetInterfaces(ctx.Context)
+		contractRepo := contract.NewRepository(conn.PG)
+
+		interfaces, err := contractRepo.GetInterfaces(ctx.Context)
 		if err != nil {
 			return errors.Wrap(err, "get interfaces")
 		}
 		if len(interfaces) == 0 {
 			return errors.New("no contract interfaces")
+		}
+
+		def, err := contractRepo.GetDefinitions(ctx.Context)
+		if err != nil {
+			return errors.Wrap(err, "get definitions")
+		}
+		err = abi.RegisterDefinitions(def)
+		if err != nil {
+			return errors.Wrap(err, "get definitions")
 		}
 
 		client := liteclient.NewConnectionPool()
@@ -62,7 +74,7 @@ var Command = &cli.Command{
 
 		p := parser.NewService(&app.ParserConfig{
 			BlockchainConfig: bcConfig,
-			ContractRepo:     contract.NewRepository(conn.PG),
+			ContractRepo:     contractRepo,
 		})
 		f := fetcher.NewService(&app.FetcherConfig{
 			API:    api,

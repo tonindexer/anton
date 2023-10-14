@@ -54,6 +54,8 @@ func dropTables(t testing.TB) {
 	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
+	_, err = pg.NewDropTable().Model((*core.ContractDefinition)(nil)).IfExists().Exec(ctx)
+	require.Nil(t, err)
 
 	_, err = pg.ExecContext(context.Background(), "DROP TYPE message_type")
 	if err != nil && !strings.Contains(err.Error(), "does not exist") {
@@ -63,6 +65,32 @@ func dropTables(t testing.TB) {
 
 func TestRepository_AddContracts(t *testing.T) {
 	initdb(t)
+
+	d := core.ContractDefinition{
+		Name: "test_definition",
+	}
+
+	definitionSchema := []byte(`[
+  {
+    "name": "new_owner",
+    "tlb_type": "addr"
+  },
+  {
+    "name": "response_destination",
+    "tlb_type": "addr"
+  },
+  {
+    "name": "custom_payload",
+    "tlb_type": "maybe ^"
+  },
+  {
+    "name": "forward_amount",
+    "tlb_type": ".",
+    "format": "coins"
+  }
+]`)
+	err := json.Unmarshal(definitionSchema, &d.Schema)
+	require.Nil(t, err)
 
 	i := &core.ContractInterface{
 		Name:      known.NFTItem,
@@ -126,7 +154,7 @@ func TestRepository_AddContracts(t *testing.T) {
       }`
 
 	var opSchema abi.OperationDesc
-	err := json.Unmarshal([]byte(schema), &opSchema)
+	err = json.Unmarshal([]byte(schema), &opSchema)
 	require.Nil(t, err)
 
 	op := &core.ContractOperation{
@@ -147,6 +175,18 @@ func TestRepository_AddContracts(t *testing.T) {
 
 	t.Run("create tables", func(t *testing.T) {
 		createTables(t)
+	})
+
+	t.Run("insert definition", func(t *testing.T) {
+		err := repo.AddDefinition(ctx, d.Name, d.Schema)
+		require.Nil(t, err)
+	})
+
+	t.Run("get definitions", func(t *testing.T) {
+		m, err := repo.GetDefinitions(ctx)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(m))
+		require.Equal(t, m[d.Name], d.Schema)
 	})
 
 	t.Run("insert interface", func(t *testing.T) {

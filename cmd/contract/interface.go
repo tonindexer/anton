@@ -13,6 +13,7 @@ import (
 
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
@@ -75,8 +76,6 @@ func parseOperationDesc(t abi.ContractName, d *abi.OperationDesc) (*core.Contrac
 		opId = uint32(n)
 	}
 
-	d.MapRegisteredDefinitions()
-
 	// this is needed to map interface definitions into schema
 	x, err := d.New()
 	if err != nil {
@@ -116,7 +115,6 @@ func parseInterfaceDesc(d *abi.InterfaceDesc) (*core.ContractInterface, []*core.
 		GetMethodsDesc: d.GetMethods,
 	}
 	for it := range i.GetMethodsDesc {
-		i.GetMethodsDesc[it].MapRegisteredDefinitions()
 		i.GetMethodHashes = append(i.GetMethodHashes, abi.MethodNameHash(i.GetMethodsDesc[it].Name))
 	}
 	if len(i.Code) == 0 {
@@ -144,15 +142,21 @@ func parseInterfaceDesc(d *abi.InterfaceDesc) (*core.ContractInterface, []*core.
 	return &i, operations, nil
 }
 
-func parseInterfacesDesc(descriptors []*abi.InterfaceDesc) (retI []*core.ContractInterface, retOp []*core.ContractOperation, _ error) {
-	for _, d := range descriptors {
-		err := d.RegisterDefinitions()
+func parseInterfacesDesc(descriptors []*abi.InterfaceDesc) (retD map[abi.TLBType]abi.TLBFieldsDesc, retI []*core.ContractInterface, retOp []*core.ContractOperation, _ error) {
+	retD = map[abi.TLBType]abi.TLBFieldsDesc{}
+	for _, desc := range descriptors {
+		err := abi.RegisterDefinitions(desc.Definitions)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
-		i, operations, err := parseInterfaceDesc(d)
+		for dn, d := range desc.Definitions {
+			retD[dn] = d
+		}
+	}
+	for _, desc := range descriptors {
+		i, operations, err := parseInterfaceDesc(desc)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		retI = append(retI, i)
 		retOp = append(retOp, operations...)
@@ -224,7 +228,7 @@ var Command = &cli.Command{
 			return err
 		}
 
-		interfaces, operations, err := parseInterfacesDesc(interfacesDesc)
+		definitions, interfaces, operations, err := parseInterfacesDesc(interfacesDesc)
 		if err != nil {
 			return err
 		}
@@ -241,14 +245,22 @@ var Command = &cli.Command{
 			return errors.Wrapf(err, "cannot ping postgresql")
 		}
 
+		for dn, d := range definitions {
+			if err := contract.NewRepository(pg).AddDefinition(ctx.Context, dn, d); err != nil {
+				log.Err(err).Str("definition_name", string(dn)).Msg("cannot insert contract interface")
+			}
+		}
 		for _, i := range interfaces {
 			if err := contract.NewRepository(pg).AddInterface(ctx.Context, i); err != nil {
-				return errors.Wrapf(err, "cannot insert %s contract interface", i.Name)
+				log.Err(err).Str("interface_name", string(i.Name)).Msg("cannot insert contract interface")
 			}
 		}
 		for _, op := range operations {
 			if err := contract.NewRepository(pg).AddOperation(ctx.Context, op); err != nil {
-				return errors.Wrapf(err, "cannot insert %s %s contract operation", op.ContractName, op.OperationName)
+				log.Err(err).
+					Str("interface_name", string(op.ContractName)).
+					Str("operation_name", op.OperationName).
+					Msg("cannot insert contract operation")
 			}
 		}
 

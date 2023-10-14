@@ -25,6 +25,15 @@ func NewRepository(db *bun.DB) *Repository {
 
 func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 	_, err := pgDB.NewCreateTable().
+		Model(&core.ContractDefinition{}).
+		IfNotExists().
+		WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "contract definitions pg create table")
+	}
+
+	_, err = pgDB.NewCreateTable().
 		Model(&core.ContractOperation{}).
 		IfNotExists().
 		WithForeignKeys().
@@ -58,6 +67,36 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 	}
 
 	return nil
+}
+
+func (r *Repository) AddDefinition(ctx context.Context, dn abi.TLBType, d abi.TLBFieldsDesc) error {
+	def := &core.ContractDefinition{
+		Name:   dn,
+		Schema: d,
+	}
+
+	_, err := r.pg.NewInsert().Model(def).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) GetDefinitions(ctx context.Context) (map[abi.TLBType]abi.TLBFieldsDesc, error) {
+	var ret []*core.ContractDefinition
+
+	err := r.pg.NewSelect().Model(&ret).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := map[abi.TLBType]abi.TLBFieldsDesc{}
+	for _, def := range ret {
+		res[def.Name] = def.Schema
+	}
+
+	return res, nil
 }
 
 func (r *Repository) AddInterface(ctx context.Context, i *core.ContractInterface) error {

@@ -34,6 +34,12 @@ type mockContractRepo struct {
 	interfaces []*core.ContractInterface
 }
 
+func (m *mockContractRepo) AddDefinition(context.Context, abi.TLBType, abi.TLBFieldsDesc) error {
+	panic("implement me")
+}
+func (m *mockContractRepo) GetDefinitions(context.Context) (map[abi.TLBType]abi.TLBFieldsDesc, error) {
+	panic("implement me")
+}
 func (m *mockContractRepo) AddInterface(_ context.Context, _ *core.ContractInterface) error {
 	panic("implement me")
 }
