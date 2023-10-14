@@ -305,6 +305,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/contracts/definitions": {
+            "get": {
+                "description": "Returns definitions used in messages and get-methods parsing",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contract"
+                ],
+                "summary": "struct definitions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.GetDefinitionsRes"
+                        }
+                    }
+                }
+            }
+        },
         "/contracts/interfaces": {
             "get": {
                 "description": "Returns known contract interfaces",
@@ -984,31 +1007,19 @@ const docTemplate = `{
             "enum": [
                 "int",
                 "cell",
-                "slice",
-                "addr",
-                "bool",
-                "bigInt",
-                "string",
-                "bytes",
-                "content"
+                "slice"
             ],
             "x-enum-varnames": [
                 "VmInt",
                 "VmCell",
-                "VmSlice",
-                "VmAddr",
-                "VmBool",
-                "VmBigInt",
-                "VmString",
-                "VmBytes",
-                "VmContentCell"
+                "VmSlice"
             ]
         },
         "abi.TLBFieldDesc": {
             "type": "object",
             "properties": {
                 "format": {
-                    "type": "string"
+                    "$ref": "#/definitions/abi.TLBType"
                 },
                 "name": {
                     "type": "string"
@@ -1035,17 +1046,51 @@ const docTemplate = `{
                 "$ref": "#/definitions/abi.TLBFieldDesc"
             }
         },
+        "abi.TLBType": {
+            "type": "string",
+            "enum": [
+                "addr",
+                "bool",
+                "bigInt",
+                "string",
+                "bytes",
+                "cell",
+                "slice",
+                "content",
+                "struct",
+                "tag"
+            ],
+            "x-enum-varnames": [
+                "TLBAddr",
+                "TLBBool",
+                "TLBBigInt",
+                "TLBString",
+                "TLBBytes",
+                "TLBCell",
+                "TLBSlice",
+                "TLBContentCell",
+                "TLBStructCell",
+                "TLBTag"
+            ]
+        },
         "abi.VmValueDesc": {
             "type": "object",
             "properties": {
                 "format": {
-                    "$ref": "#/definitions/abi.StackType"
+                    "$ref": "#/definitions/abi.TLBType"
                 },
                 "name": {
                     "type": "string"
                 },
                 "stack_type": {
                     "$ref": "#/definitions/abi.StackType"
+                },
+                "struct_fields": {
+                    "description": "Format = \"struct\"",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/abi.TLBFieldDesc"
+                    }
                 }
             }
         },
@@ -1940,6 +1985,23 @@ const docTemplate = `{
                             }
                         }
                     }
+                }
+            }
+        },
+        "http.GetDefinitionsRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/abi.TLBFieldDesc"
+                        }
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

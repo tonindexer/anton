@@ -5,6 +5,7 @@ import (
 
 	"github.com/xssnick/tonutils-go/ton"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
 	"github.com/tonindexer/anton/internal/core/aggregate/history"
@@ -21,6 +22,7 @@ type QueryConfig struct {
 type QueryService interface {
 	GetStatistics(ctx context.Context) (*aggregate.Statistics, error)
 
+	GetDefinitions(context.Context) (map[abi.TLBType]abi.TLBFieldsDesc, error)
 	GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error)
 	GetOperations(ctx context.Context) ([]*core.ContractOperation, error)
 

@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
@@ -189,6 +190,29 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 		return
 	}
 	ctx.IndentedJSON(http.StatusOK, GetOperationsRes{Total: len(ret), Results: ret})
+}
+
+type GetDefinitionsRes struct {
+	Total   int                               `json:"total"`
+	Results map[abi.TLBType]abi.TLBFieldsDesc `json:"results"`
+}
+
+// GetDefinitions godoc
+//
+//	@Summary		struct definitions
+//	@Description	Returns definitions used in messages and get-methods parsing
+//	@Tags			contract
+//	@Accept			json
+//	@Produce		json
+//	@Success		200		{object}		GetDefinitionsRes
+//	@Router			/contracts/definitions [get]
+func (c *Controller) GetDefinitions(ctx *gin.Context) {
+	ret, err := c.svc.GetDefinitions(ctx)
+	if err != nil {
+		internalErr(ctx, err)
+		return
+	}
+	ctx.IndentedJSON(http.StatusOK, GetDefinitionsRes{Total: len(ret), Results: ret})
 }
 
 // GetBlocks godoc
