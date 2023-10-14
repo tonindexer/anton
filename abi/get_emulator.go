@@ -277,10 +277,10 @@ func vmParseValueInt(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	}
 }
 
-func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
+func vmParseValueCell(v *tlb.VmStackValue, desc *VmValueDesc) (any, error) {
 	switch v.SumType {
 	case "VmStkNull":
-		switch d.Format {
+		switch desc.Format {
 		case "", TLBCell, TLBStructCell:
 			return (*cell.Cell)(nil), nil
 		case TLBString:
@@ -288,14 +288,14 @@ func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		case TLBContentCell:
 			return nft.ContentAny(nil), nil
 		default:
-			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
+			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", desc.Format, desc.StackType)
 		}
 
 	case "VmStkCell":
 		// go further
 
 	default:
-		return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.StackType, v.SumType)
+		return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", desc.StackType, v.SumType)
 	}
 
 	tgcBoc, err := v.VmStkCell.Value.ToBocCustom(false, false, false, 0)
@@ -307,11 +307,11 @@ func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		return nil, errors.Wrap(err, "convert boc to cell")
 	}
 
-	if d.Format == "" && len(d.Fields) > 0 {
-		d.Format = TLBStructCell
+	if desc.Format == "" && len(desc.Fields) > 0 {
+		desc.Format = TLBStructCell
 	}
 
-	switch d.Format {
+	switch desc.Format {
 	case "", TLBCell:
 		return c, nil
 	case TLBString:
@@ -333,20 +333,28 @@ func vmParseValueCell(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		}
 		return content, nil
 	case TLBStructCell:
-		parsed, err := d.Fields.FromCell(c)
+		parsed, err := desc.Fields.FromCell(c)
 		if err != nil {
-			return nil, errors.Wrapf(err, "load struct from cell on %s value description schema", d.Name)
+			return nil, errors.Wrapf(err, "load struct from cell on %s value description schema", desc.Name)
 		}
 		return parsed, nil
 	default:
-		return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
+		d, ok := registeredDefinitions[desc.Format]
+		if !ok {
+			return nil, fmt.Errorf("cannot find definition for '%s' format", desc.Format)
+		}
+		parsed, err := d.FromCell(c)
+		if err != nil {
+			return nil, errors.Wrapf(err, "'%s' definition from cell", desc.Format)
+		}
+		return parsed, nil
 	}
 }
 
-func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
+func vmParseValueSlice(v *tlb.VmStackValue, desc *VmValueDesc) (any, error) {
 	switch v.SumType {
 	case "VmStkNull":
-		switch d.Format {
+		switch desc.Format {
 		case "":
 			return (*cell.Slice)(nil), nil
 		case TLBAddr:
@@ -354,14 +362,14 @@ func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		case TLBString:
 			return "", nil
 		default:
-			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
+			return nil, fmt.Errorf("unsupported '%s' format for '%s' type", desc.Format, desc.StackType)
 		}
 
 	case "VmStkSlice":
 		// go further
 
 	default:
-		return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", d.StackType, v.SumType)
+		return nil, fmt.Errorf("wrong descriptor '%s' type as method returned '%s'", desc.StackType, v.SumType)
 	}
 
 	tgcBoc, err := v.VmStkSlice.Cell().ToBocCustom(false, false, false, 0)
@@ -373,11 +381,11 @@ func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		return nil, errors.Wrap(err, "convert boc to cell")
 	}
 
-	if d.Format == "" && len(d.Fields) > 0 {
-		d.Format = TLBStructCell
+	if desc.Format == "" && len(desc.Fields) > 0 {
+		desc.Format = TLBStructCell
 	}
 
-	switch d.Format {
+	switch desc.Format {
 	case "":
 		return c.BeginParse(), nil
 	case TLBString:
@@ -389,13 +397,21 @@ func vmParseValueSlice(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 		}
 		return a, nil
 	case TLBStructCell:
-		parsed, err := d.Fields.FromCell(c)
+		parsed, err := desc.Fields.FromCell(c)
 		if err != nil {
-			return nil, errors.Wrapf(err, "load struct from slice on %s value description schema", d.Name)
+			return nil, errors.Wrapf(err, "load struct from slice on %s value description schema", desc.Name)
 		}
 		return parsed, nil
 	default:
-		return nil, fmt.Errorf("unsupported '%s' format for '%s' type", d.Format, d.StackType)
+		d, ok := registeredDefinitions[desc.Format]
+		if !ok {
+			return nil, fmt.Errorf("cannot find definition for '%s' format", desc.Format)
+		}
+		parsed, err := d.FromCell(c)
+		if err != nil {
+			return nil, errors.Wrapf(err, "'%s' definition from cell", desc.Format)
+		}
+		return parsed, nil
 	}
 }
 
