@@ -20,6 +20,7 @@ const (
 	TLBString      TLBType = "string"
 	TLBBytes       TLBType = "bytes"
 	TLBCell        TLBType = "cell"
+	TLBSlice       TLBType = "slice"
 	TLBContentCell TLBType = "content"
 	TLBStructCell  TLBType = "struct"
 	TLBTag         TLBType = "tag"

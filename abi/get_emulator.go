@@ -277,6 +277,55 @@ func vmParseValueInt(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	}
 }
 
+func vmParseCell(c *cell.Cell, desc *VmValueDesc) (any, error) {
+	switch desc.Format {
+	case TLBCell:
+		return c, nil
+
+	case TLBSlice:
+		return c.BeginParse(), nil
+
+	case TLBString:
+		s, err := c.BeginParse().LoadStringSnake()
+		if err != nil {
+			return nil, errors.Wrap(err, "load string snake")
+		}
+		return s, nil
+
+	case TLBAddr:
+		a, err := c.BeginParse().LoadAddr()
+		if err != nil {
+			return nil, errors.Wrap(err, "load address")
+		}
+		return a, nil
+
+	case TLBContentCell:
+		content, err := nft.ContentFromCell(c)
+		if err != nil {
+			return nil, errors.Wrap(err, "load content from cell")
+		}
+		return content, nil
+
+	case TLBStructCell:
+		parsed, err := desc.Fields.FromCell(c)
+		if err != nil {
+			return nil, errors.Wrapf(err, "load struct from cell on %s value description schema", desc.Name)
+		}
+		return parsed, nil
+
+	default:
+		d, ok := registeredDefinitions[desc.Format]
+		if !ok {
+			return nil, fmt.Errorf("cannot find definition for '%s' format", desc.Format)
+		}
+		parsed, err := d.FromCell(c)
+		if err != nil {
+			return nil, errors.Wrapf(err, "'%s' definition from cell", desc.Format)
+		}
+		return parsed, nil
+	}
+}
+
 func vmParseValueCell(v *tlb.VmStackValue, desc *VmValueDesc) (any, error) {
 	switch v.SumType {
 	case "VmStkNull":
@@ -309,46 +358,11 @@ func vmParseValueCell(v *tlb.VmStackValue, desc *VmValueDesc) (any, error) {
 
 	if desc.Format == "" && len(desc.Fields) > 0 {
 		desc.Format = TLBStructCell
+	} else if desc.Format == "" {
+		desc.Format = TLBCell
 	}
 
-	switch desc.Format {
-	case "", TLBCell:
-		return c, nil
-	case TLBString:
-		s, err := c.BeginParse().LoadStringSnake()
-		if err != nil {
-			return nil, errors.Wrap(err, "load string snake")
-		}
-		return s, nil
-	case TLBAddr:
-		a, err := c.BeginParse().LoadAddr()
-		if err != nil {
-			return nil, errors.Wrap(err, "load address")
-		}
-		return a, nil
-	case TLBContentCell:
-		content, err := nft.ContentFromCell(c)
-		if err != nil {
-			return nil, errors.Wrap(err, "load content from cell")
-		}
-		return content, nil
-	case TLBStructCell:
-		parsed, err := desc.Fields.FromCell(c)
-		if err != nil {
-			return nil, errors.Wrapf(err, "load struct from cell on %s value description schema", desc.Name)
-		}
-		return parsed, nil
-	default:
-		d, ok := registeredDefinitions[desc.Format]
-		if !ok {
-			return nil, fmt.Errorf("cannot find definition for '%s' format", desc.Format)
-		}
-		parsed, err := d.FromCell(c)
-		if err != nil {
-			return nil, errors.Wrapf(err, "'%s' definition from cell", desc.Format)
-		}
-		return parsed, nil
-	}
+	return vmParseCell(c, desc)
 }
 
 func vmParseValueSlice(v *tlb.VmStackValue, desc *VmValueDesc) (any, error) {
@@ -383,36 +397,11 @@ func vmParseValueSlice(v *tlb.VmStackValue, desc *VmValueDesc) (any, error) {
 
 	if desc.Format == "" && len(desc.Fields) > 0 {
 		desc.Format = TLBStructCell
+	} else if desc.Format == "" {
+		desc.Format = TLBSlice
 	}
 
-	switch desc.Format {
-	case "":
-		return c.BeginParse(), nil
-	case TLBString:
-		return c.BeginParse().LoadStringSnake()
-	case TLBAddr:
-		a, err := c.BeginParse().LoadAddr()
-		if err != nil {
-			return nil, errors.Wrap(err, "load address")
-		}
-		return a, nil
-	case TLBStructCell:
-		parsed, err := desc.Fields.FromCell(c)
-		if err != nil {
-			return nil, errors.Wrapf(err, "load struct from slice on %s value description schema", desc.Name)
-		}
-		return parsed, nil
-	default:
-		d, ok := registeredDefinitions[desc.Format]
-		if !ok {
-			return nil, fmt.Errorf("cannot find definition for '%s' format", desc.Format)
-		}
-		parsed, err := d.FromCell(c)
-		if err != nil {
-			return nil, errors.Wrapf(err, "'%s' definition from cell", desc.Format)
-		}
-		return parsed, nil
-	}
+	return vmParseCell(c, desc)
 }
 
 func vmParseValue(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
