@@ -68,6 +68,8 @@ github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/iam047801/go-clickhouse v0.0.0-20230531081532-4d11768422f0 h1:0/RkLzp6whu/zFCBlEgQyAkbj4QbOlObn8jYQuhm4vg=
 github.com/iam047801/go-clickhouse v0.0.0-20230531081532-4d11768422f0/go.mod h1:ZkFYp+b3tn7YiHR6yMnHqGetPfFZhbVYVTsTGBIbdCY=
+github.com/iam047801/tonutils-go v0.0.0-20231015152158-8d07daf52f7a h1:sMViB3ah4Qx0d/13rQIeORK0c4AlR3YKzt2Eukvltbc=
+github.com/iam047801/tonutils-go v0.0.0-20231015152158-8d07daf52f7a/go.mod h1:rqfQ4jsLaFhUUvouz2hTTC02nQGszOhSps7tGAKRC8g=
 github.com/iancoleman/strcase v0.2.0 h1:05I4QRnGpI0m37iZQRuskXh+w77mr6Z41lwQzuHLwW0=
 github.com/iancoleman/strcase v0.2.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
 github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD/E=
@@ -184,8 +186,8 @@ github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAh
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
 github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 h1:bAn7/zixMGCfxrRTfdpNzjtPYqr8smhKouy9mxVdGPU=
 github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673/go.mod h1:N3UwUGtsrSj3ccvlPHLoLsHnpR27oXr4ZE984MbSER8=
-github.com/xssnick/tonutils-go v1.8.5-0.20231013083545-4f085f4fc80f h1:0wxnLLvfDe0soBkITECdT9D2DmcBMIe9Xzv3+gi0W6o=
-github.com/xssnick/tonutils-go v1.8.5-0.20231013083545-4f085f4fc80f/go.mod h1:rqfQ4jsLaFhUUvouz2hTTC02nQGszOhSps7tGAKRC8g=
+github.com/xssnick/tonutils-go v1.8.5-0.20231016063454-6d3e0636946d h1:M9SaxaPlxCeGEAsdu6yyypjB208e2g7mPymts+0JZC4=
+github.com/xssnick/tonutils-go v1.8.5-0.20231016063454-6d3e0636946d/go.mod h1:rqfQ4jsLaFhUUvouz2hTTC02nQGszOhSps7tGAKRC8g=
 github.com/yuin/goldmark v1.4.0/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 go.opentelemetry.io/otel v1.13.0 h1:1ZAKnNQKwBBxFtww/GwxNUyTf0AxkZzrukO8MeXqe4Y=

@@ -108,16 +108,25 @@ func tlbParseSettingsDict(settings []string) (reflect.Type, error) {
 		return nil, fmt.Errorf("wrong dict settings: %v", settings)
 	}
 
+	if settings[1] == "inline" {
+		settings = settings[1:]
+	}
+
 	_, err := strconv.ParseUint(settings[1], 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("cannot deserialize field as dict, bad size '%s'", settings[1])
 	}
 
-	if len(settings) >= 4 {
-		// transformation
-		return nil, errors.New("dict transformation is not supported")
+	if len(settings) < 4 {
+		return reflect.TypeOf((*cell.Dictionary)(nil)), nil
 	}
-	return reflect.TypeOf((*cell.Dictionary)(nil)), nil
+
+	mapVT, err := tlbParseSettings(strings.Join(settings[3:], " "))
+	if err != nil {
+		return nil, err
+	}
+
+	return reflect.MapOf(reflect.TypeOf(""), mapVT), nil
 }
 
 // tlbParseSettings automatically determines go type to map field into (refactor of tlb.LoadFromCell)
@@ -188,7 +197,7 @@ func tlbParseSettings(tag string) (reflect.Type, error) {
 	}
 }
 
-func tlbMapFormat(format TLBType, tag reflect.StructTag) (reflect.Type, error) {
+func tlbMapFormat(format TLBType, tag string) (reflect.Type, error) {
 	t, ok := typeNameMap[format]
 	if ok {
 		return t, nil
@@ -197,9 +206,9 @@ func tlbMapFormat(format TLBType, tag reflect.StructTag) (reflect.Type, error) {
 	switch format {
 	case "":
 		// parse tlb tag and get default type
-		t, err := tlbParseSettings(tag.Get("tlb"))
+		t, err := tlbParseSettings(tag)
 		if t == nil || err != nil {
-			return nil, fmt.Errorf("parse tlb settings with tag %s: %w", tag.Get("tlb"), err)
+			return nil, fmt.Errorf("parse tlb settings with tag '%s': %w", tag, err)
 		}
 		return t, nil
 
@@ -208,11 +217,17 @@ func tlbMapFormat(format TLBType, tag reflect.StructTag) (reflect.Type, error) {
 		if !ok {
 			return nil, fmt.Errorf("cannot find definition for '%s' format", format)
 		}
+
 		t, err := tlbParseDesc(nil, d)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating new type from definition")
 		}
-		return reflect.PointerTo(t), nil
+		vt := reflect.PointerTo(t)
+
+		if !strings.HasPrefix(tag, "dict") {
+			return vt, nil
+		}
+		return reflect.MapOf(reflect.TypeOf(""), vt), nil
 	}
 }
 
@@ -241,7 +256,7 @@ func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc, skipOption
 			}
 			sf.Type = reflect.PointerTo(sf.Type)
 		} else {
-			sf.Type, err = tlbMapFormat(f.Format, sf.Tag)
+			sf.Type, err = tlbMapFormat(f.Format, sf.Tag.Get("tlb"))
 			if err != nil {
 				return nil, errors.Wrapf(err, "%s field", f.Name)
 			}
@@ -274,7 +289,7 @@ func (desc TLBFieldsDesc) FromCell(c *cell.Cell) (any, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating struct")
 	}
-	if err := tlb.LoadFromCell(parsed, c.BeginParse()); err == nil {
+	if err = tlb.LoadFromCell(parsed, c.BeginParse()); err == nil {
 		return parsed, nil
 	}
 	if !strings.Contains(err.Error(), "not enough data in reader") && !strings.Contains(err.Error(), "no more refs exists") {
