@@ -113,59 +113,67 @@ func TestTLBFieldsDesc_LoadFromCell(t *testing.T) {
 }
 
 func TestTLBFieldsDesc_LoadFromCell_DictToMap(t *testing.T) {
-	d := []byte(`[
-  {
-    "name": "order_tag",
-    "tlb_type": "$0010",
-    "format": "tag"
-  },
-  {
-    "name": "expiration",
-    "tlb_type": "## 32"
-  },
-  {
-    "name": "direction",
-    "tlb_type": "## 1"
-  },
-  {
-    "name": "amount",
-    "tlb_type": ".",
-    "format": "coins"
-  },
-  {
-    "name": "leverage",
-    "tlb_type": "## 64"
-  },
-  {
-    "name": "limit_price",
-    "tlb_type": ".",
-    "format": "coins"
-  },
-  {
-    "name": "stop_price",
-    "tlb_type": ".",
-    "format": "coins"
-  },
-  {
-    "name": "stop_trigger_price",
-    "tlb_type": ".",
-    "format": "coins"
-  },
-  {
-    "name": "take_trigger_price",
-    "tlb_type": ".",
-    "format": "coins"
-  }
-]`)
+	d := []byte(`
+{
+  "take_order": [
+    {
+      "name": "order_tag",
+      "tlb_type": "$0010",
+      "format": "tag"
+    },
+    {
+      "name": "expiration",
+      "tlb_type": "## 32"
+    },
+    {
+      "name": "direction",
+      "tlb_type": "## 1"
+    },
+    {
+      "name": "amount",
+      "tlb_type": ".",
+      "format": "coins"
+    },
+    {
+      "name": "leverage",
+      "tlb_type": "## 64"
+    },
+    {
+      "name": "limit_price",
+      "tlb_type": ".",
+      "format": "coins"
+    },
+    {
+      "name": "stop_price",
+      "tlb_type": ".",
+      "format": "coins"
+    },
+    {
+      "name": "stop_trigger_price",
+      "tlb_type": ".",
+      "format": "coins"
+    },
+    {
+      "name": "take_trigger_price",
+      "tlb_type": ".",
+      "format": "coins"
+    }
+  ],
+  "limit_order": [
+    {
+      "name": "order_tag",
+      "tlb_type": "$0001",
+      "format": "tag"
+    }
+  ]
+}`)
 
-	var descD abi.TLBFieldsDesc
+	var descD map[abi.TLBType]abi.TLBFieldsDesc
 
 	err := json.Unmarshal(d, &descD)
 	require.Nil(t, err)
 
-	err = abi.RegisterDefinitions(map[abi.TLBType]abi.TLBFieldsDesc{
-		"take_order": descD,
-	})
+	err = abi.RegisterDefinitions(descD)
 	if err != nil {
 		require.Nil(t, err)
 	}
@@ -178,9 +186,9 @@ func TestTLBFieldsDesc_LoadFromCell_DictToMap(t *testing.T) {
   }
 ]`)
 
-	var desc abi.TLBFieldsDesc
+	var descF abi.TLBFieldsDesc
 
-	err = json.Unmarshal(j, &desc)
+	err = json.Unmarshal(j, &descF)
 	require.Nil(t, err)
 
 	body, err := base64.StdEncoding.DecodeString(`te6cckEBBQEAUwACAdQDAQEBIAIAQSZS6uXai6Q7dAAAAAAAWWgvACEeGjAAIU3JOAIO5rKAQAEBIAQAQSZS5ufKi6Q7dAAAAAAAWWgvACEeGjAAIU3JOAIO5rKAQPxznzQ=`)
@@ -189,7 +197,29 @@ func TestTLBFieldsDesc_LoadFromCell_DictToMap(t *testing.T) {
 	c, err := cell.FromBOC(body)
 	require.Nil(t, err)
 
-	got, err := desc.FromCell(c)
+	got, err := descF.FromCell(c)
+	require.Nil(t, err)
+
+	j, err = json.Marshal(got)
+	require.Nil(t, err)
+
+	require.Equal(t,
+		`{"dict_uint_3":{"0":{"order_tag":{},"expiration":1697541756,"direction":1,"amount":"100000000000","leverage":3000000000,"limit_price":"600000000","stop_price":"0","stop_trigger_price":"700000000","take_trigger_price":"500000000"},"1":{"order_tag":{},"expiration":1697558109,"direction":1,"amount":"100000000000","leverage":3000000000,"limit_price":"600000000","stop_price":"0","stop_trigger_price":"700000000","take_trigger_price":"500000000"}}}`,
+		string(j))
+
+	j = []byte(`[
+  {
+    "name": "dict_uint_3",
+    "tlb_type": "dict inline 3 -> ^ [take_order,limit_order]"
+  }
+]`)
+
+	var desc abi.TLBFieldsDesc
+
+	err = json.Unmarshal(j, &desc)
+	require.Nil(t, err)
+
+	got, err = desc.FromCell(c)
 	require.Nil(t, err)
 
 	j, err = json.Marshal(got)

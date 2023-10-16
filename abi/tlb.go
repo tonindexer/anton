@@ -187,7 +187,10 @@ func tlbParseSettings(tag string) (reflect.Type, error) {
 		return reflect.TypeOf([]byte(nil)), nil
 
 	case "^", ".":
-		return reflect.TypeOf((*cell.Cell)(nil)), nil
+		if len(settings) == 1 {
+			return reflect.TypeOf((*cell.Cell)(nil)), nil
+		}
+		return tlbParseSettings(strings.Join(settings[1:], " "))
 
 	case "dict":
 		return tlbParseSettingsDict(settings)

@@ -55,8 +55,6 @@ Also, it is possible to define similarly described embedded structures in each f
 }
 ```
 
-### Types mapping
-
 While parsing TL-B cells by fields description, we are trying to parse data according to TL-B type and map it into some Golang type or structure.
 Each TL-B type used in schemas has value equal to the structure tags in [tonutils-go](https://github.com/xssnick/tonutils-go/blob/4d0157009913e35d450c36e28018cd0686502439/tlb/loader.go#L24).
 If it is not possible to parse the field using `tlb.LoadFromCell`, 
@@ -66,7 +64,7 @@ Accepted TL-B types in `tlb_type`:
 1. `## N` - integer with N bits; by default maps to `uintX` or `big.Int`
 2. `^` - data is stored in the referenced cell; by default maps to `cell.Cell` or to custom struct, if `struct_fields` is defined
 3. `.` - inner struct; by default maps to `cell.Cell` or to custom struct, if `struct_fields` is defined
-4. [TODO] `[^]dict N [-> array [^]]` - dictionary with key size `N`, transformation is not supported yet
+4. `[^]dict [inline] N [-> [^]]` - dictionary with key size `N`, transformation to `map` is done through `->`
 5. `bits N` - bit slice N len; by default maps to `[]byte`
 6. `bool` - 1 bit boolean; by default maps to `bool`
 7. `addr` - ton address; by default maps to `addr.Address`
@@ -151,7 +149,7 @@ Accepted return values stack types:
 3. `slice` - load slice
 4. [TODO] `tuple`
  
-Accepted types to map from or into in `format` field:
+Accepted types to map from or parse into in `format` field:
 
 1. `addr` - MsgAddress slice type
 2. `bool` - map int to boolean
@@ -204,7 +202,7 @@ You can use those definitions in message schemas:
 }
 ```
 
-Or get-method stack values schemas:
+Or use them in get-method return values' schema:
 
 ```json5
 {
@@ -359,6 +357,85 @@ After parsing `deposit_liquidity` transfer notification message body will look l
       "asset_0_target_balance": "135747634478277169790071850",
       "asset_1_target_balance": "30291957672135140790470162860"
     }
+  }
+}
+```
+
+### Dictionary transformation
+
+You can define the format of the dictionary values, so Anton will be able to parse it into the golang `map`.
+
+In the following example, we use defined `limit_order` as a dictionary value:
+```json5
+{
+  // ...
+  "definitions": {
+    "limit_order": [
+      {
+        "name": "order_tag",
+        "tlb_type": "$0010",
+        "format": "tag"
+      },
+      {
+        "name": "expiration",
+        "tlb_type": "## 32"
+      },
+      // ...
+    ]
+  },
+  // ...
+  "in_message": {
+    // ...
+    "body": [
+      {
+        "name": "dict_3_bit_key",
+        "tlb_type": "dict inline 3 -> ^",
+        "format": "limit_order"
+      }
+    ]
+  }
+}
+```
+
+Or we can use defined `orders` union as a dictionary value, but for the union we're setting `tlb_type` field instead of `format`.
+```json5
+{
+  // ...
+  "definitions": {
+    "take_order": [
+      {
+        "name": "take_order_tag",
+        "tlb_type": "$0001",
+        "format": "tag"
+      },
+      {
+        "name": "expiration",
+        "tlb_type": "## 32"
+      },
+      // ...
+    ],
+    "limit_order": [
+      {
+        "name": "order_tag",
+        "tlb_type": "$0010",
+        "format": "tag"
+      },
+      {
+        "name": "expiration",
+        "tlb_type": "## 32"
+      },
+      // ...
+    ]
+  },
+  // ...
+  "in_message": {
+    // ...
+    "body": [
+      {
+        "name": "dict_3_bit_key",
+        "tlb_type": "dict inline 3 -> ^ [take_order,limit_order]"
+      }
+    ]
   }
 }
 ```
