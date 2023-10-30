@@ -114,21 +114,11 @@ func (x *Address) Base64() string {
 }
 
 func (x *Address) FromBase64(b64 string) (*Address, error) {
-	d, err := base64.RawURLEncoding.DecodeString(b64)
+	a, err := address.ParseAddr(b64)
 	if err != nil {
-		return nil, errors.Wrap(err, "decode base64")
+		return nil, err
 	}
-	if len(d) != 36 {
-		return nil, errors.New("wrong decoded address length")
-	}
-
-	copy(x[0:33], d[1:34])
-
-	if x.Checksum() != binary.BigEndian.Uint16(d[34:36]) {
-		return nil, errors.New("wrong address checksum")
-	}
-
-	return x, nil
+	return x.FromTonutils(a)
 }
 
 func MustFromBase64(b64 string) *Address {
