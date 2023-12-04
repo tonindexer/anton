@@ -1,23 +1,30 @@
 # syntax=docker/dockerfile:1.5-labs
-FROM alpine:3 AS emulator-builder
+FROM debian:12.2-slim AS emulator-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
 
 # build emulator libraries
 
-RUN apk add --no-cache make cmake gcc g++ musl-dev zlib-dev openssl-dev linux-headers git
+RUN apt-get update && \
+    apt-get install -yqq \
+      tzdata build-essential cmake clang openssl \
+      libssl-dev zlib1g-dev gperf wget git curl \
+      libreadline-dev ccache libmicrohttpd-dev ninja-build pkg-config \
+      libsecp256k1-dev libsodium-dev
 
 ADD --keep-git-dir=true https://github.com/ton-blockchain/ton.git /ton
 RUN cd /ton && git submodule update --init --recursive
-
-RUN apk add --no-cache openblas-dev libmicrohttpd-dev readline-dev libsecp256k1-dev libsodium-dev
 
 RUN mkdir build && (cd build && cmake ../ton -DCMAKE_BUILD_TYPE=Release && cmake --build . --target emulator -- -j 8)
 RUN mkdir /output && cp build/emulator/libemulator.so /output
 
 
 # build
-FROM golang:1.19-alpine AS builder
+FROM golang:1.21.4-bookworm AS builder
 
-RUN apk add --no-cache build-base libsecp256k1 libsodium
+RUN apt-get update && \
+    apt-get install -y libsecp256k1-1 libsodium23
 
 #prepare env
 WORKDIR /go/src/github.com/tonindexer/anton
@@ -47,16 +54,18 @@ RUN go build -o /anton /go/src/github.com/tonindexer/anton
 
 
 # application
-FROM alpine:3
+FROM debian:12.2-slim
 
 ENV LISTEN=0.0.0.0:8080
 
-RUN apk add --no-cache libgcc libstdc++ libsecp256k1 libsodium
+RUN apt-get update && \
+    apt-get install -y libsecp256k1-1 libsodium23 libssl3
 
-RUN addgroup -S anton && adduser -S anton -G anton
+RUN groupadd anton && useradd -g anton anton
+
 WORKDIR /app
 COPY --from=builder /lib/libemulator.so /lib
-COPY --from=builder /go/src/github.com/tonindexer/anton/abi/known /var/anton/known
+COPY --from=buildher /go/src/github.com/tonindexer/anton/abi/known /var/anton/known
 COPY --from=builder /anton /usr/bin/anton
 
 USER anton:anton
