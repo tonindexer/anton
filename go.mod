@@ -22,7 +22,7 @@ require (
 	github.com/uptrace/bun/extra/bunbig v1.1.13-0.20230308071428-7cd855e64a02
 	github.com/uptrace/go-clickhouse v0.3.0
 	github.com/urfave/cli/v2 v2.25.1
-	github.com/xssnick/tonutils-go v1.8.5-0.20231016063454-6d3e0636946d
+	github.com/xssnick/tonutils-go v1.8.6-0.20231204114749-39872ea7b254
 )
 
 require github.com/gin-contrib/cors v1.4.0
