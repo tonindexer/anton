@@ -51,7 +51,7 @@ FROM alpine:3
 
 ENV LISTEN=0.0.0.0:8080
 
-RUN apk add --no-cache libgcc libstdc++
+RUN apk add --no-cache libgcc libstdc++ libsecp256k1 libsodium
 
 RUN addgroup -S anton && adduser -S anton -G anton
 WORKDIR /app
