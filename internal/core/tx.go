@@ -59,7 +59,7 @@ func (tx *Transaction) LoadDescription() error { // TODO: optionally load descri
 		return errors.Wrap(err, "load description boc")
 	}
 
-	if err := tlb.LoadFromCell(d, c.BeginParse()); err != nil {
+	if err := tlb.LoadFromCell(&d, c.BeginParse()); err != nil {
 		return errors.Wrap(err, "load description from cell")
 	}
 

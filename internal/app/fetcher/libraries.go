@@ -15,13 +15,11 @@ type LibDescription struct {
 
 func (s *Service) GetAccountLibraries(ctx context.Context, raw *tlb.Account) (*cell.Cell, error) {
 	hashes, err := findLibraries(raw.Code)
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "find libraries")
 	}
 
 	libs, err := s.API.GetLibraries(ctx, hashes...)
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "get libraries")
 	}
@@ -59,7 +57,6 @@ func getLibraryHash(code *cell.Cell) ([]byte, error) {
 	return hash[1:], nil
 }
 
-// TODO recursive Refs
 func findLibraries(code *cell.Cell) ([][]byte, error) {
 	hashes := make([][]byte, 0)
 
@@ -71,6 +68,26 @@ func findLibraries(code *cell.Cell) ([][]byte, error) {
 		}
 
 		hashes = append(hashes, hash)
+
+		return hashes, err
+	}
+
+	if code.RefsNum() == 0 {
+		return hashes, nil
+	}
+
+	for i := code.RefsNum(); i < 0; i-- {
+		ref, err := code.PeekRef(int(i - 1))
+		if err != nil {
+			return nil, err
+		}
+
+		hash, err := findLibraries(ref)
+		if err != nil {
+			return nil, err
+		}
+
+		hashes = append(hashes, hash...)
 	}
 
 	return hashes, nil
