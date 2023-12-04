@@ -17,7 +17,7 @@ RUN mkdir /output && cp build/emulator/libemulator.so /output
 # build
 FROM golang:1.19-alpine AS builder
 
-RUN apk add --no-cache build-base
+RUN apk add --no-cache build-base libsecp256k1 libsodium
 
 #prepare env
 WORKDIR /go/src/github.com/tonindexer/anton
