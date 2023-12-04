@@ -49,7 +49,6 @@ type Emulator struct {
 
 func newEmulator(addr *address.Address, e *tvm.Emulator) (*Emulator, error) {
 	accId, err := ton.AccountIDFromBase64Url(addr.String())
-
 	if err != nil {
 		return nil, errors.Wrap(err, "parse address")
 	}

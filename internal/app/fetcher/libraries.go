@@ -31,17 +31,15 @@ func (s *Service) GetAccountLibraries(ctx context.Context, raw *tlb.Account) (*c
 
 		h := cell.BeginCell().MustStoreSlice(hash, 256).EndCell()
 		t, err := tlb.ToCell(desc)
-
 		if err != nil {
 			return nil, err
 		}
 
-		err = libsMap.Set(h, t)
+		if err = libsMap.Set(h, t); err != nil {
+			return nil, err
+		}
+
 		s.libraries.set(hash, &desc)
-
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return libsMap.ToCell()
