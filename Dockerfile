@@ -65,7 +65,7 @@ RUN groupadd anton && useradd -g anton anton
 
 WORKDIR /app
 COPY --from=builder /lib/libemulator.so /lib
-COPY --from=buildher /go/src/github.com/tonindexer/anton/abi/known /var/anton/known
+COPY --from=builder /go/src/github.com/tonindexer/anton/abi/known /var/anton/known
 COPY --from=builder /anton /usr/bin/anton
 
 USER anton:anton
