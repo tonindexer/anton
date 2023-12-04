@@ -8,7 +8,7 @@ RUN apk add --no-cache make cmake gcc g++ musl-dev zlib-dev openssl-dev linux-he
 ADD --keep-git-dir=true https://github.com/ton-blockchain/ton.git /ton
 RUN cd /ton && git submodule update --init --recursive
 
-RUN apk add --no-cache openblas-dev libmicrohttpd-dev
+RUN apk add --no-cache openblas-dev libmicrohttpd-dev readline-dev libsecp256k1-dev libsodium-dev
 
 RUN mkdir build && (cd build && cmake ../ton -DCMAKE_BUILD_TYPE=Release && cmake --build . --target emulator -- -j 8)
 RUN mkdir /output && cp build/emulator/libemulator.so /output
