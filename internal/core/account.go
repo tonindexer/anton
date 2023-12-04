@@ -74,6 +74,7 @@ type AccountState struct {
 	CodeHash  []byte `bun:"type:bytea" json:"code_hash,omitempty"`
 	Data      []byte `bun:"type:bytea" json:"data,omitempty"`
 	DataHash  []byte `bun:"type:bytea" json:"data_hash,omitempty"`
+	Libraries []byte `bun:"type:bytea" json:"libraries,omitempty"`
 
 	GetMethodHashes []int32 `ch:"type:Array(UInt32)" bun:"type:integer[]" json:"get_method_hashes,omitempty"`
 

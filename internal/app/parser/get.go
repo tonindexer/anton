@@ -47,11 +47,12 @@ func (s *Service) callGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *
 		})
 	}
 
-	codeBase64, dataBase64 :=
+	codeBase64, dataBase64, librariesBase64 :=
 		base64.StdEncoding.EncodeToString(acc.Code),
-		base64.StdEncoding.EncodeToString(acc.Data)
+		base64.StdEncoding.EncodeToString(acc.Data),
+		base64.StdEncoding.EncodeToString(acc.Libraries)
 
-	e, err := abi.NewEmulatorBase64(acc.Address.MustToTonutils(), codeBase64, dataBase64, s.bcConfigBase64)
+	e, err := abi.NewEmulatorBase64(acc.Address.MustToTonutils(), codeBase64, dataBase64, s.bcConfigBase64, librariesBase64)
 	if err != nil {
 		return ret, errors.Wrap(err, "new emulator")
 	}

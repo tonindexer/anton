@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/tonkeeper/tongo/ton"
+	"github.com/tonkeeper/tongo/txemulator"
 	"math/big"
 
 	"github.com/pkg/errors"
@@ -46,14 +48,11 @@ type Emulator struct {
 }
 
 func newEmulator(addr *address.Address, e *tvm.Emulator) (*Emulator, error) {
-	err := e.SetVerbosityLevel(0)
-	if err != nil {
-		return nil, errors.Wrap(err, "set verbosity level")
-	}
-	accId, err := tongo.AccountIDFromBase64Url(addr.String())
+	accId, err := ton.AccountIDFromBase64Url(addr.String())
 	if err != nil {
 		return nil, errors.Wrap(err, "parse address")
 	}
+
 	return &Emulator{Emulator: e, AccountID: accId}, nil
 }
 
@@ -69,11 +68,29 @@ func NewEmulator(addr *address.Address, code, data, cfg *cell.Cell) (*Emulator, 
 	return newEmulator(addr, e)
 }
 
-func NewEmulatorBase64(addr *address.Address, code, data, cfg string) (*Emulator, error) {
-	e, err := tvm.NewEmulatorFromBOCsBase64(code, data, cfg)
+func NewEmulatorBase64(addr *address.Address, code, data, cfg, libraries string) (*Emulator, error) {
+	var (
+		e   *tvm.Emulator
+		err error
+	)
+
+	if libraries != "" {
+		e, err = tvm.NewEmulatorFromBOCsBase64(
+			code,
+			data,
+			cfg,
+			tvm.WithLazyC7Optimization(),
+			tvm.WithLibrariesBase64(libraries),
+			tvm.WithVerbosityLevel(txemulator.PrintsAllStackValuesForCommand),
+		)
+	} else {
+		e, err = tvm.NewEmulatorFromBOCsBase64(code, data, cfg, tvm.WithLazyC7Optimization(), tvm.WithVerbosityLevel(txemulator.PrintsAllStackValuesForCommand))
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return newEmulator(addr, e)
 }
 

@@ -1,6 +1,7 @@
 package fetcher
 
 import (
+	"encoding/hex"
 	"sync"
 	"time"
 
@@ -120,4 +121,41 @@ func (c *accountCache) set(bExt *ton.BlockIDExt, acc *core.AccountState) {
 
 	c.m[b][acc.Address] = acc
 	c.clearCaches()
+}
+
+type librariesCache struct {
+	libs map[string]*LibDescription
+	sync.Mutex
+}
+
+func newLibrariesCache() *librariesCache {
+	return &librariesCache{
+		libs: map[string]*LibDescription{},
+	}
+}
+
+func (c *librariesCache) get(hash []byte) *LibDescription {
+	c.Lock()
+	defer c.Unlock()
+
+	l, ok := c.libs[hex.EncodeToString(hash)]
+	if ok {
+		return l
+	}
+
+	return nil
+}
+
+func (c *librariesCache) set(hash []byte, desc *LibDescription) {
+	c.Lock()
+	defer c.Unlock()
+
+	h := hex.EncodeToString(hash)
+
+	_, ok := c.libs[h]
+	if ok {
+		return
+	}
+
+	c.libs[h] = desc
 }
