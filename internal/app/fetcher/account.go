@@ -2,13 +2,14 @@ package fetcher
 
 import (
 	"context"
-	"github.com/tonindexer/anton/abi"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/xssnick/tonutils-go/ton"
 
+	"github.com/xssnick/tonutils-go/ton"
+	"github.com/xssnick/tonutils-go/tvm/cell"
+
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
@@ -34,7 +35,7 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 	acc = MapAccount(b, raw)
 
 	if raw.Code != nil {
-		libs, err := s.GetAccountLibraries(ctx, raw)
+		libs, err := s.getAccountLibraries(ctx, raw)
 		if err != nil {
 			return nil, errors.Wrapf(err, "get account libraries")
 		}
