@@ -51,7 +51,7 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 			}
 
 			lib := s.libraries.get(hash)
-			if lib != nil {
+			if lib != nil && lib.Lib != nil {
 				acc.GetMethodHashes, _ = abi.GetMethodHashes(lib.Lib)
 			}
 		} else {
