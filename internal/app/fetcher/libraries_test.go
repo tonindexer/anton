@@ -81,5 +81,7 @@ func TestService_getAccountLibraries_emulate(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(retStack))
 
-	t.Logf("%x", retStack[0].Payload.(*cell.Cell).ToBOC())
+	c, ok := retStack[0].Payload.(*cell.Cell)
+	require.True(t, ok)
+	t.Logf("%x", c.ToBOC())
 }
