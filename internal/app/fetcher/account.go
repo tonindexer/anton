@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
+	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
@@ -13,9 +13,42 @@ import (
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 )
 
-func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Address) (*core.AccountState, error) {
+func (s *Service) getLastSeenAccountState(ctx context.Context, master, b *ton.BlockIDExt, a addr.Address) (*core.AccountState, error) {
+	defer app.TimeTrack(time.Now(), "getLastSeenAccountState(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
+
+	var latestBlock *core.BlockID
+	switch {
+	case int8(b.Workchain) == a.Workchain():
+		latestBlock = &core.BlockID{Workchain: b.Workchain, Shard: b.Shard, SeqNo: b.SeqNo}
+	case int8(master.Workchain) == a.Workchain():
+		latestBlock = &core.BlockID{Workchain: master.Workchain, Shard: master.Shard, SeqNo: master.SeqNo}
+	default:
+		return nil, errors.Wrapf(core.ErrInvalidArg, "address is in %d workchain, but the given block is from %d workchain", a.Workchain(), b.Workchain)
+	}
+
+	accountReq := filter.AccountsReq{
+		Addresses:     []*addr.Address{&a},
+		Workchain:     &latestBlock.Workchain,
+		Shard:         &latestBlock.Shard,
+		BlockSeqNoLeq: &latestBlock.SeqNo,
+		Order:         "DESC",
+		Limit:         1,
+	}
+	accountRes, err := s.AccountRepo.FilterAccounts(ctx, &accountReq)
+	if err != nil {
+		return nil, errors.Wrap(err, "filter accounts")
+	}
+	if len(accountRes.Rows) < 1 {
+		return nil, errors.Wrap(core.ErrNotFound, "could not find needed account state")
+	}
+
+	return accountRes.Rows[0], nil
+}
+
+func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a addr.Address) (*core.AccountState, error) {
 	acc, ok := s.accounts.get(b, a)
 	if ok {
 		return acc, nil
@@ -25,7 +58,7 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 		return nil, errors.Wrap(core.ErrNotFound, "skip account")
 	}
 
-	defer app.TimeTrack(time.Now(), "getAccount(%d, %d, %s)", b.Workchain, b.SeqNo, a.String())
+	defer app.TimeTrack(time.Now(), "getAccount(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
 
 	raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
 	if err != nil {
@@ -71,11 +104,24 @@ func (s *Service) getAccount(ctx context.Context, b *ton.BlockIDExt, a addr.Addr
 		if ok {
 			return acc, nil
 		}
-		raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
+
+		// second attempt is to look for the latest account state in the database
+		acc, err := s.getLastSeenAccountState(ctx, master, b, a)
 		if err == nil {
-			return MapAccount(b, raw), nil
+			return acc, nil
 		}
-		return nil, errors.Wrapf(core.ErrNotFound, "cannot find %s account state", a.Base64())
+		lvl := log.Warn()
+		if errors.Is(err, core.ErrNotFound) || errors.Is(err, core.ErrInvalidArg) {
+			lvl = log.Debug()
+		}
+		lvl.Err(err).Str("addr", a.Base64()).Msg("get latest other account state")
+
+		// third attempt is to get needed contract state from the node
+		raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot get %s account state", a.Base64())
+		}
+		return MapAccount(b, raw), nil
 	}
 
 	err = s.Parser.ParseAccountData(ctx, acc, getOtherAccount)

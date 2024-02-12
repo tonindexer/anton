@@ -71,14 +71,14 @@ func TestService_BlockTransactions(t *testing.T) {
 
 		go func() {
 			defer wg.Done()
-			_, err = s.BlockTransactions(ctx, master)
+			_, err = s.BlockTransactions(ctx, master, master)
 			require.Nil(t, err)
 		}()
 
 		for i := range shards {
 			go func(shard *ton.BlockIDExt) {
 				defer wg.Done()
-				_, err := s.BlockTransactions(ctx, shard)
+				_, err := s.BlockTransactions(ctx, master, shard)
 				require.Nil(t, err)
 			}(shards[i])
 		}

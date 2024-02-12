@@ -19,6 +19,7 @@ import (
 	"github.com/tonindexer/anton/internal/app/indexer"
 	"github.com/tonindexer/anton/internal/app/parser"
 	"github.com/tonindexer/anton/internal/core/repository"
+	"github.com/tonindexer/anton/internal/core/repository/account"
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
 
@@ -77,8 +78,9 @@ var Command = &cli.Command{
 			ContractRepo:     contractRepo,
 		})
 		f := fetcher.NewService(&app.FetcherConfig{
-			API:    api,
-			Parser: p,
+			API:         api,
+			AccountRepo: account.NewRepository(conn.CH, conn.PG),
+			Parser:      p,
 		})
 		i := indexer.NewService(&app.IndexerConfig{
 			DB:        conn,

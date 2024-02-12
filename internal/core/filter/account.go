@@ -24,6 +24,11 @@ type AccountsReq struct {
 	Addresses   []*addr.Address // `form:"addresses"`
 	LatestState bool            `form:"latest"`
 
+	// filter by block
+	Workchain     *int32
+	Shard         *int64
+	BlockSeqNoLeq *uint32
+
 	// contract data filter
 	ContractTypes []abi.ContractName `form:"interface"`
 	OwnerAddress  *addr.Address      // `form:"owner_address"`

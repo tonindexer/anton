@@ -103,6 +103,17 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 	if len(f.Addresses) > 0 {
 		q = q.Where(statesTable+"address in (?)", bun.In(f.Addresses))
 	}
+
+	if f.Workchain != nil {
+		q = q.Where(prefix+"workchain = ?", *f.Workchain)
+	}
+	if f.Shard != nil {
+		q = q.Where(prefix+"shard = ?", *f.Shard)
+	}
+	if f.BlockSeqNoLeq != nil {
+		q = q.Where(prefix+"block_seq_no <= ?", *f.BlockSeqNoLeq)
+	}
+
 	if len(f.ContractTypes) > 0 {
 		q = q.Where(prefix+"types && ?", pgdialect.Array(f.ContractTypes))
 	}
@@ -154,6 +165,17 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 	if len(f.Addresses) > 0 {
 		q = q.Where("address in (?)", ch.In(f.Addresses))
 	}
+
+	if f.Workchain != nil {
+		q = q.Where("workchain = ?", *f.Workchain)
+	}
+	if f.Shard != nil {
+		q = q.Where("shard = ?", *f.Shard)
+	}
+	if f.BlockSeqNoLeq != nil {
+		q = q.Where("block_seq_no <= ?", *f.BlockSeqNoLeq)
+	}
+
 	if len(f.ContractTypes) > 0 {
 		q = q.Where("hasAny(types, [?])", ch.In(f.ContractTypes))
 	}
