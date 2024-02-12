@@ -21,9 +21,9 @@ func (s *Service) getLastSeenAccountState(ctx context.Context, master, b *ton.Bl
 
 	var latestBlock *core.BlockID
 	switch {
-	case int8(b.Workchain) == a.Workchain():
+	case b.Workchain == int32(a.Workchain()):
 		latestBlock = &core.BlockID{Workchain: b.Workchain, Shard: b.Shard, SeqNo: b.SeqNo}
-	case int8(master.Workchain) == a.Workchain():
+	case master.Workchain == int32(a.Workchain()):
 		latestBlock = &core.BlockID{Workchain: master.Workchain, Shard: master.Shard, SeqNo: master.SeqNo}
 	default:
 		return nil, errors.Wrapf(core.ErrInvalidArg, "address is in %d workchain, but the given block is from %d workchain", a.Workchain(), b.Workchain)
@@ -48,6 +48,35 @@ func (s *Service) getLastSeenAccountState(ctx context.Context, master, b *ton.Bl
 	return accountRes.Rows[0], nil
 }
 
+func (s *Service) makeGetOtherAccountFunc(master, b *ton.BlockIDExt) func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
+	getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
+		// first attempt is to look for an account in this given block
+		acc, ok := s.accounts.get(b, a)
+		if ok {
+			return acc, nil
+		}
+
+		// second attempt is to look for the latest account state in the database
+		acc, err := s.getLastSeenAccountState(ctx, master, b, a)
+		if err == nil {
+			return acc, nil
+		}
+		lvl := log.Warn()
+		if errors.Is(err, core.ErrNotFound) || errors.Is(err, core.ErrInvalidArg) {
+			lvl = log.Debug()
+		}
+		lvl.Err(err).Str("addr", a.Base64()).Msg("get latest other account state")
+
+		// third attempt is to get needed contract state from the node
+		raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot get %s account state", a.Base64())
+		}
+		return MapAccount(b, raw), nil
+	}
+	return getOtherAccountFunc
+}
+
 func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a addr.Address) (*core.AccountState, error) {
 	acc, ok := s.accounts.get(b, a)
 	if ok {
@@ -67,12 +96,11 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 
 	acc = MapAccount(b, raw)
 
-	if raw.Code != nil {
+	if raw.Code != nil { //nolint:nestif // getting get method hashes from the library
 		libs, err := s.getAccountLibraries(ctx, raw)
 		if err != nil {
 			return nil, errors.Wrapf(err, "get account libraries")
 		}
-
 		if libs != nil {
 			acc.Libraries = libs.ToBOC()
 		}
@@ -98,31 +126,7 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 
 	// sometimes, to parse the full account data we need to get other contracts states
 	// for example, to get nft item data
-	getOtherAccount := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
-		// first attempt is to look for an account in this given block
-		acc, ok := s.accounts.get(b, a)
-		if ok {
-			return acc, nil
-		}
-
-		// second attempt is to look for the latest account state in the database
-		acc, err := s.getLastSeenAccountState(ctx, master, b, a)
-		if err == nil {
-			return acc, nil
-		}
-		lvl := log.Warn()
-		if errors.Is(err, core.ErrNotFound) || errors.Is(err, core.ErrInvalidArg) {
-			lvl = log.Debug()
-		}
-		lvl.Err(err).Str("addr", a.Base64()).Msg("get latest other account state")
-
-		// third attempt is to get needed contract state from the node
-		raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
-		if err != nil {
-			return nil, errors.Wrapf(err, "cannot get %s account state", a.Base64())
-		}
-		return MapAccount(b, raw), nil
-	}
+	getOtherAccount := s.makeGetOtherAccountFunc(master, b)
 
 	err = s.Parser.ParseAccountData(ctx, acc, getOtherAccount)
 	if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
