@@ -40,7 +40,7 @@ func findLibraries(code *cell.Cell) ([][]byte, error) {
 		return hashes, nil
 	}
 
-	for i := code.RefsNum(); i < 0; i-- {
+	for i := code.RefsNum(); i < 1; i-- {
 		ref, err := code.PeekRef(int(i - 1))
 		if err != nil {
 			return nil, err
@@ -80,7 +80,7 @@ func (s *Service) getAccountLibraries(ctx context.Context, raw *tlb.Account) (*c
 
 		h := cell.BeginCell().MustStoreSlice(hash, 256).EndCell()
 
-		if err = libsMap.Set(h, t); err != nil {
+		if err := libsMap.Set(h, t); err != nil {
 			return nil, err
 		}
 
