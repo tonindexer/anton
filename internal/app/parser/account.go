@@ -111,6 +111,7 @@ func (s *Service) ParseAccountData(
 		return errors.Wrap(app.ErrImpossibleParsing, "unknown contract interfaces")
 	}
 
+	acc.Types = nil
 	for _, i := range interfaces {
 		acc.Types = append(acc.Types, i.Name)
 	}
