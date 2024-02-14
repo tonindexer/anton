@@ -43,7 +43,7 @@ type RescanTask struct {
 
 	ID                 int    `bun:",pk,autoincrement"`
 	Finished           bool   `bun:"finished,notnull"`
-	StartFrom          uint32 `bun:"start_from_start_from_masterchain_seq_nomasterchain_seq_no,notnull"`
+	StartFrom          uint32 `bun:"start_from_masterchain_seq_no,notnull"`
 	AccountsLastMaster uint32 `bun:"accounts_last_masterchain_seq_no,notnull"`
 	AccountsRescanDone bool   `bun:",notnull"`
 	MessagesLastMaster uint32 `bun:"messages_last_masterchain_seq_no,notnull"`
