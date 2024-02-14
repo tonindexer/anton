@@ -121,4 +121,8 @@ func TestRepository_AddMessages(t *testing.T) {
 		got.CreatedAt = messages[0].CreatedAt // TODO: look at time.Time ch unmarshal
 		require.Equal(t, messages[0], got)
 	})
+
+	t.Run("drop tables", func(t *testing.T) {
+		dropTables(t)
+	})
 }
