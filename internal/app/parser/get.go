@@ -271,7 +271,7 @@ func (s *Service) callPossibleGetMethods( //nolint:gocognit // yeah, it's too lo
 				}
 				collection, err := others(ctx, *acc.MinterAddress)
 				if err != nil {
-					log.Error().Err(err).Msg("get nft collection state")
+					log.Error().Str("minter_address", acc.MinterAddress.Base64()).Err(err).Msg("get nft collection state")
 					return
 				}
 				s.getNFTItemContent(ctx, collection, exec.Returns[1].(*big.Int), exec.Returns[4].(*cell.Cell), acc) //nolint:forcetypeassert // panic on wrong interface
@@ -290,7 +290,7 @@ func (s *Service) callPossibleGetMethods( //nolint:gocognit // yeah, it's too lo
 				}
 				minter, err := others(ctx, *acc.MinterAddress)
 				if err != nil {
-					log.Error().Err(err).Msg("get jetton minter state")
+					log.Error().Str("minter_address", acc.MinterAddress.Base64()).Err(err).Msg("get jetton minter state")
 					return
 				}
 				s.checkJettonMinter(ctx, minter, acc.OwnerAddress, acc)
