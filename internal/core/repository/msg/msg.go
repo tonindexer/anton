@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
@@ -196,6 +197,45 @@ func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*cor
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (r *Repository) UpdateMessages(ctx context.Context, messages []*core.Message) error {
+	if len(messages) == 0 {
+		return nil
+	}
+
+	for _, msg := range messages {
+		log.Info().
+			Hex("msg_hash", msg.Hash).
+			Str("src_address", msg.SrcAddress.Base64()).
+			Str("src_contract", string(msg.SrcContract)).
+			Str("dst_address", msg.DstAddress.Base64()).
+			Str("dst_contract", string(msg.DstContract)).
+			Uint32("operation_id", msg.OperationID).
+			Str("operation_name", msg.OperationName).
+			RawJSON("data_json", msg.DataJSON).
+			Str("error", msg.Error).
+			Msg("updating message")
+
+		_, err := r.pg.NewUpdate().Model(msg).
+			Set("src_contract = ?src_contract").
+			Set("dst_contract = ?dst_contract").
+			Set("operation_name = ?operation_name").
+			Set("data_json = ?data_json").
+			Set("error = ?error").
+			WherePK().
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err := r.ch.NewInsert().Model(&messages).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

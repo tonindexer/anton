@@ -79,5 +79,7 @@ type Message struct {
 
 type MessageRepository interface {
 	AddMessages(ctx context.Context, tx bun.Tx, messages []*Message) error
+	UpdateMessages(ctx context.Context, messages []*Message) error
+
 	GetMessage(ctx context.Context, hash []byte) (*Message, error)
 }

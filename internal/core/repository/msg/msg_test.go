@@ -102,4 +102,23 @@ func TestRepository_AddMessages(t *testing.T) {
 		err := tx.Commit()
 		require.Nil(t, err)
 	})
+
+	t.Run("update message", func(t *testing.T) {
+		messages[0].SrcContract, messages[0].DstContract = "11", "22"
+		messages[0].DataJSON = []byte(`{"qwerty": ["poiuytr"]}`)
+
+		err := repo.UpdateMessages(ctx, []*core.Message{messages[0]})
+		require.Nil(t, err)
+
+		got := new(core.Message)
+
+		err = pg.NewSelect().Model(got).Where("hash = ?", messages[0].Hash).Scan(ctx)
+		require.Nil(t, err)
+		require.Equal(t, messages[0], got)
+
+		err = ck.NewSelect().Model(got).Where("hash = ?", messages[0].Hash).Scan(ctx)
+		require.Nil(t, err)
+		got.CreatedAt = messages[0].CreatedAt // TODO: look at time.Time ch unmarshal
+		require.Equal(t, messages[0], got)
+	})
 }
