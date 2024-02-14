@@ -7,6 +7,8 @@ x-anton-rewrites: &anton-rewrites
 services:
   indexer:
     <<: *anton-rewrites
+  rescan:
+    <<: *anton-rewrites
   web:
     <<: *anton-rewrites
   migrations:
