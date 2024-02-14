@@ -210,6 +210,43 @@ var Command = &cli.Command{
 				return nil
 			},
 		},
+		{
+			Name:  "rescan",
+			Usage: "Updates account states and messages data from the given block",
+
+			ArgsUsage: "[from_block]",
+
+			Action: func(ctx *cli.Context) error {
+				pg := bun.NewDB(
+					sql.OpenDB(
+						pgdriver.NewConnector(
+							pgdriver.WithDSN(env.GetString("DB_PG_URL", "")),
+						),
+					),
+					pgdialect.New(),
+				)
+				if err := pg.Ping(); err != nil {
+					return errors.Wrapf(err, "cannot ping postgresql")
+				}
+
+				contractRepo := contract.NewRepository(pg)
+
+				fromBlock, err := strconv.ParseUint(ctx.Args().First(), 10, 32)
+				if err != nil {
+					return errors.Wrap(err, "wrong from_block argument")
+				}
+
+				err = contractRepo.CreateNewRescanTask(ctx.Context, uint32(fromBlock))
+				if err != nil {
+					if errors.Is(err, core.ErrAlreadyExists) {
+						return errors.New("there is already one unfinished task")
+					}
+					return errors.Wrapf(err, "create new rescan task")
+				}
+
+				return nil
+			},
+		},
 	},
 
 	Action: func(ctx *cli.Context) (err error) {
