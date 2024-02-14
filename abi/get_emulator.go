@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"reflect"
 
 	"github.com/tonkeeper/tongo/ton"
 	"github.com/tonkeeper/tongo/txemulator"
@@ -334,7 +335,17 @@ func vmParseCell(c *cell.Cell, desc *VmValueDesc) (any, error) {
 	default:
 		d, ok := registeredDefinitions[desc.Format]
 		if !ok {
-			return nil, fmt.Errorf("cannot find definition for '%s' format", desc.Format)
+			t, ok := typeNameMap[desc.Format]
+			if !ok {
+				return nil, fmt.Errorf("cannot find definition or type for '%s' format", desc.Format)
+			}
+			if t.Kind() == reflect.Pointer {
+				t = t.Elem()
+			}
+			tv := reflect.New(t).Interface()
+			if err := tutlb.LoadFromCell(tv, c.BeginParse()); err != nil {
+				return nil, fmt.Errorf("load type '%s' from cell: %w", desc.Format, err)
+			}
 		}
 		parsed, err := d.FromCell(c)
 		if err != nil {
