@@ -53,6 +53,10 @@ func (s *Service) Start() error {
 	s.wg.Add(1)
 	go s.rescanLoop()
 
+	log.Info().
+		Int("workers", s.Workers).
+		Msg("rescan started")
+
 	return nil
 }
 
