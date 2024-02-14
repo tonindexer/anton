@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/uptrace/bun"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
@@ -59,6 +60,14 @@ func (m *mockContractRepo) GetOperations(_ context.Context) ([]*core.ContractOpe
 	panic("implement me")
 }
 func (m *mockContractRepo) GetOperationByID(_ context.Context, _ core.MessageType, _ []abi.ContractName, _ bool, _ uint32) (*core.ContractOperation, error) {
+	panic("implement me")
+}
+
+func (m *mockContractRepo) GetUnfinishedRescanTask(_ context.Context) (bun.Tx, *core.RescanTask, error) {
+	panic("implement me")
+}
+
+func (m *mockContractRepo) SetRescanTask(_ context.Context, _ bun.Tx, _ *core.RescanTask) error {
 	panic("implement me")
 }
 

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -47,7 +48,7 @@ func createTables(t testing.TB) {
 }
 
 func dropTables(t testing.TB) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	_, err := pg.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
@@ -55,6 +56,8 @@ func dropTables(t testing.TB) {
 	_, err = pg.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.ContractDefinition)(nil)).IfExists().Exec(ctx)
+	require.Nil(t, err)
+	_, err = pg.NewDropTable().Model((*core.RescanTask)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
 
 	_, err = pg.ExecContext(context.Background(), "DROP TYPE message_type")
@@ -222,6 +225,80 @@ func TestRepository_AddContracts(t *testing.T) {
 		)
 		require.Nil(t, err)
 		require.Equal(t, op, ret)
+	})
+
+	t.Run("drop tables", func(t *testing.T) {
+		dropTables(t)
+	})
+}
+
+func TestRepository_CreateNewRescanTask(t *testing.T) {
+	initdb(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	t.Run("drop tables", func(t *testing.T) {
+		dropTables(t)
+	})
+
+	t.Run("create tables", func(t *testing.T) {
+		createTables(t)
+	})
+
+	t.Run("create new task", func(t *testing.T) {
+		err := repo.CreateNewRescanTask(ctx, 10)
+		require.NoError(t, err)
+	})
+
+	t.Run("get 'already exists' error on second creation of unfinished task", func(t *testing.T) {
+		err := repo.CreateNewRescanTask(ctx, 10)
+		require.Error(t, err)
+		require.True(t, errors.Is(err, core.ErrAlreadyExists))
+	})
+
+	t.Run("update unfinished task", func(t *testing.T) {
+		tx, task, err := repo.GetUnfinishedRescanTask(ctx)
+		require.NoError(t, err)
+
+		task.AccountsRescanDone = true
+		task.AccountsLastMaster = 30
+		task.MessagesLastMaster = 20
+
+		err = repo.SetRescanTask(ctx, tx, task)
+		require.NoError(t, err)
+	})
+
+	t.Run("finish task", func(t *testing.T) {
+		tx, task, err := repo.GetUnfinishedRescanTask(ctx)
+		require.NoError(t, err)
+
+		task.MessagesRescanDone = true
+		task.MessagesLastMaster = 30
+		task.Finished = true
+
+		err = repo.SetRescanTask(ctx, tx, task)
+		require.NoError(t, err)
+	})
+
+	t.Run("get 'not found' error on choosing unfinished task", func(t *testing.T) {
+		_, _, err := repo.GetUnfinishedRescanTask(ctx)
+		require.Error(t, err)
+		require.True(t, errors.Is(err, core.ErrNotFound))
+	})
+
+	t.Run("create second task", func(t *testing.T) {
+		err := repo.CreateNewRescanTask(ctx, 20)
+		require.NoError(t, err)
+
+		tx, task, err := repo.GetUnfinishedRescanTask(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 3, task.ID)
+
+		task.Finished = true
+
+		err = repo.SetRescanTask(ctx, tx, task)
+		require.NoError(t, err)
 	})
 
 	t.Run("drop tables", func(t *testing.T) {

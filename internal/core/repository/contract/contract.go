@@ -2,6 +2,7 @@ package contract
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -51,6 +52,15 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "contract interface pg create table")
 	}
 
+	_, err = pgDB.NewCreateTable().
+		Model(&core.RescanTask{}).
+		IfNotExists().
+		WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "rescan task pg create table")
+	}
+
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.ContractInterface{}).
 		Unique().
@@ -64,6 +74,16 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 	_, err = pgDB.ExecContext(ctx, `ALTER TABLE contract_operations ADD CONSTRAINT contract_interfaces_uniq_name UNIQUE (operation_name, contract_name)`)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return errors.Wrap(err, "messages pg create source tx hash check")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.RescanTask{}).
+		Unique().
+		Column("finished").
+		Where("finished = false").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "rescan task finished create unique index")
 	}
 
 	return nil
@@ -227,4 +247,65 @@ func (r *Repository) GetOperationByID(ctx context.Context, t core.MessageType, i
 	op := ret[0]
 
 	return op, nil
+}
+
+func (r *Repository) CreateNewRescanTask(ctx context.Context, startFrom uint32) error {
+	task := core.RescanTask{
+		StartFrom:          startFrom,
+		AccountsLastMaster: startFrom - 1,
+		MessagesLastMaster: startFrom - 1,
+	}
+
+	_, err := r.pg.NewInsert().Model(&task).Exec(ctx)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return errors.Wrap(core.ErrAlreadyExists, "cannot create new task while the previous one is unfinished")
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) GetUnfinishedRescanTask(ctx context.Context) (bun.Tx, *core.RescanTask, error) {
+	var task core.RescanTask
+
+	tx, err := r.pg.Begin()
+	if err != nil {
+		return bun.Tx{}, nil, err
+	}
+
+	err = tx.NewSelect().Model(&task).
+		Where("finished = ?", false).
+		For("UPDATE").
+		Scan(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		if errors.Is(err, sql.ErrNoRows) {
+			return bun.Tx{}, nil, errors.Wrap(core.ErrNotFound, "no unfinished tasks")
+		}
+		return bun.Tx{}, nil, err
+	}
+
+	return tx, &task, nil
+}
+
+func (r *Repository) SetRescanTask(ctx context.Context, tx bun.Tx, task *core.RescanTask) error {
+	_, err := tx.NewUpdate().Model(task).
+		Set("finished = ?finished").
+		Set("accounts_last_masterchain_seq_no = ?accounts_last_masterchain_seq_no").
+		Set("accounts_rescan_done = ?accounts_rescan_done").
+		Set("messages_last_masterchain_seq_no = ?messages_last_masterchain_seq_no").
+		Set("messages_rescan_done = ?messages_rescan_done").
+		WherePK().
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }
