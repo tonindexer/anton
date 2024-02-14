@@ -54,6 +54,10 @@ func (s *Service) getRecentAccountState(ctx context.Context, master, b core.Bloc
 
 func (s *Service) rescanAccountsInBlock(master, b *core.Block) (updates []*core.AccountState) {
 	for _, tx := range b.Transactions {
+		if tx.Account == nil {
+			continue
+		}
+
 		getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 			return s.getRecentAccountState(ctx, master.ID(), b.ID(), a, false)
 		}
@@ -88,7 +92,7 @@ func (s *Service) rescanAccountsWorker(b *core.Block) (updates []*core.AccountSt
 
 func (s *Service) rescanAccounts(masterBlocks []*core.Block) (lastScanned uint32) {
 	var (
-		accountUpdates chan []*core.AccountState
+		accountUpdates = make(chan []*core.AccountState, len(masterBlocks))
 		scanWG         sync.WaitGroup
 	)
 

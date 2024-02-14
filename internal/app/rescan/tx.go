@@ -100,7 +100,7 @@ func (s *Service) rescanMessagesWorker(m *core.Block) (updates []*core.Message) 
 
 func (s *Service) rescanMessages(masterBlocks []*core.Block) (lastScanned uint32) {
 	var (
-		msgUpdates chan []*core.Message
+		msgUpdates = make(chan []*core.Message, len(masterBlocks))
 		scanWG     sync.WaitGroup
 	)
 
