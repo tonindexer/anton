@@ -28,6 +28,7 @@ type AccountsReq struct {
 	Workchain     *int32
 	Shard         *int64
 	BlockSeqNoLeq *uint32
+	BlockSeqNoBeq *uint32
 
 	// contract data filter
 	ContractTypes []abi.ContractName `form:"interface"`

@@ -175,6 +175,9 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 	if f.BlockSeqNoLeq != nil {
 		q = q.Where("block_seq_no <= ?", *f.BlockSeqNoLeq)
 	}
+	if f.BlockSeqNoBeq != nil {
+		q = q.Where("block_seq_no >= ?", *f.BlockSeqNoBeq)
+	}
 
 	if len(f.ContractTypes) > 0 {
 		q = q.Where("hasAny(types, [?])", ch.In(f.ContractTypes))
