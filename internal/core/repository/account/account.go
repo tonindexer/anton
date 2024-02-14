@@ -3,9 +3,11 @@ package account
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
@@ -218,6 +220,53 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 			Exec(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "cannot set latest state for %s", &a)
+		}
+	}
+
+	_, err := r.ch.NewInsert().Model(&accounts).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func logAccountStateDataUpdate(acc *core.AccountState) {
+	types, _ := json.Marshal(acc.Types)                   //nolint:errchkjson // no need
+	getMethods, _ := json.Marshal(acc.ExecutedGetMethods) //nolint:errchkjson // no need
+
+	log.Info().
+		Str("address", acc.Address.Base64()).
+		Uint64("last_tx_lt", acc.LastTxLT).
+		RawJSON("types", types).
+		RawJSON("executed_get_methods", getMethods).
+		Msg("updating account state data")
+}
+
+func (r *Repository) UpdateAccountStates(ctx context.Context, accounts []*core.AccountState) error {
+	if len(accounts) == 0 {
+		return nil
+	}
+
+	for _, a := range accounts {
+		logAccountStateDataUpdate(a)
+
+		_, err := r.pg.NewUpdate().Model(a).
+			Set("types = ?types").
+			Set("owner_address = ?owner_address").
+			Set("minter_address = ?minter_address").
+			Set("fake = ?fake").
+			Set("executed_get_methods = ?executed_get_methods").
+			Set("content_uri = ?content_uri").
+			Set("content_name = ?content_name").
+			Set("content_description = ?content_description").
+			Set("content_image = ?content_image").
+			Set("content_image_data = ?content_image_data").
+			Set("jetton_balance = ?jetton_balance").
+			WherePK().
+			Exec(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "cannot update %s acc state data", a.Address.String())
 		}
 	}
 

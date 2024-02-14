@@ -13,6 +13,7 @@ import (
 	"github.com/uptrace/bun/driver/pgdriver"
 	"github.com/uptrace/go-clickhouse/ch"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository/account"
 	"github.com/tonindexer/anton/internal/core/rndm"
@@ -109,6 +110,26 @@ func TestRepository_AddAccounts(t *testing.T) {
 	t.Run("commit transaction", func(t *testing.T) {
 		err := tx.Commit()
 		require.Nil(t, err)
+	})
+
+	t.Run("update account state", func(t *testing.T) {
+		states[0].ExecutedGetMethods = map[abi.ContractName][]abi.GetMethodExecution{
+			"nft_item": {{Name: "shiny_method", Error: "failed"}},
+		}
+
+		err = repo.UpdateAccountStates(ctx, []*core.AccountState{states[0]})
+		require.Nil(t, err)
+
+		got := new(core.AccountState)
+
+		err = pg.NewSelect().Model(got).Where("address = ?", a).Where("last_tx_lt = ?", states[0].LastTxLT).Scan(ctx)
+		require.Nil(t, err)
+		require.Equal(t, states[0], got)
+
+		err = ck.NewSelect().Model(got).Where("address = ?", a).Where("last_tx_lt = ?", states[0].LastTxLT).Scan(ctx)
+		require.Nil(t, err)
+		got.UpdatedAt = states[0].UpdatedAt // TODO: look at time.Time ch unmarshal
+		require.Equal(t, states[0], got)
 	})
 
 	t.Run("drop tables again", func(t *testing.T) {

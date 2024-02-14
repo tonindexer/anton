@@ -135,4 +135,5 @@ type AccountRepository interface {
 	GetAddressLabel(context.Context, addr.Address) (*AddressLabel, error)
 
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
+	UpdateAccountStates(ctx context.Context, states []*AccountState) error
 }
