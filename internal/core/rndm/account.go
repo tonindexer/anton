@@ -52,6 +52,7 @@ func AddressState(a *addr.Address, t []abi.ContractName, minter *addr.Address) *
 		CodeHash:        Bytes(32),
 		Data:            Bytes(32),
 		DataHash:        Bytes(32),
+		Libraries:       Bytes(32),
 		GetMethodHashes: GetMethodHashes(),
 		Types:           t,
 		OwnerAddress:    Address(),
