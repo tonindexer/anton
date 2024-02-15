@@ -346,6 +346,7 @@ func vmParseCell(c *cell.Cell, desc *VmValueDesc) (any, error) {
 			if err := tutlb.LoadFromCell(tv, c.BeginParse()); err != nil {
 				return nil, fmt.Errorf("load type '%s' from cell: %w", desc.Format, err)
 			}
+			return tv, nil
 		}
 		parsed, err := d.FromCell(c)
 		if err != nil {
