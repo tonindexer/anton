@@ -306,7 +306,12 @@ func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address
 						Order("tx_lt ASC")).
 				ColumnExpr("CASE WHEN next_tx_lt IS NULL THEN tx_lt ELSE next_tx_lt END AS change_tx_lt").
 				ColumnExpr("CASE WHEN next_tx_lt IS NULL THEN types ELSE next_types END AS types").
-				Where("(NOT ((types @> next_types) AND (types <@ next_types))) OR next_tx_lt IS NULL").
+				Where(`
+					(NOT ((types @> next_types) AND (types <@ next_types))) OR
+					(types IS NULL AND next_types IS NOT NULL) OR
+					(types IS NOT NULL AND next_types IS NULL) OR
+					next_tx_lt IS NULL
+				`).
 				Order("change_tx_lt ASC")).
 		Scan(ctx, &ret)
 	if err != nil {

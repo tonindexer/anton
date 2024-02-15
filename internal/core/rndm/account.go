@@ -91,6 +91,9 @@ func AddressStateContract(a *addr.Address, t abi.ContractName, minter *addr.Addr
 func AddressStateContractWithLT(a *addr.Address, t abi.ContractName, minter *addr.Address, lt uint64) *core.AccountState {
 	acc := AddressStateContract(a, t, minter)
 	acc.LastTxLT = lt
+	if t == "" {
+		acc.Types = nil
+	}
 	return acc
 }
 

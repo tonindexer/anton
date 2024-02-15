@@ -221,6 +221,21 @@ func TestRepository_GetAllAccountInterfaces(t *testing.T) {
 			},
 		}, {
 			accounts: []*core.AccountState{
+				rndm.AddressStateContractWithLT(a, "1", nil, 11),
+				rndm.AddressStateContractWithLT(a, "", nil, 12),
+				rndm.AddressStateContractWithLT(a, "2", nil, 13),
+				rndm.AddressStateContractWithLT(a, "", nil, 14),
+				rndm.AddressStateContractWithLT(a2, "1", nil, 10),
+				rndm.AddressStateContractWithLT(a2, "2", nil, 13),
+			},
+			result: map[uint64][]abi.ContractName{
+				11: {"1"},
+				12: nil,
+				13: {"2"},
+				14: nil,
+			},
+		}, {
+			accounts: []*core.AccountState{
 				rndm.AddressStateContractWithLT(a2, "1", nil, 10),
 				rndm.AddressStateContractWithLT(a2, "2", nil, 13),
 			},
