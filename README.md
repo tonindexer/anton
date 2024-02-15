@@ -103,17 +103,18 @@ cp .env.example .env
 nano .env
 ```
 
-| Name                 | Description                       | Default | Example                                                            |
-|----------------------|-----------------------------------|---------|--------------------------------------------------------------------|
-| `DB_NAME`            | Database name                     |         | idx                                                                |
-| `DB_USERNAME`        | Database username                 |         | user                                                               |
-| `DB_PASSWORD`        | Database password                 |         | pass                                                               |
-| `DB_CH_URL`          | Clickhouse URL to connect to      |         | clickhouse://clickhouse:9000/db_name?sslmode=disable               |
-| `DB_PG_URL`          | PostgreSQL URL to connect to      |         | postgres://username:password@postgres:5432/db_name?sslmode=disable |
-| `FROM_BLOCK`         | Master chain seq_no to start from | 1       | 23532000                                                           |
-| `WORKERS`            | Number of indexer workers         | 4       | 8                                                                  |
-| `LITESERVERS`        | Lite servers to connect to        |         | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=  |
-| `DEBUG_LOGS`         | Debug logs enabled                | false   | true                                                               |
+| Name             | Description                       | Default | Example                                                            |
+|------------------|-----------------------------------|---------|--------------------------------------------------------------------|
+| `DB_NAME`        | Database name                     |         | idx                                                                |
+| `DB_USERNAME`    | Database username                 |         | user                                                               |
+| `DB_PASSWORD`    | Database password                 |         | pass                                                               |
+| `DB_CH_URL`      | Clickhouse URL to connect to      |         | clickhouse://clickhouse:9000/db_name?sslmode=disable               |
+| `DB_PG_URL`      | PostgreSQL URL to connect to      |         | postgres://username:password@postgres:5432/db_name?sslmode=disable |
+| `FROM_BLOCK`     | Master chain seq_no to start from | 1       | 23532000                                                           |
+| `WORKERS`        | Number of indexer workers         | 4       | 8                                                                  |
+| `RESCAN_WORKERS` | Number of rescan workers          | 4       | 8                                                                  |
+| `LITESERVERS`    | Lite servers to connect to        |         | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=  |
+| `DEBUG_LOGS`     | Debug logs enabled                | false   | true                                                               |
 
 ### Building
 
@@ -160,7 +161,7 @@ You can add them through this command:
 docker compose exec web sh -c "anton contract /var/anton/known/*.json"
 ```
 
-### Schema migration
+### Database schema migration
 
 ```shell
 # run migrations service on running compose
@@ -209,13 +210,13 @@ docker compose                      \
 
 ## Using
 
-### Show archive nodes from global config
+### Showing archive nodes from global config
 
 ```shell
 docker run tonindexer/anton archive [--testnet]
 ```
 
-### Insert contract interface
+### Inserting contract interface
 
 ```shell
 # add from stdin
@@ -224,17 +225,31 @@ cat abi/known/tep81_dns.json | docker compose exec -T web anton contract --stdin
 docker compose exec web anton contract "/var/anton/known/tep81_dns.json"
 ```
 
-### Delete contract interface
+### Deleting contract interface
 
 ```shell
 docker compose exec web anton contract delete "dns_nft_item"
 ```
 
-### Add address label
+### Addding address label
 
 ```shell
 docker compose exec web anton label "EQDj5AA8mQvM5wJEQsFFFof79y3ZsuX6wowktWQFhz_Anton" "anton.tools"
 
 # known tonscan labels
 docker compose exec web anton label --tonscan
+```
+
+## Rescanning
+
+If you've modified a contract interface by adding new ones or deleting old ones, 
+you can reparse account states and messages.
+
+To accomplish this, create a task specifying the masterchain block number from which to start rescanning. 
+The rescan service will then iterate through the database data and update rows based on the new contract descriptions.
+
+### Adding a rescan task
+
+```shell
+docker compose exec web anton contract rescan 24400000
 ```
