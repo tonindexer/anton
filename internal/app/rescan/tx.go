@@ -8,11 +8,56 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
 
-func (s *Service) rescanMessage(ctx context.Context, master core.BlockID, msg *core.Message) *core.Message {
+func (s *Service) chooseInterfaces(updates map[uint64][]abi.ContractName, txLT uint64) (ret []abi.ContractName) {
+	if len(updates) == 0 {
+		return ret
+	}
+
+	var maxLT uint64
+	for updLT, types := range updates {
+		if updLT <= txLT && updLT > maxLT {
+			maxLT = updLT
+			ret = types
+		}
+	}
+	if ret != nil {
+		return ret
+	}
+
+	minLT := uint64(1 << 63)
+	for updLT, types := range updates {
+		if updLT < minLT {
+			minLT = updLT
+			ret = types
+		}
+	}
+	return ret
+}
+
+func (s *Service) getAccountStateForMessage(ctx context.Context, a addr.Address, txLT uint64) *core.AccountState {
+	interfaceUpdates, ok := s.interfacesCache.get(a)
+	if ok {
+		return &core.AccountState{Address: a, Types: s.chooseInterfaces(interfaceUpdates, txLT)}
+	}
+
+	interfaceUpdates, err := s.AccountRepo.GetAllAccountInterfaces(ctx, a)
+	if err != nil {
+		log.Error().Err(err).Str("addr", a.Base64()).Msg("get all account interfaces")
+		return nil
+	}
+
+	s.interfacesCache.put(a, interfaceUpdates)
+
+	return &core.AccountState{Address: a, Types: s.chooseInterfaces(interfaceUpdates, txLT)}
+}
+
+func (s *Service) rescanMessage(ctx context.Context, msg *core.Message) *core.Message {
 	// we must get account state's interfaces to properly determine message operation
 	// and to parse message accordingly
 
@@ -23,26 +68,10 @@ func (s *Service) rescanMessage(ctx context.Context, master core.BlockID, msg *c
 	// which was update just after the message was received
 
 	if msg.SrcState == nil {
-		msg.SrcState, _ = s.getRecentAccountState(ctx,
-			master,
-			core.BlockID{
-				Workchain: msg.SrcWorkchain,
-				Shard:     msg.SrcShard,
-				SeqNo:     msg.SrcBlockSeqNo,
-			},
-			msg.SrcAddress,
-			false)
+		msg.SrcState = s.getAccountStateForMessage(ctx, msg.SrcAddress, msg.SrcTxLT)
 	}
 	if msg.DstState == nil {
-		msg.DstState, _ = s.getRecentAccountState(ctx,
-			master,
-			core.BlockID{
-				Workchain: msg.DstWorkchain,
-				Shard:     msg.DstShard,
-				SeqNo:     msg.DstBlockSeqNo,
-			},
-			msg.DstAddress,
-			true)
+		msg.DstState = s.getAccountStateForMessage(ctx, msg.DstAddress, msg.DstTxLT)
 	}
 
 	update := *msg
@@ -69,18 +98,18 @@ func (s *Service) rescanMessage(ctx context.Context, master core.BlockID, msg *c
 	return &update
 }
 
-func (s *Service) rescanMessagesInBlock(ctx context.Context, master, b *core.Block) (updates []*core.Message) {
+func (s *Service) rescanMessagesInBlock(ctx context.Context, b *core.Block) (updates []*core.Message) {
 	for _, tx := range b.Transactions {
 		if tx.InMsg != nil {
 			tx.InMsg.DstState = tx.Account
-			if got := s.rescanMessage(ctx, master.ID(), tx.InMsg); got != nil {
+			if got := s.rescanMessage(ctx, tx.InMsg); got != nil {
 				updates = append(updates, got)
 			}
 		}
 
 		for _, out := range tx.OutMsg {
 			out.SrcState = tx.Account
-			if got := s.rescanMessage(ctx, master.ID(), out); got != nil {
+			if got := s.rescanMessage(ctx, out); got != nil {
 				updates = append(updates, got)
 			}
 		}
@@ -90,11 +119,11 @@ func (s *Service) rescanMessagesInBlock(ctx context.Context, master, b *core.Blo
 
 func (s *Service) rescanMessagesWorker(m *core.Block) (updates []*core.Message) {
 	for _, shard := range m.Shards {
-		upd := s.rescanMessagesInBlock(context.Background(), m, shard)
+		upd := s.rescanMessagesInBlock(context.Background(), shard)
 		updates = append(updates, upd...)
 	}
 
-	upd := s.rescanMessagesInBlock(context.Background(), m, m)
+	upd := s.rescanMessagesInBlock(context.Background(), m)
 	updates = append(updates, upd...)
 
 	return updates

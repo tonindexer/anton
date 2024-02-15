@@ -16,7 +16,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/filter"
 )
 
-func (s *Service) getRecentAccountState(ctx context.Context, master, b core.BlockID, a addr.Address, afterBlock bool) (*core.AccountState, error) {
+func (s *Service) getRecentAccountState(ctx context.Context, master, b core.BlockID, a addr.Address) (*core.AccountState, error) {
 	defer app.TimeTrack(time.Now(), "getLastSeenAccountState(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
 
 	var boundBlock core.BlockID
@@ -30,19 +30,13 @@ func (s *Service) getRecentAccountState(ctx context.Context, master, b core.Bloc
 	}
 
 	accountReq := filter.AccountsReq{
-		Addresses: []*addr.Address{&a},
-		Workchain: &boundBlock.Workchain,
-		Shard:     &boundBlock.Shard,
-		Limit:     1,
+		Addresses:     []*addr.Address{&a},
+		Workchain:     &boundBlock.Workchain,
+		Shard:         &boundBlock.Shard,
+		BlockSeqNoLeq: &boundBlock.SeqNo,
+		Order:         "DESC",
+		Limit:         1,
 	}
-	if afterBlock {
-		accountReq.BlockSeqNoBeq = &boundBlock.SeqNo
-		accountReq.Order = "ASC"
-	} else {
-		accountReq.BlockSeqNoLeq = &boundBlock.SeqNo
-		accountReq.Order = "DESC"
-	}
-
 	accountRes, err := s.AccountRepo.FilterAccounts(ctx, &accountReq)
 	if err != nil {
 		return nil, errors.Wrap(err, "filter accounts")
@@ -66,7 +60,7 @@ func (s *Service) rescanAccountsInBlock(master, b *core.Block) (updates []*core.
 		}
 
 		getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
-			return s.getRecentAccountState(ctx, master.ID(), b.ID(), a, false)
+			return s.getRecentAccountState(ctx, master.ID(), b.ID(), a)
 		}
 
 		update := *tx.Account

@@ -20,6 +20,8 @@ type Service struct {
 
 	masterShard int64
 
+	interfacesCache *interfacesCache
+
 	run bool
 	mx  sync.RWMutex
 	wg  sync.WaitGroup
@@ -34,6 +36,8 @@ func NewService(cfg *app.RescanConfig) *Service {
 	if s.Workers < 1 {
 		s.Workers = 1
 	}
+
+	s.interfacesCache = newInterfacesCache(16384) // number of addresses
 
 	return s
 }
