@@ -113,6 +113,9 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 	if f.BlockSeqNoLeq != nil {
 		q = q.Where(prefix+"block_seq_no <= ?", *f.BlockSeqNoLeq)
 	}
+	if f.BlockSeqNoBeq != nil {
+		q = q.Where(prefix+"block_seq_no >= ?", *f.BlockSeqNoBeq)
+	}
 
 	if len(f.ContractTypes) > 0 {
 		q = q.Where(prefix+"types && ?", pgdialect.Array(f.ContractTypes))
@@ -132,7 +135,11 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 		}
 	}
 	if f.Order != "" {
-		q = q.Order(statesTable + "last_tx_lt " + strings.ToUpper(f.Order))
+		orderBy := "last_tx_lt"
+		if f.BlockSeqNoLeq != nil || f.BlockSeqNoBeq != nil {
+			orderBy = "block_seq_no"
+		}
+		q = q.Order(statesTable + orderBy + " " + strings.ToUpper(f.Order))
 	}
 
 	if total < 100000 && f.LatestState {
