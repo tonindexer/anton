@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -11,6 +12,7 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository"
@@ -276,4 +278,52 @@ func (r *Repository) UpdateAccountStates(ctx context.Context, accounts []*core.A
 	}
 
 	return nil
+}
+
+func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address) (map[uint64][]abi.ContractName, error) {
+	var ret []struct {
+		ChangeTxLT uint64
+		Types      []abi.ContractName `bun:"type:text[],array"`
+	}
+
+	minTxLtSubQ := r.pg.NewSelect().Model((*core.AccountState)(nil)).
+		ColumnExpr("min(last_tx_lt)").
+		Where("address = ?", &a)
+
+	err := r.pg.NewSelect().Model((*core.AccountState)(nil)).
+		ColumnExpr("last_tx_lt AS change_tx_lt").
+		ColumnExpr("types").
+		Where("address = ? AND last_tx_lt = (?)", &a, minTxLtSubQ).
+		UnionAll(
+			r.pg.NewSelect().
+				TableExpr("(?) AS diff",
+					r.pg.NewSelect().Model((*core.AccountState)(nil)).
+						ColumnExpr("last_tx_lt AS tx_lt").
+						ColumnExpr("types").
+						ColumnExpr("lead(last_tx_lt) OVER (ORDER BY last_tx_lt ASC) AS next_tx_lt").
+						ColumnExpr("lead(types) OVER (ORDER BY last_tx_lt ASC) AS next_types").
+						Where("address = ?", &a).
+						Order("tx_lt ASC")).
+				ColumnExpr("CASE WHEN next_tx_lt IS NULL THEN tx_lt ELSE next_tx_lt END AS change_tx_lt").
+				ColumnExpr("CASE WHEN next_tx_lt IS NULL THEN types ELSE next_types END AS types").
+				Where("(NOT ((types @> next_types) AND (types <@ next_types))) OR next_tx_lt IS NULL").
+				Order("change_tx_lt ASC")).
+		Scan(ctx, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		lastInterfaces *[]abi.ContractName
+		res            = map[uint64][]abi.ContractName{}
+	)
+	for it := range ret {
+		if lastInterfaces != nil && reflect.DeepEqual(ret[it].Types, *lastInterfaces) {
+			continue
+		}
+		res[ret[it].ChangeTxLT] = ret[it].Types
+		lastInterfaces = &ret[it].Types
+	}
+
+	return res, nil
 }

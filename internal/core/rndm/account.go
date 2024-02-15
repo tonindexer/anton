@@ -88,6 +88,12 @@ func AddressStateContract(a *addr.Address, t abi.ContractName, minter *addr.Addr
 	return AddressState(a, types, minter)
 }
 
+func AddressStateContractWithLT(a *addr.Address, t abi.ContractName, minter *addr.Address, lt uint64) *core.AccountState {
+	acc := AddressStateContract(a, t, minter)
+	acc.LastTxLT = lt
+	return acc
+}
+
 func AddressStates(a *addr.Address, n int) (ret []*core.AccountState) {
 	for i := 0; i < n; i++ {
 		ret = append(ret, AddressState(a, nil, nil))

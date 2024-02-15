@@ -136,4 +136,8 @@ type AccountRepository interface {
 
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
 	UpdateAccountStates(ctx context.Context, states []*AccountState) error
+
+	// GetAllAccountInterfaces returns transaction LT, on which contract interface was updated.
+	// It also considers, that contract can be both upgraded and downgraded.
+	GetAllAccountInterfaces(context.Context, addr.Address) (map[uint64][]abi.ContractName, error)
 }
