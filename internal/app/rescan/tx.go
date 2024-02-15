@@ -71,9 +71,11 @@ func (s *Service) rescanMessage(ctx context.Context, master core.BlockID, msg *c
 
 func (s *Service) rescanMessagesInBlock(ctx context.Context, master, b *core.Block) (updates []*core.Message) {
 	for _, tx := range b.Transactions {
-		tx.InMsg.DstState = tx.Account
-		if got := s.rescanMessage(ctx, master.ID(), tx.InMsg); got != nil {
-			updates = append(updates, got)
+		if tx.InMsg != nil {
+			tx.InMsg.DstState = tx.Account
+			if got := s.rescanMessage(ctx, master.ID(), tx.InMsg); got != nil {
+				updates = append(updates, got)
+			}
 		}
 
 		for _, out := range tx.OutMsg {
