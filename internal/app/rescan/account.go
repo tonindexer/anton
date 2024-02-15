@@ -33,13 +33,14 @@ func (s *Service) getRecentAccountState(ctx context.Context, master, b core.Bloc
 		Addresses: []*addr.Address{&a},
 		Workchain: &boundBlock.Workchain,
 		Shard:     &boundBlock.Shard,
-		Order:     "DESC",
 		Limit:     1,
 	}
 	if afterBlock {
 		accountReq.BlockSeqNoBeq = &boundBlock.SeqNo
+		accountReq.Order = "ASC"
 	} else {
 		accountReq.BlockSeqNoLeq = &boundBlock.SeqNo
+		accountReq.Order = "DESC"
 	}
 
 	accountRes, err := s.AccountRepo.FilterAccounts(ctx, &accountReq)
