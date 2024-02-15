@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
+	"github.com/tonindexer/anton/abi/known"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
@@ -55,6 +56,11 @@ func (s *Service) getRecentAccountState(ctx context.Context, master, b core.Bloc
 func (s *Service) rescanAccountsInBlock(master, b *core.Block) (updates []*core.AccountState) {
 	for _, tx := range b.Transactions {
 		if tx.Account == nil {
+			continue
+		}
+		if known.IsOnlyWalletInterfaces(tx.Account.Types) {
+			// we do not want to emulate wallet get-methods once again,
+			// as there are lots of them, so it takes a lot of CPU usage
 			continue
 		}
 
