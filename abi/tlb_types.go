@@ -1,6 +1,8 @@
 package abi
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/big"
 	"reflect"
 
@@ -59,6 +61,80 @@ func (x *StringSnake) LoadFromCell(loader *cell.Slice) error {
 	return nil
 }
 
+type DedustAssetNative struct {
+	_ tlb.Magic `tlb:"$0000"`
+}
+
+type DedustAssetJetton struct {
+	_         tlb.Magic `tlb:"$0001"`
+	Workchain int8      `tlb:"## 8"`
+	Address   []byte    `tlb:"bits 256"`
+}
+
+type DedustAssetExtraCurrency struct {
+	_          tlb.Magic `tlb:"$0010"`
+	CurrencyID int32     `tlb:"## 32"`
+}
+
+type DedustAsset struct {
+	Asset any `tlb:"."`
+}
+
+func (x *DedustAsset) LoadFromCell(loader *cell.Slice) error {
+	pfx, err := loader.LoadUInt(4)
+	if err != nil {
+		return err
+	}
+
+	switch pfx {
+	case 0b0000:
+		x.Asset = (*DedustAssetNative)(nil)
+		return nil
+	case 0b0001:
+		x.Asset = new(DedustAssetJetton)
+		err = tlb.LoadFromCell(x.Asset, loader, true)
+		if err != nil {
+			return fmt.Errorf("failed to parse DedustAssetJetton: %w", err)
+		}
+		return nil
+	case 0b0010:
+		x.Asset = new(DedustAssetExtraCurrency)
+		err = tlb.LoadFromCell(x.Asset, loader, true)
+		if err != nil {
+			return fmt.Errorf("failed to parse DedustAssetExtraCurrency: %w", err)
+		}
+		return nil
+	}
+
+	return fmt.Errorf("unknown dedust asset type: %x", pfx)
+}
+
+func (x *DedustAsset) MarshalJSON() ([]byte, error) {
+	if x == nil || x.Asset == nil {
+		return json.Marshal(nil)
+	}
+
+	var ret struct {
+		Type       string `json:"type"`
+		Workchain  *int8  `json:"workchain,omitempty"`
+		Address    []byte `json:"address,omitempty"`
+		CurrencyID int32  `json:"currency_id,omitempty"`
+	}
+	switch v := x.Asset.(type) {
+	case *DedustAssetNative:
+		ret.Type = "native"
+	case *DedustAssetJetton:
+		ret.Type = "jetton"
+		ret.Workchain = &v.Workchain
+		ret.Address = v.Address
+	case *DedustAssetExtraCurrency:
+		ret.Type = "extra_currency"
+		ret.CurrencyID = v.CurrencyID
+	}
+
+	return json.Marshal(ret)
+}
+
 var (
 	typeNameRMap = map[reflect.Type]TLBType{
 		reflect.TypeOf([]uint8{}): TLBBytes,
@@ -82,6 +158,7 @@ var (
 		TLBAddr:        reflect.TypeOf((*address.Address)(nil)),
 		TLBString:      reflect.TypeOf((*StringSnake)(nil)),
 		"telemintText": reflect.TypeOf((*TelemintText)(nil)),
+		"dedustAsset":  reflect.TypeOf((*DedustAsset)(nil)),
 	}
 
 	registeredDefinitions = map[TLBType]TLBFieldsDesc{}
