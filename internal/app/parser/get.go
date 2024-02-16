@@ -505,7 +505,7 @@ func (s *Service) callPossibleGetMethods( //nolint:gocognit,gocyclo // yeah, it'
 					individualContent *cell.Cell
 				)
 				if !valid {
-					index, individualContent = exec.Returns[1].(*big.Int), exec.Returns[4].(*cell.Cell) //nolint:forcetypeassert // panic on wrong interface
+					index, individualContent = new(big.Int).SetBytes(exec.Returns[1].([]byte)), exec.Returns[4].(*cell.Cell) //nolint:forcetypeassert // panic on wrong interface
 				} else {
 					index, individualContent, err = s.prevGetMethodExecutionGetItemParams(&exec)
 					if err != nil {
