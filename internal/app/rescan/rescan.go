@@ -169,6 +169,8 @@ func (s *Service) filterBlocksForRescan(fromBlock, toBlock uint32, withMessages 
 	*req.Shard = s.masterShard
 	*req.AfterSeqNo = fromBlock - 1
 
+	defer app.TimeTrack(time.Now(), "filterBlocksForRescan(%d, %d, %t)", fromBlock-1, workers, withMessages)
+
 	res, err := s.BlockRepo.FilterBlocks(context.Background(), req)
 	if err != nil {
 		return nil, err
