@@ -168,6 +168,9 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 func (r *Repository) AddAddressLabel(ctx context.Context, label *core.AddressLabel) error {
 	_, err := r.pg.NewInsert().Model(label).Exec(ctx)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return errors.Wrap(core.ErrAlreadyExists, "address is already labeled")
+		}
 		return errors.Wrap(err, "pg insert label")
 	}
 	_, err = r.ch.NewInsert().Model(label).Exec(ctx)

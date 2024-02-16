@@ -45,6 +45,10 @@ func TestRepository_FilterLabels(t *testing.T) {
 		err := repo.AddAddressLabel(ctx, dead)
 		require.Nil(t, err)
 
+		err = repo.AddAddressLabel(ctx, dead)
+		require.NotNil(t, err)
+		require.True(t, errors.Is(err, core.ErrAlreadyExists))
+
 		err = repo.AddAddressLabel(ctx, beef)
 		require.Nil(t, err)
 
