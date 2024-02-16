@@ -115,7 +115,9 @@ func (s *Service) ParseAccountData(
 	for _, i := range interfaces {
 		acc.Types = append(acc.Types, i.Name)
 	}
-	acc.ExecutedGetMethods = map[abi.ContractName][]abi.GetMethodExecution{}
+	if acc.ExecutedGetMethods == nil {
+		acc.ExecutedGetMethods = map[abi.ContractName][]abi.GetMethodExecution{}
+	}
 
 	s.callPossibleGetMethods(ctx, acc, others, interfaces)
 
