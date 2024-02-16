@@ -109,7 +109,8 @@
           },
           {
             "name": "index",
-            "stack_type": "int"
+             "stack_type": "int",
+            "format": "bytes"
           },
           {
             "name": "collection_address",
