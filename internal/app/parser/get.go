@@ -62,7 +62,9 @@ func (s *Service) callGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *
 	retStack, err := e.RunGetMethod(ctx, d.Name, argsStack, d.ReturnValues)
 
 	ret = abi.GetMethodExecution{
-		Name: d.Name,
+		Name:         d.Name,
+		Arguments:    d.Arguments,
+		ReturnValues: d.ReturnValues,
 	}
 	for i := range argsStack {
 		ret.Receives = append(ret.Receives, argsStack[i].Payload)
