@@ -67,12 +67,8 @@ func (s *Service) rescanMessage(ctx context.Context, msg *core.Message) *core.Me
 	// for the destination of the given message, we take the account state of receiver,
 	// which was update just after the message was received
 
-	if msg.SrcState == nil {
-		msg.SrcState = s.getAccountStateForMessage(ctx, msg.SrcAddress, msg.SrcTxLT)
-	}
-	if msg.DstState == nil {
-		msg.DstState = s.getAccountStateForMessage(ctx, msg.DstAddress, msg.DstTxLT)
-	}
+	msg.SrcState = s.getAccountStateForMessage(ctx, msg.SrcAddress, msg.SrcTxLT)
+	msg.DstState = s.getAccountStateForMessage(ctx, msg.DstAddress, msg.DstTxLT)
 
 	update := *msg
 
@@ -101,14 +97,11 @@ func (s *Service) rescanMessage(ctx context.Context, msg *core.Message) *core.Me
 func (s *Service) rescanMessagesInBlock(ctx context.Context, b *core.Block) (updates []*core.Message) {
 	for _, tx := range b.Transactions {
 		if tx.InMsg != nil {
-			tx.InMsg.DstState = tx.Account
 			if got := s.rescanMessage(ctx, tx.InMsg); got != nil {
 				updates = append(updates, got)
 			}
 		}
-
 		for _, out := range tx.OutMsg {
-			out.SrcState = tx.Account
 			if got := s.rescanMessage(ctx, out); got != nil {
 				updates = append(updates, got)
 			}

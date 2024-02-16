@@ -117,7 +117,7 @@ func (s *Service) rescanRunTask(task *core.RescanTask, toBlock uint32) error {
 		if task.AccountsLastMaster == 0 {
 			task.AccountsLastMaster = task.StartFrom - 1
 		}
-		blocks, err := s.filterBlocksForRescan(task.AccountsLastMaster+1, toBlock, false)
+		blocks, err := s.filterBlocksForRescan(task.AccountsLastMaster+1, toBlock, true, false)
 		if err != nil {
 			return errors.Wrap(err, "filter blocks for account states rescan")
 		}
@@ -132,7 +132,7 @@ func (s *Service) rescanRunTask(task *core.RescanTask, toBlock uint32) error {
 		if task.MessagesLastMaster == 0 {
 			task.MessagesLastMaster = task.StartFrom - 1
 		}
-		blocks, err := s.filterBlocksForRescan(task.MessagesLastMaster+1, toBlock, true)
+		blocks, err := s.filterBlocksForRescan(task.MessagesLastMaster+1, toBlock, false, true)
 		if err != nil {
 			return errors.Wrap(err, "filter blocks for messages states rescan")
 		}
@@ -148,7 +148,7 @@ func (s *Service) rescanRunTask(task *core.RescanTask, toBlock uint32) error {
 	return nil
 }
 
-func (s *Service) filterBlocksForRescan(fromBlock, toBlock uint32, withMessages bool) ([]*core.Block, error) {
+func (s *Service) filterBlocksForRescan(fromBlock, toBlock uint32, withAccounts, withMessages bool) ([]*core.Block, error) {
 	workers := s.Workers
 	if delta := int(toBlock-fromBlock) + 1; delta < workers {
 		workers = delta
@@ -158,8 +158,9 @@ func (s *Service) filterBlocksForRescan(fromBlock, toBlock uint32, withMessages 
 		Workchain:                   new(int32),
 		Shard:                       new(int64),
 		WithShards:                  true,
-		WithTransactionAccountState: true,
-		WithTransactions:            true,
+		WithAccountStates:           withAccounts,
+		WithTransactionAccountState: withMessages,
+		WithTransactions:            withMessages,
 		WithTransactionMessages:     withMessages,
 		AfterSeqNo:                  new(uint32),
 		Order:                       "ASC",

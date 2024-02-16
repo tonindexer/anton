@@ -97,9 +97,15 @@ func (r *Repository) filterBlocks(ctx context.Context, f *filter.BlocksReq) (ret
 		if f.WithTransactions {
 			q = loadTransactions(q, "Shards.", f)
 		}
+		if f.WithAccountStates {
+			q = q.Relation("Shards.Accounts")
+		}
 	}
 	if f.WithTransactions {
 		q = loadTransactions(q, "", f)
+	}
+	if f.WithAccountStates {
+		q = q.Relation("Accounts")
 	}
 
 	if f.Workchain != nil {

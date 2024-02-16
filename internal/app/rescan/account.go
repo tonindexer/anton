@@ -49,11 +49,8 @@ func (s *Service) getRecentAccountState(ctx context.Context, master, b core.Bloc
 }
 
 func (s *Service) rescanAccountsInBlock(master, b *core.Block) (updates []*core.AccountState) {
-	for _, tx := range b.Transactions {
-		if tx.Account == nil {
-			continue
-		}
-		if known.IsOnlyWalletInterfaces(tx.Account.Types) {
+	for _, acc := range b.Accounts {
+		if known.IsOnlyWalletInterfaces(acc.Types) {
 			// we do not want to emulate wallet get-methods once again,
 			// as there are lots of them, so it takes a lot of CPU usage
 			continue
@@ -63,7 +60,7 @@ func (s *Service) rescanAccountsInBlock(master, b *core.Block) (updates []*core.
 			return s.getRecentAccountState(ctx, master.ID(), b.ID(), a)
 		}
 
-		update := *tx.Account
+		update := *acc
 
 		err := s.Parser.ParseAccountData(context.Background(), &update, getOtherAccountFunc)
 		if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
@@ -71,7 +68,7 @@ func (s *Service) rescanAccountsInBlock(master, b *core.Block) (updates []*core.
 			continue
 		}
 
-		if reflect.DeepEqual(tx.Account, &update) {
+		if reflect.DeepEqual(acc, &update) {
 			continue
 		}
 		updates = append(updates, &update)
