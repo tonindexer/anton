@@ -321,7 +321,38 @@ func (s *Service) getNFTItemContent(ctx context.Context, collection *core.Accoun
 	mapContentDataNFT(acc, exec.Returns[0])
 }
 
-func (s *Service) checkNFTMinter(ctx context.Context, collection *core.AccountState, idx *big.Int, itemAcc *core.AccountState) {
+func (s *Service) checkMinter(ctx context.Context, minter, item *core.AccountState, i abi.ContractName, desc *abi.GetMethodDesc, args []any) {
+	it, valid := s.checkPrevGetMethodExecution(i, desc, item, args)
+	if valid {
+		return // old get-method execution is valid
+	}
+	if it != -1 {
+		s.removePrevGetMethodExecution(i, it, item)
+	}
+
+	item.Fake = true
+
+	exec, err := s.callGetMethod(ctx, desc, minter, args)
+	if err != nil {
+		log.Error().Err(err).Msgf("execute %s %s get-method", desc.Name, i)
+		return
+	}
+
+	exec.Address = &minter.Address
+
+	item.ExecutedGetMethods[i] = append(item.ExecutedGetMethods[i], exec)
+	if exec.Error != "" {
+		log.Error().Err(err).Msgf("execute %s %s get-method", desc.Name, i)
+		return
+	}
+
+	itemAddr := addr.MustFromTonutils(exec.Returns[0].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+	if addr.Equal(itemAddr, &item.Address) {
+		item.Fake = false
+	}
+}
+
+func (s *Service) checkNFTMinter(ctx context.Context, minter *core.AccountState, idx *big.Int, item *core.AccountState) {
 	desc := &abi.GetMethodDesc{
 		Name: "get_nft_address_by_index",
 		Arguments: []abi.VmValueDesc{{
@@ -338,34 +369,7 @@ func (s *Service) checkNFTMinter(ctx context.Context, collection *core.AccountSt
 
 	args := []any{idx.Bytes()}
 
-	it, valid := s.checkPrevGetMethodExecution(known.NFTCollection, desc, itemAcc, args)
-	if valid {
-		return // old get-method execution is valid
-	}
-	if it != -1 {
-		s.removePrevGetMethodExecution(known.NFTCollection, it, itemAcc)
-	}
-
-	itemAcc.Fake = true
-
-	exec, err := s.callGetMethod(ctx, desc, collection, args)
-	if err != nil {
-		log.Error().Err(err).Msg("execute get_nft_address_by_index nft_collection get-method")
-		return
-	}
-
-	exec.Address = &collection.Address
-
-	itemAcc.ExecutedGetMethods[known.NFTCollection] = append(itemAcc.ExecutedGetMethods[known.NFTCollection], exec)
-	if exec.Error != "" {
-		log.Error().Err(err).Msg("execute get_nft_address_by_index nft_collection get-method")
-		return
-	}
-
-	itemAddr := addr.MustFromTonutils(exec.Returns[0].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-	if addr.Equal(itemAddr, &itemAcc.Address) {
-		itemAcc.Fake = false
-	}
+	s.checkMinter(ctx, minter, item, known.NFTCollection, desc, args)
 }
 
 func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountState, ownerAddr *addr.Address, walletAcc *core.AccountState) {
@@ -385,34 +389,7 @@ func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountSta
 
 	args := []any{ownerAddr.MustToTonutils()}
 
-	it, valid := s.checkPrevGetMethodExecution(known.JettonMinter, desc, walletAcc, args)
-	if valid {
-		return // old get-method execution is valid
-	}
-	if it != -1 {
-		s.removePrevGetMethodExecution(known.JettonMinter, it, walletAcc)
-	}
-
-	walletAcc.Fake = true
-
-	exec, err := s.callGetMethod(ctx, desc, minter, args)
-	if err != nil {
-		log.Error().Err(err).Msg("execute get_wallet_address jetton_minter get-method")
-		return
-	}
-
-	exec.Address = &minter.Address
-
-	walletAcc.ExecutedGetMethods[known.JettonMinter] = append(walletAcc.ExecutedGetMethods[known.JettonMinter], exec)
-	if exec.Error != "" {
-		log.Error().Err(err).Msg("execute get_wallet_address jetton_minter get-method")
-		return
-	}
-
-	walletAddr := addr.MustFromTonutils(exec.Returns[0].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-	if addr.Equal(walletAddr, &walletAcc.Address) {
-		walletAcc.Fake = false
-	}
+	s.checkMinter(ctx, minter, walletAcc, known.JettonMinter, desc, args)
 }
 
 func (s *Service) callPossibleGetMethods( //nolint:gocognit // yeah, it's too long
