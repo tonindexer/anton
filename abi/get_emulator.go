@@ -21,6 +21,8 @@ import (
 	tutlb "github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/nft"
 	"github.com/xssnick/tonutils-go/tvm/cell"
+
+	"github.com/tonindexer/anton/addr"
 )
 
 type VmValue struct {
@@ -32,6 +34,8 @@ type VmStack []VmValue
 
 type GetMethodExecution struct {
 	Name string `json:"name,omitempty"`
+
+	Address *addr.Address `json:"address,omitempty"`
 
 	Arguments []VmValueDesc `json:"arguments,omitempty"`
 	Receives  []any         `json:"receives,omitempty"`
