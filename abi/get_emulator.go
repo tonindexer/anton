@@ -53,8 +53,8 @@ type Emulator struct {
 	AccountID tongo.AccountID
 }
 
-func newEmulator(addr *address.Address, e *tvm.Emulator) (*Emulator, error) {
-	accId, err := ton.AccountIDFromBase64Url(addr.String())
+func newEmulator(a *address.Address, e *tvm.Emulator) (*Emulator, error) {
+	accId, err := ton.AccountIDFromBase64Url(a.String())
 	if err != nil {
 		return nil, errors.Wrap(err, "parse address")
 	}
@@ -62,7 +62,7 @@ func newEmulator(addr *address.Address, e *tvm.Emulator) (*Emulator, error) {
 	return &Emulator{Emulator: e, AccountID: accId}, nil
 }
 
-func NewEmulator(addr *address.Address, code, data, cfg *cell.Cell) (*Emulator, error) {
+func NewEmulator(a *address.Address, code, data, cfg *cell.Cell) (*Emulator, error) {
 	e, err := tvm.NewEmulatorFromBOCsBase64(
 		base64.StdEncoding.EncodeToString(code.ToBOC()),
 		base64.StdEncoding.EncodeToString(data.ToBOC()),
@@ -71,10 +71,10 @@ func NewEmulator(addr *address.Address, code, data, cfg *cell.Cell) (*Emulator, 
 	if err != nil {
 		return nil, err
 	}
-	return newEmulator(addr, e)
+	return newEmulator(a, e)
 }
 
-func NewEmulatorBase64(addr *address.Address, code, data, cfg, libraries string) (*Emulator, error) {
+func NewEmulatorBase64(a *address.Address, code, data, cfg, libraries string) (*Emulator, error) {
 	var (
 		e   *tvm.Emulator
 		err error
@@ -97,7 +97,7 @@ func NewEmulatorBase64(addr *address.Address, code, data, cfg, libraries string)
 		return nil, err
 	}
 
-	return newEmulator(addr, e)
+	return newEmulator(a, e)
 }
 
 func vmMakeValueInt(v *VmValue) (ret tlb.VmStackValue, _ error) {
