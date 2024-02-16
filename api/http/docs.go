@@ -604,6 +604,18 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "description": "from timestamp",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "to timestamp",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
                         "maximum": 1000000,
                         "type": "integer",
                         "default": 25,
@@ -954,6 +966,12 @@ const docTemplate = `{
         "abi.GetMethodExecution": {
             "type": "object",
             "properties": {
+                "address": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "arguments": {
                     "type": "array",
                     "items": {
@@ -1428,6 +1446,12 @@ const docTemplate = `{
                 "last_tx_lt": {
                     "type": "integer"
                 },
+                "libraries": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "minter_address": {
                     "type": "array",
                     "items": {
@@ -1492,6 +1516,12 @@ const docTemplate = `{
         "core.Block": {
             "type": "object",
             "properties": {
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.AccountState"
+                    }
+                },
                 "file_hash": {
                     "type": "array",
                     "items": {

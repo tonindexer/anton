@@ -2,6 +2,7 @@ package aggregate
 
 import (
 	"context"
+	"time"
 
 	"github.com/uptrace/bun/extra/bunbig"
 
@@ -10,6 +11,9 @@ import (
 
 type MessagesReq struct {
 	Address *addr.Address
+
+	From time.Time `form:"from"`
+	To   time.Time `form:"to"`
 
 	OrderBy string `form:"order_by"` // amount / count
 	Limit   int    `form:"limit"`

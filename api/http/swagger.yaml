@@ -15,6 +15,10 @@ definitions:
     type: object
   abi.GetMethodExecution:
     properties:
+      address:
+        items:
+          type: integer
+        type: array
       arguments:
         items:
           $ref: '#/definitions/abi.VmValueDesc'
@@ -334,6 +338,10 @@ definitions:
         type: array
       last_tx_lt:
         type: integer
+      libraries:
+        items:
+          type: integer
+        type: array
       minter_address:
         items:
           type: integer
@@ -377,6 +385,10 @@ definitions:
     type: object
   core.Block:
     properties:
+      accounts:
+        items:
+          $ref: '#/definitions/core.AccountState'
+        type: array
       file_hash:
         items:
           type: integer
@@ -1140,6 +1152,14 @@ paths:
         in: query
         name: order_by
         required: true
+        type: string
+      - description: from timestamp
+        in: query
+        name: from
+        type: string
+      - description: to timestamp
+        in: query
+        name: to
         type: string
       - default: 25
         description: limit
