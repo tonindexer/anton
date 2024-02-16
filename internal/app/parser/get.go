@@ -394,7 +394,53 @@ func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountSta
 	s.checkMinter(ctx, minter, walletAcc, known.JettonMinter, desc, args)
 }
 
-func (s *Service) callPossibleGetMethods( //nolint:gocognit // yeah, it's too long
+func (s *Service) prevGetMethodExecutionGetItemParams(exec *abi.GetMethodExecution) (index *big.Int, individualContent *cell.Cell, err error) {
+	var ok bool
+
+	if len(exec.Returns) < 5 {
+		return nil, nil, fmt.Errorf("not enough return values: %d", len(exec.Returns))
+	}
+
+	switch ret := exec.Returns[1].(type) {
+	case string:
+		if len(exec.ReturnValues) > 2 && exec.ReturnValues[1].Format == "bytes" {
+			indexBytes, err := base64.StdEncoding.DecodeString(ret)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "decode item index b64 from %s", ret)
+			}
+			index = new(big.Int).SetBytes(indexBytes)
+		} else {
+			index, ok = new(big.Int).SetString(ret, 10)
+			if !ok {
+				return nil, nil, errors.Wrapf(err, "cannot set string from %s", ret)
+			}
+		}
+
+	case float64:
+		index = big.NewInt(int64(ret))
+
+	default:
+		return nil, nil, fmt.Errorf("cannot convert %s type to item index", reflect.TypeOf(ret))
+	}
+
+	switch ret := exec.Returns[4].(type) {
+	case string:
+		boc, err := base64.StdEncoding.DecodeString(ret)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "decode item content b64 from %s", ret)
+		}
+		individualContent, err = cell.FromBOC(boc)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "cannot make cell from boc")
+		}
+	default:
+		return nil, nil, fmt.Errorf("cannot convert %s type to item individual content", reflect.TypeOf(ret))
+	}
+
+	return index, individualContent, nil
+}
+
+func (s *Service) callPossibleGetMethods( //nolint:gocognit,gocyclo // yeah, it's too long
 	ctx context.Context,
 	acc *core.AccountState,
 	others func(context.Context, addr.Address) (*core.AccountState, error),
@@ -423,7 +469,7 @@ func (s *Service) callPossibleGetMethods( //nolint:gocognit // yeah, it's too lo
 				exec, err = s.callGetMethodNoArgs(ctx, i, d.Name, acc)
 				if err != nil {
 					log.Error().Err(err).Str("contract_name", string(i.Name)).Str("get_method", d.Name).Msg("execute get-method")
-					return
+					continue
 				}
 			}
 
@@ -434,12 +480,16 @@ func (s *Service) callPossibleGetMethods( //nolint:gocognit // yeah, it's too lo
 
 			switch d.Name {
 			case "get_collection_data":
-				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-				mapContentDataNFT(acc, exec.Returns[1])
+				if !valid {
+					acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+					mapContentDataNFT(acc, exec.Returns[1])
+				}
 
 			case "get_nft_data":
-				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[3].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
+				if !valid {
+					acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+					acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[3].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
+				}
 
 				if acc.MinterAddress == nil {
 					continue
@@ -449,16 +499,38 @@ func (s *Service) callPossibleGetMethods( //nolint:gocognit // yeah, it's too lo
 					log.Error().Str("minter_address", acc.MinterAddress.Base64()).Err(err).Msg("get nft collection state")
 					return
 				}
-				s.getNFTItemContent(ctx, collection, exec.Returns[1].(*big.Int), exec.Returns[4].(*cell.Cell), acc) //nolint:forcetypeassert // panic on wrong interface
-				s.checkNFTMinter(ctx, collection, exec.Returns[1].(*big.Int), acc)                                  //nolint:forcetypeassert // panic on wrong interface
+
+				var (
+					index             *big.Int
+					individualContent *cell.Cell
+				)
+				if !valid {
+					index, individualContent = exec.Returns[1].(*big.Int), exec.Returns[4].(*cell.Cell) //nolint:forcetypeassert // panic on wrong interface
+				} else {
+					index, individualContent, err = s.prevGetMethodExecutionGetItemParams(&exec)
+					if err != nil {
+						log.Error().Err(err).
+							Str("address", acc.Address.Base64()).
+							Str("minter_address", acc.MinterAddress.Base64()).
+							Msg("cannot get item index and individual content from previous get-method execution")
+						continue
+					}
+				}
+
+				s.getNFTItemContent(ctx, collection, index, individualContent, acc)
+				s.checkNFTMinter(ctx, collection, index, acc)
 
 			case "get_jetton_data":
-				mapContentDataNFT(acc, exec.Returns[3])
+				if !valid {
+					mapContentDataNFT(acc, exec.Returns[3])
+				}
 
 			case "get_wallet_data":
-				acc.JettonBalance = bunbig.FromMathBig(exec.Returns[0].(*big.Int))            //nolint:forcetypeassert // panic on wrong interface
-				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[1].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
-				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+				if !valid {
+					acc.JettonBalance = bunbig.FromMathBig(exec.Returns[0].(*big.Int))            //nolint:forcetypeassert // panic on wrong interface
+					acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[1].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
+					acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+				}
 
 				if acc.MinterAddress == nil || acc.OwnerAddress == nil {
 					continue

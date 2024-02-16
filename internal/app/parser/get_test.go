@@ -147,6 +147,51 @@ func TestService_checkPrevGetMethodExecution(t *testing.T) {
 	"arguments": [
 		{
 			"name": "index",
+			"stack_type": "int"
+		}
+	],
+	"return_values": [
+		{
+			"name": "address",
+			"stack_type": "slice",
+			"format": "addr"
+		}
+	]
+}`,
+			executedJson: `
+{
+	"name": "get_nft_address_by_index",
+	"arguments": [
+		{
+			"name": "index",
+			"stack_type": "int"
+		}
+	],
+	"receives": [
+		10
+	],
+	"return_values": [
+		{
+			"name": "address",
+			"stack_type": "slice",
+			"format": "addr"
+		}
+	],
+	"returns": [
+		"EQDHVwNhkIvqS3tJf0ScpM2kGd0Yi0PgGf_lZ1Vh0m7AyWD3"
+	]
+}`,
+			args:   []any{big.NewInt(10)},
+			result: true,
+		},
+		{
+			contract: "nft_collection",
+			descJson: `
+{
+	"name": "get_nft_address_by_index",
+	"arguments": [
+		{
+			"name": "index",
 			"stack_type": "int",
 			"format": "bytes"
 		}
