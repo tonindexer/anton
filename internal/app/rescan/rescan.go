@@ -155,16 +155,15 @@ func (s *Service) filterBlocksForRescan(fromBlock, toBlock uint32, withAccounts,
 	}
 
 	req := &filter.BlocksReq{
-		Workchain:                   new(int32),
-		Shard:                       new(int64),
-		WithShards:                  true,
-		WithAccountStates:           withAccounts,
-		WithTransactionAccountState: withMessages,
-		WithTransactions:            withMessages,
-		WithTransactionMessages:     withMessages,
-		AfterSeqNo:                  new(uint32),
-		Order:                       "ASC",
-		Limit:                       workers,
+		Workchain:               new(int32),
+		Shard:                   new(int64),
+		WithShards:              true,
+		WithAccountStates:       withAccounts,
+		WithTransactions:        withMessages,
+		WithTransactionMessages: withMessages,
+		AfterSeqNo:              new(uint32),
+		Order:                   "ASC",
+		Limit:                   workers,
 	}
 	*req.Workchain = -1
 	*req.Shard = s.masterShard
