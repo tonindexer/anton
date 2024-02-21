@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 
 	"github.com/tonindexer/anton/internal/core"
@@ -55,7 +56,7 @@ func (r *Repository) countTransactions(ctx context.Context, ret []*core.Block) e
 		Group("workchain", "shard", "block_seq_no").
 		Scan(ctx, &res)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "count transactions for each block")
 	}
 
 	var counts = make(map[int32]map[int64]map[uint32]int)
