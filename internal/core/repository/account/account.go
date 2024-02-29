@@ -285,37 +285,38 @@ func (r *Repository) UpdateAccountStates(ctx context.Context, accounts []*core.A
 
 func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address) (map[uint64][]abi.ContractName, error) {
 	var ret []struct {
-		ChangeTxLT uint64
-		Types      []abi.ContractName `bun:"type:text[],array"`
+		ChangeTxLT  int64
+		ChangeTypes []abi.ContractName `ch:"type:Array(String)" `
 	}
 
-	minTxLtSubQ := r.pg.NewSelect().Model((*core.AccountState)(nil)).
+	minTxLtSubQ := r.ch.NewSelect().Model((*core.AccountState)(nil)).
 		ColumnExpr("min(last_tx_lt)").
 		Where("address = ?", &a)
 
-	err := r.pg.NewSelect().Model((*core.AccountState)(nil)).
-		ColumnExpr("last_tx_lt AS change_tx_lt").
-		ColumnExpr("types").
-		Where("address = ? AND last_tx_lt = (?)", &a, minTxLtSubQ).
-		UnionAll(
-			r.pg.NewSelect().
-				TableExpr("(?) AS diff",
-					r.pg.NewSelect().Model((*core.AccountState)(nil)).
-						ColumnExpr("last_tx_lt AS tx_lt").
-						ColumnExpr("types").
-						ColumnExpr("lead(last_tx_lt) OVER (ORDER BY last_tx_lt ASC) AS next_tx_lt").
-						ColumnExpr("lead(types) OVER (ORDER BY last_tx_lt ASC) AS next_types").
-						Where("address = ?", &a).
-						Order("tx_lt ASC")).
-				ColumnExpr("CASE WHEN next_tx_lt IS NULL THEN tx_lt ELSE next_tx_lt END AS change_tx_lt").
-				ColumnExpr("CASE WHEN next_tx_lt IS NULL THEN types ELSE next_types END AS types").
-				Where(`
-					(NOT ((types @> next_types) AND (types <@ next_types))) OR
-					(types IS NULL AND next_types IS NOT NULL) OR
-					(types IS NOT NULL AND next_types IS NULL) OR
-					next_tx_lt IS NULL
-				`).
-				Order("change_tx_lt ASC")).
+	err := r.ch.NewSelect().
+		TableExpr("(?) AS sq", r.ch.NewSelect().Model((*core.AccountState)(nil)).
+			ColumnExpr("last_tx_lt AS change_tx_lt").
+			ColumnExpr("types AS change_types").
+			Where("address = ? AND last_tx_lt = (?)", &a, minTxLtSubQ).
+			UnionAll(
+				r.ch.NewSelect().
+					TableExpr("(?) AS diff",
+						r.ch.NewSelect().Model((*core.AccountState)(nil)).
+							ColumnExpr("last_tx_lt AS tx_lt").
+							ColumnExpr("types").
+							ColumnExpr("leadInFrame(last_tx_lt) OVER (ORDER BY last_tx_lt ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS next_tx_lt").
+							ColumnExpr("leadInFrame(types)      OVER (ORDER BY last_tx_lt ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS next_types").
+							Where("address = ?", &a).
+							Order("tx_lt ASC")).
+					ColumnExpr("if(next_tx_lt = 0, tx_lt, next_tx_lt) AS change_tx_lt").
+					ColumnExpr("if(next_tx_lt = 0, types, next_types) AS change_types").
+					Where(`
+						(NOT (hasAll(types, next_types) AND hasAll(types, next_types))) OR
+						(length(types) = 0 AND length(next_types) != 0) OR
+						(length(types) != 0 AND length(next_types) = 0) OR
+						next_tx_lt = 0`).
+					Order("change_tx_lt ASC"))).
+		Order("change_tx_lt ASC").
 		Scan(ctx, &ret)
 	if err != nil {
 		return nil, err
@@ -326,11 +327,11 @@ func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address
 		res            = map[uint64][]abi.ContractName{}
 	)
 	for it := range ret {
-		if lastInterfaces != nil && reflect.DeepEqual(ret[it].Types, *lastInterfaces) {
+		if lastInterfaces != nil && reflect.DeepEqual(ret[it].ChangeTypes, *lastInterfaces) {
 			continue
 		}
-		res[ret[it].ChangeTxLT] = ret[it].Types
-		lastInterfaces = &ret[it].Types
+		res[uint64(ret[it].ChangeTxLT)] = ret[it].ChangeTypes
+		lastInterfaces = &ret[it].ChangeTypes
 	}
 
 	return res, nil

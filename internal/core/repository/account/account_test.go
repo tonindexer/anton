@@ -230,9 +230,9 @@ func TestRepository_GetAllAccountInterfaces(t *testing.T) {
 			},
 			result: map[uint64][]abi.ContractName{
 				11: {"1"},
-				12: nil,
+				12: {},
 				13: {"2"},
-				14: nil,
+				14: {},
 			},
 		}, {
 			accounts: []*core.AccountState{
