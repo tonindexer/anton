@@ -63,15 +63,10 @@ func newEmulator(a *address.Address, e *tvm.Emulator) (*Emulator, error) {
 }
 
 func NewEmulator(a *address.Address, code, data, cfg *cell.Cell) (*Emulator, error) {
-	e, err := tvm.NewEmulatorFromBOCsBase64(
+	return NewEmulatorBase64(a,
 		base64.StdEncoding.EncodeToString(code.ToBOC()),
 		base64.StdEncoding.EncodeToString(data.ToBOC()),
-		base64.StdEncoding.EncodeToString(cfg.ToBOC()),
-	)
-	if err != nil {
-		return nil, err
-	}
-	return newEmulator(a, e)
+		base64.StdEncoding.EncodeToString(cfg.ToBOC()), "")
 }
 
 func NewEmulatorBase64(a *address.Address, code, data, cfg, libraries string) (*Emulator, error) {
@@ -80,19 +75,12 @@ func NewEmulatorBase64(a *address.Address, code, data, cfg, libraries string) (*
 		err error
 	)
 
+	args := []tvm.Option{tvm.WithVerbosityLevel(txemulator.PrintsAllStackValuesForCommand)}
 	if libraries != "" {
-		e, err = tvm.NewEmulatorFromBOCsBase64(
-			code,
-			data,
-			cfg,
-			tvm.WithLazyC7Optimization(),
-			tvm.WithLibrariesBase64(libraries),
-			tvm.WithVerbosityLevel(txemulator.PrintsAllStackValuesForCommand),
-		)
-	} else {
-		e, err = tvm.NewEmulatorFromBOCsBase64(code, data, cfg, tvm.WithLazyC7Optimization(), tvm.WithVerbosityLevel(txemulator.PrintsAllStackValuesForCommand))
+		args = append(args, tvm.WithLibrariesBase64(libraries))
 	}
 
+	e, err = tvm.NewEmulatorFromBOCsBase64(code, data, cfg, args...)
 	if err != nil {
 		return nil, err
 	}
