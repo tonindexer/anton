@@ -24,6 +24,8 @@ type AccountsReq struct {
 	Addresses   []*addr.Address // `form:"addresses"`
 	LatestState bool            `form:"latest"`
 
+	StateIDs []*core.AccountStateID
+
 	// filter by block
 	Workchain     *int32
 	Shard         *int64

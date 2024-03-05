@@ -258,6 +258,16 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		require.Equal(t, []*core.AccountState{latestState}, results.Rows)
 	})
 
+	t.Run("filter by account state ids", func(t *testing.T) {
+		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			StateIDs: []*core.AccountStateID{{Address: latestState.Address, LastTxLT: latestState.LastTxLT}},
+			Order:    "DESC", Limit: 1,
+		})
+		require.Nil(t, err)
+		require.Equal(t, 0, results.Total)
+		require.Equal(t, []*core.AccountState{latestState}, results.Rows)
+	})
+
 	t.Run("drop tables again", func(t *testing.T) {
 		dropTables(t)
 	})

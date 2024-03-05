@@ -76,6 +76,13 @@ func (r *Repository) FilterLabels(ctx context.Context, f *filter.LabelsReq) (*fi
 	return res, nil
 }
 
+func flattenStateIDs(ids []*core.AccountStateID) (ret [][]any) {
+	for _, id := range ids {
+		ret = append(ret, []any{&id.Address, id.LastTxLT})
+	}
+	return
+}
+
 func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq, total int) (ret []*core.AccountState, err error) { //nolint:gocyclo // that's ok
 	var (
 		q                   *bun.SelectQuery
@@ -102,6 +109,9 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 
 	if len(f.Addresses) > 0 {
 		q = q.Where(statesTable+"address in (?)", bun.In(f.Addresses))
+	}
+	if len(f.StateIDs) > 0 {
+		q = q.Where("("+statesTable+"address, "+statesTable+"last_tx_lt) IN (?)", bun.In(flattenStateIDs(f.StateIDs)))
 	}
 
 	if f.Workchain != nil {
@@ -172,6 +182,9 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 	if len(f.Addresses) > 0 {
 		q = q.Where("address in (?)", ch.In(f.Addresses))
 	}
+	if len(f.StateIDs) > 0 {
+		return 0, errors.Wrap(core.ErrNotImplemented, "do not count on filter by account state ids")
+	}
 
 	if f.Workchain != nil {
 		q = q.Where("workchain = ?", *f.Workchain)
@@ -224,10 +237,10 @@ func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) 
 	}
 
 	res.Total, err = r.countAccountStates(ctx, f)
-	if err != nil {
+	if err != nil && !errors.Is(err, core.ErrNotImplemented) {
 		return res, err
 	}
-	if res.Total == 0 {
+	if res.Total == 0 && !errors.Is(err, core.ErrNotImplemented) {
 		return res, nil
 	}
 

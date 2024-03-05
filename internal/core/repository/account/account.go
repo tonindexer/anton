@@ -283,6 +283,78 @@ func (r *Repository) UpdateAccountStates(ctx context.Context, accounts []*core.A
 	return nil
 }
 
+func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
+	contractName abi.ContractName,
+	addresses []*addr.Address,
+	codeHash []byte,
+	getMethodHashes []int32,
+	afterAddress *addr.Address,
+	afterTxLt uint64,
+	limit int,
+) ([]*core.AccountStateID, error) {
+	var ids []*core.AccountStateID
+
+	q := r.ch.NewSelect().Model((*core.AccountState)(nil)).
+		ColumnExpr("address").
+		ColumnExpr("last_tx_lt").
+		WhereGroup(" AND ", func(q *ch.SelectQuery) *ch.SelectQuery {
+			if contractName != "" {
+				q = q.WhereOr("contract_name = ?", contractName)
+			}
+			if len(addresses) > 0 {
+				q = q.WhereOr("address IN (?)", addresses)
+			}
+			if len(codeHash) > 0 {
+				q = q.WhereOr("code_hash = ?", codeHash)
+			}
+			if len(addresses) == 0 && len(codeHash) == 0 && len(getMethodHashes) > 0 {
+				// match by get-method hashes only if addresses and code_hash are not set
+				q = q.WhereOr("hasAll(get_method_hashes, [?])", ch.In(getMethodHashes))
+			}
+			return q
+		})
+	if afterAddress != nil && afterTxLt != 0 {
+		q = q.Where("(address, after_tx_lt) > (?, ?)", afterAddress, afterTxLt)
+	}
+	err := q.
+		Order("address ASC, last_tx_lt ASC").
+		Limit(limit).
+		Scan(ctx, &ids)
+	if err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
+// GetAddressesByContractName returns addresses with matched contract name
+// and min(tx_lt), max(tx_lt) of the matched account states.
+func (r *Repository) GetAddressesByContractName(ctx context.Context,
+	contractName abi.ContractName,
+	afterAddress *addr.Address,
+	limit int,
+) ([]*core.AccountStatesInterval, error) {
+	var intervals []*core.AccountStatesInterval
+
+	q := r.ch.NewSelect().Model((*core.AccountState)(nil)).
+		ColumnExpr("address").
+		ColumnExpr("min(last_tx_lt) as min_tx_lt").
+		ColumnExpr("max(last_tx_lt) as max_tx_lt").
+		Where("contract_name = ?", contractName)
+	if afterAddress != nil {
+		q = q.Where("address > ?", afterAddress)
+	}
+	err := q.
+		Order("address ASC, last_tx_lt ASC").
+		Limit(limit).
+		Scan(ctx, &intervals)
+	if err != nil {
+		return nil, err
+	}
+
+	return intervals, nil
+}
+
 func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address) (map[uint64][]abi.ContractName, error) {
 	var ret []struct {
 		ChangeTxLT  int64
