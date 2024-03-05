@@ -51,16 +51,21 @@ func dropTables(t testing.TB) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	_, err := pg.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
+	_, err := pg.NewDropTable().Model((*core.RescanTask)(nil)).IfExists().Exec(ctx)
+	require.Nil(t, err)
+	_, err = pg.NewDropTable().Model((*core.ContractOperation)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.ContractInterface)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.ContractDefinition)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
-	_, err = pg.NewDropTable().Model((*core.RescanTask)(nil)).IfExists().Exec(ctx)
-	require.Nil(t, err)
 
 	_, err = pg.ExecContext(context.Background(), "DROP TYPE message_type")
+	if err != nil && !strings.Contains(err.Error(), "does not exist") {
+		t.Fatal(err)
+	}
+
+	_, err = pg.ExecContext(context.Background(), "DROP TYPE rescan_task_type")
 	if err != nil && !strings.Contains(err.Error(), "does not exist") {
 		t.Fatal(err)
 	}
@@ -235,6 +240,39 @@ func TestRepository_AddContracts(t *testing.T) {
 func TestRepository_CreateNewRescanTask(t *testing.T) {
 	initdb(t)
 
+	i := &core.ContractInterface{
+		Name:      known.NFTItem,
+		Addresses: []*addr.Address{rndm.Address()},
+		Code:      rndm.Bytes(128),
+		GetMethodsDesc: []abi.GetMethodDesc{
+			{
+				Name: "get_nft_content",
+				Arguments: []abi.VmValueDesc{
+					{
+						Name:      "index",
+						StackType: "int",
+					}, {
+						Name:      "individual_content",
+						StackType: "cell",
+					},
+				},
+				ReturnValues: []abi.VmValueDesc{
+					{
+						Name:      "full_content",
+						StackType: "cell",
+						Format:    "content",
+					},
+				},
+			},
+		},
+		GetMethodHashes: rndm.GetMethodHashes(),
+	}
+
+	task := core.RescanTask{
+		Type:         core.AddInterface,
+		ContractName: known.NFTItem,
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -246,24 +284,22 @@ func TestRepository_CreateNewRescanTask(t *testing.T) {
 		createTables(t)
 	})
 
-	t.Run("create new task", func(t *testing.T) {
-		err := repo.CreateNewRescanTask(ctx, 10)
-		require.NoError(t, err)
+	t.Run("insert interface", func(t *testing.T) {
+		err := repo.AddInterface(ctx, i)
+		require.Nil(t, err)
 	})
 
-	t.Run("get 'already exists' error on second creation of unfinished task", func(t *testing.T) {
-		err := repo.CreateNewRescanTask(ctx, 10)
-		require.Error(t, err)
-		require.True(t, errors.Is(err, core.ErrAlreadyExists))
+	t.Run("create new task", func(t *testing.T) {
+		err := repo.CreateNewRescanTask(ctx, &task)
+		require.NoError(t, err)
 	})
 
 	t.Run("update unfinished task", func(t *testing.T) {
 		tx, task, err := repo.GetUnfinishedRescanTask(ctx)
 		require.NoError(t, err)
 
-		task.AccountsRescanDone = true
-		task.AccountsLastMaster = 30
-		task.MessagesLastMaster = 20
+		task.LastAddress = i.Addresses[0]
+		task.LastTxLt = 10
 
 		err = repo.SetRescanTask(ctx, tx, task)
 		require.NoError(t, err)
@@ -272,9 +308,11 @@ func TestRepository_CreateNewRescanTask(t *testing.T) {
 	t.Run("finish task", func(t *testing.T) {
 		tx, task, err := repo.GetUnfinishedRescanTask(ctx)
 		require.NoError(t, err)
+		require.Equal(t, i.Addresses[0], task.LastAddress)
+		require.Equal(t, uint64(10), task.LastTxLt)
 
-		task.MessagesRescanDone = true
-		task.MessagesLastMaster = 30
+		task.LastAddress = i.Addresses[0]
+		task.LastTxLt = 20
 		task.Finished = true
 
 		err = repo.SetRescanTask(ctx, tx, task)
@@ -288,12 +326,12 @@ func TestRepository_CreateNewRescanTask(t *testing.T) {
 	})
 
 	t.Run("create second task", func(t *testing.T) {
-		err := repo.CreateNewRescanTask(ctx, 20)
+		err := repo.CreateNewRescanTask(ctx, &task)
 		require.NoError(t, err)
 
 		tx, task, err := repo.GetUnfinishedRescanTask(ctx)
 		require.NoError(t, err)
-		require.Equal(t, 3, task.ID)
+		require.Equal(t, 2, task.ID)
 
 		task.Finished = true
 

@@ -52,10 +52,16 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "contract interface pg create table")
 	}
 
+	_, err = pgDB.ExecContext(ctx, "CREATE TYPE rescan_task_type AS ENUM (?, ?, ?, ?, ?, ?, ?, ?)",
+		core.AddInterface, core.UpdInterface, core.DelInterface, core.AddGetMethod, core.DelGetMethod, core.UpdGetMethod, core.UpdOperation, core.DelOperation)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return errors.Wrap(err, "rescan task type pg create enum")
+	}
+
 	_, err = pgDB.NewCreateTable().
 		Model(&core.RescanTask{}).
 		IfNotExists().
-		WithForeignKeys().
+		// WithForeignKeys().
 		Exec(ctx)
 	if err != nil {
 		return errors.Wrap(err, "rescan task pg create table")
@@ -249,14 +255,10 @@ func (r *Repository) GetOperationByID(ctx context.Context, t core.MessageType, i
 	return op, nil
 }
 
-func (r *Repository) CreateNewRescanTask(ctx context.Context, startFrom uint32) error {
-	task := core.RescanTask{
-		StartFrom:          startFrom,
-		AccountsLastMaster: startFrom - 1,
-		MessagesLastMaster: startFrom - 1,
-	}
+func (r *Repository) CreateNewRescanTask(ctx context.Context, task *core.RescanTask) error {
+	task.ID = 0
 
-	_, err := r.pg.NewInsert().Model(&task).Exec(ctx)
+	_, err := r.pg.NewInsert().Model(task).Exec(ctx)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 			return errors.Wrap(core.ErrAlreadyExists, "cannot create new task while the previous one is unfinished")
@@ -276,8 +278,10 @@ func (r *Repository) GetUnfinishedRescanTask(ctx context.Context) (bun.Tx, *core
 	}
 
 	err = tx.NewSelect().Model(&task).
-		Where("finished = ?", false).
 		For("UPDATE").
+		Where("finished = ?", false).
+		Order("id").
+		Limit(1).
 		Scan(ctx)
 	if err != nil {
 		_ = tx.Rollback()
@@ -287,16 +291,33 @@ func (r *Repository) GetUnfinishedRescanTask(ctx context.Context) (bun.Tx, *core
 		return bun.Tx{}, nil, err
 	}
 
+	if task.Type != core.DelInterface {
+		task.Contract = new(core.ContractInterface)
+		err := r.pg.NewSelect().Model(task.Contract).
+			Where("name = ?", task.ContractName).
+			Scan(ctx)
+		if errors.Is(err, sql.ErrNoRows) {
+			return bun.Tx{}, nil, errors.Wrapf(core.ErrNotFound, "no %s contract interface for %s task", task.ContractName, task.Type)
+		}
+		if err != nil {
+			return bun.Tx{}, nil, err
+		}
+	}
+	if task.Type == core.UpdOperation {
+		task.Operation, err = r.GetOperationByID(ctx, task.MessageType, []abi.ContractName{task.ContractName}, task.Outgoing, task.OperationID)
+		if err != nil {
+			return bun.Tx{}, nil, errors.Wrapf(err, "get 0x%x operation of %s contract for %s task", task.OperationID, task.ContractName, task.Type)
+		}
+	}
+
 	return tx, &task, nil
 }
 
 func (r *Repository) SetRescanTask(ctx context.Context, tx bun.Tx, task *core.RescanTask) error {
 	_, err := tx.NewUpdate().Model(task).
 		Set("finished = ?finished").
-		Set("accounts_last_masterchain_seq_no = ?accounts_last_masterchain_seq_no").
-		Set("accounts_rescan_done = ?accounts_rescan_done").
-		Set("messages_last_masterchain_seq_no = ?messages_last_masterchain_seq_no").
-		Set("messages_rescan_done = ?messages_rescan_done").
+		Set("last_address = ?last_address").
+		Set("last_tx_lt = ?last_tx_lt").
 		WherePK().
 		Exec(ctx)
 	if err != nil {
