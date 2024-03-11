@@ -218,7 +218,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 	t.Run("filter latest state with data by contract types", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			ContractTypes: []abi.ContractName{"special"},
+			ContractTypes: []abi.ContractName{"special", "some_nonsense"},
 			LatestState:   true,
 			Order:         "DESC", Limit: 1,
 		})
