@@ -10,6 +10,7 @@ import (
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
@@ -67,6 +68,21 @@ func GetBlockchainConfig(ctx context.Context, api ton.APIClientWrapped) (*cell.C
 type ParserService interface {
 	ParseAccountData(
 		ctx context.Context,
+		acc *core.AccountState,
+		others func(context.Context, addr.Address) (*core.AccountState, error),
+	) error
+
+	ParseAccountContractData(
+		ctx context.Context,
+		contractDesc *core.ContractInterface,
+		acc *core.AccountState,
+		others func(context.Context, addr.Address) (*core.AccountState, error),
+	) error
+
+	ExecuteAccountGetMethod(
+		ctx context.Context,
+		contract abi.ContractName,
+		getMethod string,
 		acc *core.AccountState,
 		others func(context.Context, addr.Address) (*core.AccountState, error),
 	) error
