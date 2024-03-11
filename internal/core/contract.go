@@ -68,8 +68,8 @@ const (
 	UpdGetMethod RescanTaskType = "upd_get_method"
 
 	// UpdOperation task parses contract messages.
-	// It firstly retrieves all addresses associated with the specified contract name.
-	// Then, it iterates through all messages directed to (or originating from, in the case of outgoing operations) the current address
+	// It iterates through all messages with specified operation id,
+	// directed to (or originating from, in the case of outgoing operations) the given contract
 	// and adds the parsed data.
 	UpdOperation RescanTaskType = "upd_operation"
 
