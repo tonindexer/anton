@@ -37,11 +37,8 @@ type GetMethodExecution struct {
 
 	Address *addr.Address `json:"address,omitempty"`
 
-	Arguments []VmValueDesc `json:"arguments,omitempty"`
-	Receives  []any         `json:"receives,omitempty"`
-
-	ReturnValues []VmValueDesc `json:"return_values,omitempty"`
-	Returns      []any         `json:"returns,omitempty"`
+	Receives []any `json:"receives,omitempty"`
+	Returns  []any `json:"returns,omitempty"`
 
 	Error string `json:"error,omitempty"`
 }
