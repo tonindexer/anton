@@ -3,6 +3,7 @@ package msg
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -10,6 +11,8 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository"
 )
@@ -255,4 +258,70 @@ func (r *Repository) GetMessage(ctx context.Context, hash []byte) (*core.Message
 	}
 
 	return &ret, nil
+}
+
+func (r *Repository) GetMessages(ctx context.Context, hashes [][]byte) ([]*core.Message, error) {
+	var ret []*core.Message
+
+	err := r.pg.NewSelect().Model(&ret).
+		Where("hash IN (?)", bun.In(hashes)).
+		Scan(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, core.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+// MatchMessagesByOperationDesc returns hashes of suitable messages for the given contract operation.
+func (r *Repository) MatchMessagesByOperationDesc(ctx context.Context,
+	contractName abi.ContractName,
+	msgType core.MessageType,
+	outgoing bool,
+	operationId uint32,
+	afterAddress *addr.Address,
+	afterTxLt uint64,
+	limit int,
+) (hashes [][]byte, err error) {
+	var addresses []*addr.Address
+
+	q := r.ch.NewSelect().Model((*core.AccountState)(nil)).
+		ColumnExpr("address").
+		Where("contract_name = ?", contractName)
+	if afterAddress != nil {
+		q = q.Where("address >= ?", afterAddress)
+	}
+	err = q.
+		Order("address ASC").
+		Limit(limit).
+		Scan(ctx, &addresses)
+	if err != nil {
+		return nil, errors.Wrap(err, "get contract addresses")
+	}
+
+	addrCol, ltCol := "dst_address", "dst_tx_lt"
+	if outgoing {
+		addrCol, ltCol = "src_address", "src_tx_lt"
+	}
+
+	q = r.ch.NewSelect().Model((*core.Message)(nil)).
+		ColumnExpr("hash").
+		Where("type = ?", msgType).
+		Where(addrCol+" IN (?)", bun.In(addresses)).
+		Where("operation_id = ?", operationId)
+	if afterAddress != nil && afterTxLt != 0 {
+		q = q.Where(fmt.Sprintf("(%s, %s) > (?, ?)", addrCol, ltCol), afterAddress, afterTxLt)
+	}
+	err = q.
+		Order(fmt.Sprintf("%s ASC, %s ASC", addrCol, ltCol)).
+		Limit(limit).
+		Scan(ctx, &hashes)
+	if err != nil {
+		return nil, errors.Wrap(err, "get message hashes")
+	}
+
+	return hashes, nil
 }
