@@ -309,7 +309,7 @@ func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
 			}
 			if len(addresses) == 0 && len(codeHash) == 0 && len(getMethodHashes) > 0 {
 				// match by get-method hashes only if addresses and code_hash are not set
-				q = q.WhereOr("hasAll(get_method_hashes, [?])", ch.In(getMethodHashes))
+				q = q.WhereOr("hasAll(get_method_hashes, ?)", ch.Array(getMethodHashes))
 			}
 			return q
 		})
