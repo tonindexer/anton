@@ -55,14 +55,6 @@ type AccountStateID struct {
 	LastTxLT uint64
 }
 
-// AccountStatesInterval is used only GetAddressesByContractName method
-// to get minimum and maximum transaction logical time for a given address.
-type AccountStatesInterval struct {
-	Address addr.Address `ch:"type:String"`
-	MinTxLT uint64
-	MaxTxLT uint64
-}
-
 type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:toYYYYMM(updated_at)" json:"-"`
 	bun.BaseModel `bun:"table:account_states" json:"-"`
@@ -167,13 +159,6 @@ type AccountRepository interface {
 		afterAddress *addr.Address,
 		afterTxLt uint64,
 		limit int) ([]*AccountStateID, error)
-
-	// GetAddressesByContractName returns addresses with matched contract name
-	// and min(tx_lt), max(tx_lt) of the matched account states.
-	GetAddressesByContractName(ctx context.Context,
-		contractName abi.ContractName,
-		afterAddress *addr.Address,
-		limit int) ([]*AccountStatesInterval, error)
 
 	// GetAllAccountInterfaces returns transaction LT, on which contract interface was updated.
 	// It also considers, that contract can be both upgraded and downgraded.

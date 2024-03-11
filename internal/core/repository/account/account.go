@@ -327,34 +327,6 @@ func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
 	return ids, nil
 }
 
-// GetAddressesByContractName returns addresses with matched contract name
-// and min(tx_lt), max(tx_lt) of the matched account states.
-func (r *Repository) GetAddressesByContractName(ctx context.Context,
-	contractName abi.ContractName,
-	afterAddress *addr.Address,
-	limit int,
-) ([]*core.AccountStatesInterval, error) {
-	var intervals []*core.AccountStatesInterval
-
-	q := r.ch.NewSelect().Model((*core.AccountState)(nil)).
-		ColumnExpr("address").
-		ColumnExpr("min(last_tx_lt) as min_tx_lt").
-		ColumnExpr("max(last_tx_lt) as max_tx_lt").
-		Where("contract_name = ?", contractName)
-	if afterAddress != nil {
-		q = q.Where("address > ?", afterAddress)
-	}
-	err := q.
-		Order("address ASC, last_tx_lt ASC").
-		Limit(limit).
-		Scan(ctx, &intervals)
-	if err != nil {
-		return nil, err
-	}
-
-	return intervals, nil
-}
-
 func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address) (map[uint64][]abi.ContractName, error) {
 	var ret []struct {
 		ChangeTxLT  int64
