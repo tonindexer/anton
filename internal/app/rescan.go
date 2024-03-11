@@ -14,6 +14,8 @@ type RescanConfig struct {
 	Parser ParserService
 
 	Workers int
+
+	SelectLimit int
 }
 
 type RescanService interface {

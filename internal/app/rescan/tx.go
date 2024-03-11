@@ -1,6 +1,7 @@
 package rescan
 
 import (
+	"bytes"
 	"context"
 	"reflect"
 	"sync"
@@ -57,103 +58,127 @@ func (s *Service) getAccountStateForMessage(ctx context.Context, a addr.Address,
 	return &core.AccountState{Address: a, Types: s.chooseInterfaces(interfaceUpdates, txLT)}
 }
 
-func (s *Service) rescanMessage(ctx context.Context, msg *core.Message) *core.Message {
+func (s *Service) rescanMessage(ctx context.Context, task *core.RescanTask, update *core.Message) error {
 	// we must get account state's interfaces to properly determine message operation
 	// and to parse message accordingly
 
 	// so for the source of the message we take the account state of the sender,
-	// which was updated just before the message was sent
+	// which is updated just before the message is sent
 
 	// for the destination of the given message, we take the account state of receiver,
-	// which was update just after the message was received
+	// which is updated just after the message is received
 
-	msg.SrcState = s.getAccountStateForMessage(ctx, msg.SrcAddress, msg.SrcTxLT)
-	msg.DstState = s.getAccountStateForMessage(ctx, msg.DstAddress, msg.DstTxLT)
+	if task.Outgoing {
+		update.SrcState = &core.AccountState{Address: update.SrcAddress, Types: []abi.ContractName{task.ContractName}}
+		update.DstState = s.getAccountStateForMessage(ctx, update.DstAddress, update.DstTxLT)
+	} else {
+		update.SrcState = s.getAccountStateForMessage(ctx, update.SrcAddress, update.SrcTxLT)
+		update.DstState = &core.AccountState{Address: update.DstAddress, Types: []abi.ContractName{task.ContractName}}
+	}
 
-	update := *msg
-
-	err := s.Parser.ParseMessagePayload(ctx, &update)
+	err := s.Parser.ParseMessagePayload(ctx, update)
 	if err != nil {
 		if !errors.Is(err, app.ErrImpossibleParsing) {
 			log.Error().Err(err).
-				Hex("msg_hash", msg.Hash).
-				Hex("src_tx_hash", msg.SrcTxHash).
-				Str("src_addr", msg.SrcAddress.String()).
-				Hex("dst_tx_hash", msg.DstTxHash).
-				Str("dst_addr", msg.DstAddress.String()).
-				Uint32("op_id", msg.OperationID).
+				Hex("msg_hash", update.Hash).
+				Hex("src_tx_hash", update.SrcTxHash).
+				Str("src_addr", update.SrcAddress.String()).
+				Hex("dst_tx_hash", update.DstTxHash).
+				Str("dst_addr", update.DstAddress.String()).
+				Uint32("op_id", update.OperationID).
 				Msg("parse message payload")
 		}
-		return nil
+		return err
 	}
 
-	if reflect.DeepEqual(msg, &update) {
-		return nil
-	}
-
-	return &update
+	return nil
 }
 
-func (s *Service) rescanMessagesInBlock(ctx context.Context, b *core.Block) (updates []*core.Message) {
-	for _, tx := range b.Transactions {
-		if tx.InMsg != nil {
-			if got := s.rescanMessage(ctx, tx.InMsg); got != nil {
-				updates = append(updates, got)
+func (s *Service) rescanMessagesWorker(ctx context.Context, task *core.RescanTask, messages []*core.Message) (updates []*core.Message) {
+	for _, msg := range messages {
+		upd := *msg
+
+		switch task.Type {
+		case core.DelOperation:
+			upd.SrcContract, upd.DstContract, upd.OperationName, upd.DataJSON, upd.Error = "", "", "", nil, ""
+
+		case core.UpdOperation:
+			if err := s.rescanMessage(ctx, task, msg); err != nil {
+				continue
 			}
 		}
-		for _, out := range tx.OutMsg {
-			if got := s.rescanMessage(ctx, out); got != nil {
-				updates = append(updates, got)
-			}
+
+		if !reflect.DeepEqual(msg, &upd) {
+			updates = append(updates, &upd)
 		}
 	}
-	return updates
-}
-
-func (s *Service) rescanMessagesWorker(m *core.Block) (updates []*core.Message) {
-	for _, shard := range m.Shards {
-		upd := s.rescanMessagesInBlock(context.Background(), shard)
-		updates = append(updates, upd...)
-	}
-
-	upd := s.rescanMessagesInBlock(context.Background(), m)
-	updates = append(updates, upd...)
 
 	return updates
 }
 
-func (s *Service) rescanMessages(masterBlocks []*core.Block) (lastScanned uint32) {
+func (s *Service) rescanMessages(ctx context.Context, task *core.RescanTask, hashes [][]byte) error {
 	var (
-		msgUpdates = make(chan []*core.Message, len(masterBlocks))
-		scanWG     sync.WaitGroup
+		lastParsed  core.AccountStateID
+		updatesAll  []*core.Message
+		updatesChan = make(chan []*core.Message)
+		scanWG      sync.WaitGroup
 	)
 
-	scanWG.Add(len(masterBlocks))
+	messages, err := s.MessageRepo.GetMessages(ctx, hashes)
+	if err != nil {
+		return err
+	}
 
-	for _, b := range masterBlocks {
-		go func(master *core.Block) {
-			defer scanWG.Done()
-			msgUpdates <- s.rescanMessagesWorker(master)
-		}(b)
+	workers := s.Workers
+	if len(messages) < workers {
+		workers = len(messages)
+	}
 
-		if b.SeqNo > lastScanned {
-			lastScanned = b.SeqNo
+	for i := 0; i < len(messages); {
+		batchLen := (len(messages) - i) / workers
+		if (len(messages)-i)%workers != 0 {
+			batchLen++
 		}
+
+		scanWG.Add(1)
+		go func(batch []*core.Message) {
+			defer scanWG.Done()
+			updatesChan <- s.rescanMessagesWorker(ctx, task, batch)
+		}(messages[i : i+batchLen])
+
+		i += batchLen
 	}
 
 	go func() {
 		scanWG.Wait()
-		close(msgUpdates)
+		close(updatesChan)
 	}()
 
-	var allUpdates []*core.Message
-	for upd := range msgUpdates {
-		allUpdates = append(allUpdates, upd...)
+	for upd := range updatesChan {
+		for _, upd := range upd {
+			updID := core.AccountStateID{
+				Address:  upd.DstAddress,
+				LastTxLT: upd.DstTxLT,
+			}
+			if task.Outgoing {
+				updID = core.AccountStateID{
+					Address:  upd.SrcAddress,
+					LastTxLT: upd.SrcTxLT,
+				}
+			}
+			if bytes.Compare(lastParsed.Address[:], updID.Address[:]) >= 0 && lastParsed.LastTxLT >= updID.LastTxLT {
+				lastParsed = updID
+			}
+		}
+		updatesAll = append(updatesAll, upd...)
 	}
 
-	if err := s.MessageRepo.UpdateMessages(context.Background(), allUpdates); err != nil {
-		return 0
+	if err := s.MessageRepo.UpdateMessages(context.Background(), updatesAll); err != nil {
+		return errors.Wrap(err, "update messages")
 	}
 
-	return lastScanned
+	task.LastAddress = &lastParsed.Address
+	task.LastTxLt = lastParsed.LastTxLT
+
+	return nil
 }

@@ -7,18 +7,16 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
-	"github.com/tonindexer/anton/internal/core/filter"
 )
 
 var _ app.RescanService = (*Service)(nil)
 
 type Service struct {
 	*app.RescanConfig
-
-	masterShard int64
 
 	interfacesCache *interfacesCache
 
@@ -75,14 +73,6 @@ func (s *Service) Stop() {
 func (s *Service) rescanLoop() {
 	defer s.wg.Done()
 
-	lastMaster, err := s.BlockRepo.GetLastMasterBlock(context.Background())
-	if err != nil {
-		log.Error().Err(err).Msg("cannot get last masterchain block")
-		return
-	}
-	toBlock := lastMaster.SeqNo
-	s.masterShard = lastMaster.Shard
-
 	for s.running() {
 		tx, task, err := s.ContractRepo.GetUnfinishedRescanTask(context.Background())
 		if err != nil {
@@ -93,7 +83,7 @@ func (s *Service) rescanLoop() {
 			continue
 		}
 
-		if err := s.rescanRunTask(task, toBlock); err != nil {
+		if err := s.rescanRunTask(context.Background(), task); err != nil {
 			_ = tx.Rollback()
 			log.Error().Err(err).
 				Int("id", task.ID).
@@ -110,71 +100,80 @@ func (s *Service) rescanLoop() {
 	}
 }
 
-func (s *Service) rescanRunTask(task *core.RescanTask, toBlock uint32) error {
-	if task.AccountsRescanDone || task.AccountsLastMaster >= toBlock {
-		task.AccountsRescanDone = true
-	} else {
-		if task.AccountsLastMaster == 0 {
-			task.AccountsLastMaster = task.StartFrom - 1
+func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) error {
+	switch task.Type {
+	case core.AddInterface:
+		var codeHash []byte
+		if task.Contract.Code != nil {
+			codeCell, err := cell.FromBOC(task.Contract.Code)
+			if err != nil {
+				return errors.Wrapf(err, "making %s code cell from boc", task.Contract.Name)
+			}
+			codeHash = codeCell.Hash()
 		}
-		blocks, err := s.filterBlocksForRescan(task.AccountsLastMaster+1, toBlock, true, false)
+
+		ids, err := s.AccountRepo.MatchStatesByInterfaceDesc(ctx, "", task.Contract.Addresses, codeHash, task.Contract.GetMethodHashes, task.LastAddress, task.LastTxLt, s.SelectLimit)
 		if err != nil {
-			return errors.Wrap(err, "filter blocks for account states rescan")
+			return errors.Wrapf(err, "match states by interface description")
 		}
-		if lastScanned := s.rescanAccounts(blocks); lastScanned != 0 {
-			task.AccountsLastMaster = lastScanned
+		if len(ids) == 0 {
+			task.Finished = true
+			return nil
 		}
-	}
 
-	if task.MessagesRescanDone || task.MessagesLastMaster >= toBlock {
-		task.MessagesRescanDone = true
-	} else if task.AccountsRescanDone {
-		if task.MessagesLastMaster == 0 {
-			task.MessagesLastMaster = task.StartFrom - 1
+		if err := s.rescanAccounts(ctx, task, ids); err != nil {
+			return errors.Wrapf(err, "rescan accounts")
 		}
-		blocks, err := s.filterBlocksForRescan(task.MessagesLastMaster+1, toBlock, false, true)
+
+		return nil
+
+	case core.UpdInterface, core.DelInterface:
+		ids, err := s.AccountRepo.MatchStatesByInterfaceDesc(ctx, task.ContractName, nil, nil, nil, task.LastAddress, task.LastTxLt, s.SelectLimit)
 		if err != nil {
-			return errors.Wrap(err, "filter blocks for messages states rescan")
+			return errors.Wrapf(err, "match states by interface description")
 		}
-		if lastScanned := s.rescanMessages(blocks); lastScanned != 0 {
-			task.MessagesLastMaster = lastScanned
+		if len(ids) == 0 {
+			task.Finished = true
+			return nil
+		}
+
+		if err := s.rescanAccounts(ctx, task, ids); err != nil {
+			return errors.Wrapf(err, "rescan accounts")
+		}
+
+		return nil
+
+	case core.AddGetMethod, core.DelGetMethod, core.UpdGetMethod:
+		var codeHash []byte
+		if task.Contract.Code != nil {
+			codeCell, err := cell.FromBOC(task.Contract.Code)
+			if err != nil {
+				return errors.Wrapf(err, "making %s code cell from boc", task.Contract.Name)
+			}
+			codeHash = codeCell.Hash()
+		}
+
+		ids, err := s.AccountRepo.MatchStatesByInterfaceDesc(ctx, task.ContractName, task.Contract.Addresses, codeHash, task.Contract.GetMethodHashes, task.LastAddress, task.LastTxLt, s.SelectLimit)
+		if err != nil {
+			return errors.Wrapf(err, "match states by interface description")
+		}
+
+		if err := s.rescanAccounts(ctx, task, ids); err != nil {
+			return errors.Wrapf(err, "rescan accounts")
+		}
+
+		return nil
+
+	case core.DelOperation, core.UpdOperation:
+		hashes, err := s.MessageRepo.MatchMessagesByOperationDesc(ctx, task.ContractName, task.MessageType, task.Outgoing, task.OperationID, task.LastAddress, task.LastTxLt, s.SelectLimit)
+		if err != nil {
+			return errors.Wrapf(err, "get addresses by contract name")
+		}
+
+		if err := s.rescanMessages(ctx, task, hashes); err != nil {
+			return errors.Wrapf(err, "rescan messages")
 		}
 	}
 
-	if task.AccountsRescanDone && task.MessagesRescanDone {
-		task.Finished = true
-	}
-
-	return nil
-}
-
-func (s *Service) filterBlocksForRescan(fromBlock, toBlock uint32, withAccounts, withMessages bool) ([]*core.Block, error) {
-	workers := s.Workers
-	if delta := int(toBlock-fromBlock) + 1; delta < workers {
-		workers = delta
-	}
-
-	req := &filter.BlocksReq{
-		Workchain:               new(int32),
-		Shard:                   new(int64),
-		WithShards:              true,
-		WithAccountStates:       withAccounts,
-		WithTransactions:        withMessages,
-		WithTransactionMessages: withMessages,
-		AfterSeqNo:              new(uint32),
-		Order:                   "ASC",
-		Limit:                   workers,
-	}
-	*req.Workchain = -1
-	*req.Shard = s.masterShard
-	*req.AfterSeqNo = fromBlock - 1
-
-	defer app.TimeTrack(time.Now(), "filterBlocksForRescan(%d, %d, %t)", fromBlock-1, workers, withMessages)
-
-	res, err := s.BlockRepo.FilterBlocks(context.Background(), req)
-	if err != nil {
-		return nil, err
-	}
-
-	return res.Rows, nil
+	return errors.Wrapf(core.ErrInvalidArg, "unknown rescan task type %s", task.Type)
 }
