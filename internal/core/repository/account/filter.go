@@ -45,7 +45,7 @@ func (r *Repository) countAddressLabels(ctx context.Context, f *filter.LabelsReq
 		q = q.Where("positionCaseInsensitive(name, ?) > 0", f.Name)
 	}
 	if len(f.Categories) > 0 {
-		q = q.Where("hasAny(categories, [?])", ch.In(f.Categories))
+		q = q.Where("hasAny(categories, ?)", ch.Array(f.Categories))
 	}
 
 	return q.Count(ctx)
@@ -187,7 +187,7 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 	}
 
 	if len(f.ContractTypes) > 0 {
-		q = q.Where("hasAny(types, [?])", ch.In(f.ContractTypes))
+		q = q.Where("hasAny(types, ?)", ch.Array(f.ContractTypes))
 	}
 	if f.MinterAddress != nil {
 		q = q.Where("minter_address = ?", f.MinterAddress)
@@ -225,7 +225,7 @@ func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) 
 
 	res.Total, err = r.countAccountStates(ctx, f)
 	if err != nil {
-		return res, err
+		return res, errors.Wrap(err, "count account states")
 	}
 	if res.Total == 0 {
 		return res, nil
