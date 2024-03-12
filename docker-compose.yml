@@ -40,6 +40,7 @@ services:
     environment:
       <<: *anton-env
       RESCAN_WORKERS: ${RESCAN_WORKERS}
+      RESCAN_RESCAN_LIMIT: ${RESCAN_SELECT_LIMIT}
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
   web:
