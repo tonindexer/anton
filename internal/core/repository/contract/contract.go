@@ -52,21 +52,6 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "contract interface pg create table")
 	}
 
-	_, err = pgDB.ExecContext(ctx, "CREATE TYPE rescan_task_type AS ENUM (?, ?, ?, ?, ?, ?, ?, ?)",
-		core.AddInterface, core.UpdInterface, core.DelInterface, core.AddGetMethod, core.DelGetMethod, core.UpdGetMethod, core.UpdOperation, core.DelOperation)
-	if err != nil && !strings.Contains(err.Error(), "already exists") {
-		return errors.Wrap(err, "rescan task type pg create enum")
-	}
-
-	_, err = pgDB.NewCreateTable().
-		Model(&core.RescanTask{}).
-		IfNotExists().
-		// WithForeignKeys().
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "rescan task pg create table")
-	}
-
 	_, err = pgDB.NewCreateIndex().
 		Model(&core.ContractInterface{}).
 		Unique().
@@ -80,16 +65,6 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 	_, err = pgDB.ExecContext(ctx, `ALTER TABLE contract_operations ADD CONSTRAINT contract_interfaces_uniq_name UNIQUE (operation_name, contract_name)`)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return errors.Wrap(err, "messages pg create source tx hash check")
-	}
-
-	_, err = pgDB.NewCreateIndex().
-		Model(&core.RescanTask{}).
-		Unique().
-		Column("finished").
-		Where("finished = false").
-		Exec(ctx)
-	if err != nil {
-		return errors.Wrap(err, "rescan task finished create unique index")
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package rescan
 import (
 	"context"
 	"database/sql"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
@@ -20,7 +21,27 @@ func NewRepository(db *bun.DB) *Repository {
 	return &Repository{pg: db}
 }
 
+func CreateTables(ctx context.Context, pgDB *bun.DB) error {
+	_, err := pgDB.ExecContext(ctx, "CREATE TYPE rescan_task_type AS ENUM (?, ?, ?, ?, ?, ?, ?, ?)",
+		core.AddInterface, core.UpdInterface, core.DelInterface, core.AddGetMethod, core.DelGetMethod, core.UpdGetMethod, core.UpdOperation, core.DelOperation)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return errors.Wrap(err, "rescan task type pg create enum")
+	}
+
+	_, err = pgDB.NewCreateTable().
+		Model(&core.RescanTask{}).
+		IfNotExists().
+		// WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "rescan task pg create table")
+	}
+
+	return nil
+}
+
 func (r *Repository) AddRescanTask(ctx context.Context, task *core.RescanTask) error {
+	task.ID = 0
 	_, err := r.pg.NewInsert().Model(task).Exec(ctx)
 	if err != nil {
 		return err
@@ -59,7 +80,7 @@ func (r *Repository) GetUnfinishedRescanTask(ctx context.Context) (bun.Tx, *core
 			if errors.Is(err, sql.ErrNoRows) {
 				err = core.ErrNotFound
 			}
-			return bun.Tx{}, nil, errors.Wrapf(core.ErrNotFound, "no %s contract interface for %s task", task.ContractName, task.Type)
+			return bun.Tx{}, nil, errors.Wrapf(err, "no %s contract interface for %s task", task.ContractName, task.Type)
 		}
 	}
 
