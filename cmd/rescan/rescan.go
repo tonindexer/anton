@@ -87,6 +87,7 @@ var Command = &cli.Command{
 			MessageRepo:  msg.NewRepository(conn.CH, conn.PG),
 			Parser:       p,
 			Workers:      env.GetInt("RESCAN_WORKERS", 4),
+			SelectLimit:  env.GetInt("RESCAN_SELECT_LIMIT", 1000),
 		})
 		if err = i.Start(); err != nil {
 			return err
