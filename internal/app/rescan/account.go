@@ -50,15 +50,30 @@ func (s *Service) getRecentAccountState(ctx context.Context, b core.BlockID, a a
 
 func copyAccountState(state *core.AccountState) *core.AccountState {
 	update := *state
+
+	update.Types = make([]abi.ContractName, len(state.Types))
+	copy(update.Types, state.Types)
+
 	update.ExecutedGetMethods = map[abi.ContractName][]abi.GetMethodExecution{}
 	for n, e := range state.ExecutedGetMethods {
 		update.ExecutedGetMethods[n] = make([]abi.GetMethodExecution, len(e))
 		copy(update.ExecutedGetMethods[n], e)
 	}
+
 	return &update
 }
 
 func (s *Service) clearParsedAccountsData(task *core.RescanTask, acc *core.AccountState) {
+	for it := range acc.Types {
+		if acc.Types[it] != task.ContractName {
+			continue
+		}
+		types := acc.Types
+		copy(types[it:], types[it+1:])
+		acc.Types = types[:len(types)-1]
+		break
+	}
+
 	_, ok := acc.ExecutedGetMethods[task.ContractName]
 	if !ok {
 		return
