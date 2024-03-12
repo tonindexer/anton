@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/uptrace/bun"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
@@ -38,36 +37,48 @@ type mockContractRepo struct {
 func (m *mockContractRepo) AddDefinition(context.Context, abi.TLBType, abi.TLBFieldsDesc) error {
 	panic("implement me")
 }
+func (m *mockContractRepo) UpdateDefinition(context.Context, abi.TLBType, abi.TLBFieldsDesc) error {
+	panic("implement me")
+}
+func (m *mockContractRepo) DeleteDefinition(context.Context, abi.TLBType) error {
+	panic("implement me")
+}
 func (m *mockContractRepo) GetDefinitions(context.Context) (map[abi.TLBType]abi.TLBFieldsDesc, error) {
 	panic("implement me")
 }
+
 func (m *mockContractRepo) AddInterface(_ context.Context, _ *core.ContractInterface) error {
 	panic("implement me")
 }
-func (m *mockContractRepo) AddOperation(_ context.Context, _ *core.ContractOperation) error {
+func (m *mockContractRepo) UpdateInterface(context.Context, *core.ContractInterface) error {
 	panic("implement me")
 }
-func (m *mockContractRepo) DelInterface(_ context.Context, _ string) error {
+func (m *mockContractRepo) DeleteInterface(context.Context, abi.ContractName) error {
 	panic("implement me")
 }
 func (m *mockContractRepo) GetInterfaces(_ context.Context) ([]*core.ContractInterface, error) {
 	return m.interfaces, nil
 }
+func (m *mockContractRepo) GetInterface(context.Context, abi.ContractName) (*core.ContractInterface, error) {
+	panic("implement me")
+}
 func (m *mockContractRepo) GetMethodDescription(context.Context, abi.ContractName, string) (abi.GetMethodDesc, error) {
+	panic("implement me")
+}
+
+func (m *mockContractRepo) AddOperation(_ context.Context, _ *core.ContractOperation) error {
+	panic("implement me")
+}
+func (m *mockContractRepo) UpdateOperation(context.Context, *core.ContractOperation) error {
+	panic("implement me")
+}
+func (m *mockContractRepo) DeleteOperation(context.Context, string) error {
 	panic("implement me")
 }
 func (m *mockContractRepo) GetOperations(_ context.Context) ([]*core.ContractOperation, error) {
 	panic("implement me")
 }
 func (m *mockContractRepo) GetOperationByID(_ context.Context, _ core.MessageType, _ []abi.ContractName, _ bool, _ uint32) (*core.ContractOperation, error) {
-	panic("implement me")
-}
-
-func (m *mockContractRepo) GetUnfinishedRescanTask(_ context.Context) (bun.Tx, *core.RescanTask, error) {
-	panic("implement me")
-}
-
-func (m *mockContractRepo) SetRescanTask(_ context.Context, _ bun.Tx, _ *core.RescanTask) error {
 	panic("implement me")
 }
 
