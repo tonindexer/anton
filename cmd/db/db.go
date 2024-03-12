@@ -273,7 +273,7 @@ var Command = &cli.Command{
 			},
 		},
 		{
-			Name:  "mark_applied",
+			Name:  "markApplied",
 			Usage: "Marks migrations as applied without actually running them",
 			Action: func(c *cli.Context) error {
 				mpg, mch, err := newMigrators()
