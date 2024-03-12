@@ -74,7 +74,7 @@ func (s *Service) rescanLoop() {
 	defer s.wg.Done()
 
 	for s.running() {
-		tx, task, err := s.ContractRepo.GetUnfinishedRescanTask(context.Background())
+		tx, task, err := s.RescanRepo.GetUnfinishedRescanTask(context.Background())
 		if err != nil {
 			if !errors.Is(err, core.ErrNotFound) {
 				log.Error().Err(err).Msg("get rescan task")
@@ -92,7 +92,7 @@ func (s *Service) rescanLoop() {
 			continue
 		}
 
-		if err := s.ContractRepo.SetRescanTask(context.Background(), tx, task); err != nil {
+		if err := s.RescanRepo.SetRescanTask(context.Background(), tx, task); err != nil {
 			log.Error().Err(err).Msg("update rescan task")
 			time.Sleep(time.Second)
 			continue
@@ -101,17 +101,17 @@ func (s *Service) rescanLoop() {
 }
 
 func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) error {
+	var codeHash []byte
+	if task.Contract != nil && task.Contract.Code != nil {
+		codeCell, err := cell.FromBOC(task.Contract.Code)
+		if err != nil {
+			return errors.Wrapf(err, "making %s code cell from boc", task.Contract.Name)
+		}
+		codeHash = codeCell.Hash()
+	}
+
 	switch task.Type {
 	case core.AddInterface:
-		var codeHash []byte
-		if task.Contract.Code != nil {
-			codeCell, err := cell.FromBOC(task.Contract.Code)
-			if err != nil {
-				return errors.Wrapf(err, "making %s code cell from boc", task.Contract.Name)
-			}
-			codeHash = codeCell.Hash()
-		}
-
 		ids, err := s.AccountRepo.MatchStatesByInterfaceDesc(ctx, "", task.Contract.Addresses, codeHash, task.Contract.GetMethodHashes, task.LastAddress, task.LastTxLt, s.SelectLimit)
 		if err != nil {
 			return errors.Wrapf(err, "match states by interface description")
@@ -144,15 +144,6 @@ func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) erro
 		return nil
 
 	case core.AddGetMethod, core.DelGetMethod, core.UpdGetMethod:
-		var codeHash []byte
-		if task.Contract.Code != nil {
-			codeCell, err := cell.FromBOC(task.Contract.Code)
-			if err != nil {
-				return errors.Wrapf(err, "making %s code cell from boc", task.Contract.Name)
-			}
-			codeHash = codeCell.Hash()
-		}
-
 		ids, err := s.AccountRepo.MatchStatesByInterfaceDesc(ctx, task.ContractName, task.Contract.Addresses, codeHash, task.Contract.GetMethodHashes, task.LastAddress, task.LastTxLt, s.SelectLimit)
 		if err != nil {
 			return errors.Wrapf(err, "match states by interface description")

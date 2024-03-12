@@ -22,6 +22,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/repository/block"
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 	"github.com/tonindexer/anton/internal/core/repository/msg"
+	rescanRepository "github.com/tonindexer/anton/internal/core/repository/rescan"
 )
 
 var Command = &cli.Command{
@@ -80,6 +81,7 @@ var Command = &cli.Command{
 		})
 		i := rescan.NewService(&app.RescanConfig{
 			ContractRepo: contractRepo,
+			RescanRepo:   rescanRepository.NewRepository(conn.PG),
 			AccountRepo:  account.NewRepository(conn.CH, conn.PG),
 			BlockRepo:    block.NewRepository(conn.CH, conn.PG),
 			MessageRepo:  msg.NewRepository(conn.CH, conn.PG),

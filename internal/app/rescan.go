@@ -7,6 +7,7 @@ import (
 
 type RescanConfig struct {
 	ContractRepo core.ContractRepository
+	RescanRepo   core.RescanRepository
 	BlockRepo    repository.Block
 	AccountRepo  repository.Account
 	MessageRepo  repository.Message
