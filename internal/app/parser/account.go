@@ -149,9 +149,7 @@ func (s *Service) ParseAccountContractData(
 	if acc.ExecutedGetMethods == nil {
 		acc.ExecutedGetMethods = map[abi.ContractName][]abi.GetMethodExecution{}
 	}
-	if _, ok := acc.ExecutedGetMethods[contractDesc.Name]; ok {
-		delete(acc.ExecutedGetMethods, contractDesc.Name)
-	}
+	delete(acc.ExecutedGetMethods, contractDesc.Name)
 
 	s.callPossibleGetMethods(ctx, acc, others, []*core.ContractInterface{contractDesc})
 
@@ -190,8 +188,9 @@ func (s *Service) ExecuteAccountGetMethod(
 		return errors.Wrapf(core.ErrInvalidArg,
 			"cannot find '%s' interface description for '%s' account", contract, acc.Address)
 	}
-	for _, d = range i.GetMethodsDesc {
-		if d.Name == getMethod {
+	for it := range i.GetMethodsDesc {
+		if i.GetMethodsDesc[it].Name == getMethod {
+			d = &i.GetMethodsDesc[it]
 			break
 		}
 	}
