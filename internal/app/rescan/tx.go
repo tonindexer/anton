@@ -147,6 +147,7 @@ func (s *Service) rescanMessages(ctx context.Context, task *core.RescanTask, has
 		}(messages[i : i+batchLen])
 
 		i += batchLen
+		workers--
 	}
 
 	go func() {

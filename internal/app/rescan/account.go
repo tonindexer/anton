@@ -283,6 +283,7 @@ func (s *Service) rescanAccounts(ctx context.Context, task *core.RescanTask, ids
 		}(accounts[i : i+batchLen])
 
 		i += batchLen
+		workers--
 	}
 
 	go func() {
