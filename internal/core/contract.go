@@ -104,14 +104,20 @@ type RescanTask struct {
 
 type ContractRepository interface {
 	AddDefinition(context.Context, abi.TLBType, abi.TLBFieldsDesc) error
+	UpdateDefinition(ctx context.Context, dn abi.TLBType, d abi.TLBFieldsDesc) error
+	DeleteDefinition(ctx context.Context, dn abi.TLBType) error
 	GetDefinitions(context.Context) (map[abi.TLBType]abi.TLBFieldsDesc, error)
 
 	AddInterface(context.Context, *ContractInterface) error
-	DelInterface(ctx context.Context, name string) error
+	UpdateInterface(ctx context.Context, i *ContractInterface) error
+	DeleteInterface(ctx context.Context, name abi.ContractName) error
+	GetInterface(ctx context.Context, name abi.ContractName) (*ContractInterface, error)
 	GetInterfaces(context.Context) ([]*ContractInterface, error)
 	GetMethodDescription(ctx context.Context, name abi.ContractName, method string) (abi.GetMethodDesc, error)
 
 	AddOperation(context.Context, *ContractOperation) error
+	UpdateOperation(ctx context.Context, op *ContractOperation) error
+	DeleteOperation(ctx context.Context, opName string) error
 	GetOperations(context.Context) ([]*ContractOperation, error)
 	GetOperationByID(context.Context, MessageType, []abi.ContractName, bool, uint32) (*ContractOperation, error)
 
