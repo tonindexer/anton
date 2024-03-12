@@ -127,6 +127,7 @@ func newService(t *testing.T) *Service {
 			}, {
 				Name:      "index",
 				StackType: "int",
+				Format:    "bytes",
 			}, {
 				Name:      "collection_address",
 				StackType: "slice",
