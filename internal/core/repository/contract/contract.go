@@ -109,7 +109,7 @@ func (r *Repository) UpdateDefinition(ctx context.Context, dn abi.TLBType, d abi
 func (r *Repository) DeleteDefinition(ctx context.Context, dn abi.TLBType) error {
 	def := &core.ContractDefinition{Name: dn}
 
-	ret, err := r.pg.NewUpdate().Model(def).WherePK().Exec(ctx)
+	ret, err := r.pg.NewDelete().Model(def).WherePK().Exec(ctx)
 	if err != nil {
 		return err
 	}

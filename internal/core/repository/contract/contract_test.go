@@ -61,11 +61,6 @@ func dropTables(t testing.TB) {
 	if err != nil && !strings.Contains(err.Error(), "does not exist") {
 		t.Fatal(err)
 	}
-
-	_, err = pg.ExecContext(context.Background(), "DROP TYPE rescan_task_type")
-	if err != nil && !strings.Contains(err.Error(), "does not exist") {
-		t.Fatal(err)
-	}
 }
 
 func TestRepository_AddContracts(t *testing.T) {
