@@ -116,8 +116,8 @@ func (s *Service) clearExecutedGetMethod(task *core.RescanTask, acc *core.Accoun
 		return
 	}
 
-	for it, exec := range acc.ExecutedGetMethods[task.ContractName] {
-		if exec.Name != task.ChangedGetMethod {
+	for it := range acc.ExecutedGetMethods[task.ContractName] {
+		if acc.ExecutedGetMethods[task.ContractName][it].Name != task.ChangedGetMethod {
 			continue
 		}
 		executions := acc.ExecutedGetMethods[task.ContractName]
