@@ -60,7 +60,7 @@ type RescanTask struct {
 	Contract     *ContractInterface `bun:"rel:has-one,join:contract_name=name" json:"contract_interface"`
 
 	// for get-method update
-	ChangedGetMethod string `json:"changed_get_methods,omitempty"`
+	ChangedGetMethod string `json:"changed_get_method,omitempty"`
 
 	// for operations
 	MessageType MessageType        `json:"message_type,omitempty"`
