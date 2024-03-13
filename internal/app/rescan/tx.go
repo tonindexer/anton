@@ -1,10 +1,8 @@
 package rescan
 
 import (
-	"bytes"
 	"context"
 	"reflect"
-	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -114,72 +112,4 @@ func (s *Service) rescanMessagesWorker(ctx context.Context, task *core.RescanTas
 	}
 
 	return updates
-}
-
-func (s *Service) rescanMessages(ctx context.Context, task *core.RescanTask, hashes [][]byte) error {
-	var (
-		lastParsed  core.AccountStateID
-		updatesAll  []*core.Message
-		updatesChan = make(chan []*core.Message)
-		scanWG      sync.WaitGroup
-	)
-
-	messages, err := s.MessageRepo.GetMessages(ctx, hashes)
-	if err != nil {
-		return err
-	}
-
-	workers := s.Workers
-	if len(messages) < workers {
-		workers = len(messages)
-	}
-
-	for i := 0; i < len(messages); {
-		batchLen := (len(messages) - i) / workers
-		if (len(messages)-i)%workers != 0 {
-			batchLen++
-		}
-
-		scanWG.Add(1)
-		go func(batch []*core.Message) {
-			defer scanWG.Done()
-			updatesChan <- s.rescanMessagesWorker(ctx, task, batch)
-		}(messages[i : i+batchLen])
-
-		i += batchLen
-		workers--
-	}
-
-	go func() {
-		scanWG.Wait()
-		close(updatesChan)
-	}()
-
-	for upd := range updatesChan {
-		for _, upd := range upd {
-			updID := core.AccountStateID{
-				Address:  upd.DstAddress,
-				LastTxLT: upd.DstTxLT,
-			}
-			if task.Outgoing {
-				updID = core.AccountStateID{
-					Address:  upd.SrcAddress,
-					LastTxLT: upd.SrcTxLT,
-				}
-			}
-			if bytes.Compare(lastParsed.Address[:], updID.Address[:]) >= 0 && lastParsed.LastTxLT >= updID.LastTxLT {
-				lastParsed = updID
-			}
-		}
-		updatesAll = append(updatesAll, upd...)
-	}
-
-	if err := s.MessageRepo.UpdateMessages(context.Background(), updatesAll); err != nil {
-		return errors.Wrap(err, "update messages")
-	}
-
-	task.LastAddress = &lastParsed.Address
-	task.LastTxLt = lastParsed.LastTxLT
-
-	return nil
 }

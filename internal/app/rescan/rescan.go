@@ -1,6 +1,7 @@
 package rescan
 
 import (
+	"bytes"
 	"context"
 	"sync"
 	"time"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 )
 
 var _ app.RescanService = (*Service)(nil)
@@ -148,6 +150,10 @@ func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) erro
 		if err != nil {
 			return errors.Wrapf(err, "match states by interface description")
 		}
+		if len(ids) == 0 {
+			task.Finished = true
+			return nil
+		}
 
 		if err := s.rescanAccounts(ctx, task, ids); err != nil {
 			return errors.Wrapf(err, "rescan accounts")
@@ -160,11 +166,121 @@ func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) erro
 		if err != nil {
 			return errors.Wrapf(err, "get addresses by contract name")
 		}
+		if len(hashes) == 0 {
+			task.Finished = true
+			return nil
+		}
 
 		if err := s.rescanMessages(ctx, task, hashes); err != nil {
 			return errors.Wrapf(err, "rescan messages")
 		}
+
+		return nil
 	}
 
 	return errors.Wrapf(core.ErrInvalidArg, "unknown rescan task type %s", task.Type)
+}
+
+func (s *Service) rescanAccounts(ctx context.Context, task *core.RescanTask, ids []*core.AccountStateID) error {
+	accRet, err := s.AccountRepo.FilterAccounts(ctx, &filter.AccountsReq{StateIDs: ids})
+	if err != nil {
+		return errors.Wrapf(err, "filter accounts")
+	}
+
+	updates, lastScanned := rescanStartWorkers(
+		ctx, task, accRet.Rows,
+		func(v *core.AccountState) core.AccountStateID {
+			return core.AccountStateID{Address: v.Address, LastTxLT: v.LastTxLT}
+		},
+		s.rescanAccountsWorker, s.Workers)
+
+	if len(updates) > 0 {
+		if err := s.AccountRepo.UpdateAccountStates(ctx, updates); err != nil {
+			return errors.Wrapf(err, "update account states")
+		}
+	}
+
+	task.LastAddress = &lastScanned.Address
+	task.LastTxLt = lastScanned.LastTxLT
+
+	return nil
+}
+
+func (s *Service) rescanMessages(ctx context.Context, task *core.RescanTask, hashes [][]byte) error {
+	messages, err := s.MessageRepo.GetMessages(ctx, hashes)
+	if err != nil {
+		return err
+	}
+
+	updates, lastScanned := rescanStartWorkers(
+		ctx, task, messages,
+		func(v *core.Message) core.AccountStateID {
+			msgID := core.AccountStateID{Address: v.DstAddress, LastTxLT: v.DstTxLT}
+			if task.Outgoing {
+				msgID = core.AccountStateID{Address: v.SrcAddress, LastTxLT: v.SrcTxLT}
+			}
+			return msgID
+		},
+		s.rescanMessagesWorker, s.Workers)
+
+	if len(updates) > 0 {
+		if err := s.MessageRepo.UpdateMessages(context.Background(), updates); err != nil {
+			return errors.Wrap(err, "update messages")
+		}
+	}
+
+	task.LastAddress = &lastScanned.Address
+	task.LastTxLt = lastScanned.LastTxLT
+
+	return nil
+}
+
+func rescanStartWorkers[V any](ctx context.Context,
+	task *core.RescanTask,
+	slice []V,
+	getID func(V) core.AccountStateID,
+	workerFunc func(context.Context, *core.RescanTask, []V) []V,
+	workers int,
+) (updatesAll []V, lastParsed core.AccountStateID) {
+	var (
+		updatesChan = make(chan []V)
+		scanWG      sync.WaitGroup
+	)
+
+	if len(slice) < workers {
+		workers = len(slice)
+	}
+
+	for i := 0; i < len(slice); {
+		batchLen := (len(slice) - i) / workers
+		if (len(slice)-i)%workers != 0 {
+			batchLen++
+		}
+
+		scanWG.Add(1)
+		go func(batch []V) {
+			defer scanWG.Done()
+			updatesChan <- workerFunc(ctx, task, batch)
+		}(slice[i : i+batchLen])
+
+		i += batchLen
+		workers--
+	}
+
+	go func() {
+		scanWG.Wait()
+		close(updatesChan)
+	}()
+
+	for updates := range updatesChan {
+		for _, upd := range updates {
+			updID := getID(upd)
+			if bytes.Compare(lastParsed.Address[:], updID.Address[:]) <= 0 || lastParsed.LastTxLT <= updID.LastTxLT {
+				lastParsed = updID
+			}
+		}
+		updatesAll = append(updatesAll, updates...)
+	}
+
+	return updatesAll, lastParsed
 }

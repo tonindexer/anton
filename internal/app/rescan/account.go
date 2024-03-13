@@ -1,10 +1,8 @@
 package rescan
 
 import (
-	"bytes"
 	"context"
 	"reflect"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -249,67 +247,4 @@ func (s *Service) rescanAccountsWorker(ctx context.Context, task *core.RescanTas
 	}
 
 	return updates
-}
-
-func (s *Service) rescanAccounts(ctx context.Context, task *core.RescanTask, ids []*core.AccountStateID) error {
-	var (
-		lastScanned core.AccountStateID
-		updatesAll  []*core.AccountState
-		updatesChan = make(chan []*core.AccountState)
-		scanWG      sync.WaitGroup
-	)
-
-	accRet, err := s.AccountRepo.FilterAccounts(ctx, &filter.AccountsReq{StateIDs: ids})
-	if err != nil {
-		return errors.Wrapf(err, "filter accounts")
-	}
-	accounts := accRet.Rows
-
-	workers := s.Workers
-	if len(accounts) < workers {
-		workers = len(accounts)
-	}
-
-	for i := 0; i < len(accounts); {
-		batchLen := (len(accounts) - i) / workers
-		if (len(accounts)-i)%workers != 0 {
-			batchLen++
-		}
-
-		scanWG.Add(1)
-		go func(batch []*core.AccountState) {
-			defer scanWG.Done()
-			updatesChan <- s.rescanAccountsWorker(ctx, task, batch)
-		}(accounts[i : i+batchLen])
-
-		i += batchLen
-		workers--
-	}
-
-	go func() {
-		scanWG.Wait()
-		close(updatesChan)
-	}()
-
-	for upd := range updatesChan {
-		for _, upd := range upd {
-			updID := core.AccountStateID{
-				Address:  upd.Address,
-				LastTxLT: upd.LastTxLT,
-			}
-			if bytes.Compare(lastScanned.Address[:], updID.Address[:]) >= 0 && lastScanned.LastTxLT >= updID.LastTxLT {
-				lastScanned = updID
-			}
-		}
-		updatesAll = append(updatesAll, upd...)
-	}
-
-	if err := s.AccountRepo.UpdateAccountStates(ctx, updatesAll); err != nil {
-		return errors.Wrapf(err, "update account states")
-	}
-
-	task.LastAddress = &lastScanned.Address
-	task.LastTxLt = lastScanned.LastTxLT
-
-	return nil
 }
