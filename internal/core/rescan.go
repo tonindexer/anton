@@ -60,12 +60,12 @@ type RescanTask struct {
 	Contract     *ContractInterface `bun:"rel:has-one,join:contract_name=name" json:"contract_interface"`
 
 	// for get-method update
-	ChangedGetMethod string `json:"changed_get_method,omitempty"`
+	ChangedGetMethod string `bun:",nullzero" json:"changed_get_method,omitempty"`
 
 	// for operations
-	MessageType MessageType        `json:"message_type,omitempty"`
-	Outgoing    bool               `json:"outgoing,omitempty"` // if operation is going from contract
-	OperationID uint32             `json:"operation_id,omitempty"`
+	MessageType MessageType        `bun:"type:message_type,nullzero" json:"message_type,omitempty"`
+	Outgoing    bool               `bun:",nullzero" json:"outgoing,omitempty"` // if operation is going from contract
+	OperationID uint32             `bun:",nullzero" json:"operation_id,omitempty"`
 	Operation   *ContractOperation `bun:"rel:has-one,join:contract_name=contract_name,join:outgoing=outgoing,join:operation_id=operation_id" json:"contract_operation"`
 
 	// checkpoint

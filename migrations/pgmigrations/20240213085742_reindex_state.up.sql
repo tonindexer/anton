@@ -21,14 +21,14 @@ BEGIN;
 
         contract_name text NOT NULL,
 
-        changed_get_method text NOT NULL,
+        changed_get_method text,
 
-        message_type message_type NOT NULL,
-        outgoing boolean NOT NULL,
-        operation_id integer NOT NULL,
+        message_type message_type,
+        outgoing boolean,
+        operation_id integer,
 
-        last_address bytea NOT NULL,
-        last_tx_lt bigint NOT NULL,
+        last_address bytea,
+        last_tx_lt bigint,
 
         CONSTRAINT rescan_tasks_pkey PRIMARY KEY (id)
     );
