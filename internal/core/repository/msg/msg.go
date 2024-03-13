@@ -290,7 +290,7 @@ func (r *Repository) MatchMessagesByOperationDesc(ctx context.Context,
 
 	q := r.ch.NewSelect().Model((*core.AccountState)(nil)).
 		ColumnExpr("address").
-		Where("contract_name = ?", contractName)
+		Where("contract_name = ?", string(contractName))
 	if afterAddress != nil {
 		q = q.Where("address >= ?", afterAddress)
 	}
@@ -316,7 +316,7 @@ func (r *Repository) MatchMessagesByOperationDesc(ctx context.Context,
 		q = q.Where(fmt.Sprintf("(%s, %s) > (?, ?)", addrCol, ltCol), afterAddress, afterTxLt)
 	}
 	err = q.
-		Order(fmt.Sprintf("%s ASC, %s ASC", addrCol, ltCol)).
+		OrderExpr(fmt.Sprintf("%s ASC, %s ASC", addrCol, ltCol)).
 		Limit(limit).
 		Scan(ctx, &hashes)
 	if err != nil {

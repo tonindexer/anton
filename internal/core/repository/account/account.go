@@ -317,7 +317,7 @@ func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
 		q = q.Where("(address, after_tx_lt) > (?, ?)", afterAddress, afterTxLt)
 	}
 	err := q.
-		Order("address ASC, last_tx_lt ASC").
+		OrderExpr("address ASC, last_tx_lt ASC").
 		Limit(limit).
 		Scan(ctx, &ids)
 	if err != nil {
