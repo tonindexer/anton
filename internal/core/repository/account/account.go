@@ -299,7 +299,7 @@ func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
 		ColumnExpr("last_tx_lt").
 		WhereGroup(" AND ", func(q *ch.SelectQuery) *ch.SelectQuery {
 			if contractName != "" {
-				q = q.WhereOr("contract_name = ?", contractName)
+				q = q.WhereOr("hasAny(types, [?])", contractName)
 			}
 			if len(addresses) > 0 {
 				q = q.WhereOr("address IN (?)", addresses)
@@ -314,7 +314,7 @@ func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
 			return q
 		})
 	if afterAddress != nil && afterTxLt != 0 {
-		q = q.Where("(address, after_tx_lt) > (?, ?)", afterAddress, afterTxLt)
+		q = q.Where("(address, last_tx_lt) > (?, ?)", afterAddress, afterTxLt)
 	}
 	err := q.
 		OrderExpr("address ASC, last_tx_lt ASC").
