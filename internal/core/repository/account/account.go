@@ -299,7 +299,7 @@ func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
 		ColumnExpr("last_tx_lt").
 		WhereGroup(" AND ", func(q *ch.SelectQuery) *ch.SelectQuery {
 			if contractName != "" {
-				q = q.WhereOr("hasAny(types, [?])", contractName)
+				q = q.WhereOr("hasAny(types, [?])", string(contractName))
 			}
 			if len(addresses) > 0 {
 				q = q.WhereOr("address IN (?)", addresses)
