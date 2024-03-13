@@ -285,21 +285,28 @@ func (r *Repository) MatchMessagesByOperationDesc(ctx context.Context,
 	afterAddress *addr.Address,
 	afterTxLt uint64,
 	limit int,
-) (hashes [][]byte, err error) {
-	var addresses []*addr.Address
+) ([][]byte, error) {
+	var addressesRet []struct {
+		Address *addr.Address `ch:"type:String"`
+	}
 
 	q := r.ch.NewSelect().Model((*core.AccountState)(nil)).
 		ColumnExpr("address").
-		Where("contract_name = ?", string(contractName))
+		Where("hasAny(types, [?])", string(contractName))
 	if afterAddress != nil {
 		q = q.Where("address >= ?", afterAddress)
 	}
-	err = q.
+	err := q.
 		Order("address ASC").
 		Limit(limit).
-		Scan(ctx, &addresses)
+		Scan(ctx, &addressesRet)
 	if err != nil {
 		return nil, errors.Wrap(err, "get contract addresses")
+	}
+
+	var addresses []*addr.Address
+	for _, row := range addressesRet {
+		addresses = append(addresses, row.Address)
 	}
 
 	addrCol, ltCol := "dst_address", "dst_tx_lt"
@@ -307,10 +314,13 @@ func (r *Repository) MatchMessagesByOperationDesc(ctx context.Context,
 		addrCol, ltCol = "src_address", "src_tx_lt"
 	}
 
+	var msgHashesRet []struct {
+		Hash []byte
+	}
 	q = r.ch.NewSelect().Model((*core.Message)(nil)).
 		ColumnExpr("hash").
-		Where("type = ?", msgType).
-		Where(addrCol+" IN (?)", bun.In(addresses)).
+		Where("type = ?", string(msgType)).
+		Where(addrCol+" IN (?)", ch.In(addresses)).
 		Where("operation_id = ?", operationId)
 	if afterAddress != nil && afterTxLt != 0 {
 		q = q.Where(fmt.Sprintf("(%s, %s) > (?, ?)", addrCol, ltCol), afterAddress, afterTxLt)
@@ -318,10 +328,14 @@ func (r *Repository) MatchMessagesByOperationDesc(ctx context.Context,
 	err = q.
 		OrderExpr(fmt.Sprintf("%s ASC, %s ASC", addrCol, ltCol)).
 		Limit(limit).
-		Scan(ctx, &hashes)
+		Scan(ctx, &msgHashesRet)
 	if err != nil {
 		return nil, errors.Wrap(err, "get message hashes")
 	}
 
+	var hashes [][]byte
+	for _, row := range msgHashesRet {
+		hashes = append(hashes, row.Hash)
+	}
 	return hashes, nil
 }
