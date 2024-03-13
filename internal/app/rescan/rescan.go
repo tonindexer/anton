@@ -3,6 +3,7 @@ package rescan
 import (
 	"bytes"
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -78,7 +79,7 @@ func (s *Service) rescanLoop() {
 	for s.running() {
 		tx, task, err := s.RescanRepo.GetUnfinishedRescanTask(context.Background())
 		if err != nil {
-			if !errors.Is(err, core.ErrNotFound) {
+			if !(errors.Is(err, core.ErrNotFound) && strings.Contains(err.Error(), "no unfinished tasks")) {
 				log.Error().Err(err).Msg("get rescan task")
 			}
 			time.Sleep(time.Second)
