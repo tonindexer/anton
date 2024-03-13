@@ -78,6 +78,9 @@ func (r *Repository) AddDefinition(ctx context.Context, dn abi.TLBType, d abi.TL
 
 	_, err := r.pg.NewInsert().Model(def).Exec(ctx)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return core.ErrAlreadyExists
+		}
 		return err
 	}
 
@@ -144,6 +147,9 @@ func (r *Repository) GetDefinitions(ctx context.Context) (map[abi.TLBType]abi.TL
 func (r *Repository) AddInterface(ctx context.Context, i *core.ContractInterface) error {
 	_, err := r.pg.NewInsert().Model(i).Exec(ctx)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return core.ErrAlreadyExists
+		}
 		return err
 	}
 	return nil
@@ -245,6 +251,9 @@ func (r *Repository) GetMethodDescription(ctx context.Context, name abi.Contract
 func (r *Repository) AddOperation(ctx context.Context, op *core.ContractOperation) error {
 	_, err := r.pg.NewInsert().Model(op).Exec(ctx)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return core.ErrAlreadyExists
+		}
 		return err
 	}
 	return nil
