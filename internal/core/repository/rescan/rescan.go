@@ -71,12 +71,13 @@ func (r *Repository) GetUnfinishedRescanTask(ctx context.Context) (bun.Tx, *core
 		return bun.Tx{}, nil, err
 	}
 
-	if task.Type != core.DelInterface {
+	if task.Type != core.DelInterface && task.Type != core.DelOperation {
 		task.Contract = new(core.ContractInterface)
 		err := r.pg.NewSelect().Model(task.Contract).
 			Where("name = ?", task.ContractName).
 			Scan(ctx)
 		if err != nil {
+			_ = tx.Rollback()
 			if errors.Is(err, sql.ErrNoRows) {
 				err = core.ErrNotFound
 			}
@@ -93,6 +94,7 @@ func (r *Repository) GetUnfinishedRescanTask(ctx context.Context) (bun.Tx, *core
 			Where("operation_id = ?", task.OperationID).
 			Scan(ctx)
 		if err != nil {
+			_ = tx.Rollback()
 			if errors.Is(err, sql.ErrNoRows) {
 				err = core.ErrNotFound
 			}
