@@ -88,7 +88,7 @@ func (r *Repository) GetUnfinishedRescanTask(ctx context.Context) (bun.Tx, *core
 		task.Operation = new(core.ContractOperation)
 		err := r.pg.NewSelect().Model(task.Operation).
 			Where("contract_name = ?", task.ContractName).
-			Where("outgoing IS ?", task.Operation).
+			Where("outgoing IS ?", task.Outgoing).
 			Where("message_type = ?", task.MessageType).
 			Where("operation_id = ?", task.OperationID).
 			Scan(ctx)
@@ -104,6 +104,8 @@ func (r *Repository) GetUnfinishedRescanTask(ctx context.Context) (bun.Tx, *core
 }
 
 func (r *Repository) SetRescanTask(ctx context.Context, tx bun.Tx, task *core.RescanTask) error {
+	defer func() { _ = tx.Rollback() }()
+
 	_, err := tx.NewUpdate().Model(task).
 		Set("finished = ?finished").
 		Set("last_address = ?last_address").
