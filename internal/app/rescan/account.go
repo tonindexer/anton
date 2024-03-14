@@ -123,14 +123,14 @@ func (s *Service) rescanInterface(ctx context.Context, task *core.RescanTask, ac
 	s.parseAccountData(ctx, task, acc)
 }
 
-func (s *Service) clearExecutedGetMethod(task *core.RescanTask, acc *core.AccountState) {
+func (s *Service) clearExecutedGetMethod(task *core.RescanTask, acc *core.AccountState, gm string) {
 	_, ok := acc.ExecutedGetMethods[task.ContractName]
 	if !ok {
 		return
 	}
 
 	for it := range acc.ExecutedGetMethods[task.ContractName] {
-		if acc.ExecutedGetMethods[task.ContractName][it].Name != task.ChangedGetMethod {
+		if acc.ExecutedGetMethods[task.ContractName][it].Name != gm {
 			continue
 		}
 		executions := acc.ExecutedGetMethods[task.ContractName]
@@ -145,7 +145,7 @@ func (s *Service) clearExecutedGetMethod(task *core.RescanTask, acc *core.Accoun
 		return
 	}
 
-	switch task.ChangedGetMethod {
+	switch gm {
 	case "get_nft_content", "get_collection_data", "get_jetton_data":
 		acc.ContentURI = ""
 		acc.ContentName = ""
@@ -154,7 +154,7 @@ func (s *Service) clearExecutedGetMethod(task *core.RescanTask, acc *core.Accoun
 		acc.ContentImageData = nil
 	}
 
-	switch task.ChangedGetMethod {
+	switch gm {
 	case "get_collection_data":
 		acc.OwnerAddress = nil
 	case "get_nft_data", "get_wallet_data":
@@ -165,36 +165,36 @@ func (s *Service) clearExecutedGetMethod(task *core.RescanTask, acc *core.Accoun
 		acc.JettonBalance = nil
 	}
 
-	switch task.ChangedGetMethod {
+	switch gm {
 	case "get_wallet_address", "get_nft_address_by_index":
 		acc.Fake = false
 	}
 }
 
-func (s *Service) executeGetMethod(ctx context.Context, task *core.RescanTask, acc *core.AccountState) {
+func (s *Service) executeGetMethod(ctx context.Context, task *core.RescanTask, acc *core.AccountState, gm string) {
 	getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 		return s.getRecentAccountState(ctx, acc.BlockID(), a)
 	}
 
-	err := s.Parser.ExecuteAccountGetMethod(ctx, task.ContractName, task.ChangedGetMethod, acc, getOtherAccountFunc)
+	err := s.Parser.ExecuteAccountGetMethod(ctx, task.ContractName, gm, acc, getOtherAccountFunc)
 	if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
 		log.Error().Err(err).
 			Str("contract_name", string(task.ContractName)).
-			Str("get_method", task.ChangedGetMethod).
+			Str("get_method", gm).
 			Str("addr", acc.Address.Base64()).
 			Msg("parse account data")
 	}
 }
 
-func (s *Service) rescanGetMethod(ctx context.Context, task *core.RescanTask, acc *core.AccountState) {
-	s.clearExecutedGetMethod(task, acc)
+func (s *Service) rescanGetMethod(ctx context.Context, task *core.RescanTask, acc *core.AccountState, gm string) {
+	s.clearExecutedGetMethod(task, acc, gm)
 
 	matchedByGetMethod := func() (matchedByGM, hasGM bool) {
 		if len(task.Contract.Code) > 0 || len(task.Contract.Addresses) > 0 {
 			return false, false
 		}
 
-		changed := abi.MethodNameHash(task.ChangedGetMethod)
+		changed := abi.MethodNameHash(gm)
 		for _, gmh := range task.Contract.GetMethodHashes {
 			if gmh == changed {
 				return true, true
@@ -212,7 +212,7 @@ func (s *Service) rescanGetMethod(ctx context.Context, task *core.RescanTask, ac
 			return
 		}
 
-		s.executeGetMethod(ctx, task, acc)
+		s.executeGetMethod(ctx, task, acc, gm)
 
 	case core.DelGetMethod:
 		m, h := matchedByGetMethod()
@@ -224,7 +224,7 @@ func (s *Service) rescanGetMethod(ctx context.Context, task *core.RescanTask, ac
 		}
 
 	case core.UpdGetMethod:
-		s.executeGetMethod(ctx, task, acc)
+		s.executeGetMethod(ctx, task, acc, gm)
 	}
 }
 
@@ -236,7 +236,9 @@ func (s *Service) rescanAccountsWorker(ctx context.Context, task *core.RescanTas
 		case core.AddInterface, core.UpdInterface, core.DelInterface:
 			s.rescanInterface(ctx, task, update)
 		case core.AddGetMethod, core.UpdGetMethod, core.DelGetMethod:
-			s.rescanGetMethod(ctx, task, update)
+			for _, gm := range task.ChangedGetMethods {
+				s.rescanGetMethod(ctx, task, update, gm)
+			}
 		}
 
 		if reflect.DeepEqual(acc, update) {

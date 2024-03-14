@@ -21,7 +21,7 @@ BEGIN;
 
         contract_name text NOT NULL,
 
-        changed_get_method text,
+        changed_get_methods text[],
 
         message_type message_type,
         outgoing boolean,

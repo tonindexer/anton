@@ -246,21 +246,37 @@ func diffOperations(oldOperations, newOperations []*core.ContractOperation) (add
 	return diffSlices(oldOperations, newOperations, func(v *core.ContractOperation) string { return v.OperationName })
 }
 
-func rescanGetMethod(ctx context.Context, in abi.ContractName, repo core.RescanRepository, t core.RescanTaskType, gm string) error {
-	err := repo.AddRescanTask(ctx, &core.RescanTask{
-		Type:             t,
-		ContractName:     in,
-		ChangedGetMethod: gm,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "add rescan task for '%s' get-method", gm)
+func getGetMethodNames(desc []abi.GetMethodDesc) (names []string) {
+	for i := range desc {
+		if len(desc[i].Arguments) > 0 {
+			continue
+		}
+		names = append(names, desc[i].Name)
+	}
+	return
+}
+
+func rescanGetMethod(ctx context.Context, in abi.ContractName, repo core.RescanRepository, t core.RescanTaskType, getMethods []string) error {
+	if len(getMethods) == 0 {
+		return nil
 	}
 
-	log.Info().
-		Str("rescan_type", string(t)).
-		Str("interface_name", string(in)).
-		Str("get_method", gm).
-		Msg("added get-method rescan task")
+	err := repo.AddRescanTask(ctx, &core.RescanTask{
+		Type:              t,
+		ContractName:      in,
+		ChangedGetMethods: getMethods,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "add rescan task for '%s' get-method", getMethods)
+	}
+
+	for _, gm := range getMethods {
+		log.Info().
+			Str("rescan_type", string(t)).
+			Str("interface_name", string(in)).
+			Str("get_method", gm).
+			Msg("added get-method rescan task")
+	}
 
 	return nil
 }
@@ -334,11 +350,21 @@ var Command = &cli.Command{
 				contractRepo := contract.NewRepository(pg)
 				rescanRepo := rescan.NewRepository(pg)
 
-				for dn, d := range definitions {
-					if err := contractRepo.AddDefinition(ctx.Context, dn, d); err != nil {
-						log.Error().Err(err).Str("definition_name", string(dn)).Msg("cannot insert contract definition")
+				addedDef, changedDef, err := diffDefinitions(ctx.Context, contractRepo, definitions)
+				if err != nil {
+					return err
+				}
+				for dn, d := range changedDef {
+					if err := contractRepo.UpdateDefinition(ctx.Context, dn, d); err != nil {
+						return errors.Wrapf(err, "cannot update contract definition '%s'", dn)
 					}
 				}
+				for dn, d := range addedDef {
+					if err := contractRepo.AddDefinition(ctx.Context, dn, d); err != nil {
+						return errors.Wrapf(err, "cannot insert contract definition '%s'", dn)
+					}
+				}
+
 				for _, i := range interfaces {
 					if err := contractRepo.AddInterface(ctx.Context, i); err != nil {
 						log.Error().Err(err).Str("interface_name", string(i.Name)).Msg("cannot insert contract interface")
@@ -352,6 +378,7 @@ var Command = &cli.Command{
 						log.Error().Err(err).Str("interface_name", string(i.Name)).Msg("cannot add interface rescan task")
 					}
 				}
+
 				for _, op := range operations {
 					if err := contractRepo.AddOperation(ctx.Context, op); err != nil {
 						log.Error().Err(err).
@@ -486,20 +513,14 @@ var Command = &cli.Command{
 					}
 				}
 
-				for _, gm := range addedGm {
-					if err := rescanGetMethod(ctx.Context, contractName, rescanRepo, core.AddGetMethod, gm.Name); err != nil {
-						return err
-					}
+				if err := rescanGetMethod(ctx.Context, contractName, rescanRepo, core.AddGetMethod, getGetMethodNames(addedGm)); err != nil {
+					return err
 				}
-				for _, gm := range changedGm {
-					if err := rescanGetMethod(ctx.Context, contractName, rescanRepo, core.UpdGetMethod, gm.Name); err != nil {
-						return err
-					}
+				if err := rescanGetMethod(ctx.Context, contractName, rescanRepo, core.UpdGetMethod, getGetMethodNames(changedGm)); err != nil {
+					return err
 				}
-				for _, gm := range deletedGm {
-					if err := rescanGetMethod(ctx.Context, contractName, rescanRepo, core.DelGetMethod, gm.Name); err != nil {
-						return err
-					}
+				if err := rescanGetMethod(ctx.Context, contractName, rescanRepo, core.DelGetMethod, getGetMethodNames(deletedGm)); err != nil {
+					return err
 				}
 
 				for _, op := range deletedOp {
@@ -545,7 +566,7 @@ var Command = &cli.Command{
 
 				oldInterface, err := contractRepo.GetInterface(ctx.Context, contractName)
 				if err != nil {
-					return errors.Wrapf(err, "get '%s' interface", oldInterface.Name)
+					return errors.Wrapf(err, "get '%s' interface", contractName)
 				}
 
 				if err := contractRepo.DeleteInterface(ctx.Context, contractName); err != nil {
