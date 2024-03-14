@@ -295,8 +295,7 @@ func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
 	var ids []*core.AccountStateID
 
 	q := r.ch.NewSelect().Model((*core.AccountState)(nil)).
-		ColumnExpr("address").
-		ColumnExpr("last_tx_lt").
+		ColumnExpr("DISTINCT address, last_tx_lt").
 		WhereGroup(" AND ", func(q *ch.SelectQuery) *ch.SelectQuery {
 			if contractName != "" {
 				q = q.WhereOr("hasAny(types, [?])", string(contractName))

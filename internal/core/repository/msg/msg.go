@@ -291,7 +291,7 @@ func (r *Repository) MatchMessagesByOperationDesc(ctx context.Context,
 	}
 
 	q := r.ch.NewSelect().Model((*core.AccountState)(nil)).
-		ColumnExpr("address").
+		ColumnExpr("DISTINCT address").
 		Where("hasAny(types, [?])", string(contractName))
 	if afterAddress != nil {
 		q = q.Where("address >= ?", afterAddress)
@@ -318,7 +318,7 @@ func (r *Repository) MatchMessagesByOperationDesc(ctx context.Context,
 		Hash []byte
 	}
 	q = r.ch.NewSelect().Model((*core.Message)(nil)).
-		ColumnExpr("hash").
+		ColumnExpr("DISTINCT hash").
 		Where("type = ?", string(msgType)).
 		Where(addrCol+" IN (?)", ch.In(addresses)).
 		Where("operation_id = ?", operationId)
