@@ -105,6 +105,26 @@ func (s *Service) emulateGetMethodNoArgs(ctx context.Context, i *core.ContractIn
 	return stack, nil
 }
 
+func removeGetMethodExecution(acc *core.AccountState, contract abi.ContractName, gm string) bool {
+	for it := range acc.ExecutedGetMethods[contract] {
+		if acc.ExecutedGetMethods[contract][it].Name != gm {
+			continue
+		}
+		executions := acc.ExecutedGetMethods[contract]
+		copy(executions[it:], executions[it+1:])
+		acc.ExecutedGetMethods[contract] = executions[:len(executions)-1]
+		return true
+	}
+	return false
+}
+
+func appendGetMethodExecution(acc *core.AccountState, contract abi.ContractName, exec abi.GetMethodExecution) {
+	// that's needed to clear array from duplicates (bug is already fixed)
+	for removeGetMethodExecution(acc, contract, exec.Name) {
+	}
+	acc.ExecutedGetMethods[contract] = append(acc.ExecutedGetMethods[contract], exec)
+}
+
 func mapContentDataNFT(ret *core.AccountState, c any) {
 	if c == nil {
 		return
@@ -156,7 +176,7 @@ func (s *Service) getNFTItemContent(ctx context.Context, collection *core.Accoun
 
 	exec.Address = &collection.Address
 
-	acc.ExecutedGetMethods[known.NFTCollection] = append(acc.ExecutedGetMethods[known.NFTCollection], exec)
+	appendGetMethodExecution(acc, known.NFTCollection, exec)
 	if exec.Error != "" {
 		return
 	}
@@ -175,7 +195,7 @@ func (s *Service) checkMinter(ctx context.Context, minter, item *core.AccountSta
 
 	exec.Address = &minter.Address
 
-	item.ExecutedGetMethods[i] = append(item.ExecutedGetMethods[i], exec)
+	appendGetMethodExecution(item, i, exec)
 	if exec.Error != "" {
 		log.Error().Err(err).Msgf("execute %s %s get-method", desc.Name, i)
 		return
@@ -239,7 +259,7 @@ func (s *Service) callGetMethod(
 		return errors.Wrapf(err, "execute get-method")
 	}
 
-	acc.ExecutedGetMethods[i.Name] = append(acc.ExecutedGetMethods[i.Name], exec)
+	appendGetMethodExecution(acc, i.Name, exec)
 	if exec.Error != "" {
 		return nil
 	}
