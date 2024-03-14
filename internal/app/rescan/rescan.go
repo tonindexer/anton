@@ -274,13 +274,14 @@ func rescanStartWorkers[V any](ctx context.Context,
 	}()
 
 	for updates := range updatesChan {
-		for _, upd := range updates {
-			updID := getID(upd)
-			if bytes.Compare(lastParsed.Address[:], updID.Address[:]) <= 0 || lastParsed.LastTxLT <= updID.LastTxLT {
-				lastParsed = updID
-			}
-		}
 		updatesAll = append(updatesAll, updates...)
+	}
+
+	for it := range slice {
+		vID := getID(slice[it])
+		if bytes.Compare(lastParsed.Address[:], vID.Address[:]) <= 0 || lastParsed.LastTxLT <= vID.LastTxLT {
+			lastParsed = vID
+		}
 	}
 
 	return updatesAll, lastParsed
