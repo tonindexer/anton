@@ -149,26 +149,15 @@ func mapContentDataNFT(ret *core.AccountState, c any) {
 }
 
 func (s *Service) getNFTItemContent(ctx context.Context, collection *core.AccountState, idx *big.Int, itemContent *cell.Cell, acc *core.AccountState) {
-	desc := &abi.GetMethodDesc{
-		Name: "get_nft_content",
-		Arguments: []abi.VmValueDesc{{
-			Name:      "index",
-			StackType: "int",
-			Format:    "bytes",
-		}, {
-			Name:      "individual_content",
-			StackType: "cell",
-		}},
-		ReturnValues: []abi.VmValueDesc{{
-			Name:      "full_content",
-			StackType: "cell",
-			Format:    "content",
-		}},
+	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.NFTCollection, "get_nft_content")
+	if err != nil {
+		log.Error().Err(err).Msg("get 'get_nft_content' method description")
+		return
 	}
 
 	args := []any{idx.Bytes(), itemContent}
 
-	exec, err := s.emulateGetMethod(ctx, desc, collection, args)
+	exec, err := s.emulateGetMethod(ctx, &desc, collection, args)
 	if err != nil {
 		log.Error().Err(err).Msg("execute get_nft_content nft_collection get-method")
 		return
@@ -208,43 +197,27 @@ func (s *Service) checkMinter(ctx context.Context, minter, item *core.AccountSta
 }
 
 func (s *Service) checkNFTMinter(ctx context.Context, minter *core.AccountState, idx *big.Int, item *core.AccountState) {
-	desc := &abi.GetMethodDesc{
-		Name: "get_nft_address_by_index",
-		Arguments: []abi.VmValueDesc{{
-			Name:      "index",
-			StackType: "int",
-			Format:    "bytes",
-		}},
-		ReturnValues: []abi.VmValueDesc{{
-			Name:      "address",
-			StackType: "slice",
-			Format:    "addr",
-		}},
+	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.NFTCollection, "get_nft_address_by_index")
+	if err != nil {
+		log.Error().Err(err).Msg("get 'get_nft_address_by_index' method description")
+		return
 	}
 
 	args := []any{idx.Bytes()}
 
-	s.checkMinter(ctx, minter, item, known.NFTCollection, desc, args)
+	s.checkMinter(ctx, minter, item, known.NFTCollection, &desc, args)
 }
 
 func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountState, ownerAddr *addr.Address, walletAcc *core.AccountState) {
-	desc := &abi.GetMethodDesc{
-		Name: "get_wallet_address",
-		Arguments: []abi.VmValueDesc{{
-			Name:      "owner_address",
-			StackType: "slice",
-			Format:    "addr",
-		}},
-		ReturnValues: []abi.VmValueDesc{{
-			Name:      "wallet_address",
-			StackType: "slice",
-			Format:    "addr",
-		}},
+	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.JettonMinter, "get_wallet_address")
+	if err != nil {
+		log.Error().Err(err).Msg("get 'get_wallet_address' method description")
+		return
 	}
 
 	args := []any{ownerAddr.MustToTonutils()}
 
-	s.checkMinter(ctx, minter, walletAcc, known.JettonMinter, desc, args)
+	s.checkMinter(ctx, minter, walletAcc, known.JettonMinter, &desc, args)
 }
 
 func (s *Service) callGetMethod(
