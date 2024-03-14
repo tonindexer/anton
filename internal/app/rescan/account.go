@@ -97,7 +97,7 @@ func (s *Service) clearParsedAccountsData(task *core.RescanTask, acc *core.Accou
 }
 
 func (s *Service) parseAccountData(ctx context.Context, task *core.RescanTask, acc *core.AccountState) {
-	if known.IsOnlyWalletInterfaces(acc.Types) {
+	if len(acc.Types) > 0 && known.IsOnlyWalletInterfaces(acc.Types) {
 		// we do not want to emulate wallet get-methods once again,
 		// as there are lots of them, so it takes a lot of CPU usage
 		return
@@ -239,7 +239,7 @@ func (s *Service) rescanAccountsWorker(ctx context.Context, task *core.RescanTas
 			s.rescanGetMethod(ctx, task, update)
 		}
 
-		if reflect.DeepEqual(acc, &update) {
+		if reflect.DeepEqual(acc, update) {
 			continue
 		}
 
