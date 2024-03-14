@@ -30,6 +30,9 @@ BEGIN;
         last_address bytea,
         last_tx_lt bigint,
 
+        updated_at timestamp without time zone NOT NULL,
+        created_at timestamp without time zone NOT NULL,
+
         CONSTRAINT rescan_tasks_pkey PRIMARY KEY (id)
     );
 

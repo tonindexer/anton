@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
@@ -42,6 +43,7 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 
 func (r *Repository) AddRescanTask(ctx context.Context, task *core.RescanTask) error {
 	task.ID = 0
+	task.CreatedAt = time.Now()
 	_, err := r.pg.NewInsert().Model(task).Exec(ctx)
 	if err != nil {
 		return err
@@ -112,6 +114,7 @@ func (r *Repository) SetRescanTask(ctx context.Context, tx bun.Tx, task *core.Re
 		Set("finished = ?finished").
 		Set("last_address = ?last_address").
 		Set("last_tx_lt = ?last_tx_lt").
+		Set("updated_at = ?", time.Now()).
 		WherePK().
 		Exec(ctx)
 	if err != nil {

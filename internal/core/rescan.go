@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/uptrace/bun"
 
@@ -71,6 +72,9 @@ type RescanTask struct {
 	// checkpoint
 	LastAddress *addr.Address `bun:"type:bytea" json:"last_address"`
 	LastTxLt    uint64        `bun:"type:bigint" json:"last_tx_lt"`
+
+	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
+	CreatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"created_at"`
 }
 
 type RescanRepository interface {
