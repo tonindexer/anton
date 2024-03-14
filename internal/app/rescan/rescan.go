@@ -130,7 +130,7 @@ func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) erro
 
 		return nil
 
-	case core.UpdInterface, core.DelInterface:
+	case core.DelInterface:
 		ids, err := s.AccountRepo.MatchStatesByInterfaceDesc(ctx, task.ContractName, nil, nil, nil, task.LastAddress, task.LastTxLt, s.SelectLimit)
 		if err != nil {
 			return errors.Wrapf(err, "match states by interface description")
@@ -146,7 +146,7 @@ func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) erro
 
 		return nil
 
-	case core.AddGetMethod, core.DelGetMethod, core.UpdGetMethod:
+	case core.UpdInterface, core.AddGetMethod, core.DelGetMethod, core.UpdGetMethod:
 		ids, err := s.AccountRepo.MatchStatesByInterfaceDesc(ctx, task.ContractName, task.Contract.Addresses, codeHash, task.Contract.GetMethodHashes, task.LastAddress, task.LastTxLt, s.SelectLimit)
 		if err != nil {
 			return errors.Wrapf(err, "match states by interface description")

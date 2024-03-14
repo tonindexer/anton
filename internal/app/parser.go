@@ -15,7 +15,10 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-var ErrImpossibleParsing = errors.New("parsing is impossible")
+var (
+	ErrImpossibleParsing          = errors.New("parsing is impossible")
+	ErrUnmatchedContractInterface = errors.New("account state does not match the contract interface description")
+)
 
 type ParserConfig struct {
 	BlockchainConfig *cell.Cell

@@ -132,7 +132,7 @@ func (s *Service) ParseAccountContractData(
 	others func(context.Context, addr.Address) (*core.AccountState, error),
 ) error {
 	if !interfaceMatched(acc, contractDesc) {
-		return errors.Wrap(core.ErrInvalidArg, "account state does not match the contract interface description")
+		return app.ErrUnmatchedContractInterface
 	}
 
 	var contractTypeSet bool

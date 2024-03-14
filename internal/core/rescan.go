@@ -18,9 +18,9 @@ const (
 	// execute get methods on these pairs, and update the account states with the newly parsed data.
 	AddInterface RescanTaskType = "add_interface"
 
-	// UpdInterface filters the account states by the already set contract name.
-	// Again, collect (address, last_tx_lt) pairs, execute get methods,
-	// update the account states with the parsed data.
+	// UpdInterface is invoked when changes occur to the interface code, addresses, or get-methods.
+	// This requires removing parsed data from account states that are no longer relevant
+	// and reparsing data for account states that have become relevant due to the changes.
 	UpdInterface RescanTaskType = "upd_interface"
 
 	// DelInterface does the same filtering as UpdInterface,

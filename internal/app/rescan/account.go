@@ -108,7 +108,7 @@ func (s *Service) parseAccountData(ctx context.Context, task *core.RescanTask, a
 	}
 
 	err := s.Parser.ParseAccountContractData(ctx, task.Contract, acc, getOtherAccountFunc)
-	if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
+	if err != nil && !errors.Is(err, app.ErrUnmatchedContractInterface) {
 		log.Error().Err(err).Str("addr", acc.Address.Base64()).Msg("parse account data")
 	}
 }
