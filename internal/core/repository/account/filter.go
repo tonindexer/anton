@@ -83,7 +83,7 @@ func flattenStateIDs(ids []*core.AccountStateID) (ret [][]any) {
 	return
 }
 
-func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq, total int) (ret []*core.AccountState, err error) { //nolint:gocyclo // that's ok
+func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq, total int) (ret []*core.AccountState, err error) { //nolint:gocyclo,gocognit // that's ok
 	var (
 		q                   *bun.SelectQuery
 		prefix, statesTable string
