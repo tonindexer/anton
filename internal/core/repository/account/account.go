@@ -301,7 +301,7 @@ func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
 				q = q.WhereOr("hasAny(types, [?])", string(contractName))
 			}
 			if len(addresses) > 0 {
-				q = q.WhereOr("address IN (?)", addresses)
+				q = q.WhereOr("address IN ?", ch.In(addresses))
 			}
 			if len(codeHash) > 0 {
 				q = q.WhereOr("code_hash = ?", codeHash)
