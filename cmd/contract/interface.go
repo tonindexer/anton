@@ -195,6 +195,7 @@ func diffDefinitions(ctx context.Context, contractRepo core.ContractRepository, 
 		od, ok := old[dt]
 		if !ok {
 			added[dt] = d
+			continue
 		}
 		if !reflect.DeepEqual(od, d) {
 			changed[dt] = d
@@ -217,6 +218,7 @@ func diffSlices[V any](oldS, newS []V, getName func(v V) string) (added, changed
 		ov, ok := oldM[vn]
 		if !ok {
 			added = append(added, v)
+			continue
 		}
 		if !reflect.DeepEqual(ov, v) {
 			changed = append(changed, v)
@@ -254,6 +256,23 @@ func getGetMethodNames(desc []abi.GetMethodDesc) (names []string) {
 		names = append(names, desc[i].Name)
 	}
 	return
+}
+
+func rescanInterface(ctx context.Context, in abi.ContractName, repo core.RescanRepository, t core.RescanTaskType) error {
+	err := repo.AddRescanTask(ctx, &core.RescanTask{
+		Type:         t,
+		ContractName: in,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "add rescan task for '%s' contract interface", in)
+	}
+
+	log.Info().
+		Str("rescan_type", string(t)).
+		Str("interface_name", string(in)).
+		Msg("added contract interface rescan task")
+
+	return nil
 }
 
 func rescanGetMethod(ctx context.Context, in abi.ContractName, repo core.RescanRepository, t core.RescanTaskType, getMethods []string) error {
@@ -370,10 +389,7 @@ var Command = &cli.Command{
 						log.Error().Err(err).Str("interface_name", string(i.Name)).Msg("cannot insert contract interface")
 						continue
 					}
-					err := rescanRepo.AddRescanTask(ctx.Context, &core.RescanTask{
-						Type:         core.AddInterface,
-						ContractName: i.Name,
-					})
+					err := rescanInterface(ctx.Context, i.Name, rescanRepo, core.AddInterface)
 					if err != nil {
 						log.Error().Err(err).Str("interface_name", string(i.Name)).Msg("cannot add interface rescan task")
 					}
@@ -387,13 +403,7 @@ var Command = &cli.Command{
 							Msg("cannot insert contract operation")
 						continue
 					}
-					err := rescanRepo.AddRescanTask(ctx.Context, &core.RescanTask{
-						Type:         core.UpdOperation,
-						ContractName: op.ContractName,
-						MessageType:  op.MessageType,
-						Outgoing:     op.Outgoing,
-						OperationID:  op.OperationID,
-					})
+					err := rescanOperation(ctx.Context, rescanRepo, core.UpdOperation, op)
 					if err != nil {
 						log.Error().Err(err).
 							Str("interface_name", string(op.ContractName)).
@@ -490,7 +500,7 @@ var Command = &cli.Command{
 				}
 
 				iChanged, addedGm, changedGm, deletedGm := diffInterface(oldInterface, newInterface)
-				if iChanged {
+				if iChanged || len(addedGm) > 0 || len(changedGm) > 0 || len(deletedGm) > 0 {
 					if err := contractRepo.UpdateInterface(ctx.Context, newInterface); err != nil {
 						return errors.Wrapf(err, "cannot update contract interface '%s'", newInterface.Name)
 					}
@@ -510,6 +520,12 @@ var Command = &cli.Command{
 				for _, op := range addedOp {
 					if err := contractRepo.AddOperation(ctx.Context, op); err != nil {
 						return errors.Wrapf(err, "cannot insert contract operation '%s'", op.OperationName)
+					}
+				}
+
+				if iChanged {
+					if err := rescanInterface(ctx.Context, contractName, rescanRepo, core.UpdInterface); err != nil {
+						return err
 					}
 				}
 
@@ -579,12 +595,9 @@ var Command = &cli.Command{
 					}
 				}
 
-				err = rescanRepo.AddRescanTask(ctx.Context, &core.RescanTask{
-					Type:         core.DelInterface,
-					ContractName: contractName,
-				})
+				err = rescanInterface(ctx.Context, contractName, rescanRepo, core.DelInterface)
 				if err != nil {
-					log.Error().Err(err).Str("interface_name", string(contractName)).Msg("cannot add interface rescan task")
+					return err
 				}
 
 				return nil
