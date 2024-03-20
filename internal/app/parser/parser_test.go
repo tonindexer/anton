@@ -3,12 +3,14 @@ package parser
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/abi/known"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
@@ -62,8 +64,58 @@ func (m *mockContractRepo) GetInterfaces(_ context.Context) ([]*core.ContractInt
 func (m *mockContractRepo) GetInterface(context.Context, abi.ContractName) (*core.ContractInterface, error) {
 	panic("implement me")
 }
-func (m *mockContractRepo) GetMethodDescription(context.Context, abi.ContractName, string) (abi.GetMethodDesc, error) {
-	panic("implement me")
+func (m *mockContractRepo) GetMethodDescription(_ context.Context, contract abi.ContractName, gm string) (abi.GetMethodDesc, error) {
+	switch {
+	case contract == known.NFTCollection && gm == "get_nft_content":
+		return abi.GetMethodDesc{
+			Name: "get_nft_content",
+			Arguments: []abi.VmValueDesc{{
+				Name:      "index",
+				StackType: "int",
+				Format:    "bytes",
+			}, {
+				Name:      "individual_content",
+				StackType: "cell",
+			}},
+			ReturnValues: []abi.VmValueDesc{{
+				Name:      "full_content",
+				StackType: "cell",
+				Format:    "content",
+			}},
+		}, nil
+
+	case contract == known.NFTCollection && gm == "get_nft_address_by_index":
+		return abi.GetMethodDesc{
+			Name: "get_nft_address_by_index",
+			Arguments: []abi.VmValueDesc{{
+				Name:      "index",
+				StackType: "int",
+				Format:    "bytes",
+			}},
+			ReturnValues: []abi.VmValueDesc{{
+				Name:      "address",
+				StackType: "slice",
+				Format:    "addr",
+			}},
+		}, nil
+
+	case contract == known.JettonMinter && gm == "get_wallet_address":
+		return abi.GetMethodDesc{
+			Name: "get_wallet_address",
+			Arguments: []abi.VmValueDesc{{
+				Name:      "owner_address",
+				StackType: "slice",
+				Format:    "addr",
+			}},
+			ReturnValues: []abi.VmValueDesc{{
+				Name:      "wallet_address",
+				StackType: "slice",
+				Format:    "addr",
+			}},
+		}, nil
+	}
+
+	panic(fmt.Errorf("unknown %s get-method description for %s contract", contract, gm))
 }
 
 func (m *mockContractRepo) AddOperation(_ context.Context, _ *core.ContractOperation) error {
