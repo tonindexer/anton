@@ -278,7 +278,6 @@
     "get_methods": [
       {
         "name": "get_telemint_token_name",
-        "arguments": [],
         "return_values": [
           {
             "name": "token_name",
@@ -288,7 +287,6 @@
       },
       {
         "name": "get_telemint_auction_state",
-        "arguments": [],
         "return_values": [
           {
             "name": "bidder_address",
@@ -315,7 +313,6 @@
       },
       {
         "name": "get_telemint_auction_config",
-        "arguments": [],
         "return_values": [
           {
             "name": "beneficiary_address",

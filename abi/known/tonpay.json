@@ -471,7 +471,6 @@
     "get_methods": [
       {
         "name": "get_invoice_data",
-        "arguments": [],
         "return_values": [
           {
             "name": "store",
