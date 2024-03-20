@@ -103,7 +103,7 @@ func (s *Service) rescanLoop() {
 	}
 }
 
-func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) error {
+func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) error { //nolint:gocyclo // yeah, it's a bit long
 	var codeHash []byte
 	if task.Contract != nil && task.Contract.Code != nil {
 		codeCell, err := cell.FromBOC(task.Contract.Code)
