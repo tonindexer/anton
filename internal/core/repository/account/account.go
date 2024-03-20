@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -200,6 +201,10 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 	}
 
 	for _, a := range accounts {
+		for _, executions := range a.ExecutedGetMethods {
+			sort.Slice(executions, func(i, j int) bool { return executions[i].Name < executions[j].Name })
+		}
+
 		_, err := tx.NewInsert().Model(a).Exec(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "cannot insert new %s acc state", a.Address.String())
@@ -254,6 +259,10 @@ func (r *Repository) UpdateAccountStates(ctx context.Context, accounts []*core.A
 	}
 
 	for _, a := range accounts {
+		for _, executions := range a.ExecutedGetMethods {
+			sort.Slice(executions, func(i, j int) bool { return executions[i].Name < executions[j].Name })
+		}
+
 		logAccountStateDataUpdate(a)
 
 		_, err := r.pg.NewUpdate().Model(a).
