@@ -101,7 +101,7 @@ func (s *Service) rescanMessagesWorker(ctx context.Context, task *core.RescanTas
 			upd.SrcContract, upd.DstContract, upd.OperationName, upd.DataJSON, upd.Error = "", "", "", nil, ""
 
 		case core.UpdOperation:
-			if err := s.rescanMessage(ctx, task, msg); err != nil {
+			if err := s.rescanMessage(ctx, task, &upd); err != nil {
 				continue
 			}
 		}
