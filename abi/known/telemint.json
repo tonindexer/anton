@@ -281,7 +281,8 @@
         "return_values": [
           {
             "name": "token_name",
-            "stack_type": "slice"
+            "stack_type": "slice",
+            "format": "string"
           }
         ]
       },
