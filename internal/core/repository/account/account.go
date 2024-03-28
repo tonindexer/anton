@@ -204,11 +204,11 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		for _, executions := range a.ExecutedGetMethods {
 			sort.Slice(executions, func(i, j int) bool { return executions[i].Name < executions[j].Name })
 		}
+	}
 
-		_, err := tx.NewInsert().Model(a).Exec(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "cannot insert new %s acc state", a.Address.String())
-		}
+	_, err := tx.NewInsert().Model(&accounts).Exec(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "cannot insert new account states")
 	}
 
 	addrTxLT := make(map[addr.Address]uint64)
@@ -233,7 +233,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		}
 	}
 
-	_, err := r.ch.NewInsert().Model(&accounts).Exec(ctx)
+	_, err = r.ch.NewInsert().Model(&accounts).Exec(ctx)
 	if err != nil {
 		return err
 	}
