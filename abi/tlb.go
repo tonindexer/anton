@@ -18,7 +18,7 @@ import (
 type TLBFieldDesc struct {
 	Name     string        `json:"name"`
 	Type     string        `json:"tlb_type"`
-	Format   string        `json:"format,omitempty"`
+	Format   TLBType       `json:"format,omitempty"`
 	Optional bool          `json:"optional,omitempty"`
 	Fields   TLBFieldsDesc `json:"struct_fields,omitempty"` // Format = "struct"
 }
@@ -32,7 +32,7 @@ type OperationDesc struct {
 	Body TLBFieldsDesc `json:"body"`
 }
 
-func tlbMakeDesc(t reflect.Type) (ret TLBFieldsDesc, err error) {
+func tlbMakeDesc(t reflect.Type, skipMagic ...bool) (ret TLBFieldsDesc, err error) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 
@@ -41,7 +41,7 @@ func tlbMakeDesc(t reflect.Type) (ret TLBFieldsDesc, err error) {
 			Type: f.Tag.Get("tlb"),
 		}
 
-		if i == 0 && f.Type == reflect.TypeOf(tlb.Magic{}) {
+		if len(skipMagic) > 0 && skipMagic[0] && i == 0 && f.Type == reflect.TypeOf(tlb.Magic{}) {
 			continue // skip tlb constructor tag as it has to be inside OperationDesc
 		}
 
@@ -51,18 +51,21 @@ func tlbMakeDesc(t reflect.Type) (ret TLBFieldsDesc, err error) {
 			schema.Format = ft
 
 		case f.Type.Kind() == reflect.Pointer && f.Type.Elem().Kind() == reflect.Struct:
-			schema.Format = structTypeName
+			schema.Format = TLBStructCell
 			schema.Fields, err = tlbMakeDesc(f.Type.Elem())
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", f.Name, err)
 			}
 
 		case f.Type.Kind() == reflect.Struct:
-			schema.Format = structTypeName
+			schema.Format = TLBStructCell
 			schema.Fields, err = tlbMakeDesc(f.Type)
 			if err != nil {
 				return nil, fmt.Errorf("%s: %w", f.Name, err)
 			}
+
+		case strings.HasPrefix(schema.Type, "[") && strings.HasSuffix(schema.Type, "]"):
+			// no format for union
 
 		default:
 			return nil, fmt.Errorf("%s: unknown structField type %s", f.Name, f.Type)
@@ -105,16 +108,25 @@ func tlbParseSettingsDict(settings []string) (reflect.Type, error) {
 		return nil, fmt.Errorf("wrong dict settings: %v", settings)
 	}
 
+	if settings[1] == "inline" {
+		settings = settings[1:]
+	}
+
 	_, err := strconv.ParseUint(settings[1], 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("cannot deserialize field as dict, bad size '%s'", settings[1])
 	}
 
-	if len(settings) >= 4 {
-		// transformation
-		return nil, errors.New("dict transformation is not supported")
+	if len(settings) < 4 {
+		return reflect.TypeOf((*cell.Dictionary)(nil)), nil
 	}
-	return reflect.TypeOf((*cell.Dictionary)(nil)), nil
+
+	mapVT, err := tlbParseSettings(strings.Join(settings[3:], " "))
+	if err != nil {
+		return nil, err
+	}
+
+	return reflect.MapOf(reflect.TypeOf(""), mapVT), nil
 }
 
 // tlbParseSettings automatically determines go type to map field into (refactor of tlb.LoadFromCell)
@@ -137,6 +149,19 @@ func tlbParseSettings(tag string) (reflect.Type, error) {
 	settings := strings.Split(tag, " ")
 	if len(settings) == 0 {
 		return nil, nil
+	}
+
+	if strings.HasPrefix(settings[0], "[") && strings.HasSuffix(settings[0], "]") {
+		for _, dn := range strings.Split(tag[1:len(tag)-1], ",") {
+			// iterate through union definitions
+			// check that all definitions are known
+			_, ok := registeredDefinitions[TLBType(dn)]
+			if !ok {
+				return nil, fmt.Errorf("cannot find definition for '%s' type inside union", dn)
+			}
+		}
+		var v any
+		return reflect.ValueOf(&v).Type().Elem(), nil // return type with interface kind
 	}
 
 	switch settings[0] {
@@ -162,7 +187,10 @@ func tlbParseSettings(tag string) (reflect.Type, error) {
 		return reflect.TypeOf([]byte(nil)), nil
 
 	case "^", ".":
-		return reflect.TypeOf((*cell.Cell)(nil)), nil
+		if len(settings) == 1 {
+			return reflect.TypeOf((*cell.Cell)(nil)), nil
+		}
+		return tlbParseSettings(strings.Join(settings[1:], " "))
 
 	case "dict":
 		return tlbParseSettingsDict(settings)
@@ -172,11 +200,42 @@ func tlbParseSettings(tag string) (reflect.Type, error) {
 	}
 }
 
+func tlbMapFormat(format TLBType, tag string) (reflect.Type, error) {
+	t, ok := typeNameMap[format]
+	if ok {
+		return t, nil
+	}
+
+	switch format {
+	case "":
+		// parse tlb tag and get default type
+		t, err := tlbParseSettings(tag)
+		if t == nil || err != nil {
+			return nil, fmt.Errorf("parse tlb settings with tag '%s': %w", tag, err)
+		}
+		return t, nil
+
+	default:
+		d, ok := registeredDefinitions[format]
+		if !ok {
+			return nil, fmt.Errorf("cannot find definition for '%s' format", format)
+		}
+
+		t, err := tlbParseDesc(nil, d)
+		if err != nil {
+			return nil, errors.Wrap(err, "creating new type from definition")
+		}
+		vt := reflect.PointerTo(t)
+
+		if !strings.HasPrefix(tag, "dict") {
+			return vt, nil
+		}
+		return reflect.MapOf(reflect.TypeOf(""), vt), nil
+	}
+}
+
 func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc, skipOptional ...bool) (reflect.Type, error) {
-	var (
-		err error
-		ok  bool
-	)
+	var err error
 
 	for i := range schema {
 		f := &schema[i]
@@ -184,32 +243,26 @@ func tlbParseDesc(fields []reflect.StructField, schema TLBFieldsDesc, skipOption
 		if len(skipOptional) > 0 && skipOptional[0] && f.Optional {
 			continue
 		}
+		if len(f.Fields) > 0 && f.Format == "" {
+			f.Format = TLBStructCell
+		}
 
 		var sf = reflect.StructField{
 			Name: strcase.ToCamel(f.Name),
 			Tag:  reflect.StructTag(fmt.Sprintf("tlb:%q json:%q", f.Type, strcase.ToSnake(f.Name))),
 		}
 
-		// get type from `format` field
-		sf.Type, ok = typeNameMap[f.Format]
-		if !ok {
-			if f.Format != "" && f.Format != structTypeName {
-				return nil, fmt.Errorf("unknown format '%s'", f.Format)
-			}
-			// parse tlb tag and get default type
-			sf.Type, err = tlbParseSettings(sf.Tag.Get("tlb"))
-			if sf.Type == nil || err != nil {
-				return nil, fmt.Errorf("%s (tag = %s) parse tlb settings: %w", sf.Name, sf.Tag.Get("tlb"), err)
-			}
-		}
-
-		// make new struct
-		if len(f.Fields) > 0 {
+		if f.Format == TLBStructCell {
 			sf.Type, err = tlbParseDesc(nil, f.Fields, skipOptional...)
 			if err != nil {
-				return nil, fmt.Errorf("%s: %w", sf.Name, err)
+				return nil, fmt.Errorf("%s field with struct: %w", sf.Name, err)
 			}
 			sf.Type = reflect.PointerTo(sf.Type)
+		} else {
+			sf.Type, err = tlbMapFormat(f.Format, sf.Tag.Get("tlb"))
+			if err != nil {
+				return nil, errors.Wrapf(err, "%s field", f.Name)
+			}
 		}
 
 		fields = append(fields, sf)
@@ -234,19 +287,28 @@ func (desc TLBFieldsDesc) New(skipOptional ...bool) (any, error) {
 	return reflect.New(t).Interface(), nil
 }
 
-func (desc TLBFieldsDesc) MapRegisteredDefinitions() {
-	for i := range desc {
-		if desc[i].Format == structTypeName {
-			desc[i].Fields.MapRegisteredDefinitions()
-			continue
-		}
-		d, ok := registeredDefinitions[desc[i].Format]
-		if ok {
-			desc[i].Format = structTypeName
-			desc[i].Fields = d
-			continue
-		}
+func (desc TLBFieldsDesc) FromCell(c *cell.Cell) (any, error) {
+	parsed, err := desc.New()
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating struct")
 	}
+	if err = tlb.LoadFromCell(parsed, c.BeginParse()); err == nil {
+		return parsed, nil
+	}
+	if !strings.Contains(err.Error(), "not enough data in reader") && !strings.Contains(err.Error(), "no more refs exists") {
+		return nil, errors.Wrap(err, "load from cell")
+	}
+
+	// skipping optional fields
+	parsed, err = desc.New(true)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating struct (skip optional)")
+	}
+	if err := tlb.LoadFromCell(parsed, c.BeginParse()); err != nil {
+		return nil, errors.Wrap(err, "load from cell (skip optional)")
+	}
+
+	return parsed, nil
 }
 
 func operationID(t reflect.Type) (uint32, error) {
@@ -286,7 +348,7 @@ func NewOperationDesc(x any) (*OperationDesc, error) {
 	}
 	ret.Code = fmt.Sprintf("0x%x", opCode)
 
-	ret.Body, err = tlbMakeDesc(t)
+	ret.Body, err = tlbMakeDesc(t, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "make tlb schema")
 	}
@@ -309,6 +371,26 @@ func (desc *OperationDesc) New(skipOptional ...bool) (any, error) {
 	return reflect.New(t).Interface(), nil
 }
 
-func (desc *OperationDesc) MapRegisteredDefinitions() {
-	desc.Body.MapRegisteredDefinitions()
+func (desc *OperationDesc) FromCell(c *cell.Cell) (any, error) {
+	parsed, err := desc.New()
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating struct")
+	}
+	if err = tlb.LoadFromCell(parsed, c.BeginParse()); err == nil {
+		return parsed, nil
+	}
+	if !strings.Contains(err.Error(), "not enough data in reader") && !strings.Contains(err.Error(), "no more refs exists") {
+		return nil, errors.Wrap(err, "load from cell")
+	}
+
+	// skipping optional fields
+	parsed, err = desc.New(true)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating struct (skip optional)")
+	}
+	if err = tlb.LoadFromCell(parsed, c.BeginParse()); err != nil {
+		return nil, errors.Wrap(err, "load from cell (skip optional)")
+	}
+
+	return parsed, nil
 }

@@ -13,11 +13,13 @@ import (
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/ton"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/app/fetcher"
 	"github.com/tonindexer/anton/internal/app/indexer"
 	"github.com/tonindexer/anton/internal/app/parser"
 	"github.com/tonindexer/anton/internal/core/repository"
+	"github.com/tonindexer/anton/internal/core/repository/account"
 	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
 
@@ -35,7 +37,9 @@ var Command = &cli.Command{
 			return errors.Wrap(err, "cannot connect to a database")
 		}
 
-		interfaces, err := contract.NewRepository(conn.PG).GetInterfaces(ctx.Context)
+		contractRepo := contract.NewRepository(conn.PG)
+
+		interfaces, err := contractRepo.GetInterfaces(ctx.Context)
 		if err != nil {
 			return errors.Wrap(err, "get interfaces")
 		}
@@ -43,8 +47,17 @@ var Command = &cli.Command{
 			return errors.New("no contract interfaces")
 		}
 
+		def, err := contractRepo.GetDefinitions(ctx.Context)
+		if err != nil {
+			return errors.Wrap(err, "get definitions")
+		}
+		err = abi.RegisterDefinitions(def)
+		if err != nil {
+			return errors.Wrap(err, "get definitions")
+		}
+
 		client := liteclient.NewConnectionPool()
-		api := ton.NewAPIClient(client)
+		api := ton.NewAPIClient(client, ton.ProofCheckPolicyUnsafe).WithRetry()
 		for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
 			split := strings.Split(addr, "|")
 			if len(split) != 2 {
@@ -62,11 +75,12 @@ var Command = &cli.Command{
 
 		p := parser.NewService(&app.ParserConfig{
 			BlockchainConfig: bcConfig,
-			ContractRepo:     contract.NewRepository(conn.PG),
+			ContractRepo:     contractRepo,
 		})
 		f := fetcher.NewService(&app.FetcherConfig{
-			API:    api,
-			Parser: p,
+			API:         api,
+			AccountRepo: account.NewRepository(conn.CH, conn.PG),
+			Parser:      p,
 		})
 		i := indexer.NewService(&app.IndexerConfig{
 			DB:        conn,

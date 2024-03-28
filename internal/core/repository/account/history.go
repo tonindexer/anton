@@ -29,7 +29,7 @@ func (r *Repository) AggregateAccountsHistory(ctx context.Context, req *history.
 	q := r.ch.NewSelect().Model((*core.AccountState)(nil))
 
 	if len(req.ContractTypes) > 0 {
-		q = q.Where("hasAny(types, [?])", ch.In(getContractTypes(req.ContractTypes)))
+		q = q.Where("hasAny(types, ?)", ch.Array(getContractTypes(req.ContractTypes)))
 	}
 	if req.MinterAddress != nil {
 		q = q.Where("minter_address = ?", req.MinterAddress)

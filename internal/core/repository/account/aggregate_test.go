@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/uptrace/bun/extra/bunbig"
 
 	"github.com/tonindexer/anton/abi/known"
@@ -37,7 +38,7 @@ func TestRepository_AggregateAccounts_NFTCollection(t *testing.T) {
 
 	t.Run("insert test collection data", func(t *testing.T) {
 		tx, err := pg.Begin()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		collectionStates = rndm.AccountStatesContract(100, known.NFTCollection, nil)
 
@@ -47,10 +48,10 @@ func TestRepository_AggregateAccounts_NFTCollection(t *testing.T) {
 		}
 
 		err = repo.AddAccountStates(ctx, tx, append(itemsStates, collectionStates...))
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		err = tx.Commit()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 	})
 
 	t.Run("aggregate collections info", func(t *testing.T) {
@@ -58,16 +59,16 @@ func TestRepository_AggregateAccounts_NFTCollection(t *testing.T) {
 			MinterAddress: &collectionStates[0].Address,
 			Limit:         25,
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, itemCount, res.Items)
-		assert.Equal(t, itemCount, res.OwnersCount)
-		assert.Equal(t, itemCount, len(res.OwnedItems))
+		require.Nil(t, err)
+		require.Equal(t, itemCount, res.Items)
+		require.Equal(t, itemCount, res.OwnersCount)
+		require.Equal(t, itemCount, len(res.OwnedItems))
 		for _, c := range res.OwnedItems {
-			assert.Equal(t, 1, c.ItemsCount)
+			require.Equal(t, 1, c.ItemsCount)
 		}
-		assert.Equal(t, itemCount, len(res.UniqueOwners))
+		require.Equal(t, itemCount, len(res.UniqueOwners))
 		for _, c := range res.UniqueOwners {
-			assert.Equal(t, 100/itemCount, c.OwnersCount)
+			require.Equal(t, 100/itemCount, c.OwnersCount)
 		}
 	})
 
@@ -102,7 +103,7 @@ func TestRepository_AggregateAccounts_JettonMinter(t *testing.T) {
 
 	t.Run("insert test jetton data", func(t *testing.T) {
 		tx, err := pg.Begin()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		minterStates = rndm.AccountStatesContract(100, known.JettonMinter, nil)
 
@@ -116,10 +117,10 @@ func TestRepository_AggregateAccounts_JettonMinter(t *testing.T) {
 		}
 
 		err = repo.AddAccountStates(ctx, tx, append(walletsStates, minterStates...))
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		err = tx.Commit()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 	})
 
 	t.Run("aggregate jetton data", func(t *testing.T) {
@@ -127,12 +128,12 @@ func TestRepository_AggregateAccounts_JettonMinter(t *testing.T) {
 			MinterAddress: &minterStates[0].Address,
 			Limit:         25,
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, walletsCount, res.Wallets)
-		assert.Equal(t, totalSupply, res.TotalSupply)
-		assert.Equal(t, walletsCount, len(res.OwnedBalance))
+		require.Nil(t, err)
+		require.Equal(t, walletsCount, res.Wallets)
+		require.Equal(t, totalSupply, res.TotalSupply)
+		require.Equal(t, walletsCount, len(res.OwnedBalance))
 		for _, b := range res.OwnedBalance {
-			assert.Equal(t, ownedBalance[*b.OwnerAddress], b.Balance)
+			require.Equal(t, ownedBalance[*b.OwnerAddress], b.Balance)
 		}
 	})
 

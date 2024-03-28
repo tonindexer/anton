@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
@@ -93,7 +93,7 @@ func TestNewOperationDesc_TelemintNFTCollection(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		require.Nil(t, err)
-		assert.Equal(t, test.expected, string(got))
+		require.Equal(t, test.expected, string(got))
 	}
 }
 
@@ -142,7 +142,7 @@ func TestNewOperationDesc_TelemintNFTItem(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		require.Nil(t, err)
-		assert.Equal(t, test.expected, string(got))
+		require.Equal(t, test.expected, string(got))
 	}
 }
 
@@ -160,7 +160,7 @@ func TestOperationDesc_TelemintNFTCollection(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "telemint_nft_collection" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -191,7 +191,7 @@ func TestOperationDesc_TelemintNFTCollection(t *testing.T) {
 
 	for _, test := range testCases {
 		j := loadOperation(t, i, test.name, test.boc)
-		assert.Equal(t, test.expected, j)
+		require.Equal(t, test.expected, j)
 	}
 }
 
@@ -209,7 +209,7 @@ func TestGetMethodDesc_TelemintNFTItem(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "telemint_nft_item" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -253,6 +253,6 @@ func TestGetMethodDesc_TelemintNFTItem(t *testing.T) {
 
 	for _, test := range testCases {
 		ret := execGetMethod(t, i, test.addr, test.name, test.code, test.data)
-		assert.Equal(t, test.expected, ret)
+		require.Equal(t, test.expected, ret)
 	}
 }

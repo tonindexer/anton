@@ -10,8 +10,8 @@ var (
 	seqNo uint32 = 100000
 )
 
-func BlockID(workchain int32) *core.BlockID {
-	return &core.BlockID{
+func BlockID(workchain int32) core.BlockID {
+	return core.BlockID{
 		Workchain: workchain,
 		Shard:     -9223372036854775808,
 		SeqNo:     seqNo,

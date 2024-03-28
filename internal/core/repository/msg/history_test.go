@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/uptrace/bun/extra/bunbig"
 
 	"github.com/tonindexer/anton/internal/core/aggregate/history"
@@ -32,7 +33,7 @@ func TestRepository_AggregateMessagesHistory(t *testing.T) {
 
 	t.Run("insert test data", func(t *testing.T) {
 		tx, err := pg.Begin()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		messages := rndm.Messages(50)
 		for _, m := range messages {
@@ -44,10 +45,10 @@ func TestRepository_AggregateMessagesHistory(t *testing.T) {
 		}
 
 		err = repo.AddMessages(ctx, tx, messages)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		err = tx.Commit()
-		assert.Nil(t, err)
+		require.Nil(t, err)
 	})
 
 	t.Run("count messages to special contract", func(t *testing.T) {
@@ -59,9 +60,9 @@ func TestRepository_AggregateMessagesHistory(t *testing.T) {
 				Interval: 24 * time.Hour,
 			},
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(res.CountRes))
-		assert.Equal(t, 50, res.CountRes[0].Value)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(res.CountRes))
+		require.Equal(t, 50, res.CountRes[0].Value)
 	})
 
 	t.Run("sum messages amount to special contract", func(t *testing.T) {
@@ -73,9 +74,9 @@ func TestRepository_AggregateMessagesHistory(t *testing.T) {
 				Interval: 24 * time.Hour,
 			},
 		})
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(res.BigIntRes))
-		assert.Equal(t, amountSum, res.BigIntRes[0].Value)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(res.BigIntRes))
+		require.Equal(t, amountSum, res.BigIntRes[0].Value)
 	})
 
 	t.Run("drop tables again", func(t *testing.T) {

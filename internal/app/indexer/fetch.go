@@ -63,7 +63,7 @@ func (s *Service) fetchMaster(seq uint32) *core.Block {
 		go func() {
 			defer wg.Done()
 
-			tx, err := s.Fetcher.BlockTransactions(ctx, master)
+			tx, err := s.Fetcher.BlockTransactions(ctx, master, master)
 
 			ch <- processedBlock{
 				block: &core.Block{
@@ -83,7 +83,7 @@ func (s *Service) fetchMaster(seq uint32) *core.Block {
 			go func(shard *ton.BlockIDExt) {
 				defer wg.Done()
 
-				tx, err := s.Fetcher.BlockTransactions(ctx, shard)
+				tx, err := s.Fetcher.BlockTransactions(ctx, master, shard)
 
 				ch <- processedBlock{
 					block: &core.Block{

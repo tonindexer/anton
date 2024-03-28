@@ -13,10 +13,12 @@ import (
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/ton"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/api/http"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/app/query"
 	"github.com/tonindexer/anton/internal/core/repository"
+	"github.com/tonindexer/anton/internal/core/repository/contract"
 )
 
 var Command = &cli.Command{
@@ -33,8 +35,17 @@ var Command = &cli.Command{
 			return errors.Wrap(err, "cannot connect to a database")
 		}
 
+		def, err := contract.NewRepository(conn.PG).GetDefinitions(ctx.Context)
+		if err != nil {
+			return errors.Wrap(err, "get definitions")
+		}
+		err = abi.RegisterDefinitions(def)
+		if err != nil {
+			return errors.Wrap(err, "get definitions")
+		}
+
 		client := liteclient.NewConnectionPool()
-		api := ton.NewAPIClient(client)
+		api := ton.NewAPIClient(client, ton.ProofCheckPolicyUnsafe).WithRetry()
 		for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
 			split := strings.Split(addr, "|")
 			if len(split) != 2 {

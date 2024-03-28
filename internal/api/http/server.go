@@ -34,6 +34,7 @@ type QueryController interface {
 
 	GetInterfaces(*gin.Context)
 	GetOperations(*gin.Context)
+	GetDefinitions(*gin.Context)
 }
 
 type Server struct {
@@ -75,6 +76,7 @@ func (s *Server) RegisterRoutes(t QueryController) {
 
 	base.GET("/contracts/interfaces", t.GetInterfaces)
 	base.GET("/contracts/operations", t.GetOperations)
+	base.GET("/contracts/definitions", t.GetDefinitions)
 
 	base.GET("/swagger/*any", ginSwagger.WrapHandler(
 		swaggerFiles.Handler,

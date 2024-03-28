@@ -15,6 +15,10 @@ definitions:
     type: object
   abi.GetMethodExecution:
     properties:
+      address:
+        items:
+          type: integer
+        type: array
       arguments:
         items:
           $ref: '#/definitions/abi.VmValueDesc'
@@ -52,27 +56,15 @@ definitions:
     - int
     - cell
     - slice
-    - addr
-    - bool
-    - bigInt
-    - string
-    - bytes
-    - content
     type: string
     x-enum-varnames:
     - VmInt
     - VmCell
     - VmSlice
-    - VmAddr
-    - VmBool
-    - VmBigInt
-    - VmString
-    - VmBytes
-    - VmContentCell
   abi.TLBFieldDesc:
     properties:
       format:
-        type: string
+        $ref: '#/definitions/abi.TLBType'
       name:
         type: string
       optional:
@@ -88,14 +80,43 @@ definitions:
     items:
       $ref: '#/definitions/abi.TLBFieldDesc'
     type: array
+  abi.TLBType:
+    enum:
+    - addr
+    - bool
+    - bigInt
+    - string
+    - bytes
+    - cell
+    - slice
+    - content
+    - struct
+    - tag
+    type: string
+    x-enum-varnames:
+    - TLBAddr
+    - TLBBool
+    - TLBBigInt
+    - TLBString
+    - TLBBytes
+    - TLBCell
+    - TLBSlice
+    - TLBContentCell
+    - TLBStructCell
+    - TLBTag
   abi.VmValueDesc:
     properties:
       format:
-        $ref: '#/definitions/abi.StackType'
+        $ref: '#/definitions/abi.TLBType'
       name:
         type: string
       stack_type:
         $ref: '#/definitions/abi.StackType'
+      struct_fields:
+        description: Format = "struct"
+        items:
+          $ref: '#/definitions/abi.TLBFieldDesc'
+        type: array
     type: object
   aggregate.AccountsRes:
     properties:
@@ -128,10 +149,19 @@ definitions:
               type: array
           type: object
         type: array
+      owned_jetton_wallets:
+        type: integer
+      owned_nft_collections:
+        type: integer
+      owned_nft_items:
+        type: integer
       owners_count:
         type: integer
       total_supply:
         $ref: '#/definitions/bunbig.Int'
+      transactions_count:
+        description: Address statistics
+        type: integer
       unique_owners:
         items:
           properties:
@@ -308,6 +338,10 @@ definitions:
         type: array
       last_tx_lt:
         type: integer
+      libraries:
+        items:
+          type: integer
+        type: array
       minter_address:
         items:
           type: integer
@@ -351,6 +385,10 @@ definitions:
     type: object
   core.Block:
     properties:
+      accounts:
+        items:
+          $ref: '#/definitions/core.AccountState'
+        type: array
       file_hash:
         items:
           type: integer
@@ -375,6 +413,8 @@ definitions:
         items:
           $ref: '#/definitions/core.Transaction'
         type: array
+      transactions_count:
+        type: integer
       workchain:
         type: integer
     type: object
@@ -675,6 +715,17 @@ definitions:
           type: object
         type: array
     type: object
+  http.GetDefinitionsRes:
+    properties:
+      results:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/abi.TLBFieldDesc'
+          type: array
+        type: object
+      total:
+        type: integer
+    type: object
   http.GetInterfacesRes:
     properties:
       results:
@@ -778,10 +829,13 @@ paths:
       - application/json
       description: Aggregates FT or NFT data filtered by minter address
       parameters:
+      - description: address on which statistics are calculated
+        in: query
+        name: address
+        type: string
       - description: NFT collection or FT master address
         in: query
         name: minter_address
-        required: true
         type: string
       - default: 25
         description: limit
@@ -903,6 +957,21 @@ paths:
       summary: block info
       tags:
       - block
+  /contracts/definitions:
+    get:
+      consumes:
+      - application/json
+      description: Returns definitions used in messages and get-methods parsing
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.GetDefinitionsRes'
+      summary: struct definitions
+      tags:
+      - contract
   /contracts/interfaces:
     get:
       consumes:
@@ -994,6 +1063,14 @@ paths:
         in: query
         name: hash
         type: string
+      - description: filter by source workchain
+        in: query
+        name: src_workchain
+        type: integer
+      - description: filter by destination workchain
+        in: query
+        name: dst_workchain
+        type: integer
       - description: source address
         in: query
         items:
@@ -1076,6 +1153,14 @@ paths:
         name: order_by
         required: true
         type: string
+      - description: from timestamp
+        in: query
+        name: from
+        type: string
+      - description: to timestamp
+        in: query
+        name: to
+        type: string
       - default: 25
         description: limit
         in: query
@@ -1118,6 +1203,14 @@ paths:
           type: string
         name: dst_address
         type: array
+      - description: source workchain
+        in: query
+        name: src_workchain
+        type: integer
+      - description: destination workchain
+        in: query
+        name: dst_workchain
+        type: integer
       - description: source contract interface
         in: query
         items:
@@ -1130,7 +1223,7 @@ paths:
           type: string
         name: dst_contract
         type: array
-      - description: filter by contract operation names
+      - description: contract operation names
         in: query
         items:
           type: string

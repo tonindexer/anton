@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/ton"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/app/fetcher"
@@ -45,6 +46,10 @@ func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
 	s.contractRepo = contract.NewRepository(pg)
 
 	return s, nil
+}
+
+func (s *Service) GetDefinitions(ctx context.Context) (map[abi.TLBType]abi.TLBFieldsDesc, error) {
+	return s.contractRepo.GetDefinitions(ctx)
 }
 
 func (s *Service) GetStatistics(ctx context.Context) (*aggregate.Statistics, error) {

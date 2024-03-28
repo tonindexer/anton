@@ -13,7 +13,7 @@ var (
 	txLT uint64 = 80000
 )
 
-func BlockTransaction(b *core.BlockID) *core.Transaction {
+func BlockTransaction(b core.BlockID) *core.Transaction {
 	txTS = txTS.Add(time.Minute)
 	txLT++
 
@@ -39,7 +39,7 @@ func BlockTransaction(b *core.BlockID) *core.Transaction {
 	}
 }
 
-func BlockTransactions(b *core.BlockID, n int) (ret []*core.Transaction) {
+func BlockTransactions(b core.BlockID, n int) (ret []*core.Transaction) {
 	for i := 0; i < n; i++ {
 		ret = append(ret, BlockTransaction(b))
 	}
@@ -60,7 +60,7 @@ func AddressTransactions(a *addr.Address, n int) (ret []*core.Transaction) {
 }
 
 func Transaction() *core.Transaction {
-	return BlockTransaction(&core.BlockID{
+	return BlockTransaction(core.BlockID{
 		Workchain: 0,
 		Shard:     int64(rand.Uint64()),
 		SeqNo:     rand.Uint32(),

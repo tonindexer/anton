@@ -45,7 +45,7 @@ func (r *Repository) countAddressLabels(ctx context.Context, f *filter.LabelsReq
 		q = q.Where("positionCaseInsensitive(name, ?) > 0", f.Name)
 	}
 	if len(f.Categories) > 0 {
-		q = q.Where("hasAny(categories, [?])", ch.In(f.Categories))
+		q = q.Where("hasAny(categories, ?)", ch.Array(f.Categories))
 	}
 
 	return q.Count(ctx)
@@ -76,7 +76,14 @@ func (r *Repository) FilterLabels(ctx context.Context, f *filter.LabelsReq) (*fi
 	return res, nil
 }
 
-func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq, total int) (ret []*core.AccountState, err error) {
+func flattenStateIDs(ids []*core.AccountStateID) (ret [][]any) {
+	for _, id := range ids {
+		ret = append(ret, []any{&id.Address, id.LastTxLT})
+	}
+	return
+}
+
+func (r *Repository) filterAccountStates(ctx context.Context, f *filter.AccountsReq, total int) (ret []*core.AccountState, err error) { //nolint:gocyclo,gocognit // that's ok
 	var (
 		q                   *bun.SelectQuery
 		prefix, statesTable string
@@ -103,6 +110,23 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 	if len(f.Addresses) > 0 {
 		q = q.Where(statesTable+"address in (?)", bun.In(f.Addresses))
 	}
+	if len(f.StateIDs) > 0 {
+		q = q.Where("("+statesTable+"address, "+statesTable+"last_tx_lt) IN (?)", bun.In(flattenStateIDs(f.StateIDs)))
+	}
+
+	if f.Workchain != nil {
+		q = q.Where(prefix+"workchain = ?", *f.Workchain)
+	}
+	if f.Shard != nil {
+		q = q.Where(prefix+"shard = ?", *f.Shard)
+	}
+	if f.BlockSeqNoLeq != nil {
+		q = q.Where(prefix+"block_seq_no <= ?", *f.BlockSeqNoLeq)
+	}
+	if f.BlockSeqNoBeq != nil {
+		q = q.Where(prefix+"block_seq_no >= ?", *f.BlockSeqNoBeq)
+	}
+
 	if len(f.ContractTypes) > 0 {
 		q = q.Where(prefix+"types && ?", pgdialect.Array(f.ContractTypes))
 	}
@@ -121,7 +145,11 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 		}
 	}
 	if f.Order != "" {
-		q = q.Order(statesTable + "last_tx_lt " + strings.ToUpper(f.Order))
+		orderBy := "last_tx_lt"
+		if f.BlockSeqNoLeq != nil || f.BlockSeqNoBeq != nil {
+			orderBy = "block_seq_no"
+		}
+		q = q.Order(statesTable + orderBy + " " + strings.ToUpper(f.Order))
 	}
 
 	if total < 100000 && f.LatestState {
@@ -154,8 +182,25 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 	if len(f.Addresses) > 0 {
 		q = q.Where("address in (?)", ch.In(f.Addresses))
 	}
+	if len(f.StateIDs) > 0 {
+		return 0, errors.Wrap(core.ErrNotImplemented, "do not count on filter by account state ids")
+	}
+
+	if f.Workchain != nil {
+		q = q.Where("workchain = ?", *f.Workchain)
+	}
+	if f.Shard != nil {
+		q = q.Where("shard = ?", *f.Shard)
+	}
+	if f.BlockSeqNoLeq != nil {
+		q = q.Where("block_seq_no <= ?", *f.BlockSeqNoLeq)
+	}
+	if f.BlockSeqNoBeq != nil {
+		q = q.Where("block_seq_no >= ?", *f.BlockSeqNoBeq)
+	}
+
 	if len(f.ContractTypes) > 0 {
-		q = q.Where("hasAny(types, [?])", ch.In(f.ContractTypes))
+		q = q.Where("hasAny(types, ?)", ch.Array(f.ContractTypes))
 	}
 	if f.MinterAddress != nil {
 		q = q.Where("minter_address = ?", f.MinterAddress)
@@ -192,10 +237,10 @@ func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) 
 	}
 
 	res.Total, err = r.countAccountStates(ctx, f)
-	if err != nil {
-		return res, err
+	if err != nil && !errors.Is(err, core.ErrNotImplemented) {
+		return res, errors.Wrap(err, "count account states")
 	}
-	if res.Total == 0 {
+	if res.Total == 0 && !errors.Is(err, core.ErrNotImplemented) {
 		return res, nil
 	}
 

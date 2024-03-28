@@ -10,18 +10,22 @@ import (
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 )
 
-var ErrImpossibleParsing = errors.New("parsing is impossible")
+var (
+	ErrImpossibleParsing          = errors.New("parsing is impossible")
+	ErrUnmatchedContractInterface = errors.New("account state does not match the contract interface description")
+)
 
 type ParserConfig struct {
 	BlockchainConfig *cell.Cell
 	ContractRepo     core.ContractRepository
 }
 
-func GetBlockchainConfig(ctx context.Context, api *ton.APIClient) (*cell.Cell, error) {
+func GetBlockchainConfig(ctx context.Context, api ton.APIClientWrapped) (*cell.Cell, error) {
 	var res tl.Serializable
 
 	b, err := api.GetMasterchainInfo(ctx)
@@ -38,12 +42,7 @@ func GetBlockchainConfig(ctx context.Context, api *ton.APIClient) (*cell.Cell, e
 	case ton.ConfigAll:
 		var state tlb.ShardStateUnsplit
 
-		c, err := cell.FromBOC(t.ConfigProof)
-		if err != nil {
-			return nil, err
-		}
-
-		ref, err := c.BeginParse().LoadRef()
+		ref, err := t.ConfigProof.BeginParse().LoadRef()
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +58,7 @@ func GetBlockchainConfig(ctx context.Context, api *ton.APIClient) (*cell.Cell, e
 			return nil, err
 		}
 
-		return mcStateExtra.ConfigParams.Config.ToCell()
+		return mcStateExtra.ConfigParams.Config.Params.ToCell()
 
 	case ton.LSError:
 		return nil, t
@@ -72,6 +71,21 @@ func GetBlockchainConfig(ctx context.Context, api *ton.APIClient) (*cell.Cell, e
 type ParserService interface {
 	ParseAccountData(
 		ctx context.Context,
+		acc *core.AccountState,
+		others func(context.Context, addr.Address) (*core.AccountState, error),
+	) error
+
+	ParseAccountContractData(
+		ctx context.Context,
+		contractDesc *core.ContractInterface,
+		acc *core.AccountState,
+		others func(context.Context, addr.Address) (*core.AccountState, error),
+	) error
+
+	ExecuteAccountGetMethod(
+		ctx context.Context,
+		contract abi.ContractName,
+		getMethod string,
 		acc *core.AccountState,
 		others func(context.Context, addr.Address) (*core.AccountState, error),
 	) error

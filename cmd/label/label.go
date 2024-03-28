@@ -7,6 +7,7 @@ import (
 
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 
 	"github.com/tonindexer/anton/addr"
@@ -157,6 +158,10 @@ var Command = &cli.Command{
 
 		for _, l := range labels {
 			err := accRepo.AddAddressLabel(ctx.Context, l)
+			if errors.Is(err, core.ErrAlreadyExists) {
+				log.Error().Err(err).Str("addr", l.Address.Base64()).Str("name", l.Name).Msg("cannot insert label")
+				continue
+			}
 			if err != nil {
 				return errors.Wrapf(err, "%s label", l.Address.String())
 			}

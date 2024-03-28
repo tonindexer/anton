@@ -2,6 +2,7 @@ package contract
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -25,6 +26,15 @@ func NewRepository(db *bun.DB) *Repository {
 
 func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 	_, err := pgDB.NewCreateTable().
+		Model(&core.ContractDefinition{}).
+		IfNotExists().
+		WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "contract definitions pg create table")
+	}
+
+	_, err = pgDB.NewCreateTable().
 		Model(&core.ContractOperation{}).
 		IfNotExists().
 		WithForeignKeys().
@@ -60,15 +70,100 @@ func CreateTables(ctx context.Context, pgDB *bun.DB) error {
 	return nil
 }
 
+func (r *Repository) AddDefinition(ctx context.Context, dn abi.TLBType, d abi.TLBFieldsDesc) error {
+	def := &core.ContractDefinition{
+		Name:   dn,
+		Schema: d,
+	}
+
+	_, err := r.pg.NewInsert().Model(def).Exec(ctx)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return core.ErrAlreadyExists
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) UpdateDefinition(ctx context.Context, dn abi.TLBType, d abi.TLBFieldsDesc) error {
+	def := &core.ContractDefinition{
+		Name:   dn,
+		Schema: d,
+	}
+
+	ret, err := r.pg.NewUpdate().Model(def).WherePK().Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	rows, err := ret.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "rows affected")
+	}
+	if rows == 0 {
+		return core.ErrNotFound
+	}
+
+	return nil
+}
+
+func (r *Repository) DeleteDefinition(ctx context.Context, dn abi.TLBType) error {
+	def := &core.ContractDefinition{Name: dn}
+
+	ret, err := r.pg.NewDelete().Model(def).WherePK().Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	rows, err := ret.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "rows affected")
+	}
+	if rows == 0 {
+		return core.ErrNotFound
+	}
+
+	return nil
+}
+
+func (r *Repository) GetDefinitions(ctx context.Context) (map[abi.TLBType]abi.TLBFieldsDesc, error) {
+	var ret []*core.ContractDefinition
+
+	err := r.pg.NewSelect().Model(&ret).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := map[abi.TLBType]abi.TLBFieldsDesc{}
+	for _, def := range ret {
+		res[def.Name] = def.Schema
+	}
+
+	return res, nil
+}
+
 func (r *Repository) AddInterface(ctx context.Context, i *core.ContractInterface) error {
 	_, err := r.pg.NewInsert().Model(i).Exec(ctx)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return core.ErrAlreadyExists
+		}
+		return err
+	}
+	return nil
+}
+
+func (r *Repository) UpdateInterface(ctx context.Context, i *core.ContractInterface) error {
+	_, err := r.pg.NewUpdate().Model(i).WherePK().Exec(ctx)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Repository) DelInterface(ctx context.Context, name string) error {
+func (r *Repository) DeleteInterface(ctx context.Context, name abi.ContractName) error {
 	_, err := r.pg.NewDelete().
 		Model((*core.ContractOperation)(nil)).
 		Where("contract_name = ?", name).
@@ -94,6 +189,23 @@ func (r *Repository) DelInterface(ctx context.Context, name string) error {
 	}
 
 	return nil
+}
+
+func (r *Repository) GetInterface(ctx context.Context, name abi.ContractName) (*core.ContractInterface, error) {
+	var ret core.ContractInterface
+
+	err := r.pg.NewSelect().Model(&ret).
+		Relation("Operations").
+		Where("name = ?", name).
+		Scan(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, core.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret, nil
 }
 
 func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
@@ -139,7 +251,42 @@ func (r *Repository) GetMethodDescription(ctx context.Context, name abi.Contract
 func (r *Repository) AddOperation(ctx context.Context, op *core.ContractOperation) error {
 	_, err := r.pg.NewInsert().Model(op).Exec(ctx)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return core.ErrAlreadyExists
+		}
 		return err
+	}
+	return nil
+}
+
+func (r *Repository) UpdateOperation(ctx context.Context, op *core.ContractOperation) error {
+	ret, err := r.pg.NewUpdate().Model(op).WherePK().Exec(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := ret.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "rows affected")
+	}
+	if rows == 0 {
+		return errors.Wrapf(core.ErrNotFound, "no operation '%s'", op.OperationName)
+	}
+	return nil
+}
+
+func (r *Repository) DeleteOperation(ctx context.Context, opName string) error {
+	ret, err := r.pg.NewDelete().Model((*core.ContractOperation)(nil)).
+		Where("operation_name = ?", opName).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := ret.RowsAffected()
+	if err != nil {
+		return errors.Wrap(err, "rows affected")
+	}
+	if rows == 0 {
+		return errors.Wrapf(core.ErrNotFound, "no operation '%s'", opName)
 	}
 	return nil
 }

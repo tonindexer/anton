@@ -142,7 +142,7 @@ func (x *Address) MarshalJSON() ([]byte, error) {
 func (x *Address) UnmarshalJSON(raw []byte) error {
 	s := strings.Replace(string(raw), "\"", "", 2)
 	s = strings.TrimSpace(s)
-	if len(s) > 0 && s[0] == '{' {
+	if s != "" && s[0] == '{' {
 		var bothAddr struct {
 			Hex    string `json:"hex"`
 			Base64 string `json:"base64"`

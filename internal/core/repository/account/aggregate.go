@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/go-clickhouse/ch"
@@ -12,6 +13,48 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
 )
+
+func (r *Repository) aggregateAddressStatistics(ctx context.Context, req *aggregate.AccountsReq, res *aggregate.AccountsRes) error {
+	var err error
+
+	res.TransactionsCount, err = r.ch.NewSelect().
+		Model((*core.Transaction)(nil)).
+		Where("address = ?", req.Address).
+		Count(ctx)
+	if err != nil {
+		return errors.Wrap(err, "count transactions")
+	}
+
+	var countByInterfaces []struct {
+		Types []abi.ContractName
+		Count int
+	}
+	err = r.ch.NewSelect().
+		Model((*core.AccountState)(nil)).
+		Column("types").
+		ColumnExpr("uniqExact(address) as count").
+		Where("owner_address = ?", req.Address).
+		Group("types").
+		Scan(ctx, &countByInterfaces)
+	if err != nil {
+		return errors.Wrap(err, "count owned nft items")
+	}
+
+	for _, x := range countByInterfaces {
+		for _, t := range x.Types {
+			switch t {
+			case known.NFTItem:
+				res.OwnedNFTItems += x.Count
+			case known.NFTCollection:
+				res.OwnedNFTCollections += x.Count
+			case known.JettonWallet:
+				res.OwnedJettonWallets += x.Count
+			}
+		}
+	}
+
+	return nil
+}
 
 func (r *Repository) makeLastItemStateQuery(minter *addr.Address) *ch.SelectQuery {
 	return r.ch.NewSelect().
@@ -103,15 +146,8 @@ func (r *Repository) aggregateFTMinter(ctx context.Context, req *aggregate.Accou
 	return err
 }
 
-func (r *Repository) AggregateAccounts(ctx context.Context, req *aggregate.AccountsReq) (*aggregate.AccountsRes, error) {
-	var (
-		res        aggregate.AccountsRes
-		interfaces []abi.ContractName
-	)
-
-	if req.MinterAddress == nil {
-		return nil, errors.Wrap(core.ErrInvalidArg, "minter address must be set")
-	}
+func (r *Repository) aggregateMinterStatistics(ctx context.Context, req *aggregate.AccountsReq, res *aggregate.AccountsRes) error {
+	var interfaces []abi.ContractName
 
 	err := r.ch.NewSelect().
 		Model((*core.AccountState)(nil)).
@@ -119,21 +155,44 @@ func (r *Repository) AggregateAccounts(ctx context.Context, req *aggregate.Accou
 		Where("address = ?", req.MinterAddress).
 		Group("address").
 		Scan(ctx, &interfaces)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, t := range interfaces {
 		switch t {
 		case known.NFTCollection:
-			if err := r.aggregateNFTMinter(ctx, req, &res); err != nil {
-				return nil, err
+			if err := r.aggregateNFTMinter(ctx, req, res); err != nil {
+				return err
 			}
 
 		case known.JettonMinter:
-			if err := r.aggregateFTMinter(ctx, req, &res); err != nil {
-				return nil, err
+			if err := r.aggregateFTMinter(ctx, req, res); err != nil {
+				return err
 			}
+		}
+	}
+
+	return nil
+}
+
+func (r *Repository) AggregateAccounts(ctx context.Context, req *aggregate.AccountsReq) (*aggregate.AccountsRes, error) {
+	var res aggregate.AccountsRes
+
+	if req.Address == nil && req.MinterAddress == nil {
+		return nil, errors.Wrap(core.ErrInvalidArg, "address must be set")
+	}
+	if req.Address != nil {
+		if err := r.aggregateAddressStatistics(ctx, req, &res); err != nil {
+			return nil, err
+		}
+	}
+	if req.MinterAddress != nil {
+		if err := r.aggregateMinterStatistics(ctx, req, &res); err != nil {
+			return nil, err
 		}
 	}
 

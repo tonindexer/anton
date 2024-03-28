@@ -29,7 +29,7 @@ func TestGetMethodDesc_GetGemsNFTAuction(t *testing.T) {
 	require.Nil(t, err)
 
 	for _, i := range interfaces {
-		err := i.RegisterDefinitions()
+		err := abi.RegisterDefinitions(i.Definitions)
 		require.Nil(t, err)
 
 		b64, err := base64.StdEncoding.DecodeString(i.CodeBoc)

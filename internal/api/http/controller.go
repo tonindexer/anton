@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
@@ -189,6 +190,29 @@ func (c *Controller) GetOperations(ctx *gin.Context) {
 		return
 	}
 	ctx.IndentedJSON(http.StatusOK, GetOperationsRes{Total: len(ret), Results: ret})
+}
+
+type GetDefinitionsRes struct {
+	Total   int                               `json:"total"`
+	Results map[abi.TLBType]abi.TLBFieldsDesc `json:"results"`
+}
+
+// GetDefinitions godoc
+//
+//	@Summary		struct definitions
+//	@Description	Returns definitions used in messages and get-methods parsing
+//	@Tags			contract
+//	@Accept			json
+//	@Produce		json
+//	@Success		200		{object}		GetDefinitionsRes
+//	@Router			/contracts/definitions [get]
+func (c *Controller) GetDefinitions(ctx *gin.Context) {
+	ret, err := c.svc.GetDefinitions(ctx)
+	if err != nil {
+		internalErr(ctx, err)
+		return
+	}
+	ctx.IndentedJSON(http.StatusOK, GetDefinitionsRes{Total: len(ret), Results: ret})
 }
 
 // GetBlocks godoc
@@ -373,7 +397,8 @@ func (c *Controller) GetAccounts(ctx *gin.Context) {
 //	@Tags			account
 //	@Accept			json
 //	@Produce		json
-//	@Param   		minter_address		query	string  	true	"NFT collection or FT master address"
+//	@Param   		address				query	string  	false	"address on which statistics are calculated"
+//	@Param   		minter_address		query	string  	false	"NFT collection or FT master address"
 //	@Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
 //	@Success		200		{object}	aggregate.AccountsRes
 //	@Router			/accounts/aggregated [get]
@@ -387,6 +412,12 @@ func (c *Controller) AggregateAccounts(ctx *gin.Context) {
 	}
 	if req.Limit > 1000000 {
 		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		return
+	}
+
+	req.Address, err = unmarshalAddress(ctx.Query("address"))
+	if err != nil {
+		paramErr(ctx, "address", err)
 		return
 	}
 
@@ -555,6 +586,8 @@ func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
 //	@Accept			json
 //	@Produce		json
 //	@Param   		hash				query	string  	false	"msg hash"
+//	@Param   		src_workchain     	query  	int32  		false	"filter by source workchain"
+//	@Param   		dst_workchain     	query  	int32  		false	"filter by destination workchain"
 //	@Param   		src_address     	query   []string 	false   "source address"
 //	@Param   		dst_address     	query   []string 	false   "destination address"
 //	@Param   		operation_id     	query   string 		false   "operation id in hex format or as int32"
@@ -627,6 +660,8 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 //	@Produce		json
 //	@Param   		address				query	string  	true	"address to aggregate by"
 //	@Param   		order_by	     	query   string 		true	"order aggregated by amount or message count"	Enums(amount, count)	default(amount)
+//	@Param   		from				query	string  	false	"from timestamp"
+//	@Param   		to					query	string  	false	"to timestamp"
 //	@Param   		limit	     		query   int 		false	"limit"											default(25) maximum(1000000)
 //	@Success		200		{object}	aggregate.MessagesRes
 //	@Router			/messages/aggregated [get]
@@ -675,9 +710,11 @@ func (c *Controller) AggregateMessages(ctx *gin.Context) {
 //	@Param   		metric				query	string  	true	"metric to show"								Enums(message_count, message_amount_sum)
 //	@Param   		src_address     	query   []string 	false   "source address"
 //	@Param   		dst_address     	query   []string 	false   "destination address"
+//	@Param   		src_workchain     	query  	int32  		false	"source workchain"
+//	@Param   		dst_workchain     	query  	int32  		false	"destination workchain"
 //	@Param   		src_contract		query	[]string  	false	"source contract interface"
 //	@Param   		dst_contract		query	[]string  	false	"destination contract interface"
-//	@Param   		operation_name		query	[]string  	false	"filter by contract operation names"
+//	@Param   		operation_name		query	[]string  	false	"contract operation names"
 //	@Param   		minter_address		query	string  	false	"filter FT or NFT operations by minter address"
 //	@Param   		from				query	string  	false	"from timestamp"
 //	@Param   		to					query	string  	false	"to timestamp"

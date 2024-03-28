@@ -13,6 +13,7 @@ type BlocksReq struct {
 	FileHash  []byte  `form:"file_hash"`
 
 	WithShards                  bool // TODO: array of relations as strings
+	WithAccountStates           bool
 	WithTransactionAccountState bool
 	WithTransactions            bool `form:"with_transactions"`
 	WithTransactionMessages     bool

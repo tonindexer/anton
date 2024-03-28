@@ -3,12 +3,17 @@ package account
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository"
@@ -164,6 +169,9 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 func (r *Repository) AddAddressLabel(ctx context.Context, label *core.AddressLabel) error {
 	_, err := r.pg.NewInsert().Model(label).Exec(ctx)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return errors.Wrap(core.ErrAlreadyExists, "address is already labeled")
+		}
 		return errors.Wrap(err, "pg insert label")
 	}
 	_, err = r.ch.NewInsert().Model(label).Exec(ctx)
@@ -193,10 +201,14 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 	}
 
 	for _, a := range accounts {
-		_, err := tx.NewInsert().Model(a).Exec(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "cannot insert new %s acc state", a.Address.String())
+		for _, executions := range a.ExecutedGetMethods {
+			sort.Slice(executions, func(i, j int) bool { return executions[i].Name < executions[j].Name })
 		}
+	}
+
+	_, err := tx.NewInsert().Model(&accounts).Exec(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "cannot insert new account states")
 	}
 
 	addrTxLT := make(map[addr.Address]uint64)
@@ -221,10 +233,158 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		}
 	}
 
+	_, err = r.ch.NewInsert().Model(&accounts).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func logAccountStateDataUpdate(acc *core.AccountState) {
+	types, _ := json.Marshal(acc.Types)                   //nolint:errchkjson // no need
+	getMethods, _ := json.Marshal(acc.ExecutedGetMethods) //nolint:errchkjson // no need
+
+	log.Info().
+		Str("address", acc.Address.Base64()).
+		Uint64("last_tx_lt", acc.LastTxLT).
+		RawJSON("types", types).
+		RawJSON("executed_get_methods", getMethods).
+		Msg("updating account state data")
+}
+
+func (r *Repository) UpdateAccountStates(ctx context.Context, accounts []*core.AccountState) error {
+	if len(accounts) == 0 {
+		return nil
+	}
+
+	for _, a := range accounts {
+		for _, executions := range a.ExecutedGetMethods {
+			sort.Slice(executions, func(i, j int) bool { return executions[i].Name < executions[j].Name })
+		}
+
+		logAccountStateDataUpdate(a)
+
+		_, err := r.pg.NewUpdate().Model(a).
+			Set("types = ?types").
+			Set("owner_address = ?owner_address").
+			Set("minter_address = ?minter_address").
+			Set("fake = ?fake").
+			Set("executed_get_methods = ?executed_get_methods").
+			Set("content_uri = ?content_uri").
+			Set("content_name = ?content_name").
+			Set("content_description = ?content_description").
+			Set("content_image = ?content_image").
+			Set("content_image_data = ?content_image_data").
+			Set("jetton_balance = ?jetton_balance").
+			WherePK().
+			Exec(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "cannot update %s acc state data", a.Address.String())
+		}
+	}
+
 	_, err := r.ch.NewInsert().Model(&accounts).Exec(ctx)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
+	contractName abi.ContractName,
+	addresses []*addr.Address,
+	codeHash []byte,
+	getMethodHashes []int32,
+	afterAddress *addr.Address,
+	afterTxLt uint64,
+	limit int,
+) ([]*core.AccountStateID, error) {
+	var ids []*core.AccountStateID
+
+	q := r.ch.NewSelect().Model((*core.AccountState)(nil)).
+		ColumnExpr("DISTINCT address, last_tx_lt").
+		WhereGroup(" AND ", func(q *ch.SelectQuery) *ch.SelectQuery {
+			if contractName != "" {
+				q = q.WhereOr("hasAny(types, [?])", string(contractName))
+			}
+			if len(addresses) > 0 {
+				q = q.WhereOr("address IN ?", ch.In(addresses))
+			}
+			if len(codeHash) > 0 {
+				q = q.WhereOr("code_hash = ?", codeHash)
+			}
+			if len(addresses) == 0 && len(codeHash) == 0 && len(getMethodHashes) > 0 {
+				// match by get-method hashes only if addresses and code_hash are not set
+				q = q.WhereOr("hasAll(get_method_hashes, ?)", ch.Array(getMethodHashes))
+			}
+			return q
+		})
+	if afterAddress != nil && afterTxLt != 0 {
+		q = q.Where("(address, last_tx_lt) > (?, ?)", afterAddress, afterTxLt)
+	}
+	err := q.
+		OrderExpr("address ASC, last_tx_lt ASC").
+		Limit(limit).
+		Scan(ctx, &ids)
+	if err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
+func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address) (map[uint64][]abi.ContractName, error) {
+	var ret []struct {
+		ChangeTxLT  int64
+		ChangeTypes []abi.ContractName `ch:"type:Array(String)" `
+	}
+
+	minTxLtSubQ := r.ch.NewSelect().Model((*core.AccountState)(nil)).
+		ColumnExpr("min(last_tx_lt)").
+		Where("address = ?", &a)
+
+	err := r.ch.NewSelect().
+		TableExpr("(?) AS sq", r.ch.NewSelect().Model((*core.AccountState)(nil)).
+			ColumnExpr("last_tx_lt AS change_tx_lt").
+			ColumnExpr("types AS change_types").
+			Where("address = ? AND last_tx_lt = (?)", &a, minTxLtSubQ).
+			UnionAll(
+				r.ch.NewSelect().
+					TableExpr("(?) AS diff",
+						r.ch.NewSelect().Model((*core.AccountState)(nil)).
+							ColumnExpr("last_tx_lt AS tx_lt").
+							ColumnExpr("types").
+							ColumnExpr("leadInFrame(last_tx_lt) OVER (ORDER BY last_tx_lt ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS next_tx_lt").
+							ColumnExpr("leadInFrame(types)      OVER (ORDER BY last_tx_lt ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS next_types").
+							Where("address = ?", &a).
+							Order("tx_lt ASC")).
+					ColumnExpr("if(next_tx_lt = 0, tx_lt, next_tx_lt) AS change_tx_lt").
+					ColumnExpr("if(next_tx_lt = 0, types, next_types) AS change_types").
+					Where(`
+						(NOT (hasAll(types, next_types) AND hasAll(types, next_types))) OR
+						(length(types) = 0 AND length(next_types) != 0) OR
+						(length(types) != 0 AND length(next_types) = 0) OR
+						next_tx_lt = 0`).
+					Order("change_tx_lt ASC"))).
+		Order("change_tx_lt ASC").
+		Scan(ctx, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		lastInterfaces *[]abi.ContractName
+		res            = map[uint64][]abi.ContractName{}
+	)
+	for it := range ret {
+		if lastInterfaces != nil && reflect.DeepEqual(ret[it].ChangeTypes, *lastInterfaces) {
+			continue
+		}
+		res[uint64(ret[it].ChangeTxLT)] = ret[it].ChangeTypes
+		lastInterfaces = &ret[it].ChangeTypes
+	}
+
+	return res, nil
 }

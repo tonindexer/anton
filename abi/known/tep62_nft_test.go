@@ -5,13 +5,13 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
+
+	"github.com/goccy/go-json"
+
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
-
-	"github.com/stretchr/testify/assert"
 
 	"github.com/tonindexer/anton/abi"
 )
@@ -70,7 +70,7 @@ func TestNewOperationDesc_NFTCollection(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		require.Nil(t, err)
-		assert.Equal(t, test.expected, string(got))
+		require.Equal(t, test.expected, string(got))
 	}
 }
 
@@ -99,7 +99,7 @@ func TestLoadOperation_NFTCollection(t *testing.T) {
 			// tx hash 19a40062e31365d6ad4473aabb62562f37d04c8aa5618b7ea800885dbb5a0e70
 			schema:   `{"op_name":"nft_collection_change_content","op_code":"0x4","body":[{"name":"query_id","tlb_type":"## 64","format":"uint64"},{"name":"content","tlb_type":"^","format":"cell"}]}`,
 			boc:      `te6cckEBBQEAxQACGAAAAAQAAAAAAAAAAAIBAEsAAABkgAe4JggE07o9i50C5vJ2aQiIbUYwl8/YMW27aEtS1YEfMAIABAMAaGh0dHBzOi8vcy5nZXRnZW1zLmlvL25mdC9jLzYzYTgwMDVlY2MxM2M0OTE0YjMxNGIyMy8AogFodHRwczovL3MuZ2V0Z2Vtcy5pby9uZnQvYy82M2E4MDA1ZWNjMTNjNDkxNGIzMTRiMjMvZWRpdC9tZXRhLTE2NzIyODIyMDQ1ODkuanNvbml2vhQ=`,
-			expected: `{"query_id":0,"content":"te6cckEBAwEAjQACAAIBAGhodHRwczovL3MuZ2V0Z2Vtcy5pby9uZnQvYy82M2E4MDA1ZWNjMTNjNDkxNGIzMTRiMjMvAKIBaHR0cHM6Ly9zLmdldGdlbXMuaW8vbmZ0L2MvNjNhODAwNWVjYzEzYzQ5MTRiMzE0YjIzL2VkaXQvbWV0YS0xNjcyMjgyMjA0NTg5Lmpzb279fEK3"}`,
+			expected: `{"query_id":0,"content":"te6cckEBAwEAjQACAAECAKIBaHR0cHM6Ly9zLmdldGdlbXMuaW8vbmZ0L2MvNjNhODAwNWVjYzEzYzQ5MTRiMzE0YjIzL2VkaXQvbWV0YS0xNjcyMjgyMjA0NTg5Lmpzb24AaGh0dHBzOi8vcy5nZXRnZW1zLmlvL25mdC9jLzYzYTgwMDVlY2MxM2M0OTE0YjMxNGIyMy+TM8WI"}`,
 		},
 	}
 
@@ -123,7 +123,7 @@ func TestLoadOperation_NFTCollection(t *testing.T) {
 		j, err := json.Marshal(op)
 		require.Nil(t, err)
 
-		assert.Equal(t, test.expected, string(j))
+		require.Equal(t, test.expected, string(j))
 	}
 }
 
@@ -159,7 +159,7 @@ func TestNewOperationDesc_NFTRoyalty(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		require.Nil(t, err)
-		assert.Equal(t, test.expected, string(got))
+		require.Equal(t, test.expected, string(got))
 	}
 }
 
@@ -223,7 +223,7 @@ func TestNewOperationDesc_NFTItem(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		require.Nil(t, err)
-		assert.Equal(t, test.expected, string(got))
+		require.Equal(t, test.expected, string(got))
 	}
 }
 
@@ -272,6 +272,6 @@ func TestNewOperationDesc_NFTEditable(t *testing.T) {
 		require.Nil(t, err)
 		got, err := json.Marshal(d)
 		require.Nil(t, err)
-		assert.Equal(t, test.expected, string(got))
+		require.Equal(t, test.expected, string(got))
 	}
 }

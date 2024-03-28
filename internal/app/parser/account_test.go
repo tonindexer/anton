@@ -109,7 +109,7 @@ func TestService_ParseAccountData_NFTItem(t *testing.T) {
 	require.Equal(t, "https://loton.fun/nft/100.json", ret.NFTContentData.ContentURI)
 	j, err := json.Marshal(ret.ExecutedGetMethods)
 	require.Nil(t, err)
-	require.Equal(t, `{"nft_collection":[{"name":"get_nft_content","receives":[100,"te6cckEBAQEACgAAEDEwMC5qc29ue9bV9g=="],"returns":[{"URI":"https://loton.fun/nft/100.json"}]},{"name":"get_nft_address_by_index","receives":[100],"returns":["EQAQKmY9GTsEb6lREv-vxjT5sVHJyli40xGEYP3tKZSDuTBj"]}],"nft_item":[{"name":"get_nft_data","returns":[true,100,"EQBMy6CNgBk8PrT5LNjPELxCX_LXBaVSqtbzRToUHlG3t-fg","EQCIoWk-ZntpYQIRbcaME0ri29yWPEtbL-ay74AJy7KFlcfj","te6cckEBAQEACgAAEDEwMC5qc29ue9bV9g=="]}]}`, string(j))
+	require.Equal(t, `{"nft_collection":[{"name":"get_nft_content","address":{"hex":"0:4ccba08d80193c3eb4f92cd8cf10bc425ff2d705a552aad6f3453a141e51b7b7","base64":"EQBMy6CNgBk8PrT5LNjPELxCX_LXBaVSqtbzRToUHlG3t-fg"},"receives":["ZA==","te6cckEBAQEACgAAEDEwMC5qc29ue9bV9g=="],"returns":[{"URI":"https://loton.fun/nft/100.json"}]},{"name":"get_nft_address_by_index","address":{"hex":"0:4ccba08d80193c3eb4f92cd8cf10bc425ff2d705a552aad6f3453a141e51b7b7","base64":"EQBMy6CNgBk8PrT5LNjPELxCX_LXBaVSqtbzRToUHlG3t-fg"},"receives":["ZA=="],"returns":["EQAQKmY9GTsEb6lREv-vxjT5sVHJyli40xGEYP3tKZSDuTBj"]}],"nft_item":[{"name":"get_nft_data","returns":[true,"ZA==","EQBMy6CNgBk8PrT5LNjPELxCX_LXBaVSqtbzRToUHlG3t-fg","EQCIoWk-ZntpYQIRbcaME0ri29yWPEtbL-ay74AJy7KFlcfj","te6cckEBAQEACgAAEDEwMC5qc29ue9bV9g=="]}]}`, string(j))
 	require.Equal(t, false, ret.Fake)
 }
 

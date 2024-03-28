@@ -3,10 +3,12 @@ package block_test
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository/block"
+	"github.com/tonindexer/anton/internal/core/repository/tx"
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
 
@@ -34,28 +37,43 @@ func initdb(t testing.TB) {
 
 	ck = ch.Connect(ch.WithDSN(dsnCH), ch.WithAutoCreateDatabase(true), ch.WithPoolSize(16))
 	err = ck.Ping(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	pg = bun.NewDB(sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsnPG))), pgdialect.New())
 	err = pg.Ping()
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	repo = block.NewRepository(ck, pg)
 }
 
 func createTables(t testing.TB) {
 	err := block.CreateTables(context.Background(), ck, pg)
-	assert.Nil(t, err)
+	require.Nil(t, err)
+
+	_, err = pg.ExecContext(context.Background(), "CREATE TYPE account_status AS ENUM (?, ?, ?, ?)",
+		core.Uninit, core.Active, core.Frozen, core.NonExist)
+	require.False(t, err != nil && !strings.Contains(err.Error(), "already exists"))
+
+	err = tx.CreateTables(context.Background(), ck, pg)
+	require.Nil(t, err)
 }
 
 func dropTables(t testing.TB) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err := ck.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	_, err := ck.NewDropTable().Model((*core.Transaction)(nil)).IfExists().Exec(ctx)
+	require.Nil(t, err)
+	_, err = pg.NewDropTable().Model((*core.Transaction)(nil)).IfExists().Exec(ctx)
+	require.Nil(t, err)
+
+	_, err = pg.ExecContext(ctx, "DROP TYPE IF EXISTS account_status")
+	require.Nil(t, err)
+
+	_, err = ck.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
+	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.Block)(nil)).IfExists().Exec(ctx)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 }
 
 func TestRepository_AddBlocks(t *testing.T) {
@@ -81,32 +99,32 @@ func TestRepository_AddBlocks(t *testing.T) {
 	})
 
 	t.Run("add block", func(t *testing.T) {
-		tx, err := pg.Begin()
-		assert.Nil(t, err)
+		dbTx, err := pg.Begin()
+		require.Nil(t, err)
 
-		err = repo.AddBlocks(ctx, tx, []*core.Block{master, shard})
-		assert.Nil(t, err)
+		err = repo.AddBlocks(ctx, dbTx, []*core.Block{master, shard})
+		require.Nil(t, err)
 
 		got := new(core.Block)
 
-		err = tx.NewSelect().Model(got).Where("workchain = 0").Scan(ctx)
-		assert.Nil(t, err)
-		assert.Equal(t, shard, got)
+		err = dbTx.NewSelect().Model(got).Where("workchain = 0").Scan(ctx)
+		require.Nil(t, err)
+		require.Equal(t, shard, got)
 
 		err = ck.NewSelect().Model(got).Where("workchain = 0").Scan(ctx)
-		assert.Nil(t, err)
-		assert.Equal(t, shard.ScannedAt.Truncate(time.Second), got.ScannedAt.UTC()) // TODO: debug ch timestamps
+		require.Nil(t, err)
+		require.Equal(t, shard.ScannedAt.Truncate(time.Second), got.ScannedAt.UTC()) // TODO: debug ch timestamps
 		got.ScannedAt = shard.ScannedAt
-		assert.Equal(t, shard, got)
+		require.Equal(t, shard, got)
 
-		err = tx.Commit()
-		assert.Nil(t, err)
+		err = dbTx.Commit()
+		require.Nil(t, err)
 	})
 
 	t.Run("get last masterchain block", func(t *testing.T) {
 		b, err := repo.GetLastMasterBlock(ctx)
-		assert.Nil(t, err)
-		assert.Equal(t, master, b)
+		require.Nil(t, err)
+		require.Equal(t, master, b)
 	})
 
 	t.Run("drop tables again", func(t *testing.T) {

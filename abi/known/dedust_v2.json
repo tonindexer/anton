@@ -1,0 +1,866 @@
+[
+  {
+    "interface_name": "dedust_v2_factory",
+    "addresses": [
+      "EQBfBWT7X2BHg9tXAxzhz2aKiNTU1tpt5NsiK0uSDW_YAJ67"
+    ],
+    "definitions": {
+      "pool_params": [
+        {
+          "name": "is_stable",
+          "tlb_type": "bool"
+        },
+        {
+          "name": "asset0",
+          "tlb_type": ".",
+          "format": "dedustAsset"
+        },
+        {
+          "name": "asset1",
+          "tlb_type": ".",
+          "format": "dedustAsset"
+        }
+      ]
+    },
+    "in_messages": [
+      {
+        "op_name": "dedust_v2_transfer_ownership",
+        "op_code": "0xca61554e",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_owner_addr",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_accept_ownership",
+        "op_code": "0xdee60404",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_cancel_ownership_transfer",
+        "op_code": "0x16cb7fc2",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_install_vault_code",
+        "op_code": "0xbc3f26f6",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "asset_type",
+            "tlb_type": "## 4",
+            "format": "uint8"
+          },
+          {
+            "name": "code_version",
+            "tlb_type": "## 16",
+            "format": "uint16"
+          },
+          {
+            "name": "code",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_create_vault",
+        "op_code": "0x21cfe02b",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "asset",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_create_legacy_jetton_vault",
+        "op_code": "0xc9a5752d",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "minter_addr",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "resolver_addr",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_upgrade_vault",
+        "op_code": "0x25d66911",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "asset",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_destroy_non_ready_vault",
+        "op_code": "0x8a518d0d",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "asset",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_upgrade",
+        "op_code": "0xdf4a27aa",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "code_version",
+            "tlb_type": "## 16",
+            "format": "uint16"
+          },
+          {
+            "name": "code",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_reset_gas",
+        "op_code": "0x9f3f0937",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_install_pool_code",
+        "op_code": "0xa3e45df1",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "code_version",
+            "tlb_type": "## 16",
+            "format": "uint16"
+          },
+          {
+            "name": "code",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_create_volatile_pool",
+        "op_code": "0x97d51f2f",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "asset0",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          },
+          {
+            "name": "asset1",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_create_stable_pool",
+        "op_code": "0x7c40ac87",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "asset0",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          },
+          {
+            "name": "asset0_decimals",
+            "tlb_type": "## 8",
+            "format": "uint8"
+          },
+          {
+            "name": "asset1",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          },
+          {
+            "name": "asset1_decimals",
+            "tlb_type": "## 8",
+            "format": "uint8"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_upgrade_pool",
+        "op_code": "0x53e252ae",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "is_stable",
+            "tlb_type": "bool"
+          },
+          {
+            "name": "asset0",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          },
+          {
+            "name": "asset1",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_configure_pool_trade_fee",
+        "op_code": "0xf99d79f3",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "pool_params",
+            "tlb_type": ".",
+            "format": "pool_params"
+          },
+          {
+            "name": "trade_fee",
+            "tlb_type": "## 16",
+            "format": "uint16"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_install_liquidity_deposit_code",
+        "op_code": "0x99a84311",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "code_version",
+            "tlb_type": "## 16",
+            "format": "uint16"
+          },
+          {
+            "name": "code",
+            "tlb_type": "^",
+            "format": "cell"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_create_liquidity_deposit",
+        "op_code": "0xf04ec526",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "proof",
+            "tlb_type": "^",
+            "format": "cell"
+          },
+          {
+            "name": "owner_addr",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "pool_params",
+            "tlb_type": ".",
+            "format": "pool_params"
+          },
+          {
+            "name": "next",
+            "tlb_type": "^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "asset0_target_balance",
+                "tlb_type": ".",
+                "format": "coins"
+              },
+              {
+                "name": "asset1_target_balance",
+                "tlb_type": ".",
+                "format": "coins"
+              },
+              {
+                "name": "deposit_asset",
+                "tlb_type": ".",
+                "format": "dedustAsset"
+              },
+              {
+                "name": "deposit_amount",
+                "tlb_type": ".",
+                "format": "coins"
+              },
+              {
+                "name": "min_lp_amount",
+                "tlb_type": ".",
+                "format": "coins"
+              }
+            ]
+          },
+          {
+            "name": "fulfill_payload",
+            "tlb_type": "maybe ^",
+            "format": "cell",
+            "optional": true
+          },
+          {
+            "name": "reject_payload",
+            "tlb_type": "maybe ^",
+            "format": "cell",
+            "optional": true
+          }
+        ]
+      }
+    ],
+    "get_methods": [
+      {
+        "name": "get_ownership",
+        "return_values": [
+          {
+            "name": "owner_addr",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "pending_owner_addr",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "can_accept_after",
+            "stack_type": "int",
+            "format": "uint32"
+          }
+        ]
+      },
+      {
+        "name": "get_version",
+        "return_values": [
+          {
+            "name": "version",
+            "stack_type": "int",
+            "format": "uint16"
+          }
+        ]
+      },
+      {
+        "name": "get_vault_address",
+        "arguments": [
+          {
+            "name": "asset",
+            "stack_type": "slice",
+            "format": "dedustAsset"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "vault_addr",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_pool_address",
+        "arguments": [
+          {
+            "name": "is_stable",
+            "stack_type": "int",
+            "format": "bool"
+          },
+          {
+            "name": "asset0",
+            "stack_type": "slice",
+            "format": "dedustAsset"
+          },
+          {
+            "name": "asset1",
+            "stack_type": "slice",
+            "format": "dedustAsset"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "pool_addr",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_liquidity_deposit_address",
+        "arguments": [
+          {
+            "name": "owner_addr",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "is_stable",
+            "stack_type": "int",
+            "format": "bool"
+          },
+          {
+            "name": "asset0",
+            "stack_type": "slice",
+            "format": "dedustAsset"
+          },
+          {
+            "name": "asset1",
+            "stack_type": "slice",
+            "format": "dedustAsset"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "liquidity_deposit_addr",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "dedust_v2_pool",
+    "get_methods": [
+      {
+        "name": "get_version",
+        "return_values": [
+          {
+            "name": "version",
+            "stack_type": "int",
+            "format": "uint16"
+          }
+        ]
+      },
+      {
+        "name": "is_stable",
+        "return_values": [
+          {
+            "name": "version",
+            "stack_type": "int",
+            "format": "bool"
+          }
+        ]
+      },
+      {
+        "name": "get_trade_fee",
+        "return_values": [
+          {
+            "name": "numerator",
+            "stack_type": "int",
+            "format": "uint16"
+          },
+          {
+            "name": "denominator",
+            "stack_type": "int",
+            "format": "uint16"
+          }
+        ]
+      },
+      {
+        "name": "get_reserves",
+        "return_values": [
+          {
+            "name": "asset0_reserve",
+            "stack_type": "int",
+            "format": "bigInt"
+          },
+          {
+            "name": "asset1_reserve",
+            "stack_type": "int",
+            "format": "bigInt"
+          }
+        ]
+      },
+      {
+        "name": "get_protocol_fees",
+        "return_values": [
+          {
+            "name": "asset0_protocol_fee",
+            "stack_type": "int",
+            "format": "bigInt"
+          },
+          {
+            "name": "asset1_protocol_fee",
+            "stack_type": "int",
+            "format": "bigInt"
+          }
+        ]
+      },
+      {
+        "name": "get_assets",
+        "return_values": [
+          {
+            "name": "asset0",
+            "stack_type": "slice",
+            "format": "dedustAsset"
+          },
+          {
+            "name": "asset1",
+            "stack_type": "slice",
+            "format": "dedustAsset"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "dedust_v2_deposit",
+        "op_code": "0xb544f4a4",
+        "type": "external_out",
+        "body": [
+          {
+            "name": "sender_addr",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "amount0",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "amount1",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "reserve0",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "reserve1",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "liquidity",
+            "tlb_type": ".",
+            "format": "coins"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_withdrawal",
+        "op_code": "0x3aa870a6",
+        "type": "external_out",
+        "body": [
+          {
+            "name": "sender_addr",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "liquidity",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "amount0",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "amount1",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "reserve0",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "reserve1",
+            "tlb_type": ".",
+            "format": "coins"
+          }
+        ]
+      },
+      {
+        "op_name": "dedust_v2_swap",
+        "op_code": "0x9c610de3",
+        "type": "external_out",
+        "body": [
+          {
+            "name": "asset_in",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          },
+          {
+            "name": "asset_out",
+            "tlb_type": ".",
+            "format": "dedustAsset"
+          },
+          {
+            "name": "amount_in",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "amount_out",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "next",
+            "tlb_type": "^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "sender_addr",
+                "tlb_type": "addr",
+                "format": "addr"
+              },
+              {
+                "name": "referral_addr",
+                "tlb_type": "addr",
+                "format": "addr"
+              },
+              {
+                "name": "reserve0",
+                "tlb_type": ".",
+                "format": "coins"
+              },
+              {
+                "name": "reserve1",
+                "tlb_type": ".",
+                "format": "coins"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "dedust_v2_liquidity_deposit",
+    "get_methods": [
+      {
+        "name": "get_factory_addr",
+        "return_values": [
+          {
+            "name": "factory_addr",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_owner_addr",
+        "return_values": [
+          {
+            "name": "owner_addr",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_pool_addr",
+        "return_values": [
+          {
+            "name": "pool_addr",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_pool_params",
+        "return_values": [
+          {
+            "name": "is_stable",
+            "stack_type": "int",
+            "format": "bool"
+          },
+          {
+            "name": "asset0",
+            "stack_type": "slice",
+            "format": "dedustAsset"
+          },
+          {
+            "name": "asset1",
+            "stack_type": "slice",
+            "format": "dedustAsset"
+          }
+        ]
+      },
+      {
+        "name": "get_target_balances",
+        "return_values": [
+          {
+            "name": "asset0_target_balance",
+            "stack_type": "int",
+            "format": "bigInt"
+          },
+          {
+            "name": "asset1_target_balance",
+            "stack_type": "int",
+            "format": "bigInt"
+          }
+        ]
+      },
+      {
+        "name": "get_balances",
+        "return_values": [
+          {
+            "name": "asset0_balance",
+            "stack_type": "int",
+            "format": "bigInt"
+          },
+          {
+            "name": "asset1_balance",
+            "stack_type": "int",
+            "format": "bigInt"
+          }
+        ]
+      },
+      {
+        "name": "is_processing",
+        "return_values": [
+          {
+            "name": "status",
+            "stack_type": "int",
+            "format": "bool"
+          }
+        ]
+      },
+      {
+        "name": "get_min_lp_amount",
+        "return_values": [
+          {
+            "name": "min_lp_amount",
+            "stack_type": "int",
+            "format": "bigInt"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "dedust_v2_vault",
+    "get_methods": [
+      {
+        "name": "get_version",
+        "return_values": [
+          {
+            "name": "version",
+            "stack_type": "int",
+            "format": "uint16"
+          }
+        ]
+      },
+      {
+        "name": "get_factory_addr",
+        "return_values": [
+          {
+            "name": "factory_addr",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_asset",
+        "return_values": [
+          {
+            "name": "asset",
+            "stack_type": "slice",
+            "format": "dedustAsset"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -14,6 +14,7 @@ import (
 	"github.com/tonindexer/anton/cmd/db"
 	"github.com/tonindexer/anton/cmd/indexer"
 	"github.com/tonindexer/anton/cmd/label"
+	"github.com/tonindexer/anton/cmd/rescan"
 	"github.com/tonindexer/anton/cmd/web"
 )
 
@@ -40,6 +41,7 @@ func main() {
 			archive.Command,
 			contract.Command,
 			label.Command,
+			rescan.Command,
 		},
 	}
 	if err := app.Run(os.Args); err != nil {
