@@ -38,7 +38,7 @@ func (s *Service) getLastSeenAccountState(ctx context.Context, a addr.Address, l
 	return accountRes.Rows[0], nil
 }
 
-func (s *Service) makeGetOtherAccountFunc(b *ton.BlockIDExt, lastLT uint64) func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
+func (s *Service) makeGetOtherAccountFunc(master, b *ton.BlockIDExt, lastLT uint64) func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 	getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 		// first attempt is to look for an account in this given block
 		acc, ok := s.accounts.get(b, a)
@@ -58,7 +58,7 @@ func (s *Service) makeGetOtherAccountFunc(b *ton.BlockIDExt, lastLT uint64) func
 		lvl.Err(err).Str("addr", a.Base64()).Msg("get latest other account state")
 
 		// third attempt is to get needed contract state from the node
-		raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
+		raw, err := s.API.GetAccount(ctx, master, a.MustToTonutils())
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot get %s account state", a.Base64())
 		}
@@ -116,7 +116,7 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 
 	// sometimes, to parse the full account data we need to get other contracts states
 	// for example, to get nft item data
-	getOtherAccount := s.makeGetOtherAccountFunc(b, acc.LastTxLT)
+	getOtherAccount := s.makeGetOtherAccountFunc(master, b, acc.LastTxLT)
 
 	err = s.Parser.ParseAccountData(ctx, acc, getOtherAccount)
 	if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
