@@ -16,26 +16,16 @@ import (
 	"github.com/tonindexer/anton/internal/core/filter"
 )
 
-func (s *Service) getLastSeenAccountState(ctx context.Context, master, b *ton.BlockIDExt, a addr.Address) (*core.AccountState, error) {
-	defer app.TimeTrack(time.Now(), "getLastSeenAccountState(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
+func (s *Service) getLastSeenAccountState(ctx context.Context, a addr.Address, lastLT uint64) (*core.AccountState, error) {
+	defer app.TimeTrack(time.Now(), "getLastSeenAccountState(%s, %d)", a.String(), lastLT)
 
-	var latestBlock *core.BlockID
-	switch {
-	case b.Workchain == int32(a.Workchain()):
-		latestBlock = &core.BlockID{Workchain: b.Workchain, Shard: b.Shard, SeqNo: b.SeqNo}
-	case master.Workchain == int32(a.Workchain()):
-		latestBlock = &core.BlockID{Workchain: master.Workchain, Shard: master.Shard, SeqNo: master.SeqNo}
-	default:
-		return nil, errors.Wrapf(core.ErrInvalidArg, "address is in %d workchain, but the given block is from %d workchain", a.Workchain(), b.Workchain)
-	}
+	lastLT++
 
 	accountReq := filter.AccountsReq{
-		Addresses:     []*addr.Address{&a},
-		Workchain:     &latestBlock.Workchain,
-		Shard:         &latestBlock.Shard,
-		BlockSeqNoLeq: &latestBlock.SeqNo,
-		Order:         "DESC",
-		Limit:         1,
+		Addresses: []*addr.Address{&a},
+		Order:     "DESC",
+		AfterTxLT: &lastLT,
+		Limit:     1,
 	}
 	accountRes, err := s.AccountRepo.FilterAccounts(ctx, &accountReq)
 	if err != nil {
@@ -48,7 +38,7 @@ func (s *Service) getLastSeenAccountState(ctx context.Context, master, b *ton.Bl
 	return accountRes.Rows[0], nil
 }
 
-func (s *Service) makeGetOtherAccountFunc(master, b *ton.BlockIDExt) func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
+func (s *Service) makeGetOtherAccountFunc(b *ton.BlockIDExt, lastLT uint64) func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 	getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 		// first attempt is to look for an account in this given block
 		acc, ok := s.accounts.get(b, a)
@@ -57,7 +47,7 @@ func (s *Service) makeGetOtherAccountFunc(master, b *ton.BlockIDExt) func(ctx co
 		}
 
 		// second attempt is to look for the latest account state in the database
-		acc, err := s.getLastSeenAccountState(ctx, master, b, a)
+		acc, err := s.getLastSeenAccountState(ctx, a, lastLT)
 		if err == nil {
 			return acc, nil
 		}
@@ -126,7 +116,7 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 
 	// sometimes, to parse the full account data we need to get other contracts states
 	// for example, to get nft item data
-	getOtherAccount := s.makeGetOtherAccountFunc(master, b)
+	getOtherAccount := s.makeGetOtherAccountFunc(b, acc.LastTxLT)
 
 	err = s.Parser.ParseAccountData(ctx, acc, getOtherAccount)
 	if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {

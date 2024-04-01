@@ -16,24 +16,16 @@ import (
 	"github.com/tonindexer/anton/internal/core/filter"
 )
 
-func (s *Service) getRecentAccountState(ctx context.Context, b core.BlockID, a addr.Address) (*core.AccountState, error) {
-	defer app.TimeTrack(time.Now(), "getLastSeenAccountState(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
+func (s *Service) getRecentAccountState(ctx context.Context, a addr.Address, lastLT uint64) (*core.AccountState, error) {
+	defer app.TimeTrack(time.Now(), "getLastSeenAccountState(%s, %d)", a.String(), lastLT)
 
-	var boundBlock core.BlockID
-	switch {
-	case b.Workchain == int32(a.Workchain()):
-		boundBlock = b
-	default:
-		return nil, errors.Wrapf(core.ErrInvalidArg, "address is in %d workchain, but the given block is from %d workchain", a.Workchain(), b.Workchain)
-	}
+	lastLT++
 
 	accountReq := filter.AccountsReq{
-		Addresses:     []*addr.Address{&a},
-		Workchain:     &boundBlock.Workchain,
-		Shard:         &boundBlock.Shard,
-		BlockSeqNoLeq: &boundBlock.SeqNo,
-		Order:         "DESC",
-		Limit:         1,
+		Addresses: []*addr.Address{&a},
+		Order:     "DESC",
+		AfterTxLT: &lastLT,
+		Limit:     1,
 	}
 	accountRes, err := s.AccountRepo.FilterAccounts(ctx, &accountReq)
 	if err != nil {
@@ -104,7 +96,7 @@ func (s *Service) parseAccountData(ctx context.Context, task *core.RescanTask, a
 	}
 
 	getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
-		return s.getRecentAccountState(ctx, acc.BlockID(), a)
+		return s.getRecentAccountState(ctx, a, acc.LastTxLT)
 	}
 
 	err := s.Parser.ParseAccountContractData(ctx, task.Contract, acc, getOtherAccountFunc)
@@ -173,7 +165,7 @@ func (s *Service) clearExecutedGetMethod(task *core.RescanTask, acc *core.Accoun
 
 func (s *Service) executeGetMethod(ctx context.Context, task *core.RescanTask, acc *core.AccountState, gm string) {
 	getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
-		return s.getRecentAccountState(ctx, acc.BlockID(), a)
+		return s.getRecentAccountState(ctx, a, acc.LastTxLT)
 	}
 
 	err := s.Parser.ExecuteAccountGetMethod(ctx, task.ContractName, gm, acc, getOtherAccountFunc)
