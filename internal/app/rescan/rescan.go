@@ -21,7 +21,8 @@ var _ app.RescanService = (*Service)(nil)
 type Service struct {
 	*app.RescanConfig
 
-	interfacesCache *interfacesCache
+	interfacesCache  *interfacesCache
+	minterStateCache *minterStateCache
 
 	run bool
 	mx  sync.RWMutex
@@ -38,7 +39,8 @@ func NewService(cfg *app.RescanConfig) *Service {
 		s.Workers = 1
 	}
 
-	s.interfacesCache = newInterfacesCache(16384) // number of addresses
+	s.interfacesCache = newInterfacesCache(16384)   // number of addresses
+	s.minterStateCache = newMinterStateCache(16384) // number of addresses
 
 	return s
 }

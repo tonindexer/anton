@@ -17,14 +17,17 @@ import (
 )
 
 func (s *Service) getRecentAccountState(ctx context.Context, a addr.Address, lastLT uint64) (*core.AccountState, error) {
-	defer app.TimeTrack(time.Now(), "getLastSeenAccountState(%s, %d)", a.String(), lastLT)
+	defer app.TimeTrack(time.Now(), "getRecentAccountState(%s, %d)", a.String(), lastLT)
 
-	lastLT++
+	if minter, ok := s.minterStateCache.get(a, lastLT); ok {
+		return minter, nil
+	}
 
+	beforeTxLT := lastLT + 1
 	accountReq := filter.AccountsReq{
 		Addresses: []*addr.Address{&a},
 		Order:     "DESC",
-		AfterTxLT: &lastLT,
+		AfterTxLT: &beforeTxLT,
 		Limit:     1,
 	}
 	accountRes, err := s.AccountRepo.FilterAccounts(ctx, &accountReq)
@@ -34,6 +37,25 @@ func (s *Service) getRecentAccountState(ctx context.Context, a addr.Address, las
 	if len(accountRes.Rows) < 1 {
 		return nil, errors.Wrap(core.ErrNotFound, "could not find needed account state")
 	}
+
+	afterTxLT := lastLT - 1
+	accountReq = filter.AccountsReq{
+		Addresses: []*addr.Address{&a},
+		Order:     "ASC",
+		AfterTxLT: &afterTxLT,
+		Limit:     1,
+	}
+	nextAccountRes, err := s.AccountRepo.FilterAccounts(ctx, &accountReq)
+	if err != nil {
+		return nil, errors.Wrap(err, "filter accounts for next minter state")
+	}
+
+	var nextMinterTxLT uint64
+	if len(nextAccountRes.Rows) > 0 {
+		nextMinterTxLT = nextAccountRes.Rows[0].LastTxLT
+	}
+
+	s.minterStateCache.put(a, accountRes.Rows[0], nextMinterTxLT)
 
 	return accountRes.Rows[0], nil
 }
