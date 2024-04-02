@@ -131,21 +131,24 @@ func (c *minterStateCache) get(key addr.Address, itemTxLT uint64) (state *core.A
 	c.Lock()
 	defer c.Unlock()
 
-	item, ok := c.items[key]
+	minter, ok := c.items[key]
 	if !ok {
 		return nil, false
 	}
 
-	c.list.MoveToFront(item.keyPtr)
+	c.list.MoveToFront(minter.keyPtr)
 
-	if item.nextTxLT != 0 && itemTxLT > item.nextTxLT {
-		// as we are processing item state, which is later than the next minter state we saw,
-		// we should remove the old minter state and get the new one from the database
+	if itemTxLT < minter.state.LastTxLT || (minter.nextTxLT != 0 && itemTxLT > minter.nextTxLT) {
+		// as we are processing item state,
+		// which is later than the next minter state or earlier than the current minter state in cache,
+		// we should remove the current minter state and get the new one from the database
+
 		front := c.list.Front()
 		c.list.Remove(front)
 		delete(c.items, front.Value.(addr.Address)) //nolint:forcetypeassert // no need
+
 		return nil, false
 	}
 
-	return item.state, true
+	return minter.state, true
 }
