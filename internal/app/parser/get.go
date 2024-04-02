@@ -186,7 +186,7 @@ func (s *Service) checkMinter(ctx context.Context, minter, item *core.AccountSta
 
 	appendGetMethodExecution(item, i, &exec)
 	if exec.Error != "" {
-		log.Error().Err(err).Msgf("execute %s %s get-method", desc.Name, i)
+		log.Error().Str("exec_error", exec.Error).Msgf("execute %s %s get-method", desc.Name, i)
 		return
 	}
 
