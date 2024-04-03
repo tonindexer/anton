@@ -37,6 +37,7 @@ RUN go mod download
 
 # copy application code
 COPY migrations /go/src/github.com/tonindexer/anton/migrations
+COPY lru /go/src/github.com/tonindexer/anton/lru
 COPY cmd /go/src/github.com/tonindexer/anton/cmd
 COPY addr /go/src/github.com/tonindexer/anton/addr
 COPY abi /go/src/github.com/tonindexer/anton/abi
