@@ -40,7 +40,7 @@ func (s *Service) chooseInterfaces(updates map[uint64][]abi.ContractName, txLT u
 }
 
 func (s *Service) getAccountStateForMessage(ctx context.Context, a addr.Address, txLT uint64) *core.AccountState {
-	interfaceUpdates, ok := s.interfacesCache.get(a)
+	interfaceUpdates, ok := s.interfacesCache.Get(a)
 	if ok {
 		return &core.AccountState{Address: a, Types: s.chooseInterfaces(interfaceUpdates, txLT)}
 	}
@@ -51,7 +51,7 @@ func (s *Service) getAccountStateForMessage(ctx context.Context, a addr.Address,
 		return nil
 	}
 
-	s.interfacesCache.put(a, interfaceUpdates)
+	s.interfacesCache.Put(a, interfaceUpdates)
 
 	return &core.AccountState{Address: a, Types: s.chooseInterfaces(interfaceUpdates, txLT)}
 }

@@ -1,154 +1,80 @@
 package rescan
 
 import (
-	"container/list"
-	"sync"
+	"sort"
 
-	"github.com/tonindexer/anton/abi"
+	"github.com/rs/zerolog/log"
+
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/lru"
 )
 
-type interfacesCacheItem struct {
-	data   map[uint64][]abi.ContractName
-	keyPtr *list.Element
-}
+const maxMinterStates int = 64
 
-// interfacesCache implements LRU cache for account interfaces.
-// For a given address it stores account interface updates.
-// Used only in messages rescan.
-type interfacesCache struct {
-	queue    *list.List
-	items    map[addr.Address]*interfacesCacheItem
-	capacity int
-	sync.RWMutex
-}
-
-func newInterfacesCache(capacity int) *interfacesCache {
-	return &interfacesCache{
-		queue:    list.New(),
-		items:    map[addr.Address]*interfacesCacheItem{},
-		capacity: capacity,
-	}
-}
-
-func (c *interfacesCache) removeItem() {
-	back := c.queue.Back()
-	c.queue.Remove(back)
-	delete(c.items, back.Value.(addr.Address)) //nolint:forcetypeassert // no need
-}
-
-func (c *interfacesCache) updateItem(item *interfacesCacheItem, k addr.Address, v map[uint64][]abi.ContractName) {
-	item.data = v
-	c.items[k] = item
-	c.queue.MoveToFront(item.keyPtr)
-}
-
-func (c *interfacesCache) put(k addr.Address, v map[uint64][]abi.ContractName) {
-	c.Lock()
-	defer c.Unlock()
-
-	if item, ok := c.items[k]; !ok {
-		if c.capacity == len(c.items) {
-			c.removeItem()
-		}
-		c.items[k] = &interfacesCacheItem{
-			data:   v,
-			keyPtr: c.queue.PushFront(k),
-		}
-	} else {
-		c.updateItem(item, k, v) // actually it's not used
-	}
-}
-
-func (c *interfacesCache) get(key addr.Address) (map[uint64][]abi.ContractName, bool) {
-	c.RLock()
-	defer c.RUnlock()
-
-	if item, ok := c.items[key]; ok {
-		c.queue.MoveToFront(item.keyPtr)
-		return item.data, true
-	}
-
-	return nil, false
-}
-
-type minterStateCacheItem struct {
-	state    *core.AccountState
+type minterState struct {
+	acc      *core.AccountState
 	nextTxLT uint64
-	keyPtr   *list.Element
 }
 
-// minterStateCache implements LRU cache for minter account states,
-// which are used for rescanning of nft items and jetton wallets.
-type minterStateCache struct {
-	list     *list.List
-	items    map[addr.Address]*minterStateCacheItem
-	capacity int
-	sync.RWMutex
+type minterStatesCache struct {
+	lru *lru.Cache[uint64, *minterState]
 }
 
-func newMinterStateCache(capacity int) *minterStateCache {
-	return &minterStateCache{
-		list:     list.New(),
-		items:    map[addr.Address]*minterStateCacheItem{},
-		capacity: capacity,
+func newMinterStatesCache() *minterStatesCache {
+	return &minterStatesCache{
+		lru: lru.New[uint64, *minterState](maxMinterStates),
 	}
 }
 
-func (c *minterStateCache) removeItem() {
-	back := c.list.Back()
-	c.list.Remove(back)
-	delete(c.items, back.Value.(addr.Address)) //nolint:forcetypeassert // no need
+type mintersCache struct {
+	lru *lru.Cache[addr.Address, *minterStatesCache]
 }
 
-func (c *minterStateCache) updateItem(item *minterStateCacheItem, k addr.Address, state *core.AccountState, nextTxLT uint64) {
-	item.state = state
-	item.nextTxLT = nextTxLT
-	c.items[k] = item
-	c.list.MoveToFront(item.keyPtr)
-}
-
-func (c *minterStateCache) put(k addr.Address, state *core.AccountState, nextTxLT uint64) {
-	c.Lock()
-	defer c.Unlock()
-
-	if item, ok := c.items[k]; !ok {
-		if c.capacity == len(c.items) {
-			c.removeItem()
-		}
-		c.items[k] = &minterStateCacheItem{
-			state:    state,
-			nextTxLT: nextTxLT,
-			keyPtr:   c.list.PushFront(k),
-		}
-	} else {
-		c.updateItem(item, k, state, nextTxLT) // it's never used
+func newMinterStateCache(capacity int) *mintersCache {
+	return &mintersCache{
+		lru: lru.New[addr.Address, *minterStatesCache](capacity),
 	}
 }
 
-func (c *minterStateCache) get(key addr.Address, itemTxLT uint64) (state *core.AccountState, ok bool) {
-	c.Lock()
-	defer c.Unlock()
+func (c *mintersCache) put(k addr.Address, state *core.AccountState, nextTxLT uint64) {
+	states, ok := c.lru.Get(k)
+	if !ok {
+		states = newMinterStatesCache()
+		states.lru.Put(state.LastTxLT, &minterState{acc: state, nextTxLT: nextTxLT})
+		c.lru.Put(k, states)
+		return
+	}
 
-	minter, ok := c.items[key]
+	states.lru.Put(state.LastTxLT, &minterState{acc: state, nextTxLT: nextTxLT})
+}
+
+func (c *mintersCache) get(k addr.Address, itemTxLT uint64) (state *core.AccountState, ok bool) {
+	states, ok := c.lru.Get(k)
 	if !ok {
 		return nil, false
 	}
 
-	c.list.MoveToFront(minter.keyPtr)
+	lts := states.lru.Keys()
+	sort.Slice(lts, func(i, j int) bool { return lts[i] > lts[j] })
 
-	if itemTxLT < minter.state.LastTxLT || (minter.nextTxLT != 0 && itemTxLT > minter.nextTxLT) {
-		// as we are processing item state,
-		// which is later than the next minter state or earlier than the current minter state in cache,
-		// we should remove the current minter state and get the new one from the database
+	for _, lt := range lts {
+		if lt > itemTxLT {
+			continue
+		}
 
-		front := c.list.Front()
-		c.list.Remove(front)
-		delete(c.items, front.Value.(addr.Address)) //nolint:forcetypeassert // no need
+		minter, ok := states.lru.Get(lt)
+		if !ok {
+			log.Error().Str("addr", k.Base64()).Uint64("last_tx_lt", lt).Msg("cannot get minter state from cache")
+			return nil, false
+		}
 
-		return nil, false
+		if minter.nextTxLT != 0 && itemTxLT > minter.nextTxLT {
+			continue
+		}
+
+		return minter.acc, false
 	}
 
-	return minter.state, true
+	return nil, false
 }

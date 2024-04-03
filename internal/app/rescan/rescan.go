@@ -11,9 +11,12 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/filter"
+	"github.com/tonindexer/anton/lru"
 )
 
 var _ app.RescanService = (*Service)(nil)
@@ -21,8 +24,8 @@ var _ app.RescanService = (*Service)(nil)
 type Service struct {
 	*app.RescanConfig
 
-	interfacesCache  *interfacesCache
-	minterStateCache *minterStateCache
+	interfacesCache  *lru.Cache[addr.Address, map[uint64][]abi.ContractName]
+	minterStateCache *mintersCache
 
 	run bool
 	mx  sync.RWMutex
@@ -39,8 +42,8 @@ func NewService(cfg *app.RescanConfig) *Service {
 		s.Workers = 1
 	}
 
-	s.interfacesCache = newInterfacesCache(16384)   // number of addresses
-	s.minterStateCache = newMinterStateCache(16384) // number of addresses
+	s.interfacesCache = lru.New[addr.Address, map[uint64][]abi.ContractName](16384) // number of addresses
+	s.minterStateCache = newMinterStateCache(2048)                                  // number of addresses
 
 	return s
 }
