@@ -14,7 +14,7 @@ type Cache[K comparable, V any] struct {
 	queue    *list.List
 	items    map[K]*Item[V]
 	capacity int
-	sync.Mutex
+	mx       sync.Mutex
 }
 
 func New[K comparable, V any](capacity int) *Cache[K, V] {
@@ -38,8 +38,8 @@ func (c *Cache[K, V]) updateItem(item *Item[V], k K, v V) {
 }
 
 func (c *Cache[K, V]) Put(k K, v V) {
-	c.Lock()
-	defer c.Unlock()
+	c.mx.Lock()
+	defer c.mx.Unlock()
 
 	if item, ok := c.items[k]; !ok {
 		if c.capacity == len(c.items) {
@@ -54,9 +54,9 @@ func (c *Cache[K, V]) Put(k K, v V) {
 	}
 }
 
-func (c *Cache[K, V]) Get(key K) (v V, ok bool) {
-	c.Lock()
-	defer c.Unlock()
+func (c *Cache[K, V]) Get(key K) (v V, ok bool) { //nolint:ireturn // returns generic interface (V) of type param any
+	c.mx.Lock()
+	defer c.mx.Unlock()
 
 	if item, ok := c.items[key]; ok {
 		c.queue.MoveToFront(item.keyPtr)
@@ -67,8 +67,8 @@ func (c *Cache[K, V]) Get(key K) (v V, ok bool) {
 }
 
 func (c *Cache[K, V]) Keys() (keys []K) {
-	c.Lock()
-	defer c.Unlock()
+	c.mx.Lock()
+	defer c.mx.Unlock()
 
 	for k := range c.items {
 		keys = append(keys, k)
