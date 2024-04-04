@@ -437,6 +437,10 @@ func (r *Repository) GetAllAccountStates(ctx context.Context, a addr.Address, be
 		return nil, err
 	}
 
+	if len(ret) == 0 {
+		return nil, errors.Wrapf(core.ErrNotFound, "no account states for %s address", a.Base64())
+	}
+
 	var (
 		lastCodeHash, lastDataHash []byte
 		lts                        []uint64
