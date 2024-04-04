@@ -470,7 +470,7 @@ func (r *Repository) GetAllAccountStates(ctx context.Context, a addr.Address, be
 
 	var states []*core.AccountState
 	err = r.pg.NewSelect().Model(&states).
-		Where("address = ?", a).
+		Where("address = ?", &a).
 		Where("last_tx_lt IN (?)", bun.In(lts)).
 		Order("last_tx_lt ASC").
 		Scan(ctx)
