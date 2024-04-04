@@ -73,7 +73,7 @@ func (c *mintersCache) get(k addr.Address, itemTxLT uint64) (state *core.Account
 			continue
 		}
 
-		return minter.acc, false
+		return minter.acc, true
 	}
 
 	return nil, false
