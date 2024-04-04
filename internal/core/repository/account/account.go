@@ -1,6 +1,7 @@
 package account
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -338,7 +339,7 @@ func (r *Repository) MatchStatesByInterfaceDesc(ctx context.Context,
 func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address) (map[uint64][]abi.ContractName, error) {
 	var ret []struct {
 		ChangeTxLT  int64
-		ChangeTypes []abi.ContractName `ch:"type:Array(String)" `
+		ChangeTypes []abi.ContractName `ch:"type:Array(String)"`
 	}
 
 	minTxLtSubQ := r.ch.NewSelect().Model((*core.AccountState)(nil)).
@@ -384,6 +385,106 @@ func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address
 		}
 		res[uint64(ret[it].ChangeTxLT)] = ret[it].ChangeTypes
 		lastInterfaces = &ret[it].ChangeTypes
+	}
+
+	return res, nil
+}
+
+func (r *Repository) GetAllAccountStates(ctx context.Context, a addr.Address, beforeTxLT uint64, limit int) (map[uint64]*core.AccountState, error) {
+	var ret []struct {
+		ChangeTxLT     int64
+		ChangeCodeHash []byte `ch:"type:String"`
+		ChangeDataHash []byte `ch:"type:String"`
+	}
+
+	minTxLtSubQ := r.ch.NewSelect().Model((*core.AccountState)(nil)).
+		ColumnExpr("min(last_tx_lt)").
+		Where("address = ?", &a).
+		Where("length(code_hash) > 0").
+		Where("length(data_hash) > 0")
+
+	err := r.ch.NewSelect().
+		TableExpr("(?) AS sq", r.ch.NewSelect().Model((*core.AccountState)(nil)).
+			ColumnExpr("last_tx_lt AS change_tx_lt").
+			ColumnExpr("code_hash AS change_code_hash").
+			ColumnExpr("data_hash AS change_data_hash").
+			Where("address = ? AND last_tx_lt = (?)", &a, minTxLtSubQ).
+			UnionAll(
+				r.ch.NewSelect().
+					TableExpr("(?) AS diff",
+						r.ch.NewSelect().Model((*core.AccountState)(nil)).
+							ColumnExpr("last_tx_lt AS tx_lt").
+							ColumnExpr("code_hash").
+							ColumnExpr("data_hash").
+							ColumnExpr("leadInFrame(last_tx_lt) OVER (ORDER BY last_tx_lt ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS next_tx_lt").
+							ColumnExpr("leadInFrame(code_hash)  OVER (ORDER BY last_tx_lt ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS next_code_hash").
+							ColumnExpr("leadInFrame(data_hash)  OVER (ORDER BY last_tx_lt ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS next_data_hash").
+							Where("address = ?", &a).
+							Where("length(code_hash) > 0").
+							Where("length(data_hash) > 0").
+							Order("tx_lt ASC")).
+					ColumnExpr("if(next_tx_lt = 0, tx_lt, next_tx_lt) AS change_tx_lt").
+					ColumnExpr("if(next_tx_lt = 0, code_hash, next_code_hash) AS change_code_hash").
+					ColumnExpr("if(next_tx_lt = 0, data_hash, next_data_hash) AS change_data_hash").
+					Where(`
+						code_hash != next_code_hash OR
+						data_hash != next_data_hash OR
+						next_tx_lt = 0`).
+					Order("change_tx_lt ASC"))).
+		Order("change_tx_lt ASC").
+		Scan(ctx, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		lastCodeHash, lastDataHash []byte
+		lts                        []uint64
+	)
+	for it := range ret {
+		if lastCodeHash != nil && bytes.Equal(ret[it].ChangeCodeHash, lastCodeHash) && bytes.Equal(ret[it].ChangeDataHash, lastDataHash) {
+			continue
+		}
+		lastCodeHash, lastDataHash = ret[it].ChangeCodeHash, ret[it].ChangeDataHash
+		lts = append(lts, uint64(ret[it].ChangeTxLT))
+	}
+
+	if len(lts) > limit {
+		var found bool
+		for it := range lts {
+			if lts[it] < beforeTxLT {
+				continue
+			}
+			if it >= limit {
+				lts = lts[it-limit : it]
+			} else {
+				lts = lts[0:limit]
+			}
+			found = true
+			break
+		}
+		if !found {
+			lts = lts[len(lts)-limit:]
+		}
+	}
+
+	var states []*core.AccountState
+	err = r.pg.NewSelect().Model(&states).
+		Where("address = ?", a).
+		Where("last_tx_lt IN (?)", bun.In(lts)).
+		Order("last_tx_lt ASC").
+		Scan(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "select states by lts")
+	}
+
+	res := make(map[uint64]*core.AccountState)
+	for it, s := range states {
+		var nextTxLT uint64
+		if it != len(states)-1 {
+			nextTxLT = states[it+1].LastTxLT
+		}
+		res[nextTxLT] = s
 	}
 
 	return res, nil

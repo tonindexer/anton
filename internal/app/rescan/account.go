@@ -13,7 +13,6 @@ import (
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
-	"github.com/tonindexer/anton/internal/core/filter"
 )
 
 func (s *Service) getRecentAccountState(ctx context.Context, a addr.Address, lastLT uint64) (*core.AccountState, error) {
@@ -23,41 +22,21 @@ func (s *Service) getRecentAccountState(ctx context.Context, a addr.Address, las
 		return minter, nil
 	}
 
-	beforeTxLT := lastLT + 1
-	accountReq := filter.AccountsReq{
-		Addresses: []*addr.Address{&a},
-		Order:     "DESC",
-		AfterTxLT: &beforeTxLT,
-		Limit:     1,
-	}
-	accountRes, err := s.AccountRepo.FilterAccounts(ctx, &accountReq)
+	states, err := s.AccountRepo.GetAllAccountStates(ctx, a, lastLT, maxMinterStates)
 	if err != nil {
-		return nil, errors.Wrap(err, "filter accounts")
-	}
-	if len(accountRes.Rows) < 1 {
-		return nil, errors.Wrap(core.ErrNotFound, "could not find needed account state")
+		return nil, err
 	}
 
-	afterTxLT := lastLT - 1
-	accountReq = filter.AccountsReq{
-		Addresses: []*addr.Address{&a},
-		Order:     "ASC",
-		AfterTxLT: &afterTxLT,
-		Limit:     1,
-	}
-	nextAccountRes, err := s.AccountRepo.FilterAccounts(ctx, &accountReq)
-	if err != nil {
-		return nil, errors.Wrap(err, "filter accounts for next minter state")
+	for nextMinterTxLT, state := range states {
+		s.minterStateCache.put(a, state, nextMinterTxLT)
 	}
 
-	var nextMinterTxLT uint64
-	if len(nextAccountRes.Rows) > 0 {
-		nextMinterTxLT = nextAccountRes.Rows[0].LastTxLT
+	minter, ok := s.minterStateCache.get(a, lastLT)
+	if !ok {
+		return nil, errors.Wrapf(core.ErrNotFound, "cannot find %s minter state before %d lt", a.Base64(), lastLT)
 	}
 
-	s.minterStateCache.put(a, accountRes.Rows[0], nextMinterTxLT)
-
-	return accountRes.Rows[0], nil
+	return minter, nil
 }
 
 func copyAccountState(state *core.AccountState) *core.AccountState {
