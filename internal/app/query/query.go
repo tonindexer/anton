@@ -146,6 +146,9 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 }
 
 func (s *Service) addGetMethodDescription(ctx context.Context, rows []*core.AccountState) error {
+	if _, err := s.contractRepo.GetInterfaces(ctx); err != nil { // to fill in the cache with contract interfaces
+		return errors.Wrapf(err, "get contract interfaces")
+	}
 	for _, r := range rows {
 		for name, methods := range r.ExecutedGetMethods {
 			for it := range methods {
