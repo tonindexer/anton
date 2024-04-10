@@ -60,7 +60,7 @@ FROM debian:12.2-slim
 ENV LISTEN=0.0.0.0:8080
 
 RUN apt-get update && \
-    apt-get install -y libsecp256k1-1 libsodium23 libssl3
+    apt-get install -y libsecp256k1-1 libsodium23 libssl3 ca-certificates
 
 RUN groupadd anton && useradd -g anton anton
 
