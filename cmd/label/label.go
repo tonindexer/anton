@@ -71,6 +71,11 @@ func fetchTonscanLabels() ([]*core.AddressLabel, error) {
 		}
 
 		for _, l := range labels {
+			switch l.Name {
+			case "Burn", "System":
+				continue
+			}
+
 			a := new(addr.Address)
 
 			err := a.UnmarshalText([]byte(l.Address))
