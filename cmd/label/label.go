@@ -72,7 +72,7 @@ func fetchTonscanLabels() ([]*core.AddressLabel, error) {
 
 		for _, l := range labels {
 			switch l.Name {
-			case "Burn", "System":
+			case "Burn Address", "System":
 				continue
 			}
 
