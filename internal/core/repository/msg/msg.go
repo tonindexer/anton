@@ -209,7 +209,7 @@ func (r *Repository) UpdateMessages(ctx context.Context, messages []*core.Messag
 	}
 
 	for _, msg := range messages {
-		log.Info().
+		log.Debug().
 			Hex("msg_hash", msg.Hash).
 			Str("src_address", msg.SrcAddress.Base64()).
 			Str("src_contract", string(msg.SrcContract)).

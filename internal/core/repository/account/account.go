@@ -246,7 +246,7 @@ func logAccountStateDataUpdate(acc *core.AccountState) {
 	types, _ := json.Marshal(acc.Types)                   //nolint:errchkjson // no need
 	getMethods, _ := json.Marshal(acc.ExecutedGetMethods) //nolint:errchkjson // no need
 
-	log.Info().
+	log.Debug().
 		Str("address", acc.Address.Base64()).
 		Uint64("last_tx_lt", acc.LastTxLT).
 		RawJSON("types", types).
