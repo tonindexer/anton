@@ -7,7 +7,7 @@ import (
 )
 
 func TestFetchTonscanLabels(t *testing.T) {
-	label, err := FetchTonscanLabels()
+	label, err := fetchTonscanLabels()
 	require.Nil(t, err)
 
 	for _, l := range label {

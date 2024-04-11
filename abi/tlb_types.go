@@ -1,6 +1,8 @@
 package abi
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/big"
 	"reflect"
 
@@ -11,7 +13,20 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-const structTypeName = "struct"
+type TLBType string
+
+const (
+	TLBAddr        TLBType = "addr"
+	TLBBool        TLBType = "bool"
+	TLBBigInt      TLBType = "bigInt"
+	TLBString      TLBType = "string"
+	TLBBytes       TLBType = "bytes"
+	TLBCell        TLBType = "cell"
+	TLBSlice       TLBType = "slice"
+	TLBContentCell TLBType = "content"
+	TLBStructCell  TLBType = "struct"
+	TLBTag         TLBType = "tag"
+)
 
 type TelemintText struct {
 	Len  uint8  // ## 8
@@ -46,12 +61,86 @@ func (x *StringSnake) LoadFromCell(loader *cell.Slice) error {
 	return nil
 }
 
-var (
-	typeNameRMap = map[reflect.Type]string{
-		reflect.TypeOf([]uint8{}): "bytes",
+type DedustAssetNative struct {
+	_ tlb.Magic `tlb:"$0000"`
+}
+
+type DedustAssetJetton struct {
+	_         tlb.Magic `tlb:"$0001"`
+	Workchain int8      `tlb:"## 8"`
+	Address   []byte    `tlb:"bits 256"`
+}
+
+type DedustAssetExtraCurrency struct {
+	_          tlb.Magic `tlb:"$0010"`
+	CurrencyID int32     `tlb:"## 32"`
+}
+
+type DedustAsset struct {
+	Asset any `tlb:"."`
+}
+
+func (x *DedustAsset) LoadFromCell(loader *cell.Slice) error {
+	pfx, err := loader.LoadUInt(4)
+	if err != nil {
+		return err
 	}
-	typeNameMap = map[string]reflect.Type{
-		"bool":         reflect.TypeOf(false),
+
+	switch pfx {
+	case 0b0000:
+		x.Asset = (*DedustAssetNative)(nil)
+		return nil
+	case 0b0001:
+		x.Asset = new(DedustAssetJetton)
+		err = tlb.LoadFromCell(x.Asset, loader, true)
+		if err != nil {
+			return fmt.Errorf("failed to parse DedustAssetJetton: %w", err)
+		}
+		return nil
+	case 0b0010:
+		x.Asset = new(DedustAssetExtraCurrency)
+		err = tlb.LoadFromCell(x.Asset, loader, true)
+		if err != nil {
+			return fmt.Errorf("failed to parse DedustAssetExtraCurrency: %w", err)
+		}
+		return nil
+	}
+
+	return fmt.Errorf("unknown dedust asset type: %x", pfx)
+}
+
+func (x *DedustAsset) MarshalJSON() ([]byte, error) {
+	if x == nil || x.Asset == nil {
+		return json.Marshal(nil)
+	}
+
+	var ret struct {
+		Type       string `json:"type"`
+		Workchain  *int8  `json:"workchain,omitempty"`
+		Address    []byte `json:"address,omitempty"`
+		CurrencyID int32  `json:"currency_id,omitempty"`
+	}
+	switch v := x.Asset.(type) {
+	case *DedustAssetNative:
+		ret.Type = "native"
+	case *DedustAssetJetton:
+		ret.Type = "jetton"
+		ret.Workchain = &v.Workchain
+		ret.Address = v.Address
+	case *DedustAssetExtraCurrency:
+		ret.Type = "extra_currency"
+		ret.CurrencyID = v.CurrencyID
+	}
+
+	return json.Marshal(ret)
+}
+
+var (
+	typeNameRMap = map[reflect.Type]TLBType{
+		reflect.TypeOf([]uint8{}): TLBBytes,
+	}
+	typeNameMap = map[TLBType]reflect.Type{
+		TLBBool:        reflect.TypeOf(false),
 		"int8":         reflect.TypeOf(int8(0)),
 		"int16":        reflect.TypeOf(int16(0)),
 		"int32":        reflect.TypeOf(int32(0)),
@@ -60,18 +149,19 @@ var (
 		"uint16":       reflect.TypeOf(uint16(0)),
 		"uint32":       reflect.TypeOf(uint32(0)),
 		"uint64":       reflect.TypeOf(uint64(0)),
-		"bytes":        reflect.TypeOf([]byte{}),
-		"bigInt":       reflect.TypeOf(big.NewInt(0)),
-		"cell":         reflect.TypeOf((*cell.Cell)(nil)),
+		TLBBytes:       reflect.TypeOf([]byte{}),
+		TLBBigInt:      reflect.TypeOf(big.NewInt(0)),
+		TLBCell:        reflect.TypeOf((*cell.Cell)(nil)),
 		"dict":         reflect.TypeOf((*cell.Dictionary)(nil)),
-		"magic":        reflect.TypeOf(tlb.Magic{}),
+		TLBTag:         reflect.TypeOf(tlb.Magic{}),
 		"coins":        reflect.TypeOf(tlb.Coins{}),
-		"addr":         reflect.TypeOf((*address.Address)(nil)),
-		"string":       reflect.TypeOf((*StringSnake)(nil)),
+		TLBAddr:        reflect.TypeOf((*address.Address)(nil)),
+		TLBString:      reflect.TypeOf((*StringSnake)(nil)),
 		"telemintText": reflect.TypeOf((*TelemintText)(nil)),
+		"dedustAsset":  reflect.TypeOf((*DedustAsset)(nil)),
 	}
 
-	registeredDefinitions = map[string]TLBFieldsDesc{}
+	registeredDefinitions = map[TLBType]TLBFieldsDesc{}
 )
 
 func init() {

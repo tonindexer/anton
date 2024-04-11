@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/xssnick/tonutils-go/address"
@@ -63,6 +62,6 @@ func TestGetMethodDesc_DNSItem(t *testing.T) {
 
 	for _, test := range testCases {
 		ret := execGetMethod(t, i, test.addr, test.name, test.code, test.data)
-		assert.Equal(t, test.expected, ret)
+		require.Equal(t, test.expected, ret)
 	}
 }

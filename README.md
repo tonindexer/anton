@@ -57,6 +57,7 @@ To explore how Anton stores data, visit the [migrations' directory](/migrations)
 | `app/parser`      | service determines contract interfaces, parse contract data and message payloads | 
 | `app/fetcher`     | service concurrently fetches data from blockchain                                | 
 | `app/indexer`     | service scans blocks and save parsed data to databases                           |
+| `app/rescan`      | service parses data by updated contract description                              |
 | `app/query`       | service aggregates database repositories                                         |
 | `api/http`        | implements the REST API                                                          |
 
@@ -103,17 +104,19 @@ cp .env.example .env
 nano .env
 ```
 
-| Name                 | Description                       | Default | Example                                                            |
-|----------------------|-----------------------------------|---------|--------------------------------------------------------------------|
-| `DB_NAME`            | Database name                     |         | idx                                                                |
-| `DB_USERNAME`        | Database username                 |         | user                                                               |
-| `DB_PASSWORD`        | Database password                 |         | pass                                                               |
-| `DB_CH_URL`          | Clickhouse URL to connect to      |         | clickhouse://clickhouse:9000/db_name?sslmode=disable               |
-| `DB_PG_URL`          | PostgreSQL URL to connect to      |         | postgres://username:password@postgres:5432/db_name?sslmode=disable |
-| `FROM_BLOCK`         | Master chain seq_no to start from | 1       | 23532000                                                           |
-| `WORKERS`            | Number of indexer workers         | 4       | 8                                                                  |
-| `LITESERVERS`        | Lite servers to connect to        |         | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=  |
-| `DEBUG_LOGS`         | Debug logs enabled                | false   | true                                                               |
+| Name                  | Description                        | Default | Example                                                            |
+|-----------------------|------------------------------------|---------|--------------------------------------------------------------------|
+| `DB_NAME`             | Database name                      |         | idx                                                                |
+| `DB_USERNAME`         | Database username                  |         | user                                                               |
+| `DB_PASSWORD`         | Database password                  |         | pass                                                               |
+| `DB_CH_URL`           | Clickhouse URL to connect to       |         | clickhouse://clickhouse:9000/db_name?sslmode=disable               |
+| `DB_PG_URL`           | PostgreSQL URL to connect to       |         | postgres://username:password@postgres:5432/db_name?sslmode=disable |
+| `FROM_BLOCK`          | Master chain seq_no to start from  | 1       | 23532000                                                           |
+| `WORKERS`             | Number of indexer workers          | 4       | 8                                                                  |
+| `RESCAN_WORKERS`      | Number of rescan workers           | 4       | 8                                                                  |
+| `RESCAN_SELECT_LIMIT` | Number of rows to fetch for rescan | 3000    | 1000                                                               |
+| `LITESERVERS`         | Lite servers to connect to         |         | 135.181.177.59:53312 aF91CuUHuuOv9rm2W5+O/4h38M3sRm40DtSdRxQhmtQ=  |
+| `DEBUG_LOGS`          | Debug logs enabled                 | false   | true                                                               |
 
 ### Building
 
@@ -157,10 +160,10 @@ To run Anton, you need at least one defined contract interface.
 There are some known interfaces in the [abi/known](/abi/known) directory.
 You can add them through this command:
 ```shell
-docker compose exec web sh -c "anton contract /var/anton/known/*.json"
+docker compose exec rescan sh -c "anton contract addInterfaces /var/anton/known/*.json"
 ```
 
-### Schema migration
+### Database schema migration
 
 ```shell
 # run migrations service on running compose
@@ -209,28 +212,48 @@ docker compose                      \
 
 ## Using
 
-### Show archive nodes from global config
+### Showing archive nodes from global config
 
 ```shell
 docker run tonindexer/anton archive [--testnet]
 ```
 
-### Insert contract interface
+### Inserting contract interface
+
+To add interfaces, you need to provide Anton with a contract description. 
+It will select any interfaces not already present in the database, 
+insert them, and initiate rescan tasks for messages and account states.
 
 ```shell
 # add from stdin
-cat abi/known/tep81_dns.json | docker compose exec -T web anton contract --stdin
+cat abi/known/tep81_dns.json | docker compose exec -T web anton contract addInterfaces --stdin
 # add from file
-docker compose exec web anton contract "/var/anton/known/tep81_dns.json"
+docker compose exec web anton contract addInterfaces "/var/anton/known/tep81_dns.json"
 ```
 
-### Delete contract interface
+### Deleting contract interface
+
+To delete an interface, provide a contract description along with the specific contract name you wish to remove. 
+Anton will then delete the contract interface and its associated operations from the database 
+and initiate rescan tasks to remove all parsed data related to this interface from messages and account states.  
 
 ```shell
-docker compose exec web anton contract delete "dns_nft_item"
+docker compose exec rescan sh -c "anton contract deleteInterface -c nft_item /var/anton/known/*.json"
 ```
 
-### Add address label
+### Updating contract interface
+
+To update a contract interface, you need to provide both the contract description 
+and the specific name of the contract you're updating. 
+Anton will then compare the provided contract interface description against the existing interface in the database. 
+If there are any differences, Anton initiates rescan tasks to reparse data and fix these changes. 
+This process may involve adding, deleting, or updating get-methods and contract operations.
+
+```shell
+docker compose exec rescan sh -c "anton contract updateInterface -c telemint_nft_item /var/anton/known/telemint.json"
+```
+
+### Adding address label
 
 ```shell
 docker compose exec web anton label "EQDj5AA8mQvM5wJEQsFFFof79y3ZsuX6wowktWQFhz_Anton" "anton.tools"

@@ -50,6 +50,11 @@ type FTWalletData struct {
 	JettonBalance *bunbig.Int `ch:"type:UInt256" bun:"type:numeric" json:"jetton_balance,omitempty" swaggertype:"string"`
 }
 
+type AccountStateID struct {
+	Address  addr.Address `ch:"type:String"`
+	LastTxLT uint64
+}
+
 type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:toYYYYMM(updated_at)" json:"-"`
 	bun.BaseModel `bun:"table:account_states" json:"-"`
@@ -74,6 +79,7 @@ type AccountState struct {
 	CodeHash  []byte `bun:"type:bytea" json:"code_hash,omitempty"`
 	Data      []byte `bun:"type:bytea" json:"data,omitempty"`
 	DataHash  []byte `bun:"type:bytea" json:"data_hash,omitempty"`
+	Libraries []byte `bun:"type:bytea" json:"libraries,omitempty"`
 
 	GetMethodHashes []int32 `ch:"type:Array(UInt32)" bun:"type:integer[]" json:"get_method_hashes,omitempty"`
 
@@ -92,6 +98,14 @@ type AccountState struct {
 	FTWalletData
 
 	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
+}
+
+func (a *AccountState) BlockID() BlockID {
+	return BlockID{
+		Workchain: a.Workchain,
+		Shard:     a.Shard,
+		SeqNo:     a.BlockSeqNo,
+	}
 }
 
 type LatestAccountState struct {
@@ -134,4 +148,22 @@ type AccountRepository interface {
 	GetAddressLabel(context.Context, addr.Address) (*AddressLabel, error)
 
 	AddAccountStates(ctx context.Context, tx bun.Tx, states []*AccountState) error
+	UpdateAccountStates(ctx context.Context, states []*AccountState) error
+
+	// MatchStatesByInterfaceDesc returns (address, last_tx_lt) pairs for suitable account states.
+	MatchStatesByInterfaceDesc(ctx context.Context,
+		contractName abi.ContractName,
+		addresses []*addr.Address,
+		codeHash []byte,
+		getMethodHashes []int32,
+		afterAddress *addr.Address,
+		afterTxLt uint64,
+		limit int) ([]*AccountStateID, error)
+
+	// GetAllAccountInterfaces returns transaction LT, on which contract interface was updated.
+	// It also considers, that contract can be both upgraded and downgraded.
+	GetAllAccountInterfaces(context.Context, addr.Address) (map[uint64][]abi.ContractName, error)
+
+	// GetAllAccountStates is pretty much similar to GetAllAccountInterfaces, but it returns updates of code or data.
+	GetAllAccountStates(ctx context.Context, a addr.Address, beforeTxLT uint64, limit int) (map[uint64]*AccountState, error)
 }

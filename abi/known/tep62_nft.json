@@ -100,7 +100,6 @@
     "get_methods": [
       {
         "name": "get_nft_data",
-        "arguments": [],
         "return_values": [
           {
             "name": "init",
@@ -109,7 +108,8 @@
           },
           {
             "name": "index",
-            "stack_type": "int"
+            "stack_type": "int",
+            "format": "bytes"
           },
           {
             "name": "collection_address",
@@ -222,11 +222,11 @@
     "get_methods": [
       {
         "name": "get_collection_data",
-        "arguments": [],
         "return_values": [
           {
             "name": "next_item_index",
-            "stack_type": "int"
+            "stack_type": "int",
+            "format": "bytes"
           },
           {
             "name": "collection_content",
@@ -245,7 +245,8 @@
         "arguments": [
           {
             "name": "index",
-            "stack_type": "int"
+            "stack_type": "int",
+            "format": "bytes"
           }
         ],
         "return_values": [
@@ -261,7 +262,8 @@
         "arguments": [
           {
             "name": "index",
-            "stack_type": "int"
+            "stack_type": "int",
+            "format": "bytes"
           },
           {
             "name": "individual_content",
@@ -319,7 +321,6 @@
     "get_methods": [
       {
         "name": "royalty_params",
-        "arguments": [],
         "return_values": [
           {
             "name": "numerator",
@@ -424,7 +425,6 @@
     "get_methods": [
       {
         "name": "get_editor",
-        "arguments": [],
         "return_values": [
           {
             "name": "editor",

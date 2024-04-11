@@ -30,7 +30,7 @@ func getMethodByName(i *core.ContractInterface, n string) *abi.GetMethodDesc {
 	return nil
 }
 
-func (s *Service) callGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *core.AccountState, args []any) (ret abi.GetMethodExecution, err error) {
+func (s *Service) emulateGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *core.AccountState, args []any) (ret abi.GetMethodExecution, err error) {
 	var argsStack abi.VmStack
 
 	if len(acc.Code) == 0 || len(acc.Data) == 0 {
@@ -47,11 +47,12 @@ func (s *Service) callGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *
 		})
 	}
 
-	codeBase64, dataBase64 :=
+	codeBase64, dataBase64, librariesBase64 :=
 		base64.StdEncoding.EncodeToString(acc.Code),
-		base64.StdEncoding.EncodeToString(acc.Data)
+		base64.StdEncoding.EncodeToString(acc.Data),
+		base64.StdEncoding.EncodeToString(acc.Libraries)
 
-	e, err := abi.NewEmulatorBase64(acc.Address.MustToTonutils(), codeBase64, dataBase64, s.bcConfigBase64)
+	e, err := abi.NewEmulatorBase64(acc.Address.MustToTonutils(), codeBase64, dataBase64, s.bcConfigBase64, librariesBase64)
 	if err != nil {
 		return ret, errors.Wrap(err, "new emulator")
 	}
@@ -85,7 +86,7 @@ func (s *Service) callGetMethod(ctx context.Context, d *abi.GetMethodDesc, acc *
 	return ret, nil
 }
 
-func (s *Service) callGetMethodNoArgs(ctx context.Context, i *core.ContractInterface, gmName string, acc *core.AccountState) (ret abi.GetMethodExecution, err error) {
+func (s *Service) emulateGetMethodNoArgs(ctx context.Context, i *core.ContractInterface, gmName string, acc *core.AccountState) (ret abi.GetMethodExecution, err error) {
 	gm := getMethodByName(i, gmName)
 	if gm == nil {
 		// we panic as contract interface was defined, but there are no standard get-method
@@ -96,12 +97,32 @@ func (s *Service) callGetMethodNoArgs(ctx context.Context, i *core.ContractInter
 		panic(fmt.Errorf("%s `%s` get-method has arguments", i.Name, gmName))
 	}
 
-	stack, err := s.callGetMethod(ctx, gm, acc, nil)
+	stack, err := s.emulateGetMethod(ctx, gm, acc, nil)
 	if err != nil {
 		return ret, errors.Wrapf(err, "%s `%s`", i.Name, gmName)
 	}
 
 	return stack, nil
+}
+
+func removeGetMethodExecution(acc *core.AccountState, contract abi.ContractName, gm string) bool {
+	for it := range acc.ExecutedGetMethods[contract] {
+		if acc.ExecutedGetMethods[contract][it].Name != gm {
+			continue
+		}
+		executions := acc.ExecutedGetMethods[contract]
+		copy(executions[it:], executions[it+1:])
+		acc.ExecutedGetMethods[contract] = executions[:len(executions)-1]
+		return true
+	}
+	return false
+}
+
+func appendGetMethodExecution(acc *core.AccountState, contract abi.ContractName, exec *abi.GetMethodExecution) {
+	// that's needed to clear array from duplicates (bug is already fixed)
+	for removeGetMethodExecution(acc, contract, exec.Name) {
+	}
+	acc.ExecutedGetMethods[contract] = append(acc.ExecutedGetMethods[contract], *exec)
 }
 
 func mapContentDataNFT(ret *core.AccountState, c any) {
@@ -128,29 +149,23 @@ func mapContentDataNFT(ret *core.AccountState, c any) {
 }
 
 func (s *Service) getNFTItemContent(ctx context.Context, collection *core.AccountState, idx *big.Int, itemContent *cell.Cell, acc *core.AccountState) {
-	exec, err := s.callGetMethod(ctx,
-		&abi.GetMethodDesc{
-			Name: "get_nft_content",
-			Arguments: []abi.VmValueDesc{{
-				Name:      "index",
-				StackType: "int",
-			}, {
-				Name:      "individual_content",
-				StackType: "cell",
-			}},
-			ReturnValues: []abi.VmValueDesc{{
-				Name:      "full_content",
-				StackType: "cell",
-				Format:    "content",
-			}},
-		},
-		collection, []any{idx, itemContent},
-	)
+	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.NFTCollection, "get_nft_content")
+	if err != nil {
+		log.Error().Err(err).Msg("get 'get_nft_content' method description")
+		return
+	}
+
+	args := []any{idx.Bytes(), itemContent}
+
+	exec, err := s.emulateGetMethod(ctx, &desc, collection, args)
 	if err != nil {
 		log.Error().Err(err).Msg("execute get_nft_content nft_collection get-method")
 		return
 	}
-	acc.ExecutedGetMethods[known.NFTCollection] = append(acc.ExecutedGetMethods[known.NFTCollection], exec)
+
+	exec.Address = &collection.Address
+
+	appendGetMethodExecution(acc, known.NFTCollection, &exec)
 	if exec.Error != "" {
 		return
 	}
@@ -158,80 +173,119 @@ func (s *Service) getNFTItemContent(ctx context.Context, collection *core.Accoun
 	mapContentDataNFT(acc, exec.Returns[0])
 }
 
-func (s *Service) checkNFTMinter(ctx context.Context, collection *core.AccountState, idx *big.Int, itemAcc *core.AccountState) {
-	itemAcc.Fake = true
+func (s *Service) checkMinter(ctx context.Context, minter, item *core.AccountState, i abi.ContractName, desc *abi.GetMethodDesc, args []any) {
+	item.Fake = true
 
-	exec, err := s.callGetMethod(ctx,
-		&abi.GetMethodDesc{
-			Name: "get_nft_address_by_index",
-			Arguments: []abi.VmValueDesc{{
-				Name:      "index",
-				StackType: "int",
-			}},
-			ReturnValues: []abi.VmValueDesc{{
-				Name:      "address",
-				StackType: "slice",
-				Format:    "addr",
-			}},
-		},
-		collection,
-		[]any{idx},
-	)
+	exec, err := s.emulateGetMethod(ctx, desc, minter, args)
 	if err != nil {
-		log.Error().Err(err).Msg("execute get_nft_address_by_index nft_collection get-method")
+		log.Error().Err(err).Msgf("execute %s %s get-method", desc.Name, i)
 		return
 	}
 
-	itemAcc.ExecutedGetMethods[known.NFTCollection] = append(itemAcc.ExecutedGetMethods[known.NFTCollection], exec)
+	exec.Address = &minter.Address
+
+	appendGetMethodExecution(item, i, &exec)
 	if exec.Error != "" {
-		log.Error().Err(err).Msg("execute get_nft_address_by_index nft_collection get-method")
+		log.Error().Str("exec_error", exec.Error).Msgf("execute %s %s get-method", desc.Name, i)
 		return
 	}
 
 	itemAddr := addr.MustFromTonutils(exec.Returns[0].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-	if addr.Equal(itemAddr, &itemAcc.Address) {
-		itemAcc.Fake = false
+	if addr.Equal(itemAddr, &item.Address) {
+		item.Fake = false
 	}
+}
+
+func (s *Service) checkNFTMinter(ctx context.Context, minter *core.AccountState, idx *big.Int, item *core.AccountState) {
+	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.NFTCollection, "get_nft_address_by_index")
+	if err != nil {
+		log.Error().Err(err).Msg("get 'get_nft_address_by_index' method description")
+		return
+	}
+
+	args := []any{idx.Bytes()}
+
+	s.checkMinter(ctx, minter, item, known.NFTCollection, &desc, args)
 }
 
 func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountState, ownerAddr *addr.Address, walletAcc *core.AccountState) {
-	walletAcc.Fake = true
-
-	exec, err := s.callGetMethod(ctx,
-		&abi.GetMethodDesc{
-			Name: "get_wallet_address",
-			Arguments: []abi.VmValueDesc{{
-				Name:      "owner_address",
-				StackType: "slice",
-				Format:    "addr",
-			}},
-			ReturnValues: []abi.VmValueDesc{{
-				Name:      "wallet_address",
-				StackType: "slice",
-				Format:    "addr",
-			}},
-		},
-		minter,
-		[]any{ownerAddr.MustToTonutils()},
-	)
+	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.JettonMinter, "get_wallet_address")
 	if err != nil {
-		log.Error().Err(err).Msg("execute get_wallet_address jetton_minter get-method")
+		log.Error().Err(err).Msg("get 'get_wallet_address' method description")
 		return
 	}
 
-	walletAcc.ExecutedGetMethods[known.JettonMinter] = append(walletAcc.ExecutedGetMethods[known.JettonMinter], exec)
-	if exec.Error != "" {
-		log.Error().Err(err).Msg("execute get_wallet_address jetton_minter get-method")
-		return
-	}
+	args := []any{ownerAddr.MustToTonutils()}
 
-	walletAddr := addr.MustFromTonutils(exec.Returns[0].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-	if addr.Equal(walletAddr, &walletAcc.Address) {
-		walletAcc.Fake = false
-	}
+	s.checkMinter(ctx, minter, walletAcc, known.JettonMinter, &desc, args)
 }
 
-func (s *Service) callPossibleGetMethods( //nolint:gocognit // yeah, it's too long
+func (s *Service) callGetMethod(
+	ctx context.Context,
+	acc *core.AccountState,
+	i *core.ContractInterface,
+	getMethodDesc *abi.GetMethodDesc,
+	others func(context.Context, addr.Address) (*core.AccountState, error),
+) error {
+	exec, err := s.emulateGetMethodNoArgs(ctx, i, getMethodDesc.Name, acc)
+	if err != nil {
+		return errors.Wrapf(err, "execute get-method")
+	}
+
+	appendGetMethodExecution(acc, i.Name, &exec)
+	if exec.Error != "" {
+		return nil
+	}
+
+	switch getMethodDesc.Name {
+	case "get_collection_data":
+		acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+		mapContentDataNFT(acc, exec.Returns[1])
+
+	case "get_nft_data":
+		acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+		acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[3].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
+
+		if acc.MinterAddress == nil {
+			return nil
+		}
+
+		collection, err := others(ctx, *acc.MinterAddress)
+		if err != nil {
+			log.Error().Str("minter_address", acc.MinterAddress.Base64()).Err(err).Msg("get nft collection state")
+			return nil
+		}
+
+		index, individualContent := new(big.Int).SetBytes(exec.Returns[1].([]byte)), exec.Returns[4].(*cell.Cell) //nolint:forcetypeassert // panic on wrong interface
+
+		s.getNFTItemContent(ctx, collection, index, individualContent, acc)
+		s.checkNFTMinter(ctx, collection, index, acc)
+
+	case "get_jetton_data":
+		mapContentDataNFT(acc, exec.Returns[3])
+
+	case "get_wallet_data":
+		acc.JettonBalance = bunbig.FromMathBig(exec.Returns[0].(*big.Int))            //nolint:forcetypeassert // panic on wrong interface
+		acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[1].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
+		acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
+
+		if acc.MinterAddress == nil || acc.OwnerAddress == nil {
+			return nil
+		}
+
+		minter, err := others(ctx, *acc.MinterAddress)
+		if err != nil {
+			log.Error().Str("minter_address", acc.MinterAddress.Base64()).Err(err).Msg("get jetton minter state")
+			return nil
+		}
+
+		s.checkJettonMinter(ctx, minter, acc.OwnerAddress, acc)
+	}
+
+	return nil
+}
+
+func (s *Service) callPossibleGetMethods(
 	ctx context.Context,
 	acc *core.AccountState,
 	others func(context.Context, addr.Address) (*core.AccountState, error),
@@ -245,54 +299,8 @@ func (s *Service) callPossibleGetMethods( //nolint:gocognit // yeah, it's too lo
 				continue
 			}
 
-			exec, err := s.callGetMethodNoArgs(ctx, i, d.Name, acc)
-			if err != nil {
+			if err := s.callGetMethod(ctx, acc, i, d, others); err != nil {
 				log.Error().Err(err).Str("contract_name", string(i.Name)).Str("get_method", d.Name).Msg("execute get-method")
-				return
-			}
-
-			acc.ExecutedGetMethods[i.Name] = append(acc.ExecutedGetMethods[i.Name], exec)
-			if exec.Error != "" {
-				continue
-			}
-
-			switch d.Name {
-			case "get_collection_data":
-				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-				mapContentDataNFT(acc, exec.Returns[1])
-
-			case "get_nft_data":
-				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[3].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
-
-				if acc.MinterAddress == nil {
-					continue
-				}
-				collection, err := others(ctx, *acc.MinterAddress)
-				if err != nil {
-					log.Error().Err(err).Msg("get nft collection state")
-					return
-				}
-				s.getNFTItemContent(ctx, collection, exec.Returns[1].(*big.Int), exec.Returns[4].(*cell.Cell), acc) //nolint:forcetypeassert // panic on wrong interface
-				s.checkNFTMinter(ctx, collection, exec.Returns[1].(*big.Int), acc)                                  //nolint:forcetypeassert // panic on wrong interface
-
-			case "get_jetton_data":
-				mapContentDataNFT(acc, exec.Returns[3])
-
-			case "get_wallet_data":
-				acc.JettonBalance = bunbig.FromMathBig(exec.Returns[0].(*big.Int))            //nolint:forcetypeassert // panic on wrong interface
-				acc.OwnerAddress = addr.MustFromTonutils(exec.Returns[1].(*address.Address))  //nolint:forcetypeassert // panic on wrong interface
-				acc.MinterAddress = addr.MustFromTonutils(exec.Returns[2].(*address.Address)) //nolint:forcetypeassert // panic on wrong interface
-
-				if acc.MinterAddress == nil || acc.OwnerAddress == nil {
-					continue
-				}
-				minter, err := others(ctx, *acc.MinterAddress)
-				if err != nil {
-					log.Error().Err(err).Msg("get jetton minter state")
-					return
-				}
-				s.checkJettonMinter(ctx, minter, acc.OwnerAddress, acc)
 			}
 		}
 	}

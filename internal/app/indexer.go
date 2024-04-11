@@ -9,7 +9,7 @@ import (
 type IndexerConfig struct {
 	DB *repository.DB
 
-	API *ton.APIClient
+	API ton.APIClientWrapped
 
 	Fetcher FetcherService
 	Parser  ParserService

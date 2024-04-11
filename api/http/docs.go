@@ -124,10 +124,15 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "address on which statistics are calculated",
+                        "name": "address",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "NFT collection or FT master address",
                         "name": "minter_address",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "maximum": 1000000,
@@ -300,6 +305,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/contracts/definitions": {
+            "get": {
+                "description": "Returns definitions used in messages and get-methods parsing",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contract"
+                ],
+                "summary": "struct definitions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.GetDefinitionsRes"
+                        }
+                    }
+                }
+            }
+        },
         "/contracts/interfaces": {
             "get": {
                 "description": "Returns known contract interfaces",
@@ -444,6 +472,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "filter by source workchain",
+                        "name": "src_workchain",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "filter by destination workchain",
+                        "name": "dst_workchain",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -564,6 +604,18 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "description": "from timestamp",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "to timestamp",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
                         "maximum": 1000000,
                         "type": "integer",
                         "default": 25,
@@ -626,6 +678,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "source workchain",
+                        "name": "src_workchain",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "destination workchain",
+                        "name": "dst_workchain",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -648,7 +712,7 @@ const docTemplate = `{
                         "items": {
                             "type": "string"
                         },
-                        "description": "filter by contract operation names",
+                        "description": "contract operation names",
                         "name": "operation_name",
                         "in": "query"
                     },
@@ -902,6 +966,12 @@ const docTemplate = `{
         "abi.GetMethodExecution": {
             "type": "object",
             "properties": {
+                "address": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "arguments": {
                     "type": "array",
                     "items": {
@@ -955,31 +1025,19 @@ const docTemplate = `{
             "enum": [
                 "int",
                 "cell",
-                "slice",
-                "addr",
-                "bool",
-                "bigInt",
-                "string",
-                "bytes",
-                "content"
+                "slice"
             ],
             "x-enum-varnames": [
                 "VmInt",
                 "VmCell",
-                "VmSlice",
-                "VmAddr",
-                "VmBool",
-                "VmBigInt",
-                "VmString",
-                "VmBytes",
-                "VmContentCell"
+                "VmSlice"
             ]
         },
         "abi.TLBFieldDesc": {
             "type": "object",
             "properties": {
                 "format": {
-                    "type": "string"
+                    "$ref": "#/definitions/abi.TLBType"
                 },
                 "name": {
                     "type": "string"
@@ -1006,17 +1064,51 @@ const docTemplate = `{
                 "$ref": "#/definitions/abi.TLBFieldDesc"
             }
         },
+        "abi.TLBType": {
+            "type": "string",
+            "enum": [
+                "addr",
+                "bool",
+                "bigInt",
+                "string",
+                "bytes",
+                "cell",
+                "slice",
+                "content",
+                "struct",
+                "tag"
+            ],
+            "x-enum-varnames": [
+                "TLBAddr",
+                "TLBBool",
+                "TLBBigInt",
+                "TLBString",
+                "TLBBytes",
+                "TLBCell",
+                "TLBSlice",
+                "TLBContentCell",
+                "TLBStructCell",
+                "TLBTag"
+            ]
+        },
         "abi.VmValueDesc": {
             "type": "object",
             "properties": {
                 "format": {
-                    "$ref": "#/definitions/abi.StackType"
+                    "$ref": "#/definitions/abi.TLBType"
                 },
                 "name": {
                     "type": "string"
                 },
                 "stack_type": {
                     "$ref": "#/definitions/abi.StackType"
+                },
+                "struct_fields": {
+                    "description": "Format = \"struct\"",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/abi.TLBFieldDesc"
+                    }
                 }
             }
         },
@@ -1067,11 +1159,24 @@ const docTemplate = `{
                         }
                     }
                 },
+                "owned_jetton_wallets": {
+                    "type": "integer"
+                },
+                "owned_nft_collections": {
+                    "type": "integer"
+                },
+                "owned_nft_items": {
+                    "type": "integer"
+                },
                 "owners_count": {
                     "type": "integer"
                 },
                 "total_supply": {
                     "$ref": "#/definitions/bunbig.Int"
+                },
+                "transactions_count": {
+                    "description": "Address statistics",
+                    "type": "integer"
                 },
                 "unique_owners": {
                     "type": "array",
@@ -1341,6 +1446,12 @@ const docTemplate = `{
                 "last_tx_lt": {
                     "type": "integer"
                 },
+                "libraries": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "minter_address": {
                     "type": "array",
                     "items": {
@@ -1405,6 +1516,12 @@ const docTemplate = `{
         "core.Block": {
             "type": "object",
             "properties": {
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.AccountState"
+                    }
+                },
                 "file_hash": {
                     "type": "array",
                     "items": {
@@ -1440,6 +1557,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/core.Transaction"
                     }
+                },
+                "transactions_count": {
+                    "type": "integer"
                 },
                 "workchain": {
                     "type": "integer"
@@ -1895,6 +2015,23 @@ const docTemplate = `{
                             }
                         }
                     }
+                }
+            }
+        },
+        "http.GetDefinitionsRes": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/abi.TLBFieldDesc"
+                        }
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

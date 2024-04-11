@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
@@ -29,7 +29,7 @@ func TestOperationDesc_TonpayStore(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "tonpay_store" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -77,7 +77,7 @@ func TestOperationDesc_TonpayStore(t *testing.T) {
 
 	for _, test := range testCases {
 		j := loadOperation(t, i, test.name, test.boc)
-		assert.Equal(t, test.expected, j)
+		require.Equal(t, test.expected, j)
 	}
 }
 
@@ -95,7 +95,7 @@ func TestGetMethodDesc_TonpayStore(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "tonpay_store" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -158,7 +158,7 @@ func TestGetMethodDesc_TonpayStore(t *testing.T) {
 			if reflect.TypeOf(test.expected[it]) == reflect.TypeOf(&cell.Cell{}) {
 				continue
 			}
-			assert.Equal(t, test.expected[it], ret[it])
+			require.Equal(t, test.expected[it], ret[it])
 		}
 	}
 }
@@ -177,7 +177,7 @@ func TestOperationDesc_TonpayInvoice(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "tonpay_invoice" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -198,7 +198,7 @@ func TestOperationDesc_TonpayInvoice(t *testing.T) {
 
 	for _, test := range testCases {
 		j := loadOperation(t, i, test.name, test.boc)
-		assert.Equal(t, test.expected, j)
+		require.Equal(t, test.expected, j)
 	}
 }
 
@@ -216,7 +216,7 @@ func TestGetMethodDesc_TonpayInvoice(t *testing.T) {
 
 	for _, i = range interfaces {
 		if i.Name == "tonpay_invoice" {
-			err := i.RegisterDefinitions()
+			err := abi.RegisterDefinitions(i.Definitions)
 			require.Nil(t, err)
 			break
 		}
@@ -259,7 +259,7 @@ func TestGetMethodDesc_TonpayInvoice(t *testing.T) {
 			if reflect.TypeOf(test.expected[it]) == reflect.TypeOf(&cell.Cell{}) {
 				continue
 			}
-			assert.Equal(t, test.expected[it], ret[it])
+			require.Equal(t, test.expected[it], ret[it])
 		}
 	}
 }

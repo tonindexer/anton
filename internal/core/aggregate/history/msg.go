@@ -19,6 +19,9 @@ type MessagesReq struct {
 	SrcAddresses []*addr.Address // `form:"src_address"`
 	DstAddresses []*addr.Address // `form:"dst_address"`
 
+	SrcWorkchain *int32 `form:"src_workchain"`
+	DstWorkchain *int32 `form:"dst_workchain"`
+
 	SrcContracts []string `form:"src_contract"`
 	DstContracts []string `form:"dst_contract"`
 

@@ -3,12 +3,16 @@ package msg
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
+	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository"
 )
@@ -199,6 +203,45 @@ func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*cor
 	return nil
 }
 
+func (r *Repository) UpdateMessages(ctx context.Context, messages []*core.Message) error {
+	if len(messages) == 0 {
+		return nil
+	}
+
+	for _, msg := range messages {
+		log.Debug().
+			Hex("msg_hash", msg.Hash).
+			Str("src_address", msg.SrcAddress.Base64()).
+			Str("src_contract", string(msg.SrcContract)).
+			Str("dst_address", msg.DstAddress.Base64()).
+			Str("dst_contract", string(msg.DstContract)).
+			Uint32("operation_id", msg.OperationID).
+			Str("operation_name", msg.OperationName).
+			RawJSON("data_json", msg.DataJSON).
+			Str("error", msg.Error).
+			Msg("updating message")
+
+		_, err := r.pg.NewUpdate().Model(msg).
+			Set("src_contract = ?src_contract").
+			Set("dst_contract = ?dst_contract").
+			Set("operation_name = ?operation_name").
+			Set("data_json = ?data_json").
+			Set("error = ?error").
+			WherePK().
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err := r.ch.NewInsert().Model(&messages).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *Repository) GetMessage(ctx context.Context, hash []byte) (*core.Message, error) {
 	var ret core.Message
 
@@ -215,4 +258,84 @@ func (r *Repository) GetMessage(ctx context.Context, hash []byte) (*core.Message
 	}
 
 	return &ret, nil
+}
+
+func (r *Repository) GetMessages(ctx context.Context, hashes [][]byte) ([]*core.Message, error) {
+	var ret []*core.Message
+
+	err := r.pg.NewSelect().Model(&ret).
+		Where("hash IN (?)", bun.In(hashes)).
+		Scan(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, core.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+// MatchMessagesByOperationDesc returns hashes of suitable messages for the given contract operation.
+func (r *Repository) MatchMessagesByOperationDesc(ctx context.Context,
+	contractName abi.ContractName,
+	msgType core.MessageType,
+	outgoing bool,
+	operationId uint32,
+	afterAddress *addr.Address,
+	afterTxLt uint64,
+	limit int,
+) ([][]byte, error) {
+	var addressesRet []struct {
+		Address *addr.Address `ch:"type:String"`
+	}
+
+	q := r.ch.NewSelect().Model((*core.AccountState)(nil)).
+		ColumnExpr("DISTINCT address").
+		Where("hasAny(types, [?])", string(contractName))
+	if afterAddress != nil {
+		q = q.Where("address >= ?", afterAddress)
+	}
+	err := q.
+		Order("address ASC").
+		Limit(limit).
+		Scan(ctx, &addressesRet)
+	if err != nil {
+		return nil, errors.Wrap(err, "get contract addresses")
+	}
+
+	var addresses []*addr.Address
+	for _, row := range addressesRet {
+		addresses = append(addresses, row.Address)
+	}
+
+	addrCol, ltCol := "dst_address", "dst_tx_lt"
+	if outgoing {
+		addrCol, ltCol = "src_address", "src_tx_lt"
+	}
+
+	var msgHashesRet []struct {
+		Hash []byte
+	}
+	q = r.ch.NewSelect().Model((*core.Message)(nil)).
+		ColumnExpr("DISTINCT hash").
+		Where("type = ?", string(msgType)).
+		Where(addrCol+" IN (?)", ch.In(addresses)).
+		Where("operation_id = ?", operationId)
+	if afterAddress != nil && afterTxLt != 0 {
+		q = q.Where(fmt.Sprintf("(%s, %s) > (?, ?)", addrCol, ltCol), afterAddress, afterTxLt)
+	}
+	err = q.
+		OrderExpr(fmt.Sprintf("%s ASC, %s ASC", addrCol, ltCol)).
+		Limit(limit).
+		Scan(ctx, &msgHashesRet)
+	if err != nil {
+		return nil, errors.Wrap(err, "get message hashes")
+	}
+
+	var hashes [][]byte
+	for _, row := range msgHashesRet {
+		hashes = append(hashes, row.Hash)
+	}
+	return hashes, nil
 }

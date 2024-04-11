@@ -20,20 +20,11 @@ const (
 	VmSlice StackType = "slice"
 )
 
-// formats
-const (
-	VmAddr        StackType = "addr"
-	VmBool        StackType = "bool"
-	VmBigInt      StackType = "bigInt"
-	VmString      StackType = "string"
-	VmBytes       StackType = "bytes"
-	VmContentCell StackType = "content"
-)
-
 type VmValueDesc struct {
-	Name      string    `json:"name"`
-	StackType StackType `json:"stack_type"`
-	Format    StackType `json:"format,omitempty"`
+	Name      string        `json:"name"`
+	StackType StackType     `json:"stack_type"`
+	Format    TLBType       `json:"format,omitempty"`
+	Fields    TLBFieldsDesc `json:"struct_fields,omitempty"` // Format = "struct"
 }
 
 type GetMethodDesc struct {

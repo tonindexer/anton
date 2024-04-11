@@ -37,7 +37,9 @@ type Block struct {
 	MasterID *BlockID `ch:"-" bun:"embed:master_" json:"master,omitempty"`
 	Shards   []*Block `ch:"-" bun:"rel:has-many,join:workchain=master_workchain,join:shard=master_shard,join:seq_no=master_seq_no" json:"shards,omitempty"`
 
-	Transactions []*Transaction `ch:"-" bun:"rel:has-many,join:workchain=workchain,join:shard=shard,join:seq_no=block_seq_no" json:"transactions,omitempty"`
+	TransactionsCount int             `ch:"-" bun:"transactions_count,scanonly" json:"transactions_count"`
+	Transactions      []*Transaction  `ch:"-" bun:"rel:has-many,join:workchain=workchain,join:shard=shard,join:seq_no=block_seq_no" json:"transactions,omitempty"`
+	Accounts          []*AccountState `ch:"-" bun:"rel:has-many,join:workchain=workchain,join:shard=shard,join:seq_no=block_seq_no" json:"accounts,omitempty"`
 
 	// TODO: block info data
 

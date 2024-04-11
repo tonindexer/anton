@@ -14,7 +14,7 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-func (s *Service) getTransaction(ctx context.Context, b *ton.BlockIDExt, id ton.TransactionShortInfo) (*core.Transaction, error) {
+func (s *Service) getTransaction(ctx context.Context, master, b *ton.BlockIDExt, id ton.TransactionShortInfo) (*core.Transaction, error) {
 	var tx *core.Transaction
 	var acc *core.AccountState
 
@@ -47,7 +47,7 @@ func (s *Service) getTransaction(ctx context.Context, b *ton.BlockIDExt, id ton.
 
 	accCh := make(chan ret)
 	go func() {
-		acc, err := s.getAccount(ctx, b, *addr.MustFromTonutils(a))
+		acc, err := s.getAccount(ctx, master, b, *addr.MustFromTonutils(a))
 		accCh <- ret{res: acc, err: errors.Wrapf(err, "get account (addr = %s)", a)}
 	}()
 
@@ -88,7 +88,7 @@ func (s *Service) getTransaction(ctx context.Context, b *ton.BlockIDExt, id ton.
 	return tx, nil
 }
 
-func (s *Service) getTransactions(ctx context.Context, b *ton.BlockIDExt, ids []ton.TransactionShortInfo) ([]*core.Transaction, error) {
+func (s *Service) getTransactions(ctx context.Context, master, b *ton.BlockIDExt, ids []ton.TransactionShortInfo) ([]*core.Transaction, error) {
 	var wg sync.WaitGroup
 
 	type ret struct {
@@ -105,7 +105,7 @@ func (s *Service) getTransactions(ctx context.Context, b *ton.BlockIDExt, ids []
 	for i := range ids {
 		go func(id ton.TransactionShortInfo) {
 			defer wg.Done()
-			tx, err := s.getTransaction(ctx, b, id)
+			tx, err := s.getTransaction(ctx, master, b, id)
 			ch <- ret{tx: tx, err: err}
 		}(ids[i])
 	}
@@ -133,7 +133,7 @@ func (s *Service) fetchTxIDs(ctx context.Context, b *ton.BlockIDExt, after *ton.
 	return s.API.GetBlockTransactionsV2(ctx, b, 100, after)
 }
 
-func (s *Service) BlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*core.Transaction, error) {
+func (s *Service) BlockTransactions(ctx context.Context, master, b *ton.BlockIDExt) ([]*core.Transaction, error) {
 	var (
 		after        *ton.TransactionID3
 		fetchedIDs   []ton.TransactionShortInfo
@@ -153,7 +153,7 @@ func (s *Service) BlockTransactions(ctx context.Context, b *ton.BlockIDExt) ([]*
 			after = fetchedIDs[len(fetchedIDs)-1].ID3()
 		}
 
-		rawTx, err := s.getTransactions(ctx, b, fetchedIDs)
+		rawTx, err := s.getTransactions(ctx, master, b, fetchedIDs)
 		if err != nil {
 			return nil, err
 		}

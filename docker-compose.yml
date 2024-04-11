@@ -30,6 +30,19 @@ services:
       WORKERS: ${WORKERS}
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
+  rescan:
+    <<: *anton-service
+    depends_on:
+      <<: *anton-deps
+      migrations:
+        condition: service_completed_successfully
+    command: rescan
+    environment:
+      <<: *anton-env
+      RESCAN_WORKERS: ${RESCAN_WORKERS}
+      RESCAN_SELECT_LIMIT: ${RESCAN_SELECT_LIMIT}
+      LITESERVERS: ${LITESERVERS}
+      DEBUG_LOGS: ${DEBUG_LOGS}
   web:
     <<: *anton-service
     depends_on:
