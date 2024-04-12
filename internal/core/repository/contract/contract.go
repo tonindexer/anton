@@ -308,14 +308,14 @@ func (r *Repository) GetOperations(ctx context.Context) ([]*core.ContractOperati
 	return ret, nil
 }
 
-func (r *Repository) GetOperationByID(ctx context.Context, t core.MessageType, interfaces []abi.ContractName, outgoing bool, id uint32) (*core.ContractOperation, error) {
+func (r *Repository) GetOperationsByID(ctx context.Context, t core.MessageType, interfaces []abi.ContractName, outgoing bool, id uint32) ([]*core.ContractOperation, error) {
 	var ret []*core.ContractOperation
 
 	if len(interfaces) == 0 {
 		return nil, errors.Wrap(core.ErrNotFound, "no contract interfaces")
 	}
 
-	if op := r.cache.getOperationByID(interfaces, outgoing, id); op != nil {
+	if op := r.cache.getOperationsByID(interfaces, outgoing, id); op != nil {
 		return op, nil
 	}
 
@@ -328,11 +328,6 @@ func (r *Repository) GetOperationByID(ctx context.Context, t core.MessageType, i
 	if err != nil {
 		return nil, err
 	}
-	if len(ret) < 1 {
-		return nil, errors.Wrap(core.ErrNotFound, "unknown operation")
-	}
 
-	op := ret[0]
-
-	return op, nil
+	return ret, nil
 }

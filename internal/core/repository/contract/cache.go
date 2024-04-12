@@ -88,7 +88,7 @@ func (c *cache) getOperations() []*core.ContractOperation {
 	return c.operations
 }
 
-func (c *cache) getOperationByID(types []abi.ContractName, outgoing bool, id uint32) *core.ContractOperation {
+func (c *cache) getOperationsByID(types []abi.ContractName, outgoing bool, id uint32) (ret []*core.ContractOperation) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -103,10 +103,10 @@ func (c *cache) getOperationByID(types []abi.ContractName, outgoing bool, id uin
 		}
 		for _, t := range types {
 			if op.ContractName == t {
-				return op
+				ret = append(ret, op)
 			}
 		}
 	}
 
-	return nil
+	return ret
 }

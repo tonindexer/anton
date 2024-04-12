@@ -213,7 +213,7 @@ func TestRepository_AddContracts(t *testing.T) {
 	})
 
 	t.Run("get operation by id", func(t *testing.T) {
-		ret, err := repo.GetOperationByID(
+		ret, err := repo.GetOperationsByID(
 			ctx,
 			core.Internal,
 			[]abi.ContractName{op.ContractName},
@@ -221,7 +221,7 @@ func TestRepository_AddContracts(t *testing.T) {
 			op.OperationID,
 		)
 		require.Nil(t, err)
-		require.Equal(t, op, ret)
+		require.Equal(t, op, ret[0])
 	})
 
 	t.Run("drop tables", func(t *testing.T) {
