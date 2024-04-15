@@ -427,6 +427,51 @@
         "name": "get_sale_data",
         "return_values": [
           {
+            "name": "magic",
+            "stack_type": "int"
+          }, {
+            "name": "is_complete",
+            "stack_type": "int",
+            "format": "bool"
+          }, {
+            "name": "created_at",
+            "stack_type": "int"
+          }, {
+            "name": "marketplace_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "nft_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "nft_owner_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "full_price",
+            "stack_type": "int"
+          }, {
+            "name": "marketplace_fee_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "marketplace_fee",
+            "stack_type": "int"
+          }, {
+            "name": "royalty_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "royalty_amount",
+            "stack_type": "int"
+          }
+        ]
+      },
+      {
+        "name": "get_fix_price_data",
+        "return_values": [
+          {
             "name": "is_complete",
             "stack_type": "int",
             "format": "bool"
