@@ -1,0 +1,636 @@
+[
+  {
+    "interface_name": "stonfi_router",
+    "definitions": {
+      "dex_payload_swap": [
+        {
+          "name": "dex_payload_swap",
+          "tlb_type": "#25938561",
+          "format": "tag"
+        },
+        {
+          "name": "token_wallet1",
+          "tlb_type": "addr"
+        },
+        {
+          "name": "min_out",
+          "tlb_type": ".",
+          "format": "coins"
+        },
+        {
+          "name": "to_address",
+          "tlb_type": "addr"
+        },
+        {
+          "name": "ref_address",
+          "tlb_type": "maybe addr"
+        }
+      ],
+      "dex_payload_provide_lp": [
+        {
+          "name": "dex_payload_provide_lp",
+          "tlb_type": "#fcf9e58f",
+          "format": "tag"
+        },
+        {
+          "name": "token_wallet1",
+          "tlb_type": "addr"
+        },
+        {
+          "name": "min_lp_out",
+          "tlb_type": ".",
+          "format": "coins"
+        }
+      ]
+    },
+    "get_methods": [
+      {
+        "name": "get_pool_address",
+        "arguments": [
+          {
+            "name": "token0",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "token1",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "pool",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "name": "get_router_data",
+        "return_values": [
+          {
+            "name": "is_locked",
+            "stack_type": "int",
+            "format": "bool"
+          },
+          {
+            "name": "admin_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "temp_upgrade",
+            "stack_type": "cell"
+          },
+          {
+            "name": "pool_code",
+            "stack_type": "cell"
+          },
+          {
+            "name": "jetton_lp_wallet_code",
+            "stack_type": "cell"
+          },
+          {
+            "name": "lp_account_code",
+            "stack_type": "cell"
+          }
+        ]
+      }
+    ],
+    "in_messages": [
+      {
+        "op_name": "stonfi_router_transfer_notification",
+        "op_code": "0x7362d09c",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "sender",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "transferred_op",
+                "tlb_type": "[dex_payload_swap,dex_payload_provide_lp]"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "stonfi_pool",
+    "get_methods": [
+      {
+        "name": "get_pool_data",
+        "return_values": [
+          {
+            "name": "reserve0",
+            "stack_type": "int"
+          },
+          {
+            "name": "reserve1",
+            "stack_type": "int"
+          },
+          {
+            "name": "token0_wallet_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "token1_wallet_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "lp_fee",
+            "stack_type": "int"
+          },
+          {
+            "name": "protocol_fee",
+            "stack_type": "int"
+          },
+          {
+            "name": "ref_fee",
+            "stack_type": "int"
+          },
+          {
+            "name": "protocol_fee_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "collected_token0_protocol_fee",
+            "stack_type": "int"
+          },
+          {
+            "name": "collected_token1_protocol_fee",
+            "stack_type": "int"
+          }
+        ]
+      },
+      {
+        "name": "get_expected_outputs",
+        "arguments": [
+          {
+            "name": "amount",
+            "stack_type": "int"
+          },
+          {
+            "name": "jetton_wallet",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "jetton_to_receive",
+            "stack_type": "int"
+          },
+          {
+            "name": "protocol_fee_paid",
+            "stack_type": "int"
+          },
+          {
+            "name": "ref_fee_paid",
+            "stack_type": "int"
+          }
+        ]
+      },
+      {
+        "name": "get_expected_tokens",
+        "arguments": [
+          {
+            "name": "amount0",
+            "stack_type": "int"
+          },
+          {
+            "name": "amount1",
+            "stack_type": "int"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "expected_amount",
+            "stack_type": "int"
+          }
+        ]
+      },
+      {
+        "name": "get_expected_liquidity",
+        "arguments": [
+          {
+            "name": "jetton_amount",
+            "stack_type": "int"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "amount0",
+            "stack_type": "int"
+          },
+          {
+            "name": "amount1",
+            "stack_type": "int"
+          }
+        ]
+      },
+      {
+        "name": "get_lp_account_address",
+        "arguments": [
+          {
+            "name": "owner_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ],
+        "return_values": [
+          {
+            "name": "account_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }
+        ]
+      }
+    ],
+    "in_messages": [
+      {
+        "op_name": "stonfi_pool_swap",
+        "op_code": "0x25938561",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "from_user",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "token_wallet",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "min_out",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "has_ref",
+            "tlb_type": "bool"
+          },
+          {
+            "name": "ref_body",
+            "tlb_type": "^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "from_real_user",
+                "tlb_type": "addr"
+              },
+              {
+                "name": "ref_address",
+                "tlb_type": "addr",
+                "optional": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_pool_provide_lp",
+        "op_code": "0xfcf9e58f",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "owner_addr",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "min_lp_out",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "amount0",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "amount1",
+            "tlb_type": ".",
+            "format": "coins"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_pool_reset_gas",
+        "op_code": "0x42a0fb43",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_pool_collect_fees",
+        "op_code": "0x1fcb7d3d",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_pool_set_fees",
+        "op_code": "0x355423e5",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_lp_fee",
+            "tlb_type": "## 8",
+            "format": "uint8"
+          },
+          {
+            "name": "new_protocol_fee",
+            "tlb_type": "## 8",
+            "format": "uint8"
+          },
+          {
+            "name": "new_ref_fee",
+            "tlb_type": "## 8",
+            "format": "uint8"
+          },
+          {
+            "name": "new_protocol_fee_address",
+            "tlb_type": "addr"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_pool_burn_notification",
+        "op_code": "0x7bdd97de",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "jetton_amount",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "from_address",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "response_address",
+            "tlb_type": "addr"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "stonfi_pool_pay_to",
+        "op_code": "0xf93bb43f",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "owner",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "exit_code",
+            "tlb_type": "## 32"
+          },
+          {
+            "name": "ref_coins_data",
+            "tlb_type": "^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "amount0_out",
+                "tlb_type": ".",
+                "format": "coins"
+              },
+              {
+                "name": "token0_address",
+                "tlb_type": "addr"
+              },
+              {
+                "name": "amount1_out",
+                "tlb_type": ".",
+                "format": "coins"
+              },
+              {
+                "name": "token1_address",
+                "tlb_type": "addr"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "interface_name": "stonfi_lp_account",
+    "get_methods": [
+      {
+        "name": "get_lp_account_data",
+        "return_values": [
+          {
+            "name": "user_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "pool_address",
+            "stack_type": "slice",
+            "format": "addr"
+          },
+          {
+            "name": "amount0",
+            "stack_type": "int"
+          },
+          {
+            "name": "amount1",
+            "stack_type": "int"
+          }
+        ]
+      }
+    ],
+    "in_messages": [
+      {
+        "op_name": "stonfi_lp_account_add_liquidity",
+        "op_code": "0x3ebe5431",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_amount0",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "new_amount1",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "min_lp_out",
+            "tlb_type": ".",
+            "format": "coins"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_lp_account_refund_me",
+        "op_code": "0x0bf3f447",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_lp_account_direct_add_liquidity",
+        "op_code": "0x4cf82803",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "amount0",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "amount1",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "min_lp_out",
+            "tlb_type": ".",
+            "format": "coins"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_lp_account_reset_gas",
+        "op_code": "0x42a0fb43",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "stonfi_pool_cb_add_liquidity",
+        "op_code": "0x56dfeb8a",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "total_amount0",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "total_amount1",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "user_address",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "min_lp_out",
+            "tlb_type": ".",
+            "format": "coins"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_pool_cb_refund_me",
+        "op_code": "0x89446a42",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "total_amount0",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "total_amount1",
+            "tlb_type": ".",
+            "format": "coins"
+          },
+          {
+            "name": "user_address",
+            "tlb_type": "addr"
+          }
+        ]
+      }
+    ]
+  }
+]
