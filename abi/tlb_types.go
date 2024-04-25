@@ -28,6 +28,12 @@ const (
 	TLBTag         TLBType = "tag"
 )
 
+func init() {
+	tlb.Register(DedustAssetNative{})
+	tlb.Register(DedustAssetJetton{})
+	tlb.Register(DedustAssetExtraCurrency{})
+}
+
 type TelemintText struct {
 	Len  uint8  // ## 8
 	Text string // bits (len * 8)
@@ -77,7 +83,7 @@ type DedustAssetExtraCurrency struct {
 }
 
 type DedustAsset struct {
-	Asset any `tlb:"."`
+	Asset any `tlb:"[DedustAssetNative,DedustAssetJetton,DedustAssetExtraCurrency]"`
 }
 
 func (x *DedustAsset) LoadFromCell(loader *cell.Slice) error {
@@ -88,7 +94,7 @@ func (x *DedustAsset) LoadFromCell(loader *cell.Slice) error {
 
 	switch pfx {
 	case 0b0000:
-		x.Asset = (*DedustAssetNative)(nil)
+		x.Asset = new(DedustAssetNative)
 		return nil
 	case 0b0001:
 		x.Asset = new(DedustAssetJetton)

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -302,6 +303,57 @@ func (s *Service) callPossibleGetMethods(
 			if err := s.callGetMethod(ctx, acc, i, d, others); err != nil {
 				log.Error().Err(err).Str("contract_name", string(i.Name)).Str("get_method", d.Name).Msg("execute get-method")
 			}
+		}
+
+		sort.Slice(acc.ExecutedGetMethods[i.Name], func(it, jt int) bool {
+			return acc.ExecutedGetMethods[i.Name][it].Name < acc.ExecutedGetMethods[i.Name][jt].Name
+		})
+
+		switch i.Name {
+		case known.DedustV2Pool:
+			factoryAddr := "EQBfBWT7X2BHg9tXAxzhz2aKiNTU1tpt5NsiK0uSDW_YAJ67"
+
+			factory, err := others(ctx, *addr.MustFromBase64(factoryAddr))
+			if err != nil {
+				log.Error().Str("factory_address", factoryAddr).Err(err).Msg("get dedust v2 factory state")
+				continue
+			}
+
+			desc, err := s.ContractRepo.GetMethodDescription(ctx, known.DedustV2Factory, "get_pool_address")
+			if err != nil {
+				log.Error().Err(err).Msg("get 'get_pool_address' method description")
+				return
+			}
+
+			asset0 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[0].(*abi.DedustAsset)
+			asset1 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[1].(*abi.DedustAsset)
+			isStable := acc.ExecutedGetMethods[known.DedustV2Pool][5].Returns[0].(bool)
+
+			args := []any{isStable, asset0, asset1}
+
+			s.checkMinter(ctx, factory, acc, known.DedustV2Factory, &desc, args)
+
+		case known.StonFiPool:
+			routerAddr := "EQB3ncyBUTjZUA5EnFKR5_EnOMI9V1tTEAAPaiU71gc4TiUt"
+
+			router, err := others(ctx, *addr.MustFromBase64(routerAddr))
+			if err != nil {
+				log.Error().Str("router_address", routerAddr).Err(err).Msg("get stonfi router state")
+				continue
+			}
+
+			desc, err := s.ContractRepo.GetMethodDescription(ctx, known.StonFiRouter, "get_pool_address")
+			if err != nil {
+				log.Error().Err(err).Msg("get 'get_pool_address' method description")
+				return
+			}
+
+			asset0 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[2].(*address.Address)
+			asset1 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[3].(*address.Address)
+
+			args := []any{asset0, asset1}
+
+			s.checkMinter(ctx, router, acc, known.StonFiRouter, &desc, args)
 		}
 	}
 }
