@@ -1,6 +1,9 @@
 [
   {
     "interface_name": "stonfi_router",
+    "addresses": [
+      "EQB3ncyBUTjZUA5EnFKR5_EnOMI9V1tTEAAPaiU71gc4TiUt"
+    ],
     "definitions": {
       "dex_payload_swap": [
         {
