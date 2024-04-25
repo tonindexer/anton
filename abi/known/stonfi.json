@@ -26,7 +26,8 @@
         },
         {
           "name": "ref_address",
-          "tlb_type": "maybe addr"
+          "tlb_type": "maybe addr",
+          "format": "addr"
         }
       ],
       "dex_payload_provide_lp": [
