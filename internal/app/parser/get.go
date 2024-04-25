@@ -325,9 +325,9 @@ func (s *Service) callPossibleGetMethods(
 				return
 			}
 
-			asset0 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[0].(*abi.DedustAsset)
-			asset1 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[1].(*abi.DedustAsset)
-			isStable := acc.ExecutedGetMethods[known.DedustV2Pool][5].Returns[0].(bool)
+			asset0 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[0].(*abi.DedustAsset) //nolint:forcetypeassert // that's ok
+			asset1 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[1].(*abi.DedustAsset) //nolint:forcetypeassert // that's ok
+			isStable := acc.ExecutedGetMethods[known.DedustV2Pool][5].Returns[0].(bool)           //nolint:forcetypeassert // that's ok
 
 			args := []any{isStable, asset0, asset1}
 
@@ -348,8 +348,8 @@ func (s *Service) callPossibleGetMethods(
 				return
 			}
 
-			asset0 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[2].(*address.Address)
-			asset1 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[3].(*address.Address)
+			asset0 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[2].(*address.Address) //nolint:forcetypeassert // that's ok
+			asset1 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[3].(*address.Address) //nolint:forcetypeassert // that's ok
 
 			args := []any{asset0, asset1}
 
