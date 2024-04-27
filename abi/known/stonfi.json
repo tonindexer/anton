@@ -134,6 +134,228 @@
             ]
           }
         ]
+      },
+      {
+        "op_name": "stonfi_router_get_pool_address",
+        "op_code": "0xd1db969b",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "token0",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "token1",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_set_fees",
+        "op_code": "0x355423e5",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "new_lp_fee",
+            "tlb_type": "## 8"
+          },
+          {
+            "name": "new_protocol_fee",
+            "tlb_type": "## 8"
+          },
+          {
+            "name": "new_ref_fee",
+            "tlb_type": "## 8"
+          },
+          {
+            "name": "new_protocol_fee_address",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "ref_wallets",
+            "tlb_type": "^",
+            "format": "struct",
+            "struct_fields": [
+              {
+                "name": "jetton_wallet0",
+                "tlb_type": "addr",
+                "format": "addr"
+              },
+              {
+                "name": "jetton_wallet1",
+                "tlb_type": "addr",
+                "format": "addr"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_collect_fees",
+        "op_code": "0x1fcb7d3d",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "jetton_wallet0",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "jetton_wallet1",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_lock",
+        "op_code": "0x878f9b0e",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_unlock",
+        "op_code": "0x6ae4b0ef",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_init_code_upgrade",
+        "op_code": "0xdf1e233d",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "code",
+            "tlb_type": "^"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_init_admin_upgrade",
+        "op_code": "0x2fb94384",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "admin",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_cancel_admin_upgrade",
+        "op_code": "0xa4ed9981",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_cancel_code_upgrade",
+        "op_code": "0x357ccc67",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_finalize_upgrades",
+        "op_code": "0x6378509f",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_reset_gas",
+        "op_code": "0x42a0fb43",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          }
+        ]
+      },
+      {
+        "op_name": "stonfi_router_reset_pool_gas",
+        "op_code": "0xf6aa9737",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "jetton_wallet0",
+            "tlb_type": "addr",
+            "format": "addr"
+          },
+          {
+            "name": "jetton_wallet1",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
+      }
+    ],
+    "out_messages": [
+      {
+        "op_name": "stonfi_router_report_pool_address",
+        "op_code": "0xd1db969b",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64",
+            "format": "uint64"
+          },
+          {
+            "name": "pool_address",
+            "tlb_type": "addr",
+            "format": "addr"
+          }
+        ]
       }
     ]
   },
