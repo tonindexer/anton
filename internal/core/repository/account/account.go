@@ -456,15 +456,15 @@ func (r *Repository) GetAllAccountStates(ctx context.Context, a addr.Address, be
 	if len(lts) > limit {
 		var found bool
 		for it := range lts {
-			if lts[it] < beforeTxLT {
+			if !found {
+				found = lts[it] >= beforeTxLT
 				continue
 			}
-			if it >= limit {
+			if it > limit {
 				lts = lts[it-limit : it]
 			} else {
 				lts = lts[0:limit]
 			}
-			found = true
 			break
 		}
 		if !found {
