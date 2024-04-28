@@ -311,6 +311,14 @@ func (s *Service) callPossibleGetMethods(
 
 		switch i.Name {
 		case known.DedustV2Pool:
+			acc.Fake = true
+
+			if len(acc.ExecutedGetMethods[known.DedustV2Pool]) < 6 ||
+				acc.ExecutedGetMethods[known.DedustV2Pool][0].Name != "get_assets" || acc.ExecutedGetMethods[known.DedustV2Pool][5].Name != "is_stable" ||
+				acc.ExecutedGetMethods[known.DedustV2Pool][0].Error != "" || acc.ExecutedGetMethods[known.DedustV2Pool][5].Error != "" {
+				continue
+			}
+
 			factoryAddr := "EQBfBWT7X2BHg9tXAxzhz2aKiNTU1tpt5NsiK0uSDW_YAJ67"
 
 			factory, err := others(ctx, *addr.MustFromBase64(factoryAddr))
@@ -334,6 +342,14 @@ func (s *Service) callPossibleGetMethods(
 			s.checkMinter(ctx, factory, acc, known.DedustV2Factory, &desc, args)
 
 		case known.StonFiPool:
+			acc.Fake = true
+
+			if len(acc.ExecutedGetMethods[known.StonFiPool]) < 1 ||
+				acc.ExecutedGetMethods[known.StonFiPool][0].Name != "get_pool_data" ||
+				acc.ExecutedGetMethods[known.StonFiPool][0].Error != "" {
+				continue
+			}
+
 			routerAddr := "EQB3ncyBUTjZUA5EnFKR5_EnOMI9V1tTEAAPaiU71gc4TiUt"
 
 			router, err := others(ctx, *addr.MustFromBase64(routerAddr))
