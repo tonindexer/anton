@@ -1,7 +1,9 @@
 # Anton
 
 This project is an open-source tool that extracts and organizes data from the TON blockchain, 
-efficiently storing it in PostgreSQL and ClickHouse databases. 
+efficiently storing it in PostgreSQL and ClickHouse databases.
+
+If you have any questions, you can ask them in the [Telegram group](https://t.me/tonindexer_chat).
 
 ## Overview
 
