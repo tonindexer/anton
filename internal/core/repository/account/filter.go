@@ -228,7 +228,7 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 
 func (r *Repository) getCodeData(ctx context.Context, rows []*core.AccountState, excludeCode, excludeData bool) error {
 	for _, row := range rows {
-		if !excludeCode && len(row.Code) == 0 {
+		if !excludeCode && len(row.Code) == 0 && len(row.CodeHash) == 32 {
 			var code core.AccountStateCode
 			err := r.ch.NewSelect().Model(&code).Where("code_hash = ?", row.CodeHash).Scan(ctx)
 			if err != nil {
@@ -236,7 +236,7 @@ func (r *Repository) getCodeData(ctx context.Context, rows []*core.AccountState,
 			}
 			row.Code = code.Code
 		}
-		if !excludeData && len(row.Data) == 0 {
+		if !excludeData && len(row.Data) == 0 && len(row.DataHash) == 32 {
 			var data core.AccountStateData
 			err := r.ch.NewSelect().Model(&data).Where("data_hash = ?", row.DataHash).Scan(ctx)
 			if err != nil {
