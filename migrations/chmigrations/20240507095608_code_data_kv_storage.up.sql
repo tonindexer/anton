@@ -6,8 +6,6 @@ CREATE TABLE account_states_code
 ENGINE = EmbeddedRocksDB
 PRIMARY KEY code_hash;
 
---migration:split
-
 CREATE TABLE account_states_data
 (
     data_hash String,
@@ -15,8 +13,6 @@ CREATE TABLE account_states_data
 )
 ENGINE = EmbeddedRocksDB
 PRIMARY KEY data_hash;
-
---migration:split
 
 -- INSERT INTO account_states_code SELECT code_hash, any(code) FROM account_states GROUP BY code_hash;
 -- INSERT INTO account_states_data SELECT data_hash, any(data) FROM account_states GROUP BY data_hash;
