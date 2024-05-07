@@ -22,10 +22,11 @@ func (s *Service) getLastSeenAccountState(ctx context.Context, a addr.Address, l
 	lastLT++
 
 	accountReq := filter.AccountsReq{
-		Addresses: []*addr.Address{&a},
-		Order:     "DESC",
-		AfterTxLT: &lastLT,
-		Limit:     1,
+		WithCodeData: true,
+		Addresses:    []*addr.Address{&a},
+		Order:        "DESC",
+		AfterTxLT:    &lastLT,
+		Limit:        1,
 	}
 	accountRes, err := s.AccountRepo.FilterAccounts(ctx, &accountReq)
 	if err != nil {

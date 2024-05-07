@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
@@ -139,6 +140,23 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 
 	_, err = chDB.NewCreateTable().
 		IfNotExists().
+		Engine("EmbeddedRocksDB PRIMARY KEY code_hash").
+		Model(&core.AccountStateCode{}).
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state code ch create table")
+	}
+	_, err = chDB.NewCreateTable().
+		IfNotExists().
+		Engine("EmbeddedRocksDB PRIMARY KEY data_hash").
+		Model(&core.AccountStateData{}).
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state data ch create table")
+	}
+
+	_, err = chDB.NewCreateTable().
+		IfNotExists().
 		Engine("ReplacingMergeTree").
 		Model(&core.AccountState{}).
 		Exec(ctx)
@@ -205,6 +223,23 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		for _, executions := range a.ExecutedGetMethods {
 			sort.Slice(executions, func(i, j int) bool { return executions[i].Name < executions[j].Name })
 		}
+	}
+
+	var (
+		codeKV []*core.AccountStateCode
+		dataKV []*core.AccountStateData
+	)
+	for _, a := range accounts {
+		codeKV = append(codeKV, &core.AccountStateCode{CodeHash: a.CodeHash, Code: a.Code})
+		dataKV = append(dataKV, &core.AccountStateData{DataHash: a.DataHash, Data: a.Data})
+		a.Code, a.Data = nil, nil
+	}
+
+	if _, err := r.ch.NewInsert().Model(&codeKV).Exec(ctx); err != nil {
+		return errors.Wrapf(err, "write code to key-value store")
+	}
+	if _, err := r.ch.NewInsert().Model(&dataKV).Exec(ctx); err != nil {
+		return errors.Wrapf(err, "write data to key-value store")
 	}
 
 	_, err := tx.NewInsert().Model(&accounts).Exec(ctx)

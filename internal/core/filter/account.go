@@ -21,6 +21,8 @@ type LabelsRes struct {
 }
 
 type AccountsReq struct {
+	WithCodeData bool
+
 	Addresses   []*addr.Address // `form:"addresses"`
 	LatestState bool            `form:"latest"`
 

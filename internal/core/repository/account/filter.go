@@ -226,6 +226,28 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 	return qCount.Count(ctx)
 }
 
+func (r *Repository) getCodeData(ctx context.Context, rows []*core.AccountState, excludeCode, excludeData bool) error {
+	for _, row := range rows {
+		if !excludeCode && len(row.Code) == 0 {
+			var code core.AccountStateCode
+			err := r.ch.NewSelect().Model(&code).Where("code_hash = ?", row.CodeHash).Scan(ctx)
+			if err != nil {
+				return errors.Wrapf(err, "get code with %x hash", row.CodeHash)
+			}
+			row.Code = code.Code
+		}
+		if !excludeData && len(row.Data) == 0 {
+			var data core.AccountStateData
+			err := r.ch.NewSelect().Model(&data).Where("data_hash = ?", row.DataHash).Scan(ctx)
+			if err != nil {
+				return errors.Wrapf(err, "get data with %x hash", row.DataHash)
+			}
+			row.Data = data.Data
+		}
+	}
+	return nil
+}
+
 func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) (*filter.AccountsRes, error) {
 	var (
 		res = new(filter.AccountsRes)
@@ -247,6 +269,22 @@ func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) 
 	res.Rows, err = r.filterAccountStates(ctx, f, res.Total)
 	if err != nil {
 		return res, err
+	}
+
+	var excludeCode, excludeData bool
+	for _, c := range f.ExcludeColumn {
+		cl := strings.ToLower(c)
+		if cl == "code" {
+			excludeCode = true
+		}
+		if cl == "data" {
+			excludeData = true
+		}
+	}
+	if f.WithCodeData && (!excludeCode || !excludeData) {
+		if err := r.getCodeData(ctx, res.Rows, excludeCode, excludeData); err != nil {
+			return res, err
+		}
 	}
 
 	return res, nil

@@ -188,7 +188,7 @@ func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) erro
 }
 
 func (s *Service) rescanAccounts(ctx context.Context, task *core.RescanTask, ids []*core.AccountStateID) error {
-	accRet, err := s.AccountRepo.FilterAccounts(ctx, &filter.AccountsReq{StateIDs: ids})
+	accRet, err := s.AccountRepo.FilterAccounts(ctx, &filter.AccountsReq{WithCodeData: true, StateIDs: ids})
 	if err != nil {
 		return errors.Wrapf(err, "filter accounts")
 	}

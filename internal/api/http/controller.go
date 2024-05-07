@@ -347,7 +347,7 @@ func (c *Controller) GetLabels(ctx *gin.Context) {
 //	@Success		200		{object}	filter.AccountsRes
 //	@Router			/accounts [get]
 func (c *Controller) GetAccounts(ctx *gin.Context) {
-	var req filter.AccountsReq
+	req := filter.AccountsReq{WithCodeData: true}
 
 	err := ctx.ShouldBindQuery(&req)
 	if err != nil {

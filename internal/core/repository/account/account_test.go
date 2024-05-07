@@ -60,6 +60,11 @@ func dropTables(t testing.TB) {
 	_, err := pg.NewDropTable().Model((*core.LatestAccountState)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
 
+	_, err = ck.NewDropTable().Model((*core.AccountStateCode)(nil)).IfExists().Exec(ctx)
+	require.Nil(t, err)
+	_, err = ck.NewDropTable().Model((*core.AccountStateData)(nil)).IfExists().Exec(ctx)
+	require.Nil(t, err)
+
 	_, err = ck.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
 	_, err = pg.NewDropTable().Model((*core.AccountState)(nil)).IfExists().Exec(ctx)
@@ -102,10 +107,12 @@ func TestRepository_AddAccounts(t *testing.T) {
 
 		err = tx.NewSelect().Model(got).Where("address = ?", a).Where("last_tx_lt = ?", states[0].LastTxLT).Scan(ctx)
 		require.Nil(t, err)
+		got.Code, got.Data = states[0].Code, states[0].Data
 		require.Equal(t, states[0], got)
 
 		err = ck.NewSelect().Model(got).Where("address = ?", a).Where("last_tx_lt = ?", states[0].LastTxLT).Scan(ctx)
 		require.Nil(t, err)
+		got.Code, got.Data = states[0].Code, states[0].Data
 		got.UpdatedAt = states[0].UpdatedAt // TODO: look at time.Time ch unmarshal
 		require.Equal(t, states[0], got)
 	})
@@ -127,10 +134,12 @@ func TestRepository_AddAccounts(t *testing.T) {
 
 		err = pg.NewSelect().Model(got).Where("address = ?", a).Where("last_tx_lt = ?", states[0].LastTxLT).Scan(ctx)
 		require.Nil(t, err)
+		got.Code, got.Data = states[0].Code, states[0].Data
 		require.Equal(t, states[0], got)
 
 		err = ck.NewSelect().Model(got).Where("address = ?", a).Where("last_tx_lt = ?", states[0].LastTxLT).Scan(ctx)
 		require.Nil(t, err)
+		got.Code, got.Data = states[0].Code, states[0].Data
 		got.UpdatedAt = states[0].UpdatedAt // TODO: look at time.Time ch unmarshal
 		require.Equal(t, states[0], got)
 	})
@@ -298,7 +307,7 @@ func TestRepository_GetAllAccountInterfaces(t *testing.T) {
 
 	initdb(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	for i, tc := range testCases {

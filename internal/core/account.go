@@ -75,9 +75,9 @@ type AccountState struct {
 	LastTxHash []byte `bun:"type:bytea,unique,notnull" json:"last_tx_hash"`
 
 	StateHash []byte `bun:"type:bytea" json:"state_hash,omitempty"` // only if account is frozen
-	Code      []byte `bun:"type:bytea" json:"code,omitempty"`
+	Code      []byte `ch:"-" bun:"type:bytea" json:"code,omitempty"`
 	CodeHash  []byte `bun:"type:bytea" json:"code_hash,omitempty"`
-	Data      []byte `bun:"type:bytea" json:"data,omitempty"`
+	Data      []byte `ch:"-" bun:"type:bytea" json:"data,omitempty"`
 	DataHash  []byte `bun:"type:bytea" json:"data_hash,omitempty"`
 	Libraries []byte `bun:"type:bytea" json:"libraries,omitempty"`
 
@@ -98,6 +98,20 @@ type AccountState struct {
 	FTWalletData
 
 	UpdatedAt time.Time `bun:"type:timestamp without time zone,notnull" json:"updated_at"`
+}
+
+type AccountStateCode struct {
+	ch.CHModel `ch:"account_states_code" json:"-"`
+
+	CodeHash []byte `ch:"type:String"`
+	Code     []byte `ch:"type:String"`
+}
+
+type AccountStateData struct {
+	ch.CHModel `ch:"account_states_data" json:"-"`
+
+	DataHash []byte `ch:"type:String"`
+	Data     []byte `ch:"type:String"`
 }
 
 func (a *AccountState) BlockID() BlockID {
