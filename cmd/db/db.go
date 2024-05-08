@@ -303,5 +303,83 @@ var Command = &cli.Command{
 				return nil
 			},
 		},
+		{
+			Name:  "transferCodeData",
+			Usage: "Moves account states code and data from clickhouse to rocksdb and replaces columns with nulls in PostgreSQL",
+			Flags: []cli.Flag{
+				&cli.IntFlag{
+					Name:  "limit",
+					Value: 10000,
+					Usage: "batch size for update",
+				},
+				&cli.Uint64Flag{
+					Name:  "start-from",
+					Value: 0,
+					Usage: "last tx lt to start from",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				chURL := env.GetString("DB_CH_URL", "")
+				pgURL := env.GetString("DB_PG_URL", "")
+
+				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+
+				conn, err := repository.ConnectDB(ctx, chURL, pgURL)
+				if err != nil {
+					return errors.Wrap(err, "cannot connect to the databases")
+				}
+				defer conn.Close()
+
+				lastTxLT := c.Uint64("start-from")
+				limit := c.Int("limit")
+				for {
+					var nextTxLT uint64
+
+					err := conn.CH.NewRaw(`
+							SELECT last_tx_lt
+							FROM account_states
+							WHERE last_tx_lt >= ?
+							ORDER BY last_tx_lt ASC
+							OFFSET ? ROW FETCH FIRST 1 ROWS ONLY`, lastTxLT, limit).
+						Scan(c.Context, &nextTxLT)
+					if err != nil {
+						return errors.Wrap(err, "get next tx lt")
+					}
+
+					err = conn.CH.NewRaw(`
+							INSERT INTO account_states_code
+							SELECT code_hash, any(code)
+							FROM (
+								SELECT code_hash, code
+								FROM account_states
+								WHERE last_tx_lt >= ? AND last_tx_lt < ?
+							)
+							GROUP BY code_hash`, lastTxLT, nextTxLT).
+						Scan(ctx)
+					if err != nil {
+						return errors.Wrapf(err, "transfer code from %d to %d", lastTxLT, nextTxLT)
+					}
+
+					err = conn.CH.NewRaw(`
+							INSERT INTO account_states_data
+							SELECT data_hash, any(data)
+							FROM (
+								SELECT data_hash, data
+								FROM account_states
+								WHERE last_tx_lt >= ? AND last_tx_lt < ?
+							)
+							GROUP BY data_hash`, lastTxLT, nextTxLT).
+						Scan(ctx)
+					if err != nil {
+						return errors.Wrapf(err, "transfer data from %d to %d", lastTxLT, nextTxLT)
+					}
+
+					log.Info().Uint64("last_tx_lt", lastTxLT).Uint64("next_tx_lt", nextTxLT).Msg("transferred new batch")
+
+					lastTxLT = nextTxLT
+				}
+			},
+		},
 	},
 }
