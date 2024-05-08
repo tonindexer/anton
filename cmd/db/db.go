@@ -350,7 +350,8 @@ var Command = &cli.Command{
 							FROM (
 								SELECT code_hash, code
 								FROM account_states
-								WHERE last_tx_lt >= ? AND last_tx_lt < ?
+								WHERE last_tx_lt >= ? AND last_tx_lt < ? AND 
+								      length(code) > 0
 							)
 							GROUP BY code_hash`, lastTxLT, nextTxLT).
 						Scan(c.Context)
@@ -364,7 +365,8 @@ var Command = &cli.Command{
 							FROM (
 								SELECT data_hash, data
 								FROM account_states
-								WHERE last_tx_lt >= ? AND last_tx_lt < ?
+								WHERE last_tx_lt >= ? AND last_tx_lt < ? AND 
+								      length(data) > 0
 							)
 							GROUP BY data_hash`, lastTxLT, nextTxLT).
 						Scan(c.Context)
