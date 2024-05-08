@@ -322,10 +322,7 @@ var Command = &cli.Command{
 				chURL := env.GetString("DB_CH_URL", "")
 				pgURL := env.GetString("DB_PG_URL", "")
 
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-				defer cancel()
-
-				conn, err := repository.ConnectDB(ctx, chURL, pgURL)
+				conn, err := repository.ConnectDB(c.Context, chURL, pgURL)
 				if err != nil {
 					return errors.Wrap(err, "cannot connect to the databases")
 				}
@@ -356,7 +353,7 @@ var Command = &cli.Command{
 								WHERE last_tx_lt >= ? AND last_tx_lt < ?
 							)
 							GROUP BY code_hash`, lastTxLT, nextTxLT).
-						Scan(ctx)
+						Scan(c.Context)
 					if err != nil {
 						return errors.Wrapf(err, "transfer code from %d to %d", lastTxLT, nextTxLT)
 					}
@@ -370,7 +367,7 @@ var Command = &cli.Command{
 								WHERE last_tx_lt >= ? AND last_tx_lt < ?
 							)
 							GROUP BY data_hash`, lastTxLT, nextTxLT).
-						Scan(ctx)
+						Scan(c.Context)
 					if err != nil {
 						return errors.Wrapf(err, "transfer data from %d to %d", lastTxLT, nextTxLT)
 					}
