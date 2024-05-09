@@ -425,7 +425,7 @@ func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address
 	return res, nil
 }
 
-func (r *Repository) GetAllAccountStates(ctx context.Context, a addr.Address, beforeTxLT uint64, limit int) (map[uint64]*core.AccountState, error) {
+func (r *Repository) GetAllAccountStates(ctx context.Context, a addr.Address, beforeTxLT uint64, limit int) ([]*core.AccountState, error) {
 	var ret []struct {
 		ChangeTxLT     int64
 		ChangeCodeHash []byte `ch:"type:String"`
@@ -517,14 +517,9 @@ func (r *Repository) GetAllAccountStates(ctx context.Context, a addr.Address, be
 		return nil, errors.Wrap(err, "select states by lts")
 	}
 
-	res := make(map[uint64]*core.AccountState)
-	for it, s := range states {
-		var nextTxLT uint64
-		if it != len(states)-1 {
-			nextTxLT = states[it+1].LastTxLT
-		}
-		res[nextTxLT] = s
+	if err := r.getCodeData(ctx, states, false, false); err != nil {
+		return nil, errors.Wrap(err, "get code and data")
 	}
 
-	return res, nil
+	return states, nil
 }

@@ -27,8 +27,12 @@ func (s *Service) getRecentAccountState(ctx context.Context, a addr.Address, las
 		return nil, err
 	}
 
-	for nextMinterTxLT, state := range states {
-		s.minterStateCache.put(a, state, nextMinterTxLT)
+	for it, state := range states {
+		var nextTxLT uint64
+		if it != len(states)-1 {
+			nextTxLT = states[it+1].LastTxLT
+		}
+		s.minterStateCache.put(a, state, nextTxLT)
 	}
 
 	minter, ok := s.minterStateCache.get(a, lastLT)

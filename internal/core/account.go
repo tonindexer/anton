@@ -179,5 +179,5 @@ type AccountRepository interface {
 	GetAllAccountInterfaces(context.Context, addr.Address) (map[uint64][]abi.ContractName, error)
 
 	// GetAllAccountStates is pretty much similar to GetAllAccountInterfaces, but it returns updates of code or data.
-	GetAllAccountStates(ctx context.Context, a addr.Address, beforeTxLT uint64, limit int) (map[uint64]*AccountState, error)
+	GetAllAccountStates(ctx context.Context, a addr.Address, beforeTxLT uint64, limit int) ([]*AccountState, error)
 }
