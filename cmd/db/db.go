@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/uptrace/bun/migrate"
 	"github.com/uptrace/go-clickhouse/chmigrate"
 
+	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/repository"
 
 	"github.com/tonindexer/anton/migrations/chmigrations"
@@ -305,7 +308,7 @@ var Command = &cli.Command{
 		},
 		{
 			Name:  "transferCodeData",
-			Usage: "Moves account states code and data from clickhouse to rocksdb and replaces columns with nulls in PostgreSQL",
+			Usage: "Moves account states code and data from ClickHouse to RocksDB",
 			Flags: []cli.Flag{
 				&cli.IntFlag{
 					Name:  "limit",
@@ -340,8 +343,16 @@ var Command = &cli.Command{
 							ORDER BY last_tx_lt ASC
 							OFFSET ? ROW FETCH FIRST 1 ROWS ONLY`, lastTxLT, limit).
 						Scan(c.Context, &nextTxLT)
-					if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						nextTxLT = 0
+						log.Info().Uint64("last_tx_lt", lastTxLT).Msg("finishing")
+					} else if err != nil {
 						return errors.Wrap(err, "get next tx lt")
+					}
+
+					f := fmt.Sprintf("last_tx_lt >= %d", lastTxLT)
+					if nextTxLT != 0 {
+						f += fmt.Sprintf(" AND last_tx_lt < %d", nextTxLT)
 					}
 
 					err = conn.CH.NewRaw(`
@@ -350,10 +361,9 @@ var Command = &cli.Command{
 							FROM (
 								SELECT code_hash, code
 								FROM account_states
-								WHERE last_tx_lt >= ? AND last_tx_lt < ? AND 
-								      length(code) > 0
+								WHERE ` + f + ` AND length(code) > 0
 							)
-							GROUP BY code_hash`, lastTxLT, nextTxLT).
+							GROUP BY code_hash`).
 						Scan(c.Context)
 					if err != nil {
 						return errors.Wrapf(err, "transfer code from %d to %d", lastTxLT, nextTxLT)
@@ -365,17 +375,94 @@ var Command = &cli.Command{
 							FROM (
 								SELECT data_hash, data
 								FROM account_states
-								WHERE last_tx_lt >= ? AND last_tx_lt < ? AND 
-								      length(data) > 0
+								WHERE ` + f + ` AND length(data) > 0
 							)
-							GROUP BY data_hash`, lastTxLT, nextTxLT).
+							GROUP BY data_hash`).
 						Scan(c.Context)
 					if err != nil {
 						return errors.Wrapf(err, "transfer data from %d to %d", lastTxLT, nextTxLT)
 					}
 
-					log.Info().Uint64("last_tx_lt", lastTxLT).Uint64("next_tx_lt", nextTxLT).Msg("transferred new batch")
+					if nextTxLT == 0 {
+						log.Info().Msg("finished")
+						return nil
+					} else {
+						log.Info().Uint64("last_tx_lt", lastTxLT).Uint64("next_tx_lt", nextTxLT).Msg("transferred new batch")
+					}
+					lastTxLT = nextTxLT
+				}
+			},
+		},
+		{
+			Name:  "clearCodeData",
+			Usage: "Removes account states code and data from PostgreSQL",
+			Flags: []cli.Flag{
+				&cli.IntFlag{
+					Name:  "limit",
+					Value: 10000,
+					Usage: "batch size for update",
+				},
+				&cli.Uint64Flag{
+					Name:  "start-from",
+					Value: 0,
+					Usage: "last tx lt to start from",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				chURL := env.GetString("DB_CH_URL", "")
+				pgURL := env.GetString("DB_PG_URL", "")
 
+				conn, err := repository.ConnectDB(c.Context, chURL, pgURL)
+				if err != nil {
+					return errors.Wrap(err, "cannot connect to the databases")
+				}
+				defer conn.Close()
+
+				lastTxLT := c.Uint64("start-from")
+				limit := c.Int("limit")
+				for {
+					var nextTxLT uint64
+
+					err := conn.CH.NewRaw(`
+							SELECT last_tx_lt
+							FROM account_states
+							WHERE last_tx_lt >= ?
+							ORDER BY last_tx_lt ASC
+							OFFSET ? ROW FETCH FIRST 1 ROWS ONLY`, lastTxLT, limit).
+						Scan(c.Context, &nextTxLT)
+					if errors.Is(err, sql.ErrNoRows) {
+						nextTxLT = 0
+						log.Info().Uint64("last_tx_lt", lastTxLT).Msg("finishing")
+					} else if err != nil {
+						return errors.Wrap(err, "get next tx lt")
+					}
+
+					q := conn.PG.NewUpdate().Model((*core.AccountState)(nil)).
+						Set("code = NULL").
+						Where("last_tx_lt >= ?", lastTxLT)
+					if nextTxLT != 0 {
+						q = q.Where("last_tx_lt < ?", nextTxLT)
+					}
+					if _, err := q.Exec(c.Context); err != nil {
+						return errors.Wrapf(err, "clear code from %d to %d", lastTxLT, nextTxLT)
+					}
+
+					q = conn.PG.NewUpdate().Model((*core.AccountState)(nil)).
+						Set("data = NULL").
+						Where("last_tx_lt >= ?", lastTxLT)
+					if nextTxLT != 0 {
+						q = q.Where("last_tx_lt < ?", nextTxLT)
+					}
+					if _, err := q.Exec(c.Context); err != nil {
+						return errors.Wrapf(err, "clear data from %d to %d", lastTxLT, nextTxLT)
+					}
+
+					log.Info().Uint64("last_tx_lt", lastTxLT).Uint64("next_tx_lt", nextTxLT).Msg("cleared new batch")
+
+					if nextTxLT == 0 {
+						log.Info().Msg("finished")
+						return nil
+					}
 					lastTxLT = nextTxLT
 				}
 			},
