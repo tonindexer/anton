@@ -6,6 +6,8 @@ CREATE TABLE account_states_code
 ENGINE = EmbeddedRocksDB
 PRIMARY KEY code_hash;
 
+--migration:split
+
 CREATE TABLE account_states_data
 (
     data_hash String,
