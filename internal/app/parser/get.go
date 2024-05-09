@@ -35,7 +35,7 @@ func (s *Service) emulateGetMethod(ctx context.Context, d *abi.GetMethodDesc, ac
 	var argsStack abi.VmStack
 
 	if len(acc.Code) == 0 || len(acc.Data) == 0 {
-		return ret, errors.Wrap(app.ErrImpossibleParsing, "no account code or data")
+		return ret, errors.Wrapf(app.ErrImpossibleParsing, "no account code or data for %s (%d)", acc.Address.Base64(), acc.LastTxLT)
 	}
 
 	if len(d.Arguments) != len(args) {
@@ -152,8 +152,7 @@ func mapContentDataNFT(ret *core.AccountState, c any) {
 func (s *Service) getNFTItemContent(ctx context.Context, collection *core.AccountState, idx *big.Int, itemContent *cell.Cell, acc *core.AccountState) {
 	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.NFTCollection, "get_nft_content")
 	if err != nil {
-		log.Error().Err(err).Msg("get 'get_nft_content' method description")
-		return
+		panic("get 'get_nft_content' method description")
 	}
 
 	args := []any{idx.Bytes(), itemContent}
@@ -200,8 +199,7 @@ func (s *Service) checkMinter(ctx context.Context, minter, item *core.AccountSta
 func (s *Service) checkNFTMinter(ctx context.Context, minter *core.AccountState, idx *big.Int, item *core.AccountState) {
 	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.NFTCollection, "get_nft_address_by_index")
 	if err != nil {
-		log.Error().Err(err).Msg("get 'get_nft_address_by_index' method description")
-		return
+		panic("get 'get_nft_address_by_index' method description")
 	}
 
 	args := []any{idx.Bytes()}
@@ -212,8 +210,7 @@ func (s *Service) checkNFTMinter(ctx context.Context, minter *core.AccountState,
 func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountState, ownerAddr *addr.Address, walletAcc *core.AccountState) {
 	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.JettonMinter, "get_wallet_address")
 	if err != nil {
-		log.Error().Err(err).Msg("get 'get_wallet_address' method description")
-		return
+		panic("get 'get_wallet_address' method description")
 	}
 
 	args := []any{ownerAddr.MustToTonutils()}
@@ -329,8 +326,7 @@ func (s *Service) callPossibleGetMethods(
 
 			desc, err := s.ContractRepo.GetMethodDescription(ctx, known.DedustV2Factory, "get_pool_address")
 			if err != nil {
-				log.Error().Err(err).Msg("get 'get_pool_address' method description")
-				return
+				panic("get 'get_pool_address' method description")
 			}
 
 			asset0 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[0].(*abi.DedustAsset) //nolint:forcetypeassert // that's ok
@@ -360,8 +356,7 @@ func (s *Service) callPossibleGetMethods(
 
 			desc, err := s.ContractRepo.GetMethodDescription(ctx, known.StonFiRouter, "get_pool_address")
 			if err != nil {
-				log.Error().Err(err).Msg("get 'get_pool_address' method description")
-				return
+				panic("get 'get_pool_address' method description")
 			}
 
 			asset0 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[2].(*address.Address) //nolint:forcetypeassert // that's ok
