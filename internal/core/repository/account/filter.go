@@ -226,7 +226,7 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 	return qCount.Count(ctx)
 }
 
-func (r *Repository) getCodeData(ctx context.Context, rows []*core.AccountState, excludeCode, excludeData bool) error { //nolint:gocognit // TODO: make one function working for both code and data
+func (r *Repository) getCodeData(ctx context.Context, rows []*core.AccountState, excludeCode, excludeData bool) error { //nolint:gocognit,gocyclo // TODO: make one function working for both code and data
 	codeHashesSet, dataHashesSet := map[string]struct{}{}, map[string]struct{}{}
 	for _, row := range rows {
 		if !excludeCode && len(row.Code) == 0 && len(row.CodeHash) == 32 {
