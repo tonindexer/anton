@@ -218,6 +218,65 @@ func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountSta
 	s.checkMinter(ctx, minter, walletAcc, known.JettonMinter, &desc, args)
 }
 
+func (s *Service) checkDeDustMinter(ctx context.Context, acc *core.AccountState, others func(context.Context, addr.Address) (*core.AccountState, error)) {
+	factoryAddr := "EQBfBWT7X2BHg9tXAxzhz2aKiNTU1tpt5NsiK0uSDW_YAJ67"
+	factory, err := others(ctx, *addr.MustFromBase64(factoryAddr))
+	if err != nil {
+		log.Error().Str("factory_address", factoryAddr).Err(err).Msg("get dedust v2 factory state")
+		return
+	}
+
+	acc.Fake = true
+
+	if len(acc.ExecutedGetMethods[known.DedustV2Pool]) < 6 ||
+		acc.ExecutedGetMethods[known.DedustV2Pool][0].Name != "get_assets" || acc.ExecutedGetMethods[known.DedustV2Pool][5].Name != "is_stable" ||
+		acc.ExecutedGetMethods[known.DedustV2Pool][0].Error != "" || acc.ExecutedGetMethods[known.DedustV2Pool][5].Error != "" {
+		return
+	}
+
+	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.DedustV2Factory, "get_pool_address")
+	if err != nil {
+		panic("get 'get_pool_address' method description")
+	}
+
+	asset0 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[0].(*abi.DedustAsset) //nolint:forcetypeassert // that's ok
+	asset1 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[1].(*abi.DedustAsset) //nolint:forcetypeassert // that's ok
+	isStable := acc.ExecutedGetMethods[known.DedustV2Pool][5].Returns[0].(bool)           //nolint:forcetypeassert // that's ok
+
+	args := []any{isStable, asset0, asset1}
+
+	s.checkMinter(ctx, factory, acc, known.DedustV2Factory, &desc, args)
+}
+
+func (s *Service) checkStonFiMinter(ctx context.Context, acc *core.AccountState, others func(context.Context, addr.Address) (*core.AccountState, error)) {
+	routerAddr := "EQB3ncyBUTjZUA5EnFKR5_EnOMI9V1tTEAAPaiU71gc4TiUt"
+	router, err := others(ctx, *addr.MustFromBase64(routerAddr))
+	if err != nil {
+		log.Error().Str("router_address", routerAddr).Err(err).Msg("get stonfi router state")
+		return
+	}
+
+	acc.Fake = true
+
+	if len(acc.ExecutedGetMethods[known.StonFiPool]) < 1 ||
+		acc.ExecutedGetMethods[known.StonFiPool][0].Name != "get_pool_data" ||
+		acc.ExecutedGetMethods[known.StonFiPool][0].Error != "" {
+		return
+	}
+
+	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.StonFiRouter, "get_pool_address")
+	if err != nil {
+		panic("get 'get_pool_address' method description")
+	}
+
+	asset0 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[2].(*address.Address) //nolint:forcetypeassert // that's ok
+	asset1 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[3].(*address.Address) //nolint:forcetypeassert // that's ok
+
+	args := []any{asset0, asset1}
+
+	s.checkMinter(ctx, router, acc, known.StonFiRouter, &desc, args)
+}
+
 func (s *Service) callGetMethod(
 	ctx context.Context,
 	acc *core.AccountState,
@@ -308,63 +367,10 @@ func (s *Service) callPossibleGetMethods(
 
 		switch i.Name {
 		case known.DedustV2Pool:
-			acc.Fake = true
-
-			if len(acc.ExecutedGetMethods[known.DedustV2Pool]) < 6 ||
-				acc.ExecutedGetMethods[known.DedustV2Pool][0].Name != "get_assets" || acc.ExecutedGetMethods[known.DedustV2Pool][5].Name != "is_stable" ||
-				acc.ExecutedGetMethods[known.DedustV2Pool][0].Error != "" || acc.ExecutedGetMethods[known.DedustV2Pool][5].Error != "" {
-				continue
-			}
-
-			factoryAddr := "EQBfBWT7X2BHg9tXAxzhz2aKiNTU1tpt5NsiK0uSDW_YAJ67"
-
-			factory, err := others(ctx, *addr.MustFromBase64(factoryAddr))
-			if err != nil {
-				log.Error().Str("factory_address", factoryAddr).Err(err).Msg("get dedust v2 factory state")
-				continue
-			}
-
-			desc, err := s.ContractRepo.GetMethodDescription(ctx, known.DedustV2Factory, "get_pool_address")
-			if err != nil {
-				panic("get 'get_pool_address' method description")
-			}
-
-			asset0 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[0].(*abi.DedustAsset) //nolint:forcetypeassert // that's ok
-			asset1 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[1].(*abi.DedustAsset) //nolint:forcetypeassert // that's ok
-			isStable := acc.ExecutedGetMethods[known.DedustV2Pool][5].Returns[0].(bool)           //nolint:forcetypeassert // that's ok
-
-			args := []any{isStable, asset0, asset1}
-
-			s.checkMinter(ctx, factory, acc, known.DedustV2Factory, &desc, args)
+			s.checkDeDustMinter(ctx, acc, others)
 
 		case known.StonFiPool:
-			acc.Fake = true
-
-			if len(acc.ExecutedGetMethods[known.StonFiPool]) < 1 ||
-				acc.ExecutedGetMethods[known.StonFiPool][0].Name != "get_pool_data" ||
-				acc.ExecutedGetMethods[known.StonFiPool][0].Error != "" {
-				continue
-			}
-
-			routerAddr := "EQB3ncyBUTjZUA5EnFKR5_EnOMI9V1tTEAAPaiU71gc4TiUt"
-
-			router, err := others(ctx, *addr.MustFromBase64(routerAddr))
-			if err != nil {
-				log.Error().Str("router_address", routerAddr).Err(err).Msg("get stonfi router state")
-				continue
-			}
-
-			desc, err := s.ContractRepo.GetMethodDescription(ctx, known.StonFiRouter, "get_pool_address")
-			if err != nil {
-				panic("get 'get_pool_address' method description")
-			}
-
-			asset0 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[2].(*address.Address) //nolint:forcetypeassert // that's ok
-			asset1 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[3].(*address.Address) //nolint:forcetypeassert // that's ok
-
-			args := []any{asset0, asset1}
-
-			s.checkMinter(ctx, router, acc, known.StonFiRouter, &desc, args)
+			s.checkStonFiMinter(ctx, acc, others)
 		}
 	}
 }
