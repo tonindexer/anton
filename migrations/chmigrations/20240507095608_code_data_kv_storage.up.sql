@@ -16,8 +16,8 @@ CREATE TABLE account_states_data
 ENGINE = EmbeddedRocksDB
 PRIMARY KEY data_hash;
 
--- INSERT INTO account_states_code SELECT code_hash, any(code) FROM account_states GROUP BY code_hash;
--- INSERT INTO account_states_data SELECT data_hash, any(data) FROM account_states GROUP BY data_hash;
+-- INSERT INTO account_states_code SELECT code_hash, any(code) FROM account_states WHERE length(code) > 0 GROUP BY code_hash;
+-- INSERT INTO account_states_data SELECT data_hash, any(data) FROM account_states WHERE length(data) > 0 GROUP BY data_hash;
 
 -- ALTER TABLE account_states DROP COLUMN code;
 -- ALTER TABLE account_states DROP COLUMN data;
