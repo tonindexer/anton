@@ -55,5 +55,5 @@ type ContractRepository interface {
 	UpdateOperation(ctx context.Context, op *ContractOperation) error
 	DeleteOperation(ctx context.Context, opName string) error
 	GetOperations(context.Context) ([]*ContractOperation, error)
-	GetOperationByID(context.Context, MessageType, []abi.ContractName, bool, uint32) (*ContractOperation, error)
+	GetOperationsByID(ctx context.Context, t MessageType, interfaces []abi.ContractName, outgoing bool, id uint32) ([]*ContractOperation, error)
 }

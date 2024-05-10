@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/uptrace/bun"
 
 	"github.com/stretchr/testify/require"
 
@@ -97,6 +98,16 @@ func TestRepository_FilterLabels(t *testing.T) {
 	})
 }
 
+func addAccountStatesCopy(ctx context.Context, tx bun.Tx, states []*core.AccountState) error {
+	var copied []*core.AccountState
+	for _, s := range states {
+		c := *s
+		copied = append(copied, &c)
+	}
+	err := repo.AddAccountStates(ctx, tx, copied)
+	return err
+}
+
 func TestRepository_FilterAccounts(t *testing.T) {
 	var (
 		// filter by address
@@ -138,7 +149,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 			address = &states[len(states)-10].Address
 			addressStates = states[len(states)-10:]
 
-			err = repo.AddAccountStates(ctx, tx, states)
+			err = addAccountStatesCopy(ctx, tx, states)
 			require.Nil(t, err)
 		}
 
@@ -156,7 +167,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 			specialState = states[len(states)-1]
 
-			err = repo.AddAccountStates(ctx, tx, states)
+			err = addAccountStatesCopy(ctx, tx, states)
 			require.Nil(t, err)
 		}
 
@@ -170,7 +181,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 		for i := 0; i < 5; i++ {
 			latestState = rndm.AddressStateContract(address, "", nil)
-			err = repo.AddAccountStates(ctx, tx, []*core.AccountState{latestState})
+			err = addAccountStatesCopy(ctx, tx, []*core.AccountState{latestState})
 			require.Nil(t, err)
 		}
 
@@ -180,8 +191,9 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 	t.Run("filter states by address", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			Addresses: []*addr.Address{address},
-			Order:     "ASC", Limit: len(addressStates),
+			WithCodeData: true,
+			Addresses:    []*addr.Address{address},
+			Order:        "ASC", Limit: len(addressStates),
 		})
 		require.Nil(t, err)
 		require.Equal(t, 15, results.Total)
@@ -193,6 +205,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		latest.Code = nil
 
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithCodeData:  true,
 			Addresses:     []*addr.Address{&latest.Address},
 			LatestState:   true,
 			ExcludeColumn: []string{"code"},
@@ -207,6 +220,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		latest.Code = nil
 
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithCodeData:  true,
 			Addresses:     []*addr.Address{&latest.Address},
 			LatestState:   true,
 			ExcludeColumn: []string{"code"},
@@ -218,6 +232,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 	t.Run("filter latest state with data by contract types", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithCodeData:  true,
 			ContractTypes: []abi.ContractName{"special", "some_nonsense"},
 			LatestState:   true,
 			Order:         "DESC", Limit: 1,
@@ -229,6 +244,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 	t.Run("filter states by minter", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithCodeData:  true,
 			MinterAddress: latestState.MinterAddress,
 			Order:         "DESC", Limit: 1,
 		})
@@ -239,6 +255,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 	t.Run("filter states by owner", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithCodeData: true,
 			OwnerAddress: latestState.OwnerAddress,
 			Order:        "DESC", Limit: 1,
 		})
@@ -249,6 +266,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 	t.Run("filter latest states by owner", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithCodeData: true,
 			LatestState:  true,
 			OwnerAddress: latestState.OwnerAddress,
 			Order:        "DESC", Limit: 1,
@@ -260,8 +278,9 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 	t.Run("filter by account state ids", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			StateIDs: []*core.AccountStateID{{Address: latestState.Address, LastTxLT: latestState.LastTxLT}},
-			Order:    "DESC", Limit: 1,
+			WithCodeData: true,
+			StateIDs:     []*core.AccountStateID{{Address: latestState.Address, LastTxLT: latestState.LastTxLT}},
+			Order:        "DESC", Limit: 1,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 0, results.Total)
@@ -307,7 +326,7 @@ func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 		for i := 0; i < totalStates/100; i++ {
 			states := rndm.AccountStates(100)
 
-			err = repo.AddAccountStates(ctx, tx, states)
+			err = addAccountStatesCopy(ctx, tx, states)
 			require.Nil(t, err)
 
 			if i%100 == 0 {
@@ -328,7 +347,7 @@ func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 		for i := 0; i < specialStates/100; i++ {
 			specialState = rndm.AddressStateContract(address, "special", nil)
 
-			err = repo.AddAccountStates(ctx, tx, []*core.AccountState{specialState})
+			err = addAccountStatesCopy(ctx, tx, []*core.AccountState{specialState})
 			require.Nil(t, err)
 
 			if i%100 == 0 {
@@ -344,6 +363,7 @@ func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 		start := time.Now()
 
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithCodeData:  true,
 			ContractTypes: []abi.ContractName{"special"},
 			LatestState:   true,
 			Order:         "DESC", Limit: 1,

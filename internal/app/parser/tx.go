@@ -7,36 +7,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
+	"github.com/tonindexer/anton/abi/known"
 	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
 
-func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountState, msg *core.Message) error {
-	if acc == nil {
-		return errors.Wrap(app.ErrImpossibleParsing, "no account data")
-	}
-	if len(acc.Types) == 0 {
-		return errors.Wrap(app.ErrImpossibleParsing, "no interfaces")
-	}
-
-	outgoing := acc.Address == msg.SrcAddress
-	if outgoing && len(acc.Types) == 1 {
-		msg.SrcContract = acc.Types[0]
-	}
-	if !outgoing && len(acc.Types) == 1 {
-		msg.DstContract = acc.Types[0]
-	}
-
-	op, err := s.ContractRepo.GetOperationByID(ctx, msg.Type, acc.Types, outgoing, msg.OperationID)
-	if errors.Is(err, core.ErrNotFound) {
-		return errors.Wrap(app.ErrImpossibleParsing, "unknown operation")
-	}
-	if err != nil {
-		return errors.Wrap(err, "get contract operations")
-	}
-
+func parseOperationAttempt(msg *core.Message, op *core.ContractOperation) error {
 	msg.OperationName = op.OperationName
-	if outgoing {
+	if op.Outgoing {
 		msg.SrcContract = op.ContractName
 	} else {
 		msg.DstContract = op.ContractName
@@ -58,6 +36,53 @@ func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountSta
 	}
 
 	return nil
+}
+
+func (s *Service) parseDirectedMessage(ctx context.Context, acc *core.AccountState, msg *core.Message) error {
+	if acc == nil {
+		return errors.Wrap(app.ErrImpossibleParsing, "no account data")
+	}
+	if len(acc.Types) == 0 {
+		return errors.Wrap(app.ErrImpossibleParsing, "no interfaces")
+	}
+
+	outgoing := acc.Address == msg.SrcAddress
+	if outgoing && len(acc.Types) == 1 {
+		msg.SrcContract = acc.Types[0]
+	}
+	if !outgoing && len(acc.Types) == 1 {
+		msg.DstContract = acc.Types[0]
+	}
+
+	operations, err := s.ContractRepo.GetOperationsByID(ctx, msg.Type, acc.Types, outgoing, msg.OperationID)
+	if err != nil {
+		return errors.Wrap(err, "get contract operations")
+	}
+
+	switch len(operations) {
+	case 0:
+		return errors.Wrap(app.ErrImpossibleParsing, "unknown operation")
+	case 1:
+		return parseOperationAttempt(msg, operations[0])
+	default:
+		for _, op := range operations {
+			switch op.ContractName {
+			case known.NFTItem, known.NFTCollection, known.JettonMinter, known.JettonWallet:
+				// firstly, skip standard contracts
+			default:
+				if err := parseOperationAttempt(msg, op); err == nil {
+					return nil
+				}
+			}
+		}
+		var err error
+		for _, op := range operations {
+			if err = parseOperationAttempt(msg, op); err == nil {
+				return nil
+			}
+		}
+		return err
+	}
 }
 
 func (s *Service) ParseMessagePayload(ctx context.Context, msg *core.Message) error {

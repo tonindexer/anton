@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,13 +15,12 @@ import (
 )
 
 func (s *Service) insertData(
+	ctx context.Context,
 	acc []*core.AccountState,
 	msg []*core.Message,
 	tx []*core.Transaction,
 	b []*core.Block,
 ) error {
-	ctx := context.Background()
-
 	dbTx, err := s.DB.PG.Begin()
 	if err != nil {
 		return errors.Wrap(err, "cannot begin db tx")
@@ -55,6 +55,7 @@ func (s *Service) insertData(
 
 	if err := func() error {
 		defer app.TimeTrack(time.Now(), "AddMessages(%d)", len(msg))
+		sort.Slice(msg, func(i, j int) bool { return msg[i].CreatedLT < msg[j].CreatedLT })
 		return s.msgRepo.AddMessages(ctx, dbTx, msg)
 	}(); err != nil {
 		return errors.Wrap(err, "add messages")
@@ -130,7 +131,40 @@ func (s *Service) addMessage(msg *core.Message, uniqMsg map[string]*core.Message
 	}
 }
 
-func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message {
+func (s *Service) getMessageSource(ctx context.Context, msg *core.Message) (skip bool) {
+	source, err := s.msgRepo.GetMessage(context.Background(), msg.Hash)
+	if err == nil {
+		msg.SrcTxLT, msg.SrcShard, msg.SrcBlockSeqNo, msg.SrcState =
+			source.SrcTxLT, source.SrcShard, source.SrcBlockSeqNo, source.SrcState
+		return false
+	}
+	if err != nil && !errors.Is(err, core.ErrNotFound) {
+		panic(errors.Wrapf(err, "get message with hash %s", msg.Hash))
+	}
+
+	// some masterchain messages does not have source
+	if msg.SrcAddress.Workchain() == -1 || msg.DstAddress.Workchain() == -1 {
+		return false
+	}
+
+	blocks, err := s.blockRepo.CountMasterBlocks(ctx)
+	if err != nil {
+		panic(errors.Wrap(err, "count masterchain blocks"))
+	}
+	if blocks < 1000 {
+		log.Debug().
+			Hex("dst_tx_hash", msg.DstTxHash).
+			Int32("dst_workchain", msg.DstWorkchain).Int64("dst_shard", msg.DstShard).Uint32("dst_block_seq_no", msg.DstBlockSeqNo).
+			Str("src_address", msg.SrcAddress.String()).Str("dst_address", msg.DstAddress.String()).
+			Msg("cannot find source message")
+		return true
+	}
+
+	panic(fmt.Errorf("unknown source of message with dst tx hash %x on block (%d, %d, %d) from %s to %s",
+		msg.DstTxHash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
+}
+
+func (s *Service) uniqMessages(ctx context.Context, transactions []*core.Transaction) []*core.Message {
 	var ret []*core.Message
 
 	uniqMsg := make(map[string]*core.Message)
@@ -148,19 +182,8 @@ func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message
 
 	for _, msg := range uniqMsg {
 		if msg.Type == core.Internal && (msg.SrcTxLT == 0 && msg.DstTxLT != 0) {
-			// unknown source transaction, fill in source contract state
-			source, err := s.msgRepo.GetMessage(context.Background(), msg.Hash)
-			if err != nil && !errors.Is(err, core.ErrNotFound) {
-				panic(errors.Wrap(err, "get message error"))
-			}
-			// some masterchain messages does not have source
-			if errors.Is(err, core.ErrNotFound) && !(msg.SrcAddress.Workchain() == -1 && msg.DstAddress.Workchain() == -1) {
-				panic(fmt.Errorf("unknown source message with dst tx hash %x on block (%d, %x, %d) from %s to %s",
-					msg.DstTxHash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
-			}
-			if err == nil {
-				msg.SrcTxLT, msg.SrcShard, msg.SrcBlockSeqNo, msg.SrcState =
-					source.SrcTxLT, source.SrcShard, source.SrcBlockSeqNo, source.SrcState
+			if s.getMessageSource(ctx, msg) {
+				continue
 			}
 		}
 
@@ -172,7 +195,7 @@ func (s *Service) uniqMessages(transactions []*core.Transaction) []*core.Message
 
 var lastLog = time.Now()
 
-func (s *Service) saveBlock(master *core.Block) {
+func (s *Service) saveBlock(ctx context.Context, master *core.Block) {
 	newBlocks := append([]*core.Block{master}, master.Shards...)
 
 	var newTransactions []*core.Transaction
@@ -180,7 +203,7 @@ func (s *Service) saveBlock(master *core.Block) {
 		newTransactions = append(newTransactions, newBlocks[i].Transactions...)
 	}
 
-	if err := s.insertData(s.uniqAccounts(newTransactions), s.uniqMessages(newTransactions), newTransactions, newBlocks); err != nil {
+	if err := s.insertData(ctx, s.uniqAccounts(newTransactions), s.uniqMessages(ctx, newTransactions), newTransactions, newBlocks); err != nil {
 		panic(err)
 	}
 
@@ -211,6 +234,6 @@ func (s *Service) saveBlocksLoop(results <-chan *core.Block) {
 			Int("shards", len(b.Shards)).
 			Msg("new master")
 
-		s.saveBlock(b)
+		s.saveBlock(context.Background(), b)
 	}
 }

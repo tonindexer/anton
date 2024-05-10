@@ -87,5 +87,5 @@ func (s *Service) getAccountLibraries(ctx context.Context, raw *tlb.Account) (*c
 		s.libraries.set(hash, &desc)
 	}
 
-	return libsMap.ToCell()
+	return libsMap.AsCell(), nil
 }

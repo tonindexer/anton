@@ -119,6 +119,13 @@ func vmMakeValueInt(v *VmValue) (ret tlb.VmStackValue, _ error) {
 	case "int64":
 		ui, uok := v.Payload.(int64)
 		bi, ok = big.NewInt(ui), uok
+	case "bool":
+		b, uok := v.Payload.(bool)
+		ui := 0
+		if b {
+			ui = 1
+		}
+		bi, ok = big.NewInt(int64(ui)), uok
 	case "bytes":
 		ui, uok := v.Payload.([]byte)
 		bi, ok = new(big.Int).SetBytes(ui), uok
@@ -162,8 +169,16 @@ func vmMakeValueCell(v *VmValue) (tlb.VmStackValue, error) {
 		var err error
 		c, err = tutlb.ToCell(v.Payload)
 		if err != nil {
-			return tlb.VmStackValue{}, err
+			return tlb.VmStackValue{}, errors.Wrapf(err, "'%s' argument to cell", v.Name)
 		}
+		ok = true
+	default:
+		var err error
+		c, err = tutlb.ToCell(v.Payload)
+		if err != nil {
+			return tlb.VmStackValue{}, errors.Wrapf(err, "'%s' argument to cell with '%s' format", v.Name, v.Format)
+		}
+		ok = true
 	}
 	if !ok {
 		return tlb.VmStackValue{}, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.StackType, v.Format)
@@ -210,9 +225,15 @@ func vmMakeValueSlice(v *VmValue) (tlb.VmStackValue, error) {
 	case TLBStructCell:
 		c, err := tutlb.ToCell(v.Payload)
 		if err != nil {
-			return tlb.VmStackValue{}, err
+			return tlb.VmStackValue{}, errors.Wrapf(err, "'%s' argument to cell", v.Name)
 		}
-		s = c.BeginParse()
+		s, ok = c.BeginParse(), true
+	default:
+		c, err := tutlb.ToCell(v.Payload)
+		if err != nil {
+			return tlb.VmStackValue{}, errors.Wrapf(err, "'%s' argument to cell with '%s' format", v.Name, v.Format)
+		}
+		s, ok = c.BeginParse(), true
 	}
 	if !ok {
 		return tlb.VmStackValue{}, errors.Wrapf(ErrWrongValueFormat, "'%s' type with '%s' format", v.StackType, v.Format)

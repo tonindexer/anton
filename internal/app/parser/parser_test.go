@@ -130,7 +130,7 @@ func (m *mockContractRepo) DeleteOperation(context.Context, string) error {
 func (m *mockContractRepo) GetOperations(_ context.Context) ([]*core.ContractOperation, error) {
 	panic("implement me")
 }
-func (m *mockContractRepo) GetOperationByID(_ context.Context, _ core.MessageType, _ []abi.ContractName, _ bool, _ uint32) (*core.ContractOperation, error) {
+func (m *mockContractRepo) GetOperationsByID(_ context.Context, _ core.MessageType, _ []abi.ContractName, _ bool, _ uint32) ([]*core.ContractOperation, error) {
 	panic("implement me")
 }
 

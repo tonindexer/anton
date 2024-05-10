@@ -82,10 +82,15 @@ func HasGetMethod(code *cell.Cell, getMethodName string) bool {
 		return false
 	}
 
-	if dict.GetByIntKey(big.NewInt(hash)) != nil {
-		return true
+	s, err := dict.LoadValueByIntKey(big.NewInt(hash))
+	if err != nil {
+		return false
 	}
-	return false
+	if _, err := s.ToCell(); err != nil {
+		return false
+	}
+
+	return true
 }
 
 func GetMethodHashes(code *cell.Cell) ([]int32, error) {
@@ -96,8 +101,13 @@ func GetMethodHashes(code *cell.Cell) ([]int32, error) {
 		return nil, errors.Wrap(err, "get methods dict")
 	}
 
-	for _, kv := range dict.All() {
-		i, err := kv.Key.BeginParse().LoadUInt(getMethodsDictKeySz)
+	dictKV, err := dict.LoadAll()
+	if err != nil {
+		return nil, errors.Wrapf(err, "dict load all")
+	}
+
+	for _, kv := range dictKV {
+		i, err := kv.Key.LoadUInt(getMethodsDictKeySz)
 		if err != nil {
 			return nil, errors.Wrap(err, "load uint")
 		}

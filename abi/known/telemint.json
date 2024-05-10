@@ -226,6 +226,22 @@
           "name": "destination",
           "tlb_type": "addr"
         }
+      ],
+      "telemint_bid_info": [
+        {
+          "name": "bid_info",
+          "tlb_type": "#38127de1",
+          "format": "tag"
+        },
+        {
+          "name": "bid",
+          "tlb_type": ".",
+          "format": "coins"
+        },
+        {
+          "name": "bid_ts",
+          "tlb_type": "## 32"
+        }
       ]
     },
     "in_messages": [
@@ -273,6 +289,25 @@
         "op_name": "teleitem_outbid_notification",
         "op_code": "0x557cea20",
         "body": null
+      },
+      {
+        "op_name": "telemint_nft_item_ownership_assigned",
+        "op_code": "0x05138d91",
+        "body": [
+          {
+            "name": "query_id",
+            "tlb_type": "## 64"
+          },
+          {
+            "name": "prev_owner",
+            "tlb_type": "addr"
+          },
+          {
+            "name": "forward_payload",
+            "tlb_type": "either . ^",
+            "format": "telemint_bid_info"
+          }
+        ]
       }
     ],
     "get_methods": [

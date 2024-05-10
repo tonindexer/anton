@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tvm.sh/abi.schema.json",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "interface_name": {
+        "type": "string",
+        "pattern": "^([a-z0-9_]+)$"
+      },
+      "addresses": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "definitions": {
+        "type": "object",
+        "patternProperties": {
+          "^([a-z0-9_]+)\\.([a-z0-9_]+)\\.([a-z0-9_]+)$": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/tlb_value"
+            }
+          }
+        }
+      },
+      "code_boc": {
+        "type": "string"
+      },
+      "get_methods": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "arguments": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/vm_value"
+              }
+            },
+            "return_values": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/vm_value"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "return_values"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "in_messages": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/message"
+        }
+      },
+      "out_messages": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/message"
+        }
+      }
+    },
+    "required": [
+      "interface_name"
+    ],
+    "additionalProperties": false
+  },
+  "$defs": {
+    "vm_value": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "stack_type": {
+          "enum": [
+            "int",
+            "cell",
+            "slice"
+          ]
+        },
+        "format": {
+          "enum": [
+            "bigInt",
+            "uint8",
+            "uint16",
+            "uint32",
+            "uint64",
+            "int8",
+            "int16",
+            "int32",
+            "int64",
+            "bool",
+            "bytes",
+            "cell",
+            "slice",
+            "string",
+            "addr",
+            "content",
+            "struct",
+            "asset",
+            "dedustAsset"
+          ]
+        },
+        "struct_fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tlb_value"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "stack_type"
+      ]
+    },
+    "tlb_value": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "tlb_type": {
+          "oneOf": [
+            {
+              "enum": [
+                ".",
+                "^",
+                "bool",
+                "addr"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^#[a-f0-9]+$"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\[[^\\]]+\\]$"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\$[01]+$"
+            },
+            {
+              "type": "string",
+              "pattern": "^(##|bits) \\d{1,3}$"
+            },
+            {
+              "type": "string",
+              "pattern": "^maybe (\\^)$"
+            },
+            {
+              "type": "string",
+              "pattern": "^either ([\\^.]) ([\\^.])$"
+            }
+          ]
+        },
+        "format": {
+          "enum": [
+            "bool",
+            "int8",
+            "int16",
+            "int32",
+            "int64",
+            "uint8",
+            "uint16",
+            "uint32",
+            "uint64",
+            "bigInt",
+            "coins",
+            "bytes",
+            "string",
+            "addr",
+            "cell",
+            "dict",
+            "tag",
+            "telemintText",
+            "asset",
+            "struct",
+            "dedustAsset"
+          ]
+        },
+        "struct_fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tlb_value"
+          }
+        },
+        "optional": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "tlb_type"
+      ],
+      "additionalProperties": false
+    },
+    "message": {
+      "type": "object",
+      "properties": {
+        "op_name": {
+          "type": "string"
+        },
+        "op_code": {
+          "type": "string",
+          "pattern": "^0x([0-9a-f]{1,8})$"
+        },
+        "type": {
+          "enum": [
+            "INTERNAL",
+            "EXTERNAL_IN",
+            "EXTERNAL_OUT",
+            "internal",
+            "external_in",
+            "external_out"
+          ]
+        },
+        "body": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tlb_value"
+          }
+        }
+      },
+      "required": [
+        "op_name",
+        "op_code"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -76,7 +76,7 @@ func readFiles(filenames []string) (ret []*abi.InterfaceDesc, err error) {
 	return
 }
 
-func parseOperationDesc(t abi.ContractName, d *abi.OperationDesc) (*core.ContractOperation, error) {
+func ParseOperationDesc(t abi.ContractName, d *abi.OperationDesc) (*core.ContractOperation, error) {
 	var opId uint32
 
 	if c := d.Code; strings.HasPrefix(c, "0x") {
@@ -118,7 +118,7 @@ func parseOperationDesc(t abi.ContractName, d *abi.OperationDesc) (*core.Contrac
 	}, nil
 }
 
-func parseInterfaceDesc(d *abi.InterfaceDesc) (*core.ContractInterface, []*core.ContractOperation, error) {
+func ParseInterfaceDesc(d *abi.InterfaceDesc) (*core.ContractInterface, []*core.ContractOperation, error) {
 	var operations []*core.ContractOperation
 
 	code, err := base64.StdEncoding.DecodeString(d.CodeBoc)
@@ -140,7 +140,7 @@ func parseInterfaceDesc(d *abi.InterfaceDesc) (*core.ContractInterface, []*core.
 	}
 
 	for it := range d.InMessages {
-		op, err := parseOperationDesc(i.Name, &d.InMessages[it])
+		op, err := ParseOperationDesc(i.Name, &d.InMessages[it])
 		if err != nil {
 			return nil, nil, err
 		}
@@ -149,7 +149,7 @@ func parseInterfaceDesc(d *abi.InterfaceDesc) (*core.ContractInterface, []*core.
 	}
 
 	for it := range d.OutMessages {
-		op, err := parseOperationDesc(i.Name, &d.OutMessages[it])
+		op, err := ParseOperationDesc(i.Name, &d.OutMessages[it])
 		if err != nil {
 			return nil, nil, err
 		}
@@ -162,7 +162,7 @@ func parseInterfaceDesc(d *abi.InterfaceDesc) (*core.ContractInterface, []*core.
 	return &i, operations, nil
 }
 
-func parseInterfacesDesc(descriptors []*abi.InterfaceDesc) (retD map[abi.TLBType]abi.TLBFieldsDesc, retI []*core.ContractInterface, retOp []*core.ContractOperation, _ error) {
+func ParseInterfacesDesc(descriptors []*abi.InterfaceDesc) (retD map[abi.TLBType]abi.TLBFieldsDesc, retI []*core.ContractInterface, retOp []*core.ContractOperation, _ error) {
 	retD = map[abi.TLBType]abi.TLBFieldsDesc{}
 	for _, desc := range descriptors {
 		err := abi.RegisterDefinitions(desc.Definitions)
@@ -174,7 +174,7 @@ func parseInterfacesDesc(descriptors []*abi.InterfaceDesc) (retD map[abi.TLBType
 		}
 	}
 	for _, desc := range descriptors {
-		i, operations, err := parseInterfaceDesc(desc)
+		i, operations, err := ParseInterfaceDesc(desc)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -356,7 +356,7 @@ var Command = &cli.Command{
 					return err
 				}
 
-				definitions, interfaces, operations, err := parseInterfacesDesc(interfacesDesc)
+				definitions, interfaces, operations, err := ParseInterfacesDesc(interfacesDesc)
 				if err != nil {
 					return err
 				}
@@ -451,7 +451,7 @@ var Command = &cli.Command{
 					return err
 				}
 
-				definitions, interfaces, _, err := parseInterfacesDesc(interfacesDesc)
+				definitions, interfaces, _, err := ParseInterfacesDesc(interfacesDesc)
 				if err != nil {
 					return err
 				}

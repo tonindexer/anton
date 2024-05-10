@@ -10,6 +10,11 @@ var (
 
 	JettonMinter abi.ContractName = "jetton_minter"
 	JettonWallet abi.ContractName = "jetton_wallet"
+
+	DedustV2Pool    abi.ContractName = "dedust_v2_pool"
+	DedustV2Factory abi.ContractName = "dedust_v2_factory"
+	StonFiPool      abi.ContractName = "stonfi_pool"
+	StonFiRouter    abi.ContractName = "stonfi_router"
 )
 
 var (

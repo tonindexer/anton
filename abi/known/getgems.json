@@ -420,6 +420,114 @@
     ]
   },
   {
+    "interface_name": "getgems_fix_price_sale_v3r3",
+    "code_boc": "te6ccgECDwEAA5MAART/APSkE/S88sgLAQIBYgIDAgLNBAUCASANDgL30A6GmBgLjYSS+CcH0gGHaiaGmAaY/9IH0gfSB9AGppj+mfmBg4KYVjgGAASpiFaY+F7xDhgEoYBWmfxwjFsxsLcxsrZBZjgsk5mW8oBfEV4ADJL4dwEuuk4QEWQIEV3RXgAJFZ2Ngp5OOC2HGBFWAA+WjKFkEINjYQQF1AYHAdFmCEAX14QBSYKBSML7y4cIk0PpA+gD6QPoAMFOSoSGhUIehFqBSkCH6RFtwgBDIywVQA88WAfoCy2rJcfsAJcIAJddJwgKwjhtQRSH6RFtwgBDIywVQA88WAfoCy2rJcfsAECOSNDTiWoMAGQwMWyy1DDQ0wchgCCw8tGVIsMAjhSBAlj4I1NBobwE+CMCoLkTsPLRlpEy4gHUMAH7AATwU8fHBbCOXRNfAzI3Nzc3BPoA+gD6ADBTIaEhocEB8tGYBdD6QPoA+kD6ADAwyDICzxZY+gIBzxZQBPoCyXAgEEgQNxBFEDQIyMsAF8sfUAXPFlADzxYBzxYB+gLMyx/LP8ntVOCz4wIwMTcowAPjAijAAOMCCMACCAkKCwCGNTs7U3THBZJfC+BRc8cF8uH0ghAFE42RGLry4fX6QDAQSBA3VTIIyMsAF8sfUAXPFlADzxYBzxYB+gLMyx/LP8ntVADiODmCEAX14QAYvvLhyVNGxwVRUscFFbHy4cpwIIIQX8w9FCGAEMjLBSjPFiH6Astqyx8Vyz8nzxYnzxYUygAj+gITygDJgwb7AHFwVBcAXjMQNBAjCMjLABfLH1AFzxZQA88WAc8WAfoCzMsfyz/J7VQAGDY3EDhHZRRDMHDwBQAgmFVEECQQI/AF4F8KhA/y8ADsIfpEW3CAEMjLBVADzxYB+gLLaslx+wBwIIIQX8w9FMjLH1Iwyz8kzxZQBM8WE8oAggnJw4D6AhLKAMlxgBjIywUnzxZw+gLLaswl+kRbyYMG+wBxVWD4IwEIyMsAF8sfUAXPFlADzxYBzxYB+gLMyx/LP8ntVACHvOFnaiaGmAaY/9IH0gfSB9AGppj+mfmC3ofSB9AH0gfQAYKaFQkNDggPlozJP9Ii2TfSItkf0iLcEIIySsKAVgAKrAQAgb7l72omhpgGmP/SB9IH0gfQBqaY/pn5gBaH0gfQB9IH0AGCmxUJDQ4ID5aM0U/SItlH0iLZH9Ii2F4ACFiBqqiU",
+    "get_methods": [
+      {
+        "name": "get_sale_data",
+        "return_values": [
+          {
+            "name": "magic",
+            "stack_type": "int"
+          }, {
+            "name": "is_complete",
+            "stack_type": "int",
+            "format": "bool"
+          }, {
+            "name": "created_at",
+            "stack_type": "int"
+          }, {
+            "name": "marketplace_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "nft_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "nft_owner_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "full_price",
+            "stack_type": "int"
+          }, {
+            "name": "marketplace_fee_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "marketplace_fee",
+            "stack_type": "int"
+          }, {
+            "name": "royalty_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "royalty_amount",
+            "stack_type": "int"
+          }
+        ]
+      },
+      {
+        "name": "get_fix_price_data",
+        "return_values": [
+          {
+            "name": "is_complete",
+            "stack_type": "int",
+            "format": "bool"
+          }, {
+            "name": "created_at",
+            "stack_type": "int"
+          }, {
+            "name": "marketplace_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "nft_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "nft_owner_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "full_price",
+            "stack_type": "int"
+          }, {
+            "name": "marketplace_fee_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "marketplace_fee",
+            "stack_type": "int"
+          }, {
+            "name": "royalty_address",
+            "stack_type": "slice",
+            "format": "addr"
+          }, {
+            "name": "royalty_amount",
+            "stack_type": "int"
+          }, {
+            "name": "sold_at",
+            "stack_type": "int"
+          }, {
+            "name": "query_id",
+            "stack_type": "int"
+          }
+        ]
+      }
+    ],
+    "in_messages": [
+      {
+        "op_name": "getgems_nft_fix_price_buy",
+        "op_code": "2"
+      }, {
+        "op_name": "getgems_nft_fix_price_cancel",
+        "op_code": "3"
+      }
+    ]
+  },
+  {
     "interface_name": "getgems_nft_marketplace_v2",
     "code_boc": "te6cckEBDAEA7wABFP8A9KQT9LzyyAsBAgEgAwIAePKDCNcYINMf0x/THwL4I7vyY/ABUTK68qFRRLryogT5AVQQVfkQ8qP4AJMg10qW0wfUAvsA6DABpALwAgIBSAcEAgFIBgUAEbjJftRNDXCx+AAXuznO1E0NM/MdcL/4AgLOCQgAF0AsjLH8sfy//J7VSAIBIAsKABU7UTQ0x/TH9P/MIACpGwiIMcAkVvgAdDTAzBxsJEw4PABbCEB0x8BwAGONIMI1xgg+QFAA/kQ8qPU1DAh+QBwyMoHy//J0Hd0gBjIywXLAljPFnD6AstrEszMyYBA+wDgW4NC26jQ=",
     "in_messages": [

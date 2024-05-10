@@ -22,7 +22,7 @@ require (
 	github.com/uptrace/bun/extra/bunbig v1.1.13-0.20230308071428-7cd855e64a02
 	github.com/uptrace/go-clickhouse v0.3.1
 	github.com/urfave/cli/v2 v2.25.1
-	github.com/xssnick/tonutils-go v1.8.8-0.20231205084433-c884d708cbd7
+	github.com/xssnick/tonutils-go v1.9.5
 )
 
 require github.com/gin-contrib/cors v1.4.0
@@ -70,14 +70,14 @@ require (
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
-	golang.org/x/crypto v0.6.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
-	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
-	golang.org/x/tools v0.2.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	mellium.im/sasl v0.3.1 // indirect
 )

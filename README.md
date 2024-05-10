@@ -1,7 +1,9 @@
 # Anton
 
 This project is an open-source tool that extracts and organizes data from the TON blockchain, 
-efficiently storing it in PostgreSQL and ClickHouse databases. 
+efficiently storing it in PostgreSQL and ClickHouse databases.
+
+If you have any questions, you can ask them in the [Telegram group](https://t.me/tonindexer_chat).
 
 ## Overview
 
@@ -157,10 +159,18 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 To run Anton, you need at least one defined contract interface.
-There are some known interfaces in the [abi/known](/abi/known) directory.
-You can add them through this command:
+You can find some known interfaces in the [abi/known](/abi/known) directory.
+These can be added during the initial startup of the indexer:
+
 ```shell
-docker compose exec rescan sh -c "anton contract addInterfaces /var/anton/known/*.json"
+# If you are running the indexer without Docker, 
+# you need to specify the directory containing the known contracts:
+anton indexer --contract-dir /root/anton/abi/known
+
+# If you are running it using Docker, 
+# there is no need to specify the contracts directory,
+# as they are already included in the container:
+docker compose up -d indexer
 ```
 
 ### Database schema migration

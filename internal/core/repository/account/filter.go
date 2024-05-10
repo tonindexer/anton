@@ -226,6 +226,74 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 	return qCount.Count(ctx)
 }
 
+func (r *Repository) getCodeData(ctx context.Context, rows []*core.AccountState, excludeCode, excludeData bool) error { //nolint:gocognit,gocyclo // TODO: make one function working for both code and data
+	codeHashesSet, dataHashesSet := map[string]struct{}{}, map[string]struct{}{}
+	for _, row := range rows {
+		if !excludeCode && len(row.Code) == 0 && len(row.CodeHash) == 32 {
+			codeHashesSet[string(row.CodeHash)] = struct{}{}
+		}
+		if !excludeData && len(row.Data) == 0 && len(row.DataHash) == 32 {
+			dataHashesSet[string(row.DataHash)] = struct{}{}
+		}
+	}
+
+	batchLen := 1000
+	codeHashBatches, dataHashBatches := make([][][]byte, 1), make([][][]byte, 1)
+	appendHash := func(hash []byte, batches [][][]byte) [][][]byte {
+		b := batches[len(batches)-1]
+		if len(b) >= batchLen {
+			b = [][]byte{}
+			batches = append(batches, b)
+		}
+		batches[len(batches)-1] = append(b, hash)
+		return batches
+	}
+	for h := range codeHashesSet {
+		codeHashBatches = appendHash([]byte(h), codeHashBatches)
+	}
+	for h := range dataHashesSet {
+		dataHashBatches = appendHash([]byte(h), dataHashBatches)
+	}
+
+	codeRes, dataRes := map[string][]byte{}, map[string][]byte{}
+	for _, b := range codeHashBatches {
+		var codeArr []*core.AccountStateCode
+		err := r.ch.NewSelect().Model(&codeArr).Where("code_hash IN ?", ch.In(b)).Scan(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "get code")
+		}
+		for _, x := range codeArr {
+			codeRes[string(x.CodeHash)] = x.Code
+		}
+	}
+	for _, b := range dataHashBatches {
+		var dataArr []*core.AccountStateData
+		err := r.ch.NewSelect().Model(&dataArr).Where("data_hash IN ?", ch.In(b)).Scan(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "get data")
+		}
+		for _, x := range dataArr {
+			dataRes[string(x.DataHash)] = x.Data
+		}
+	}
+
+	for _, row := range rows {
+		var ok bool
+		if !excludeCode && len(row.Code) == 0 && len(row.CodeHash) == 32 {
+			if row.Code, ok = codeRes[string(row.CodeHash)]; !ok {
+				return fmt.Errorf("cannot find code with %x hash", row.CodeHash)
+			}
+		}
+		if !excludeData && len(row.Data) == 0 && len(row.DataHash) == 32 {
+			if row.Data, ok = dataRes[string(row.DataHash)]; !ok {
+				return fmt.Errorf("cannot find data with %x hash", row.DataHash)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) (*filter.AccountsRes, error) {
 	var (
 		res = new(filter.AccountsRes)
@@ -247,6 +315,22 @@ func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) 
 	res.Rows, err = r.filterAccountStates(ctx, f, res.Total)
 	if err != nil {
 		return res, err
+	}
+
+	var excludeCode, excludeData bool
+	for _, c := range f.ExcludeColumn {
+		cl := strings.ToLower(c)
+		if cl == "code" {
+			excludeCode = true
+		}
+		if cl == "data" {
+			excludeData = true
+		}
+	}
+	if f.WithCodeData && (!excludeCode || !excludeData) {
+		if err := r.getCodeData(ctx, res.Rows, excludeCode, excludeData); err != nil {
+			return res, err
+		}
 	}
 
 	return res, nil
