@@ -131,6 +131,39 @@ func (s *Service) addMessage(msg *core.Message, uniqMsg map[string]*core.Message
 	}
 }
 
+func (s *Service) getMessageSource(ctx context.Context, msg *core.Message) (skip bool) {
+	source, err := s.msgRepo.GetMessage(context.Background(), msg.Hash)
+	if err == nil {
+		msg.SrcTxLT, msg.SrcShard, msg.SrcBlockSeqNo, msg.SrcState =
+			source.SrcTxLT, source.SrcShard, source.SrcBlockSeqNo, source.SrcState
+		return false
+	}
+	if err != nil && !errors.Is(err, core.ErrNotFound) {
+		panic(errors.Wrapf(err, "get message with hash %s", msg.Hash))
+	}
+
+	// some masterchain messages does not have source
+	if msg.SrcAddress.Workchain() == -1 || msg.DstAddress.Workchain() == -1 {
+		return false
+	}
+
+	blocks, err := s.blockRepo.CountMasterBlocks(ctx)
+	if err != nil {
+		panic(errors.Wrap(err, "count masterchain blocks"))
+	}
+	if blocks < 1000 {
+		log.Debug().
+			Hex("dst_tx_hash", msg.DstTxHash).
+			Int32("dst_workchain", msg.DstWorkchain).Int64("dst_shard", msg.DstShard).Uint32("dst_block_seq_no", msg.DstBlockSeqNo).
+			Str("src_address", msg.SrcAddress.String()).Str("dst_address", msg.DstAddress.String()).
+			Msg("cannot find source message")
+		return true
+	}
+
+	panic(fmt.Errorf("unknown source of message with dst tx hash %x on block (%d, %d, %d) from %s to %s",
+		msg.DstTxHash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
+}
+
 func (s *Service) uniqMessages(ctx context.Context, transactions []*core.Transaction) []*core.Message {
 	var ret []*core.Message
 
@@ -149,32 +182,8 @@ func (s *Service) uniqMessages(ctx context.Context, transactions []*core.Transac
 
 	for _, msg := range uniqMsg {
 		if msg.Type == core.Internal && (msg.SrcTxLT == 0 && msg.DstTxLT != 0) {
-			// unknown source transaction, fill in source contract state
-			source, err := s.msgRepo.GetMessage(context.Background(), msg.Hash)
-			if err != nil && !errors.Is(err, core.ErrNotFound) {
-				panic(errors.Wrap(err, "get message error"))
-			}
-			// some masterchain messages does not have source
-			if errors.Is(err, core.ErrNotFound) && !(msg.SrcAddress.Workchain() == -1 && msg.DstAddress.Workchain() == -1) {
-				blocks, err := s.blockRepo.CountMasterBlocks(ctx)
-				if err != nil {
-					panic(errors.Wrap(err, "count masterchain blocks"))
-				}
-				if blocks > 1000 {
-					panic(fmt.Errorf("unknown source of message with dst tx hash %x on block (%d, %d, %d) from %s to %s",
-						msg.DstTxHash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
-				} else {
-					log.Debug().
-						Hex("dst_tx_hash", msg.DstTxHash).
-						Int32("dst_workchain", msg.DstWorkchain).Int64("dst_shard", msg.DstShard).Uint32("dst_block_seq_no", msg.DstBlockSeqNo).
-						Str("src_address", msg.SrcAddress.String()).Str("dst_address", msg.DstAddress.String()).
-						Msg("cannot find source message")
-					continue
-				}
-			}
-			if err == nil {
-				msg.SrcTxLT, msg.SrcShard, msg.SrcBlockSeqNo, msg.SrcState =
-					source.SrcTxLT, source.SrcShard, source.SrcBlockSeqNo, source.SrcState
+			if s.getMessageSource(ctx, msg) {
+				continue
 			}
 		}
 
