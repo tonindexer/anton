@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/uptrace/bun"
 
 	"github.com/stretchr/testify/require"
 
@@ -97,6 +98,16 @@ func TestRepository_FilterLabels(t *testing.T) {
 	})
 }
 
+func addAccountStatesCopy(ctx context.Context, tx bun.Tx, states []*core.AccountState) error {
+	var copied []*core.AccountState
+	for _, s := range states {
+		c := *s
+		copied = append(copied, &c)
+	}
+	err := repo.AddAccountStates(ctx, tx, copied)
+	return err
+}
+
 func TestRepository_FilterAccounts(t *testing.T) {
 	var (
 		// filter by address
@@ -138,7 +149,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 			address = &states[len(states)-10].Address
 			addressStates = states[len(states)-10:]
 
-			err = repo.AddAccountStates(ctx, tx, states)
+			err = addAccountStatesCopy(ctx, tx, states)
 			require.Nil(t, err)
 		}
 
@@ -156,7 +167,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 			specialState = states[len(states)-1]
 
-			err = repo.AddAccountStates(ctx, tx, states)
+			err = addAccountStatesCopy(ctx, tx, states)
 			require.Nil(t, err)
 		}
 
@@ -170,7 +181,7 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 		for i := 0; i < 5; i++ {
 			latestState = rndm.AddressStateContract(address, "", nil)
-			err = repo.AddAccountStates(ctx, tx, []*core.AccountState{latestState})
+			err = addAccountStatesCopy(ctx, tx, []*core.AccountState{latestState})
 			require.Nil(t, err)
 		}
 
@@ -315,7 +326,7 @@ func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 		for i := 0; i < totalStates/100; i++ {
 			states := rndm.AccountStates(100)
 
-			err = repo.AddAccountStates(ctx, tx, states)
+			err = addAccountStatesCopy(ctx, tx, states)
 			require.Nil(t, err)
 
 			if i%100 == 0 {
@@ -336,7 +347,7 @@ func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 		for i := 0; i < specialStates/100; i++ {
 			specialState = rndm.AddressStateContract(address, "special", nil)
 
-			err = repo.AddAccountStates(ctx, tx, []*core.AccountState{specialState})
+			err = addAccountStatesCopy(ctx, tx, []*core.AccountState{specialState})
 			require.Nil(t, err)
 
 			if i%100 == 0 {
