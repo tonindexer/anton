@@ -304,12 +304,14 @@ func (r *Repository) FilterAccounts(ctx context.Context, f *filter.AccountsReq) 
 		f.Limit = 3
 	}
 
-	res.Total, err = r.countAccountStates(ctx, f)
-	if err != nil && !errors.Is(err, core.ErrNotImplemented) {
-		return res, errors.Wrap(err, "count account states")
-	}
-	if res.Total == 0 && !errors.Is(err, core.ErrNotImplemented) {
-		return res, nil
+	if !f.NoCount {
+		res.Total, err = r.countAccountStates(ctx, f)
+		if err != nil && !errors.Is(err, core.ErrNotImplemented) {
+			return res, errors.Wrap(err, "count account states")
+		}
+		if res.Total == 0 && !errors.Is(err, core.ErrNotImplemented) {
+			return res, nil
+		}
 	}
 
 	res.Rows, err = r.filterAccountStates(ctx, f, res.Total)

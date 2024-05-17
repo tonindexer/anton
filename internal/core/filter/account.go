@@ -41,6 +41,8 @@ type AccountsReq struct {
 
 	ExcludeColumn []string // TODO: support relations
 
+	NoCount bool
+
 	Order string `form:"order"` // ASC, DESC
 
 	AfterTxLT *uint64 `form:"after"`
