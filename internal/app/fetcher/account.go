@@ -42,6 +42,8 @@ func (s *Service) getLastSeenAccountState(ctx context.Context, a addr.Address, l
 
 func (s *Service) makeGetOtherAccountFunc(master, b *ton.BlockIDExt, lastLT uint64) func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 	getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
+		defer app.TimeTrack(time.Now(), "getOtherAccount(%s, %d)", a.String(), lastLT)
+
 		// first attempt is to look for an account in this given block
 		acc, ok := s.accounts.get(b, a)
 		if ok {
