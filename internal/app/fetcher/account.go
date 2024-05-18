@@ -2,6 +2,8 @@ package fetcher
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -50,23 +52,49 @@ func (s *Service) makeGetOtherAccountFunc(master, b *ton.BlockIDExt, lastLT uint
 			return acc, nil
 		}
 
-		// second attempt is to look for the latest account state in the database
-		acc, err := s.getLastSeenAccountState(ctx, a, lastLT)
-		if err == nil {
-			return acc, nil
-		}
-		lvl := log.Warn()
-		if errors.Is(err, core.ErrNotFound) || errors.Is(err, core.ErrInvalidArg) {
-			lvl = log.Debug()
-		}
-		lvl.Err(err).Str("addr", a.Base64()).Msg("get latest other account state")
+		itemStateID := core.AccountStateID{Address: a, LastTxLT: lastLT}
 
-		// third attempt is to get needed contract state from the node
-		raw, err := s.API.GetAccount(ctx, master, a.MustToTonutils())
-		if err != nil {
-			return nil, errors.Wrapf(err, "cannot get %s account state", a.Base64())
+		// second attempt is to look into LRU cache, if minter was already fetched for the given id
+		if m, ok := s.minterStatesCache.Get(itemStateID); ok {
+			return m, nil
 		}
-		return MapAccount(b, raw), nil
+
+		s.minterStatesCacheLocksMx.Lock()
+		lock, exists := s.minterStatesCacheLocks.Get(itemStateID)
+		if !exists {
+			lock = &sync.Once{}
+			s.minterStatesCacheLocks.Put(itemStateID, lock)
+		}
+		s.minterStatesCacheLocksMx.Unlock()
+
+		lock.Do(func() {
+			// third attempt is to look for the latest account state in the database
+			acc, err := s.getLastSeenAccountState(ctx, a, lastLT)
+			if err == nil {
+				s.minterStatesCache.Put(itemStateID, acc)
+				return
+			}
+			lvl := log.Warn()
+			if errors.Is(err, core.ErrNotFound) || errors.Is(err, core.ErrInvalidArg) {
+				lvl = log.Debug()
+			}
+			lvl.Err(err).Str("addr", a.Base64()).Msg("get latest other account state")
+
+			// forth attempt is to get needed contract state from the node
+			raw, err := s.API.GetAccount(ctx, master, a.MustToTonutils())
+			if err != nil {
+				log.Error().Err(err).Str("address", a.Base64()).Msg("cannot get account state")
+				return
+			}
+
+			s.minterStatesCache.Put(itemStateID, MapAccount(b, raw))
+		})
+
+		if m, ok := s.minterStatesCache.Get(itemStateID); ok {
+			return m, nil
+		}
+
+		return nil, fmt.Errorf("cannot get account state for (%s, %d)", itemStateID.Address.Base64(), itemStateID.LastTxLT)
 	}
 	return getOtherAccountFunc
 }
