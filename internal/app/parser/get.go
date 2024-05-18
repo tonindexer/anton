@@ -22,6 +22,16 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
+var (
+	dedustFactoryAddr *addr.Address
+	stonfiRouterAddr  *addr.Address
+)
+
+func init() {
+	dedustFactoryAddr = addr.MustFromBase64("EQBfBWT7X2BHg9tXAxzhz2aKiNTU1tpt5NsiK0uSDW_YAJ67")
+	stonfiRouterAddr = addr.MustFromBase64("EQB3ncyBUTjZUA5EnFKR5_EnOMI9V1tTEAAPaiU71gc4TiUt")
+}
+
 func getMethodByName(i *core.ContractInterface, n string) *abi.GetMethodDesc {
 	for it := range i.GetMethodsDesc {
 		if i.GetMethodsDesc[it].Name == n {
@@ -194,9 +204,17 @@ func (s *Service) checkMinter(ctx context.Context, minter, item *core.AccountSta
 	if addr.Equal(itemAddr, &item.Address) {
 		item.Fake = false
 	}
+
+	if !item.Fake {
+		s.itemsMinterCache.Put(item.Address, minter.Address)
+	}
 }
 
 func (s *Service) checkNFTMinter(ctx context.Context, minter *core.AccountState, idx *big.Int, item *core.AccountState) {
+	if minterAddr, ok := s.itemsMinterCache.Get(item.Address); ok && addr.Equal(&minter.Address, &minterAddr) {
+		return
+	}
+
 	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.NFTCollection, "get_nft_address_by_index")
 	if err != nil {
 		panic(fmt.Errorf("get 'get_nft_address_by_index' method description: %w", err))
@@ -207,7 +225,17 @@ func (s *Service) checkNFTMinter(ctx context.Context, minter *core.AccountState,
 	s.checkMinter(ctx, minter, item, known.NFTCollection, &desc, args)
 }
 
-func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountState, ownerAddr *addr.Address, walletAcc *core.AccountState) {
+func (s *Service) checkJettonMinter(ctx context.Context, ownerAddr *addr.Address, walletAcc *core.AccountState, others func(context.Context, addr.Address) (*core.AccountState, error)) {
+	if minterAddr, ok := s.itemsMinterCache.Get(walletAcc.Address); ok && addr.Equal(walletAcc.MinterAddress, &minterAddr) {
+		return
+	}
+
+	minter, err := others(ctx, *walletAcc.MinterAddress)
+	if err != nil {
+		log.Error().Str("minter_address", walletAcc.MinterAddress.Base64()).Err(err).Msg("get jetton minter state")
+		return
+	}
+
 	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.JettonMinter, "get_wallet_address")
 	if err != nil {
 		panic(fmt.Errorf("get 'get_wallet_address' method description: %w", err))
@@ -219,10 +247,13 @@ func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountSta
 }
 
 func (s *Service) checkDeDustMinter(ctx context.Context, acc *core.AccountState, others func(context.Context, addr.Address) (*core.AccountState, error)) {
-	factoryAddr := "EQBfBWT7X2BHg9tXAxzhz2aKiNTU1tpt5NsiK0uSDW_YAJ67"
-	factory, err := others(ctx, *addr.MustFromBase64(factoryAddr))
+	if minterAddr, ok := s.itemsMinterCache.Get(acc.Address); ok && addr.Equal(dedustFactoryAddr, &minterAddr) {
+		return
+	}
+
+	factory, err := others(ctx, *dedustFactoryAddr)
 	if err != nil {
-		log.Error().Str("factory_address", factoryAddr).Err(err).Msg("get dedust v2 factory state")
+		log.Error().Str("factory_address", dedustFactoryAddr.Base64()).Err(err).Msg("get dedust v2 factory state")
 		return
 	}
 
@@ -249,10 +280,13 @@ func (s *Service) checkDeDustMinter(ctx context.Context, acc *core.AccountState,
 }
 
 func (s *Service) checkStonFiMinter(ctx context.Context, acc *core.AccountState, others func(context.Context, addr.Address) (*core.AccountState, error)) {
-	routerAddr := "EQB3ncyBUTjZUA5EnFKR5_EnOMI9V1tTEAAPaiU71gc4TiUt"
-	router, err := others(ctx, *addr.MustFromBase64(routerAddr))
+	if minterAddr, ok := s.itemsMinterCache.Get(acc.Address); ok && addr.Equal(stonfiRouterAddr, &minterAddr) {
+		return
+	}
+
+	router, err := others(ctx, *stonfiRouterAddr)
 	if err != nil {
-		log.Error().Str("router_address", routerAddr).Err(err).Msg("get stonfi router state")
+		log.Error().Str("router_address", stonfiRouterAddr.Base64()).Err(err).Msg("get stonfi router state")
 		return
 	}
 
@@ -330,13 +364,7 @@ func (s *Service) callGetMethod(
 			return nil
 		}
 
-		minter, err := others(ctx, *acc.MinterAddress)
-		if err != nil {
-			log.Error().Str("minter_address", acc.MinterAddress.Base64()).Err(err).Msg("get jetton minter state")
-			return nil
-		}
-
-		s.checkJettonMinter(ctx, minter, acc.OwnerAddress, acc)
+		s.checkJettonMinter(ctx, acc.OwnerAddress, acc, others)
 	}
 
 	return nil
