@@ -17,9 +17,11 @@ import (
 func MapAccount(b *ton.BlockIDExt, acc *tlb.Account) *core.AccountState {
 	ret := new(core.AccountState)
 
-	ret.Workchain = b.Workchain
-	ret.Shard = b.Shard
-	ret.BlockSeqNo = b.SeqNo
+	if b != nil {
+		ret.Workchain = b.Workchain
+		ret.Shard = b.Shard
+		ret.BlockSeqNo = b.SeqNo
+	}
 
 	ret.IsActive = acc.IsActive
 	ret.Status = core.NonExist

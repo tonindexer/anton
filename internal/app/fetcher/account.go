@@ -42,19 +42,13 @@ func (s *Service) getLastSeenAccountState(ctx context.Context, a addr.Address, l
 	return accountRes.Rows[0], nil
 }
 
-func (s *Service) makeGetOtherAccountFunc(master, b *ton.BlockIDExt, lastLT uint64) func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
+func (s *Service) makeGetOtherAccountFunc(master *ton.BlockIDExt, lastLT uint64) func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 	getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 		defer app.TimeTrack(time.Now(), "getOtherAccount(%s, %d)", a.String(), lastLT)
 
-		// first attempt is to look for an account in this given block
-		acc, ok := s.accounts.get(b, a)
-		if ok {
-			return acc, nil
-		}
-
 		itemStateID := core.AccountStateID{Address: a, LastTxLT: lastLT}
 
-		// second attempt is to look into LRU cache, if minter was already fetched for the given id
+		// first attempt is to look into LRU cache, if minter was already fetched for the given id
 		if m, ok := s.minterStatesCache.Get(itemStateID); ok {
 			return m, nil
 		}
@@ -68,7 +62,7 @@ func (s *Service) makeGetOtherAccountFunc(master, b *ton.BlockIDExt, lastLT uint
 		s.minterStatesCacheLocksMx.Unlock()
 
 		lock.Do(func() {
-			// third attempt is to look for the latest account state in the database
+			// second attempt is to look for the latest account state in the database
 			acc, err := s.getLastSeenAccountState(ctx, a, lastLT)
 			if err == nil {
 				s.minterStatesCache.Put(itemStateID, acc)
@@ -80,14 +74,14 @@ func (s *Service) makeGetOtherAccountFunc(master, b *ton.BlockIDExt, lastLT uint
 			}
 			lvl.Err(err).Str("addr", a.Base64()).Msg("get latest other account state")
 
-			// forth attempt is to get needed contract state from the node
+			// third attempt is to get needed contract state from the node
 			raw, err := s.API.GetAccount(ctx, master, a.MustToTonutils())
 			if err != nil {
 				log.Error().Err(err).Str("address", a.Base64()).Msg("cannot get account state")
 				return
 			}
 
-			s.minterStatesCache.Put(itemStateID, MapAccount(b, raw))
+			s.minterStatesCache.Put(itemStateID, MapAccount(nil, raw))
 		})
 
 		if m, ok := s.minterStatesCache.Get(itemStateID); ok {
@@ -100,61 +94,89 @@ func (s *Service) makeGetOtherAccountFunc(master, b *ton.BlockIDExt, lastLT uint
 }
 
 func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a addr.Address) (*core.AccountState, error) {
-	acc, ok := s.accounts.get(b, a)
-	if ok {
-		return acc, nil
-	}
-
 	if core.SkipAddress(a) {
 		return nil, errors.Wrap(core.ErrNotFound, "skip account")
 	}
 
 	defer app.TimeTrack(time.Now(), "getAccount(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
 
-	raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
-	if err != nil {
-		return nil, errors.Wrapf(err, "get account")
+	stateID := core.AccountBlockStateID{Address: a, Workchain: b.Workchain, Shard: b.Shard, BlockSeqNo: b.SeqNo}
+
+	if res, ok := s.accBlockStatesCache.Get(stateID); ok {
+		return res.acc, res.err
 	}
 
-	acc = MapAccount(b, raw)
+	s.accBlockStatesCacheLocksMx.Lock()
+	lock, exists := s.accBlockStatesCacheLocks.Get(stateID)
+	if !exists {
+		lock = &sync.Once{}
+		s.accBlockStatesCacheLocks.Put(stateID, lock)
+	}
+	s.accBlockStatesCacheLocksMx.Unlock()
 
-	if raw.Code != nil { //nolint:nestif // getting get method hashes from the library
-		libs, err := s.getAccountLibraries(ctx, raw)
+	lock.Do(func() {
+		var (
+			acc *core.AccountState
+			err error
+		)
+		defer func() { s.accBlockStatesCache.Put(stateID, getAccountRes{acc: acc, err: err}) }()
+
+		raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
 		if err != nil {
-			return nil, errors.Wrapf(err, "get account libraries")
-		}
-		if libs != nil {
-			acc.Libraries = libs.ToBOC()
+			err = errors.Wrapf(err, "get account")
+			return
 		}
 
-		if raw.Code.GetType() == cell.LibraryCellType {
-			hash, err := getLibraryHash(raw.Code)
-			if err != nil {
-				return nil, errors.Wrap(err, "get library hash")
+		acc = MapAccount(b, raw)
+
+		if raw.Code != nil { //nolint:nestif // getting get-method hashes from the library
+			libs, getErr := s.getAccountLibraries(ctx, raw)
+			if getErr != nil {
+				err = errors.Wrapf(getErr, "get account libraries")
+				return
+			}
+			if libs != nil {
+				acc.Libraries = libs.ToBOC()
 			}
 
-			lib := s.libraries.get(hash)
-			if lib != nil && lib.Lib != nil {
-				acc.GetMethodHashes, _ = abi.GetMethodHashes(lib.Lib)
+			if raw.Code.GetType() == cell.LibraryCellType {
+				hash, getErr := getLibraryHash(raw.Code)
+				if getErr != nil {
+					err = errors.Wrap(getErr, "get library hash")
+					return
+				}
+
+				lib := s.libraries.get(hash)
+				if lib != nil && lib.Lib != nil {
+					acc.GetMethodHashes, _ = abi.GetMethodHashes(lib.Lib)
+				}
+			} else {
+				acc.GetMethodHashes, _ = abi.GetMethodHashes(raw.Code)
 			}
-		} else {
-			acc.GetMethodHashes, _ = abi.GetMethodHashes(raw.Code)
 		}
+
+		if acc.Status == core.NonExist {
+			err = errors.Wrap(core.ErrNotFound, "account does not exists")
+			return
+		}
+
+		// sometimes, to parse the full account data we need to get other contracts states
+		// for example, to get nft item data
+		getOtherAccount := s.makeGetOtherAccountFunc(master, acc.LastTxLT)
+
+		err = s.Parser.ParseAccountData(ctx, acc, getOtherAccount)
+		if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
+			err = errors.Wrapf(err, "parse account data (%s)", acc.Address.String())
+			return
+		}
+
+		err = nil
+	})
+
+	res, ok := s.accBlockStatesCache.Get(stateID)
+	if !ok {
+		panic(fmt.Errorf("cannot get %s parsed account result on (%d, %d, %d)", a.String(), b.Workchain, b.Shard, b.SeqNo))
 	}
 
-	if acc.Status == core.NonExist {
-		return nil, errors.Wrap(core.ErrNotFound, "account does not exists")
-	}
-
-	// sometimes, to parse the full account data we need to get other contracts states
-	// for example, to get nft item data
-	getOtherAccount := s.makeGetOtherAccountFunc(master, b, acc.LastTxLT)
-
-	err = s.Parser.ParseAccountData(ctx, acc, getOtherAccount)
-	if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
-		return nil, errors.Wrapf(err, "parse account data (%s)", acc.Address.String())
-	}
-
-	s.accounts.set(b, acc)
-	return acc, nil
+	return res.acc, res.err
 }

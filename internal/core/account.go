@@ -55,6 +55,13 @@ type AccountStateID struct {
 	LastTxLT uint64
 }
 
+type AccountBlockStateID struct {
+	Address    addr.Address `ch:"type:String"`
+	Workchain  int32
+	Shard      int64
+	BlockSeqNo uint32
+}
+
 type AccountState struct {
 	ch.CHModel    `ch:"account_states,partition:toYYYYMM(updated_at)" json:"-"`
 	bun.BaseModel `bun:"table:account_states" json:"-"`

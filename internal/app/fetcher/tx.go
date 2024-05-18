@@ -63,7 +63,7 @@ func (s *Service) getTransaction(ctx context.Context, master, b *ton.BlockIDExt,
 			if err := accRet.err; err != nil && !errors.Is(err, core.ErrNotFound) {
 				return nil, err
 			}
-			if accRet.res != nil {
+			if accRet.err == nil && accRet.res != nil {
 				acc = accRet.res.(*core.AccountState) //nolint:forcetypeassert // that's ok
 			}
 
