@@ -5,10 +5,11 @@ import (
 	"time"
 
 	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/abi/known"
 	"github.com/tonindexer/anton/internal/core"
 )
 
-var cacheInvalidation = 10 * time.Second
+var cacheInvalidation = 60 * time.Second
 
 type cache struct {
 	interfaces  []*core.ContractInterface
@@ -31,7 +32,17 @@ func (c *cache) clearCaches() {
 	}
 	c.interfaces = nil
 	c.operations = nil
-	c.getMethods = map[abi.ContractName]map[string]abi.GetMethodDesc{}
+	for i, im := range c.getMethods {
+		for gm := range im {
+			switch {
+			case i == known.NFTCollection && (gm == "get_nft_content" || gm == "get_nft_address_by_index"),
+				i == known.JettonMinter && gm == "get_wallet_address",
+				(i == known.DedustV2Factory || i == known.StonFiRouter) && gm == "get_pool_address":
+				continue
+			}
+			delete(im, gm)
+		}
+	}
 	c.lastCleared = time.Now()
 }
 
