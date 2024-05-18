@@ -139,7 +139,7 @@ func (s *Service) getMessageSource(ctx context.Context, msg *core.Message) (skip
 		return false
 	}
 	if err != nil && !errors.Is(err, core.ErrNotFound) {
-		panic(errors.Wrapf(err, "get message with hash %s", msg.Hash))
+		panic(errors.Wrapf(err, "get message with hash %x", msg.Hash))
 	}
 
 	// some masterchain messages does not have source
