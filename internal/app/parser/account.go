@@ -106,6 +106,9 @@ func (s *Service) ParseAccountData(
 		return errors.Wrap(app.ErrImpossibleParsing, "no contract repository")
 	}
 
+	s.accountParseSemaphore <- struct{}{}
+	defer func() { <-s.accountParseSemaphore }()
+
 	interfaces, err := s.determineInterfaces(ctx, acc)
 	if err != nil {
 		return errors.Wrapf(err, "determine contract interfaces")
@@ -134,6 +137,9 @@ func (s *Service) ParseAccountContractData(
 	if !interfaceMatched(acc, contractDesc) {
 		return app.ErrUnmatchedContractInterface
 	}
+
+	s.accountParseSemaphore <- struct{}{}
+	defer func() { <-s.accountParseSemaphore }()
 
 	var contractTypeSet bool
 	for _, t := range acc.Types {
@@ -166,6 +172,9 @@ func (s *Service) ExecuteAccountGetMethod(
 	if s.ContractRepo == nil {
 		return errors.Wrap(app.ErrImpossibleParsing, "no contract repository")
 	}
+
+	s.accountParseSemaphore <- struct{}{}
+	defer func() { <-s.accountParseSemaphore }()
 
 	interfaces, err := s.determineInterfaces(ctx, acc)
 	if err != nil {

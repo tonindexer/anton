@@ -35,8 +35,9 @@ func init() {
 
 func newService(t *testing.T) *Service {
 	p := parser.NewService(&app.ParserConfig{
-		BlockchainConfig: bcConfig,
-		ContractRepo:     nil,
+		BlockchainConfig:         bcConfig,
+		ContractRepo:             nil,
+		MaxAccountParsingWorkers: 96,
 	})
 
 	client := liteclient.NewConnectionPool()
