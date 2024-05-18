@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
@@ -18,6 +19,7 @@ var _ repository.Contract = (*Repository)(nil)
 type Repository struct {
 	pg    *bun.DB
 	cache *cache
+	mx    sync.Mutex
 }
 
 func NewRepository(db *bun.DB) *Repository {
@@ -210,6 +212,9 @@ func (r *Repository) GetInterface(ctx context.Context, name abi.ContractName) (*
 
 func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
 	var ret []*core.ContractInterface
+
+	r.mx.Lock()
+	defer r.mx.Unlock()
 
 	if i := r.cache.getInterfaces(); i != nil {
 		return i, nil
