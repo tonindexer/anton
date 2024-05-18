@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -376,6 +377,8 @@ func (s *Service) callPossibleGetMethods(
 	others func(context.Context, addr.Address) (*core.AccountState, error),
 	interfaces []*core.ContractInterface,
 ) {
+	defer app.TimeTrack(time.Now(), "callPossibleGetMethods(%s, %v)", acc.Address.Base64(), acc.Types)
+
 	for _, i := range interfaces {
 		for it := range i.GetMethodsDesc {
 			d := &i.GetMethodsDesc[it]

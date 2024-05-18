@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -83,6 +84,8 @@ func interfaceMatched(acc *core.AccountState, i *core.ContractInterface) bool {
 func (s *Service) determineInterfaces(ctx context.Context, acc *core.AccountState) ([]*core.ContractInterface, error) {
 	var ret []*core.ContractInterface
 
+	defer app.TimeTrack(time.Now(), "determineInterfaces(%s)", acc.Address.Base64())
+
 	interfaces, err := s.ContractRepo.GetInterfaces(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "get contract interfaces")
@@ -102,9 +105,13 @@ func (s *Service) ParseAccountData(
 	acc *core.AccountState,
 	others func(context.Context, addr.Address) (*core.AccountState, error),
 ) error {
+	defer app.TimeTrack(time.Now(), "ParseAccountData(%s)", acc.Address.Base64())
+
 	if s.ContractRepo == nil {
 		return errors.Wrap(app.ErrImpossibleParsing, "no contract repository")
 	}
+
+	defer app.TimeTrack(time.Now(), "ParseAccountData[unlocked](%s)", acc.Address.Base64())
 
 	s.accountParseSemaphore <- struct{}{}
 	defer func() { <-s.accountParseSemaphore }()
