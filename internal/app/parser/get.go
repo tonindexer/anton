@@ -152,7 +152,7 @@ func mapContentDataNFT(ret *core.AccountState, c any) {
 func (s *Service) getNFTItemContent(ctx context.Context, collection *core.AccountState, idx *big.Int, itemContent *cell.Cell, acc *core.AccountState) {
 	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.NFTCollection, "get_nft_content")
 	if err != nil {
-		panic("get 'get_nft_content' method description")
+		panic(fmt.Errorf("get 'get_nft_content' method description: %w", err))
 	}
 
 	args := []any{idx.Bytes(), itemContent}
@@ -199,7 +199,7 @@ func (s *Service) checkMinter(ctx context.Context, minter, item *core.AccountSta
 func (s *Service) checkNFTMinter(ctx context.Context, minter *core.AccountState, idx *big.Int, item *core.AccountState) {
 	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.NFTCollection, "get_nft_address_by_index")
 	if err != nil {
-		panic("get 'get_nft_address_by_index' method description")
+		panic(fmt.Errorf("get 'get_nft_address_by_index' method description: %w", err))
 	}
 
 	args := []any{idx.Bytes()}
@@ -210,7 +210,7 @@ func (s *Service) checkNFTMinter(ctx context.Context, minter *core.AccountState,
 func (s *Service) checkJettonMinter(ctx context.Context, minter *core.AccountState, ownerAddr *addr.Address, walletAcc *core.AccountState) {
 	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.JettonMinter, "get_wallet_address")
 	if err != nil {
-		panic("get 'get_wallet_address' method description")
+		panic(fmt.Errorf("get 'get_wallet_address' method description: %w", err))
 	}
 
 	args := []any{ownerAddr.MustToTonutils()}
@@ -236,7 +236,7 @@ func (s *Service) checkDeDustMinter(ctx context.Context, acc *core.AccountState,
 
 	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.DedustV2Factory, "get_pool_address")
 	if err != nil {
-		panic("get 'get_pool_address' method description")
+		panic(fmt.Errorf("get 'get_pool_address' method description: %w", err))
 	}
 
 	asset0 := acc.ExecutedGetMethods[known.DedustV2Pool][0].Returns[0].(*abi.DedustAsset) //nolint:forcetypeassert // that's ok
@@ -266,7 +266,7 @@ func (s *Service) checkStonFiMinter(ctx context.Context, acc *core.AccountState,
 
 	desc, err := s.ContractRepo.GetMethodDescription(ctx, known.StonFiRouter, "get_pool_address")
 	if err != nil {
-		panic("get 'get_pool_address' method description")
+		panic(fmt.Errorf("get 'get_pool_address' method description: %w", err))
 	}
 
 	asset0 := acc.ExecutedGetMethods[known.StonFiPool][0].Returns[2].(*address.Address) //nolint:forcetypeassert // that's ok
