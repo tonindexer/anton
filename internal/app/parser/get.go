@@ -59,6 +59,8 @@ func (s *Service) emulateGetMethod(ctx context.Context, d *abi.GetMethodDesc, ac
 		})
 	}
 
+	defer app.TimeTrack(time.Now(), fmt.Sprintf("emulateGetMethod(%s, %s)", acc.Address.Base64(), d.Name))
+
 	codeBase64, dataBase64, librariesBase64 :=
 		base64.StdEncoding.EncodeToString(acc.Code),
 		base64.StdEncoding.EncodeToString(acc.Data),
