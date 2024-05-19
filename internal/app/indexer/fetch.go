@@ -11,7 +11,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/ton"
 
-	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
 
@@ -43,7 +42,7 @@ func (s *Service) fetchMaster(seq uint32) *core.Block {
 		err   error
 	}
 
-	defer app.TimeTrack(time.Now(), "fetchMaster(%d)", seq)
+	defer core.Timer(time.Now(), "fetchMaster(%d)", seq)
 
 	for {
 		ctx := context.Background()

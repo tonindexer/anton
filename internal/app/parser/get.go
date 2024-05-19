@@ -59,7 +59,7 @@ func (s *Service) emulateGetMethod(ctx context.Context, d *abi.GetMethodDesc, ac
 		})
 	}
 
-	defer app.TimeTrack(time.Now(), fmt.Sprintf("emulateGetMethod(%s, %s)", acc.Address.Base64(), d.Name))
+	defer core.Timer(time.Now(), fmt.Sprintf("emulateGetMethod(%s, %s)", acc.Address.Base64(), d.Name))
 
 	codeBase64, dataBase64, librariesBase64 :=
 		base64.StdEncoding.EncodeToString(acc.Code),
@@ -379,7 +379,7 @@ func (s *Service) callPossibleGetMethods(
 	others func(context.Context, addr.Address) (*core.AccountState, error),
 	interfaces []*core.ContractInterface,
 ) {
-	defer app.TimeTrack(time.Now(), "callPossibleGetMethods(%s, %v)", acc.Address.Base64(), acc.Types)
+	defer core.Timer(time.Now(), "callPossibleGetMethods(%s, %v)", acc.Address.Base64(), acc.Types)
 
 	for _, i := range interfaces {
 		for it := range i.GetMethodsDesc {

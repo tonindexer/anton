@@ -47,14 +47,14 @@ func (s *Service) insertData(
 	}
 
 	if err := func() error {
-		defer app.TimeTrack(time.Now(), "AddAccountStates(%d)", len(acc))
+		defer core.Timer(time.Now(), "AddAccountStates(%d)", len(acc))
 		return s.accountRepo.AddAccountStates(ctx, dbTx, acc)
 	}(); err != nil {
 		return errors.Wrap(err, "add account states")
 	}
 
 	if err := func() error {
-		defer app.TimeTrack(time.Now(), "AddMessages(%d)", len(msg))
+		defer core.Timer(time.Now(), "AddMessages(%d)", len(msg))
 		sort.Slice(msg, func(i, j int) bool { return msg[i].CreatedLT < msg[j].CreatedLT })
 		return s.msgRepo.AddMessages(ctx, dbTx, msg)
 	}(); err != nil {
@@ -62,14 +62,14 @@ func (s *Service) insertData(
 	}
 
 	if err := func() error {
-		defer app.TimeTrack(time.Now(), "AddTransactions(%d)", len(tx))
+		defer core.Timer(time.Now(), "AddTransactions(%d)", len(tx))
 		return s.txRepo.AddTransactions(ctx, dbTx, tx)
 	}(); err != nil {
 		return errors.Wrap(err, "add transactions")
 	}
 
 	if err := func() error {
-		defer app.TimeTrack(time.Now(), "AddBlocks(%d)", len(b))
+		defer core.Timer(time.Now(), "AddBlocks(%d)", len(b))
 		return s.blockRepo.AddBlocks(ctx, dbTx, b)
 	}(); err != nil {
 		return errors.Wrap(err, "add blocks")

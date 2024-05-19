@@ -19,7 +19,7 @@ import (
 )
 
 func (s *Service) getLastSeenAccountState(ctx context.Context, a addr.Address, lastLT uint64) (*core.AccountState, error) {
-	defer app.TimeTrack(time.Now(), "getLastSeenAccountState(%s, %d)", a.String(), lastLT)
+	defer core.Timer(time.Now(), "getLastSeenAccountState(%s, %d)", a.String(), lastLT)
 
 	lastLT++
 
@@ -44,7 +44,7 @@ func (s *Service) getLastSeenAccountState(ctx context.Context, a addr.Address, l
 
 func (s *Service) makeGetOtherAccountFunc(master *ton.BlockIDExt, lastLT uint64) func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
 	getOtherAccountFunc := func(ctx context.Context, a addr.Address) (*core.AccountState, error) {
-		defer app.TimeTrack(time.Now(), "getOtherAccount(%s, %d)", a.String(), lastLT)
+		defer core.Timer(time.Now(), "getOtherAccount(%s, %d)", a.String(), lastLT)
 
 		itemStateID := core.AccountStateID{Address: a, LastTxLT: lastLT}
 
@@ -98,7 +98,7 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 		return nil, errors.Wrap(core.ErrNotFound, "skip account")
 	}
 
-	defer app.TimeTrack(time.Now(), "getAccount(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
+	defer core.Timer(time.Now(), "getAccount(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
 
 	stateID := core.AccountBlockStateID{Address: a, Workchain: b.Workchain, Shard: b.Shard, BlockSeqNo: b.SeqNo}
 

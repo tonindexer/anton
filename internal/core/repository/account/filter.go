@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
@@ -221,6 +222,8 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 }
 
 func (r *Repository) getCodeData(ctx context.Context, rows []*core.AccountState, excludeCode, excludeData bool) error { //nolint:gocognit,gocyclo // TODO: make one function working for both code and data
+	defer core.Timer(time.Now(), "getCodeData(%d, %t, %t)", len(rows), excludeCode, excludeData)
+
 	codeHashesSet, dataHashesSet := map[string]struct{}{}, map[string]struct{}{}
 	for _, row := range rows {
 		if !excludeCode && len(row.Code) == 0 && len(row.CodeHash) == 32 {

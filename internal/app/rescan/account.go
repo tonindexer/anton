@@ -16,7 +16,7 @@ import (
 )
 
 func (s *Service) getRecentAccountState(ctx context.Context, a addr.Address, lastLT uint64) (*core.AccountState, error) {
-	defer app.TimeTrack(time.Now(), "getRecentAccountState(%s, %d)", a.String(), lastLT)
+	defer core.Timer(time.Now(), "getRecentAccountState(%s, %d)", a.String(), lastLT)
 
 	if minter, ok := s.minterStateCache.get(a, lastLT); ok {
 		return minter, nil
