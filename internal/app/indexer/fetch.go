@@ -141,7 +141,7 @@ func publishProcessedBlocks(fromBlock uint32, processed []*core.Block, results c
 		var found bool
 
 		for it, b := range processed {
-			if b.SeqNo == fromBlock {
+			if b.SeqNo != fromBlock {
 				continue
 			}
 
