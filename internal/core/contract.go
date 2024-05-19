@@ -22,6 +22,7 @@ type ContractInterface struct {
 	Name            abi.ContractName     `bun:",pk" json:"name"`
 	Addresses       []*addr.Address      `bun:"type:bytea[],unique" json:"addresses,omitempty"`
 	Code            []byte               `bun:"type:bytea,unique" json:"code,omitempty"`
+	CodeHash        []byte               `bun:"-" json:"code_hash,omitempty"`
 	GetMethodsDesc  []abi.GetMethodDesc  `bun:"type:text" json:"get_methods_descriptors,omitempty"`
 	GetMethodHashes []int32              `bun:"type:integer[]" json:"get_method_hashes,omitempty"`
 	Operations      []*ContractOperation `ch:"-" bun:"rel:has-many,join:name=contract_name" json:"operations,omitempty"`

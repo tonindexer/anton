@@ -3,11 +3,14 @@ package contract
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
+
+	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/core"
@@ -17,13 +20,14 @@ import (
 var _ repository.Contract = (*Repository)(nil)
 
 type Repository struct {
-	pg    *bun.DB
-	cache *cache
-	mx    sync.Mutex
+	pg          *bun.DB
+	cache       *cache
+	codeHashMap map[string][]byte
+	mx          sync.RWMutex
 }
 
 func NewRepository(db *bun.DB) *Repository {
-	return &Repository{pg: db, cache: newCache()}
+	return &Repository{pg: db, codeHashMap: map[string][]byte{}, cache: newCache()}
 }
 
 func CreateTables(ctx context.Context, pgDB *bun.DB) error {
@@ -193,6 +197,30 @@ func (r *Repository) DeleteInterface(ctx context.Context, name abi.ContractName)
 	return nil
 }
 
+func (r *Repository) setContractCodeHash(i *core.ContractInterface) {
+	if len(i.Code) == 0 {
+		return
+	}
+
+	r.mx.RLock()
+	i.CodeHash = r.codeHashMap[string(i.Code)]
+	r.mx.RUnlock()
+
+	if i.CodeHash != nil {
+		return
+	}
+
+	codeCell, err := cell.FromBOC(i.Code)
+	if err != nil {
+		panic(fmt.Errorf("parse contract interface code of %s interface", i.Name))
+	}
+	i.CodeHash = codeCell.Hash()
+
+	r.mx.Lock()
+	r.codeHashMap[string(i.Code)] = i.CodeHash
+	r.mx.Unlock()
+}
+
 func (r *Repository) GetInterface(ctx context.Context, name abi.ContractName) (*core.ContractInterface, error) {
 	var ret core.ContractInterface
 
@@ -207,14 +235,13 @@ func (r *Repository) GetInterface(ctx context.Context, name abi.ContractName) (*
 		return nil, err
 	}
 
+	r.setContractCodeHash(&ret)
+
 	return &ret, nil
 }
 
 func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
 	var ret []*core.ContractInterface
-
-	r.mx.Lock()
-	defer r.mx.Unlock()
 
 	if i := r.cache.getInterfaces(); i != nil {
 		return i, nil
@@ -223,6 +250,10 @@ func (r *Repository) GetInterfaces(ctx context.Context) ([]*core.ContractInterfa
 	err := r.pg.NewSelect().Model(&ret).Scan(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, i := range ret {
+		r.setContractCodeHash(i)
 	}
 
 	r.cache.setInterfaces(ret)

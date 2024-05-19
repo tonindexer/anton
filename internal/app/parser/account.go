@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
@@ -22,27 +20,6 @@ func matchByAddress(acc *core.AccountState, addresses []*addr.Address) bool {
 		}
 	}
 	return false
-}
-
-func matchByCode(acc *core.AccountState, code []byte) bool {
-	if len(acc.Code) == 0 || len(code) == 0 {
-		return false
-	}
-
-	codeCell, err := cell.FromBOC(code)
-	if err != nil {
-		log.Error().Err(err).Msg("parse contract interface code")
-		return false
-	}
-	codeHash := codeCell.Hash()
-
-	accCodeCell, err := cell.FromBOC(acc.Code)
-	if err != nil {
-		log.Error().Err(err).Str("addr", acc.Address.Base64()).Msg("parse account code cell")
-		return false
-	}
-
-	return bytes.Equal(accCodeCell.Hash(), codeHash)
 }
 
 func matchByGetMethods(acc *core.AccountState, getMethodHashes []int32) bool {
@@ -71,7 +48,7 @@ func interfaceMatched(acc *core.AccountState, i *core.ContractInterface) bool {
 		return true
 	}
 
-	if matchByCode(acc, i.Code) {
+	if len(acc.Code) != 0 && len(i.Code) != 0 && bytes.Equal(acc.CodeHash, i.CodeHash) {
 		return true
 	}
 
