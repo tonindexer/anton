@@ -143,7 +143,7 @@ func (s *Service) getMessageSource(ctx context.Context, msg *core.Message) (skip
 	}
 
 	// some masterchain messages does not have source
-	if msg.SrcAddress.Workchain() == -1 || msg.DstAddress.Workchain() == -1 {
+	if msg.SrcAddress.Workchain() == -1 && msg.DstAddress.Workchain() == -1 {
 		return false
 	}
 
