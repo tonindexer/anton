@@ -2,7 +2,6 @@ package indexer
 
 import (
 	"context"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -137,49 +136,60 @@ func (s *Service) fetchMaster(seq uint32) *core.Block {
 	}
 }
 
-func (s *Service) fetchMastersConcurrent(fromBlock uint32) []*core.Block {
-	var blocks []*core.Block
-	var wg sync.WaitGroup
+func publishProcessedBlocks(fromBlock uint32, processed []*core.Block, results chan<- *core.Block) (uint32, []*core.Block) {
+	for {
+		var found bool
 
-	wg.Add(s.Workers)
+		for it, b := range processed {
+			if b.SeqNo == fromBlock {
+				continue
+			}
+
+			results <- b
+
+			fromBlock++
+
+			copy(processed[:it], processed[it+1:])
+			processed = processed[:len(processed)-1]
+
+			found = true
+
+			break
+		}
+
+		if !found {
+			break
+		}
+	}
+
+	return fromBlock, processed
+}
+
+func (s *Service) fetchMastersConcurrent(fromBlock uint32, results chan<- *core.Block) (nextBlock uint32) {
+	var blocks []*core.Block
 
 	ch := make(chan *core.Block, s.Workers)
+	defer close(ch)
 
 	for i := 0; i < s.Workers; i++ {
 		go func(seq uint32) {
-			defer wg.Done()
 			ch <- s.fetchMaster(seq)
 		}(fromBlock + uint32(i))
 	}
 
-	wg.Wait()
-	close(ch)
-
-	for b := range ch {
-		if b == nil {
-			continue
-		}
+	for i := 0; i < s.Workers; i++ {
+		b := <-ch
 		blocks = append(blocks, b)
+		fromBlock, blocks = publishProcessedBlocks(fromBlock, blocks, results)
 	}
 
-	sort.Slice(blocks, func(i, j int) bool {
-		return blocks[i].SeqNo < blocks[j].SeqNo
-	})
-
-	return blocks
+	return fromBlock
 }
 
 func (s *Service) fetchMasterLoop(fromBlock uint32, results chan<- *core.Block) {
 	defer s.wg.Done()
 
 	for s.running() {
-		blocks := s.fetchMastersConcurrent(fromBlock)
-		for i := range blocks {
-			if fromBlock != blocks[i].SeqNo {
-				break
-			}
-			results <- blocks[i]
-			fromBlock++
-		}
+		fromBlock = s.fetchMastersConcurrent(fromBlock, results)
 	}
 }
