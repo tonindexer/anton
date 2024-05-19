@@ -65,6 +65,8 @@ func matchByGetMethods(acc *core.AccountState, getMethodHashes []int32) bool {
 }
 
 func interfaceMatched(acc *core.AccountState, i *core.ContractInterface) bool {
+	defer app.TimeTrack(time.Now(), "interfaceMatched(%s, %s)", acc.Address.Base64(), i.Name)
+
 	if matchByAddress(acc, i.Addresses) {
 		return true
 	}
