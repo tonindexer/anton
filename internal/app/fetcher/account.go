@@ -102,13 +102,14 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 
 	stateID := core.AccountBlockStateID{Address: a, Workchain: b.Workchain, Shard: b.Shard, BlockSeqNo: b.SeqNo}
 
-	if res, ok := s.accBlockStatesCache.Get(stateID); ok {
-		return res.acc, res.err
+	res, ok := s.accBlockStatesCache.Get(stateID)
+	if ok && res.err == nil {
+		return res.acc, nil
 	}
 
 	s.accBlockStatesCacheLocksMx.Lock()
 	lock, exists := s.accBlockStatesCacheLocks.Get(stateID)
-	if !exists {
+	if !exists || res.err != nil {
 		lock = &sync.Once{}
 		s.accBlockStatesCacheLocks.Put(stateID, lock)
 	}
@@ -173,7 +174,7 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 		err = nil
 	})
 
-	res, ok := s.accBlockStatesCache.Get(stateID)
+	res, ok = s.accBlockStatesCache.Get(stateID)
 	if !ok {
 		panic(fmt.Errorf("cannot get %s parsed account result on (%d, %d, %d)", a.String(), b.Workchain, b.Shard, b.SeqNo))
 	}
