@@ -168,6 +168,21 @@ func publishProcessedBlocks(fromBlock uint32, processed []*core.Block, results c
 func (s *Service) fetchMastersConcurrent(fromBlock uint32, results chan<- *core.Block) (nextBlock uint32) {
 	var blocks []*core.Block
 
+	m, err := s.API.GetMasterchainInfo(context.Background())
+	if err != nil {
+		log.Error().Err(err).Msg("get masterchain info")
+		time.Sleep(100 * time.Millisecond)
+		return fromBlock
+	}
+
+	workers := s.Workers
+	if diff := int(m.SeqNo) - int(fromBlock) + 1; diff < workers {
+		workers = diff
+	}
+	if workers <= 0 { // should never be triggered
+		workers = 1
+	}
+
 	ch := make(chan *core.Block, s.Workers)
 	defer close(ch)
 
