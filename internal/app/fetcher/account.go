@@ -131,7 +131,7 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 		acc = MapAccount(b, raw)
 
 		if raw.Code != nil { //nolint:nestif // getting get-method hashes from the library
-			libs, getErr := s.getAccountLibraries(ctx, raw)
+			libs, getErr := s.getAccountLibraries(ctx, a, raw)
 			if getErr != nil {
 				err = errors.Wrapf(getErr, "get account libraries")
 				return

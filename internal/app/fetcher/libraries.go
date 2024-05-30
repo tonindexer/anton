@@ -2,10 +2,14 @@ package fetcher
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
+
+	"github.com/tonindexer/anton/addr"
+	"github.com/tonindexer/anton/internal/core"
 )
 
 type libDescription struct {
@@ -57,7 +61,9 @@ func findLibraries(code *cell.Cell) ([][]byte, error) {
 	return hashes, nil
 }
 
-func (s *Service) getAccountLibraries(ctx context.Context, raw *tlb.Account) (*cell.Cell, error) {
+func (s *Service) getAccountLibraries(ctx context.Context, a addr.Address, raw *tlb.Account) (*cell.Cell, error) {
+	defer core.Timer(time.Now(), "getAccountLibraries(%s)", a.String())
+
 	hashes, err := findLibraries(raw.Code)
 	if err != nil {
 		return nil, errors.Wrapf(err, "find libraries")
