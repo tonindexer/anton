@@ -98,8 +98,6 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 		return nil, errors.Wrap(core.ErrNotFound, "skip account")
 	}
 
-	defer core.Timer(time.Now(), "getAccount(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
-
 	stateID := core.AccountBlockStateID{Address: a, Workchain: b.Workchain, Shard: b.Shard, BlockSeqNo: b.SeqNo}
 
 	res, ok := s.accBlockStatesCache.Get(stateID)
@@ -116,6 +114,8 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 	s.accBlockStatesCacheLocksMx.Unlock()
 
 	lock.Do(func() {
+		defer core.Timer(time.Now(), "getAccount(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
+
 		var (
 			acc *core.AccountState
 			err error
