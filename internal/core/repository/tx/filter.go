@@ -108,13 +108,18 @@ func (r *Repository) FilterTransactions(ctx context.Context, req *filter.Transac
 	if err != nil {
 		return res, err
 	}
-	if len(res.Rows) == 0 {
-		return res, nil
-	}
 
-	res.Total, err = r.countTx(ctx, req)
-	if err != nil {
-		return res, err
+	switch {
+	case len(res.Rows) == 0:
+
+	case len(req.Hash) > 0:
+		res.Total = len(res.Rows)
+
+	default:
+		res.Total, err = r.countTx(ctx, req)
+		if err != nil {
+			return res, err
+		}
 	}
 
 	return res, nil
