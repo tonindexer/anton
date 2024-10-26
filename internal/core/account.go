@@ -184,6 +184,10 @@ func SkipAddress(a addr.Address) bool {
 		"EQDCR0XQ0qNQJNjITRpo59mFsP0pjx81ImtXx92mJBnIc7m4",
 		"EQAYNJOQTA9FqZF4QGxzcPEvvMWkP76snfI7gATCur_86psC":
 		return true
+	case "EQC_0ScHnb7bVoyInXLkZ2G4XRHg97S9XrPKCUDaO1ZRyFhZ": // Gemz Checkin
+		return true
+	case "EQD_QUnVTBzwG-8GCkqnQ4xiWxU0oPZn9Pon_rq0MZVdIBuf": // Wonton (?)
+		return true
 	default:
 		return false
 	}
