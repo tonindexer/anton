@@ -8,10 +8,11 @@ ENV TZ=Etc/UTC
 
 RUN apt-get update && \
     apt-get install -yqq \
-      tzdata build-essential cmake clang openssl \
-      libssl-dev zlib1g-dev gperf wget git curl \
-      libreadline-dev ccache libmicrohttpd-dev ninja-build pkg-config \
-      libsecp256k1-dev libsodium-dev liblz4-dev
+        tzdata build-essential cmake clang openssl \
+        autoconf libtool \
+        libssl-dev zlib1g-dev gperf wget git curl \
+        libreadline-dev ccache libmicrohttpd-dev ninja-build pkg-config \
+        libsecp256k1-dev libsodium-dev liblz4-dev
 
 ADD --keep-git-dir=true https://github.com/ton-blockchain/ton.git /ton
 RUN cd /ton && git submodule update --init --recursive
