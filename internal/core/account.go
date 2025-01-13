@@ -176,17 +176,26 @@ func SkipAddress(a addr.Address) bool {
 		return true
 	case "EQDF6fj6ydJJX_ArwxINjP-0H8zx982W4XgbkKzGvceUWvXl": // ETH Token Bridge Collector
 		return true
+	case "EQC_0ScHnb7bVoyInXLkZ2G4XRHg97S9XrPKCUDaO1ZRyFhZ": // Gemz Checkin
+		return true
+	case "EQD_QUnVTBzwG-8GCkqnQ4xiWxU0oPZn9Pon_rq0MZVdIBuf",
+		"EQB2MfIcTbwtshE8VOv0YA6ZWpb9bbj79D_SUXHZYv04X47c": // Wonton (?)
+		return true
+	case "EQAqk4SStGaodBsjW0zc8H4psrsx258cCdqw4Nm3ScnMYpLf": // some service (?)
+		return true
+	case "EQDlHrYvmV9R91wNbqvpzo-_pXu4Q6vQZo0-t2CplC6Zgh4y": // RBT trader
+		return true
+	case "EQD5iFPj0zk1mA-GatG_3QtBNWVzuRKatszH1MUYAw6aVeK2": // some service claims (?)
+		return true
 	case "EQCfrctTcgYp6cd2iqgAVKiLKauJvBNC4sc84xYBvspyw3q7",
 		"EQAlMRLTYOoG6kM0d3dLHqgK30ol3qIYwMNtEelktzXP_pD5",
 		"EQDa5wUCdTj1tqYV-LyIcefBHd3IGacvzhcBrSjmlKY2xnaK",
 		"EQAU35_2hAbymisgUrhGa4bIJUtEJjVNVS7zBrqfKaENd67N",
 		"EQCxr1o-x7cEFb3vALiYMOW7QPuAoGHMtw1Yab5m6HrnuIuZ",
 		"EQDCR0XQ0qNQJNjITRpo59mFsP0pjx81ImtXx92mJBnIc7m4",
-		"EQAYNJOQTA9FqZF4QGxzcPEvvMWkP76snfI7gATCur_86psC":
-		return true
-	case "EQC_0ScHnb7bVoyInXLkZ2G4XRHg97S9XrPKCUDaO1ZRyFhZ": // Gemz Checkin
-		return true
-	case "EQD_QUnVTBzwG-8GCkqnQ4xiWxU0oPZn9Pon_rq0MZVdIBuf": // Wonton (?)
+		"EQAYNJOQTA9FqZF4QGxzcPEvvMWkP76snfI7gATCur_86psC",
+		"EQD-r3joXyZ2kWRxraqze6ypKoVtSx1qlKlJsNEjyLM7ujs7",
+		"EQDTCD85dI5Cu8O1eDecuARaagwaOPMacnXwqn8KB0-1DN8P": // unknown
 		return true
 	default:
 		return false
