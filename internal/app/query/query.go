@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/ton"
@@ -34,9 +35,13 @@ type Service struct {
 	msgRepo      repository.Message
 	accountRepo  repository.Account
 
-	statsLastBlock uint32
-	statsCached    *aggregate.Statistics
-	statsLock      sync.RWMutex
+	statsCached   *aggregate.Statistics
+	statsUpdateTs time.Time
+	statsFailTs   time.Time
+
+	run bool
+	mx  sync.RWMutex
+	wg  sync.WaitGroup
 }
 
 func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
@@ -53,32 +58,50 @@ func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
 	return s, nil
 }
 
+func (s *Service) running() bool {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+
+	return s.run
+}
+
+func (s *Service) Start() error {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+
+	if s.run {
+		return core.ErrAlreadyExists
+	}
+
+	s.run = true
+
+	s.wg.Add(1)
+	go s.updateStatsLoop()
+
+	return nil
+}
+
+func (s *Service) Stop() {
+	s.mx.Lock()
+	s.run = false
+	s.mx.Unlock()
+
+	s.wg.Wait()
+}
+
 func (s *Service) GetDefinitions(ctx context.Context) (map[abi.TLBType]abi.TLBFieldsDesc, error) {
 	return s.contractRepo.GetDefinitions(ctx)
 }
 
-func (s *Service) GetStatistics(ctx context.Context) (*aggregate.Statistics, error) {
-	s.statsLock.RLock()
-	defer s.statsLock.RUnlock()
+func (s *Service) GetStatistics(_ context.Context) (*aggregate.Statistics, error) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
 
-	m, err := s.blockRepo.GetLastMasterBlock(ctx)
-	if err != nil {
-		return nil, err
+	if s.statsCached == nil || time.Since(s.statsUpdateTs) > statsLifespan {
+		return nil, core.ErrNotAvailable
 	}
 
-	if s.statsCached != nil && m.SeqNo == s.statsLastBlock {
-		return s.statsCached, nil
-	}
-
-	stats, err := aggregate.GetStatistics(ctx, s.DB.CH, s.DB.PG)
-	if err != nil {
-		return nil, err
-	}
-
-	s.statsCached = stats
-	s.statsLastBlock = uint32(stats.LastBlock)
-
-	return stats, nil
+	return s.statsCached, nil
 }
 
 func (s *Service) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
