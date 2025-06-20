@@ -502,9 +502,11 @@ var Command = &cli.Command{
 
 				for i := range blockIds {
 					res, err := blockRepo.FilterBlocks(c.Context, &filter.BlocksReq{
-						Workchain:               &m.Workchain,
-						Shard:                   &m.Shard,
-						SeqNo:                   &blockIds[i],
+						BlocksFilter: filter.BlocksFilter{
+							Workchain: &m.Workchain,
+							Shard:     &m.Shard,
+							SeqNo:     &blockIds[i],
+						},
 						WithShards:              true,
 						WithAccountStates:       true,
 						WithTransactions:        true,

@@ -7,7 +7,7 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-type TransactionsReq struct {
+type TransactionsFilter struct {
 	Hash      []byte // `form:"hash"`
 	InMsgHash []byte // `form:"in_msg_hash"`
 
@@ -16,6 +16,10 @@ type TransactionsReq struct {
 	Workchain *int32 `form:"workchain"`
 
 	BlockID *core.BlockID
+}
+
+type TransactionsReq struct {
+	TransactionsFilter
 
 	WithAccountState bool
 	WithMessages     bool

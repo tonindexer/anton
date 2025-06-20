@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
@@ -11,14 +12,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/filter"
 )
 
-func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (ret []*core.Message, err error) {
-	q := r.pg.NewSelect()
-	if req.DBTx != nil {
-		q = req.DBTx.NewSelect()
-	}
-
-	q = q.Model(&ret)
-
+func (r *Repository) getFilterMessageQuery(q *bun.SelectQuery, req *filter.MessagesFilter) *bun.SelectQuery {
 	if len(req.Hash) > 0 {
 		q = q.Where("hash = ?", req.Hash)
 	}
@@ -47,6 +41,20 @@ func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (re
 	if len(req.OperationNames) > 0 {
 		q = q.Where("operation_name IN (?)", bun.In(req.OperationNames))
 	}
+
+	return q
+}
+
+func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (ret []*core.Message, err error) {
+	q := r.pg.NewSelect()
+	if req.DBTx != nil {
+		q = req.DBTx.NewSelect()
+	}
+
+	q = q.Model(&ret)
+
+	q = r.getFilterMessageQuery(q, &req.MessagesFilter)
+
 	if req.AfterTxLT != nil {
 		if req.Order == "ASC" {
 			q = q.Where("created_lt > ?", req.AfterTxLT)
@@ -68,9 +76,16 @@ func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (re
 	return ret, err
 }
 
-func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int, error) {
+func (r *Repository) countMsgFullScan(ctx context.Context, req *filter.MessagesReq) (count int, maxLt uint64, err error) {
+	var result struct {
+		Count int
+		MaxLT uint64 `ch:"max_lt"`
+	}
+
 	q := r.ch.NewSelect().
-		Model((*core.Message)(nil))
+		Model((*core.Message)(nil)).
+		ColumnExpr("count(*) AS count").
+		ColumnExpr("max(created_lt) AS max_lt")
 
 	if len(req.Hash) > 0 {
 		q = q.Where("hash = ?", req.Hash)
@@ -100,7 +115,58 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 		q = q.Where("operation_name IN (?)", ch.In(req.OperationNames))
 	}
 
-	return q.Count(ctx)
+	if err := q.Scan(ctx, &result); err != nil {
+		return 0, 0, err
+	}
+
+	return result.Count, result.MaxLT, nil
+}
+
+func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.MessagesReq, startLt uint64) (partialCount int, maxLt uint64, err error) {
+	var result struct {
+		Count int
+		MaxLT uint64 `ch:"max_lt"`
+	}
+
+	q := r.pg.NewSelect().
+		Model((*core.Message)(nil)).
+		ColumnExpr("count(*) AS count").
+		ColumnExpr("max(created_lt) AS max_lt").
+		Where("created_lt > ?", startLt)
+
+	q = r.getFilterMessageQuery(q, &req.MessagesFilter)
+
+	if err := q.Scan(ctx, &result); err != nil {
+		return 0, 0, err
+	}
+
+	return result.Count, result.MaxLT, nil
+}
+
+func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int, error) {
+	count, maxLT, err := r.messagesFilterCache.Get(req.MessagesFilter)
+	if errors.Is(err, core.ErrNotFound) {
+		count, maxLT, err = r.countMsgFullScan(ctx, req)
+		if err != nil {
+			return 0, err
+		}
+		if err := r.messagesFilterCache.Set(req.MessagesFilter, count, maxLT); err != nil {
+			return 0, err
+		}
+	}
+	if err != nil && !errors.Is(err, core.ErrNotFound) {
+		return 0, err
+	}
+
+	partialCount, maxLT, err := r.countMsgPartialScan(ctx, req, maxLT)
+	if err != nil {
+		return 0, err
+	}
+	if err := r.messagesFilterCache.Set(req.MessagesFilter, count+partialCount, maxLT); err != nil {
+		return 0, err
+	}
+
+	return count + partialCount, nil
 }
 
 func (r *Repository) FilterMessages(ctx context.Context, req *filter.MessagesReq) (*filter.MessagesRes, error) {
