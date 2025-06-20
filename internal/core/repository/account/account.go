@@ -104,6 +104,37 @@ func createIndexes(ctx context.Context, pgDB *bun.DB) error {
 		return errors.Wrap(err, "latest account state last_tx_lt pg create index")
 	}
 
+	// latest parsed account state
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.LatestParsedAccountState{}).
+		Using("HASH").
+		Column("owner_address").
+		Where("owner_address IS NOT NULL").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "latest address state owner pg create index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.LatestParsedAccountState{}).
+		Using("HASH").
+		Column("minter_address").
+		Where("minter_address IS NOT NULL").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "latest address state minter pg create index")
+	}
+
+	_, err = pgDB.NewCreateIndex().
+		Model(&core.LatestParsedAccountState{}).
+		Using("GIN").
+		Column("types").
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "account state contract types pg create index")
+	}
+
 	return nil
 }
 
@@ -182,6 +213,15 @@ func CreateTables(ctx context.Context, chDB *ch.DB, pgDB *bun.DB) error {
 		return errors.Wrap(err, "latest account state pg create table")
 	}
 
+	_, err = pgDB.NewCreateTable().
+		Model(&core.LatestParsedAccountState{}).
+		IfNotExists().
+		WithForeignKeys().
+		Exec(ctx)
+	if err != nil {
+		return errors.Wrap(err, "latest token account state pg create table")
+	}
+
 	return createIndexes(ctx, pgDB)
 }
 
@@ -247,25 +287,49 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		return errors.Wrapf(err, "cannot insert new account states")
 	}
 
-	addrTxLT := make(map[addr.Address]uint64)
-	for _, a := range accounts {
-		if addrTxLT[a.Address] < a.LastTxLT {
-			addrTxLT[a.Address] = a.LastTxLT
+	latestStates := make(map[addr.Address]*core.AccountState)
+	for _, state := range accounts {
+		if latestStates[state.Address] == nil {
+			latestStates[state.Address] = state
+		}
+		if latestStates[state.Address].LastTxLT < state.LastTxLT {
+			latestStates[state.Address] = state
 		}
 	}
 
-	for a, lt := range addrTxLT {
+	for a, state := range latestStates {
 		_, err := tx.NewInsert().
 			Model(&core.LatestAccountState{
 				Address:  a,
-				LastTxLT: lt,
+				LastTxLT: state.LastTxLT,
 			}).
 			On("CONFLICT (address) DO UPDATE").
-			Where("latest_account_state.last_tx_lt < ?", lt).
+			Where("latest_account_state.last_tx_lt < ?", state.LastTxLT).
 			Set("last_tx_lt = EXCLUDED.last_tx_lt").
 			Exec(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "cannot set latest state for %s", &a)
+		}
+
+		if state.OwnerAddress != nil || state.MinterAddress != nil || len(state.Types) > 0 {
+			_, err := tx.NewInsert().
+				Model(&core.LatestParsedAccountState{
+					Address:       a,
+					LastTxLT:      state.LastTxLT,
+					Types:         state.Types,
+					OwnerAddress:  state.OwnerAddress,
+					MinterAddress: state.MinterAddress,
+				}).
+				On("CONFLICT (address) DO UPDATE").
+				Where("latest_parsed_account_state.last_tx_lt < ?", state.LastTxLT).
+				Set("last_tx_lt = EXCLUDED.last_tx_lt").
+				Set("types = EXCLUDED.types").
+				Set("owner_address = EXCLUDED.owner_address").
+				Set("minter_address = EXCLUDED.minter_address").
+				Exec(ctx)
+			if err != nil {
+				return errors.Wrapf(err, "cannot set latest state for %s", &a)
+			}
 		}
 	}
 

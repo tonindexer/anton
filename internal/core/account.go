@@ -137,6 +137,20 @@ type LatestAccountState struct {
 	AccountState *AccountState `bun:"rel:has-one,join:address=address,join:last_tx_lt=last_tx_lt" json:"account"`
 }
 
+type LatestParsedAccountState struct {
+	bun.BaseModel `bun:"table:latest_parsed_account_states" json:"-"`
+
+	Address  addr.Address `bun:"type:bytea,pk,notnull" json:"address"`
+	LastTxLT uint64       `bun:"type:bigint,notnull" json:"last_tx_lt"`
+
+	Types []abi.ContractName `bun:"type:text[],array" json:"types,omitempty"`
+
+	OwnerAddress  *addr.Address `bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
+	MinterAddress *addr.Address `bun:"type:bytea" json:"minter_address,omitempty"`
+
+	AccountState *AccountState `bun:"rel:has-one,join:address=address,join:last_tx_lt=last_tx_lt" json:"account"`
+}
+
 func SkipAddress(a addr.Address) bool {
 	switch a.Base64() {
 	case "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c": // burn address
