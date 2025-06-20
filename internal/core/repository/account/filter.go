@@ -171,7 +171,7 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 	return ret, err
 }
 
-func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsReq) (int, error) {
+func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsReq) (count int, err error) {
 	q := r.ch.NewSelect().Model((*core.AccountState)(nil))
 
 	if len(f.Addresses) > 0 {
@@ -201,24 +201,26 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 		q = q.Where("minter_address = ?", f.MinterAddress)
 	}
 
-	if f.LatestState {
-		q = q.ColumnExpr("argMax(address, last_tx_lt)")
-		if f.OwnerAddress != nil {
-			q = q.ColumnExpr("argMax(owner_address, last_tx_lt) as owner_address")
-		}
-		q = q.Group("address")
-	} else {
-		q = q.Column("address")
-		if f.OwnerAddress != nil {
-			q = q.Column("owner_address")
+	if f.OwnerAddress != nil {
+		if f.LatestState {
+			q = r.ch.NewSelect().TableExpr("(?) as q", // because owner address can change
+				q.Column("address").
+					ColumnExpr("argMax(owner_address, last_tx_lt) as owner_address").
+					Group("address")).
+				Where("owner_address = ?", f.OwnerAddress)
+		} else {
+			q = q.Where("owner_address = ?", f.OwnerAddress)
 		}
 	}
 
-	qCount := r.ch.NewSelect().TableExpr("(?) as q", q)
-	if f.OwnerAddress != nil { // that's because owner address can change
-		qCount = qCount.Where("owner_address = ?", f.OwnerAddress)
+	if f.LatestState {
+		q = q.ColumnExpr("count(distinct address)")
+	} else {
+		q = q.ColumnExpr("count(*)")
 	}
-	return qCount.Count(ctx)
+
+	err = q.Scan(ctx, &count)
+	return count, err
 }
 
 func (r *Repository) getCodeData(ctx context.Context, rows []*core.AccountState, excludeCode, excludeData bool) error { //nolint:gocognit,gocyclo // TODO: make one function working for both code and data
