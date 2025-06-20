@@ -1,0 +1,1 @@
+DROP TABLE latest_parsed_account_states;
