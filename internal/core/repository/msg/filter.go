@@ -79,13 +79,13 @@ func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (re
 func (r *Repository) countMsgFullScan(ctx context.Context, req *filter.MessagesReq) (count int, maxLt uint64, err error) {
 	var result struct {
 		Count int
-		MaxLT uint64 `ch:"max_lt"`
+		MaxLT *uint64 `ch:"max_lt"`
 	}
 
 	q := r.ch.NewSelect().
 		Model((*core.Message)(nil)).
 		ColumnExpr("count(*) AS count").
-		ColumnExpr("max(created_lt) AS max_lt")
+		ColumnExpr("(SELECT max(created_lt) FROM messages) AS max_lt") // unfiltered max
 
 	if len(req.Hash) > 0 {
 		q = q.Where("hash = ?", req.Hash)
@@ -119,7 +119,11 @@ func (r *Repository) countMsgFullScan(ctx context.Context, req *filter.MessagesR
 		return 0, 0, err
 	}
 
-	return result.Count, result.MaxLT, nil
+	if result.MaxLT == nil {
+		return 0, 0, core.ErrNotFound
+	}
+
+	return result.Count, *result.MaxLT, nil
 }
 
 func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.MessagesReq, startLt uint64) (partialCount int, maxLt uint64, err error) {
@@ -149,6 +153,9 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 		count, maxLT, err = r.countMsgFullScan(ctx, req)
 		if err != nil {
 			return 0, err
+		}
+		if errors.Is(err, core.ErrNotFound) {
+			return 0, nil
 		}
 		if err := r.messagesFilterCache.Set(req.MessagesFilter, count, maxLT); err != nil {
 			return 0, err
