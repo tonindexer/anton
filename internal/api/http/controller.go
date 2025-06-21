@@ -46,22 +46,22 @@ func NewController(svc app.QueryService) *Controller {
 	return &Controller{svc: svc}
 }
 
-func paramErr(ctx *gin.Context, param string, err error) {
-	ctx.IndentedJSON(http.StatusBadRequest, gin.H{"param": param, "error": err.Error()})
+func paramErr(c *gin.Context, param string, err error) {
+	c.IndentedJSON(http.StatusBadRequest, gin.H{"param": param, "error": err.Error()})
 }
 
-func internalErr(ctx *gin.Context, err error) {
+func internalErr(c *gin.Context, err error) {
 	if errors.Is(err, core.ErrInvalidArg) {
-		ctx.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	log.Error().Err(err).
-		Str("path", ctx.FullPath()).
-		Str("url", ctx.Request.URL.String()).
+		Str("path", c.FullPath()).
+		Str("url", c.Request.URL.String()).
 		Msg("internal server error")
 
-	ctx.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 }
 
 func unmarshalAddress(a string) (*addr.Address, error) {
@@ -141,13 +141,13 @@ func getAddresses(ctx *gin.Context, name string) ([]*addr.Address, error) {
 //	@Produce		json
 //	@Success		200		{object}		aggregate.Statistics
 //	@Router			/statistics [get]
-func (c *Controller) GetStatistics(ctx *gin.Context) {
-	ret, err := c.svc.GetStatistics(ctx)
+func (ctrl *Controller) GetStatistics(c *gin.Context) {
+	ret, err := ctrl.svc.GetStatistics(c.Request.Context())
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, ret)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 type GetInterfacesRes struct {
@@ -164,13 +164,13 @@ type GetInterfacesRes struct {
 //	@Produce		json
 //	@Success		200		{object}		GetInterfacesRes
 //	@Router			/contracts/interfaces [get]
-func (c *Controller) GetInterfaces(ctx *gin.Context) {
-	ret, err := c.svc.GetInterfaces(ctx)
+func (ctrl *Controller) GetInterfaces(c *gin.Context) {
+	ret, err := ctrl.svc.GetInterfaces(c.Request.Context())
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, GetInterfacesRes{Total: len(ret), Results: ret})
+	c.IndentedJSON(http.StatusOK, GetInterfacesRes{Total: len(ret), Results: ret})
 }
 
 type GetOperationsRes struct {
@@ -187,13 +187,13 @@ type GetOperationsRes struct {
 //	@Produce		json
 //	@Success		200		{object}		GetOperationsRes
 //	@Router			/contracts/operations [get]
-func (c *Controller) GetOperations(ctx *gin.Context) {
-	ret, err := c.svc.GetOperations(ctx)
+func (ctrl *Controller) GetOperations(c *gin.Context) {
+	ret, err := ctrl.svc.GetOperations(c.Request.Context())
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, GetOperationsRes{Total: len(ret), Results: ret})
+	c.IndentedJSON(http.StatusOK, GetOperationsRes{Total: len(ret), Results: ret})
 }
 
 type GetDefinitionsRes struct {
@@ -210,13 +210,13 @@ type GetDefinitionsRes struct {
 //	@Produce		json
 //	@Success		200		{object}		GetDefinitionsRes
 //	@Router			/contracts/definitions [get]
-func (c *Controller) GetDefinitions(ctx *gin.Context) {
-	ret, err := c.svc.GetDefinitions(ctx)
+func (ctrl *Controller) GetDefinitions(c *gin.Context) {
+	ret, err := ctrl.svc.GetDefinitions(c.Request.Context())
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, GetDefinitionsRes{Total: len(ret), Results: ret})
+	c.IndentedJSON(http.StatusOK, GetDefinitionsRes{Total: len(ret), Results: ret})
 }
 
 // GetBlocks godoc
@@ -236,20 +236,20 @@ func (c *Controller) GetDefinitions(ctx *gin.Context) {
 //	@Param   		count	     		query   bool 	false	"count total number of rows"	default(false)
 //	@Success		200		{object}	filter.BlocksRes
 //	@Router			/blocks [get]
-func (c *Controller) GetBlocks(ctx *gin.Context) {
+func (ctrl *Controller) GetBlocks(c *gin.Context) {
 	var req filter.BlocksReq
 
-	err := ctx.ShouldBindQuery(&req)
+	err := c.ShouldBindQuery(&req)
 	if err != nil {
-		paramErr(ctx, "block_filter", err)
+		paramErr(c, "block_filter", err)
 		return
 	}
 	if req.Limit > 100 {
-		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		paramErr(c, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
-	if mw := int32(-1); ctx.Query("workchain") == "" {
+	if mw := int32(-1); c.Query("workchain") == "" {
 		req.Workchain = &mw
 	}
 
@@ -262,17 +262,17 @@ func (c *Controller) GetBlocks(ctx *gin.Context) {
 
 	req.Order, err = unmarshalSorting(req.Order)
 	if err != nil {
-		paramErr(ctx, "order", err)
+		paramErr(c, "order", err)
 		return
 	}
 
-	ret, err := c.svc.FilterBlocks(ctx, &req)
+	ret, err := ctrl.svc.FilterBlocks(c.Request.Context(), &req)
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, ret)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 type GetLabelCategoriesRes struct {
@@ -289,14 +289,14 @@ type GetLabelCategoriesRes struct {
 //	@Produce		json
 //	@Success		200		{object}	GetLabelCategoriesRes
 //	@Router			/labels/categories [get]
-func (c *Controller) GetLabelCategories(ctx *gin.Context) {
-	ret, err := c.svc.GetLabelCategories(ctx)
+func (ctrl *Controller) GetLabelCategories(c *gin.Context) {
+	ret, err := ctrl.svc.GetLabelCategories(c.Request.Context())
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, GetLabelCategoriesRes{Total: len(ret), Results: ret})
+	c.IndentedJSON(http.StatusOK, GetLabelCategoriesRes{Total: len(ret), Results: ret})
 }
 
 // GetLabels godoc
@@ -312,26 +312,26 @@ func (c *Controller) GetLabelCategories(ctx *gin.Context) {
 //	@Param   		limit	     		query   int 		false	"limit"										default(3) maximum(10000)
 //	@Success		200		{object}	filter.LabelsRes
 //	@Router			/labels [get]
-func (c *Controller) GetLabels(ctx *gin.Context) {
+func (ctrl *Controller) GetLabels(c *gin.Context) {
 	var req filter.LabelsReq
 
-	err := ctx.ShouldBindQuery(&req)
+	err := c.ShouldBindQuery(&req)
 	if err != nil {
-		paramErr(ctx, "label_filter", err)
+		paramErr(c, "label_filter", err)
 		return
 	}
 	if req.Limit > 10000 {
-		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		paramErr(c, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
-	ret, err := c.svc.FilterLabels(ctx, &req)
+	ret, err := ctrl.svc.FilterLabels(c.Request.Context(), &req)
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, ret)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 // GetAccounts godoc
@@ -352,48 +352,48 @@ func (c *Controller) GetLabels(ctx *gin.Context) {
 //	@Param   		count	     		query   bool 		false	"count total number of rows"				default(false)
 //	@Success		200		{object}	filter.AccountsRes
 //	@Router			/accounts [get]
-func (c *Controller) GetAccounts(ctx *gin.Context) {
+func (ctrl *Controller) GetAccounts(c *gin.Context) {
 	req := filter.AccountsReq{WithCodeData: true}
 
-	err := ctx.ShouldBindQuery(&req)
+	err := c.ShouldBindQuery(&req)
 	if err != nil {
-		paramErr(ctx, "account_filter", err)
+		paramErr(c, "account_filter", err)
 		return
 	}
 	if req.Limit > 10000 {
-		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		paramErr(c, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
-	req.Addresses, err = getAddresses(ctx, "address")
+	req.Addresses, err = getAddresses(c, "address")
 	if err != nil {
-		paramErr(ctx, "address", err)
+		paramErr(c, "address", err)
 		return
 	}
-	req.OwnerAddress, err = unmarshalAddress(ctx.Query("owner_address"))
+	req.OwnerAddress, err = unmarshalAddress(c.Query("owner_address"))
 	if err != nil {
-		paramErr(ctx, "owner_address", err)
+		paramErr(c, "owner_address", err)
 		return
 	}
-	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
+	req.MinterAddress, err = unmarshalAddress(c.Query("minter_address"))
 	if err != nil {
-		paramErr(ctx, "minter_address", err)
+		paramErr(c, "minter_address", err)
 		return
 	}
 
 	req.Order, err = unmarshalSorting(req.Order)
 	if err != nil {
-		paramErr(ctx, "order", err)
+		paramErr(c, "order", err)
 		return
 	}
 
-	ret, err := c.svc.FilterAccounts(ctx, &req)
+	ret, err := ctrl.svc.FilterAccounts(c.Request.Context(), &req)
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, ret)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 // AggregateAccounts godoc
@@ -408,38 +408,38 @@ func (c *Controller) GetAccounts(ctx *gin.Context) {
 //	@Param   		limit	     		query   int 		false	"limit"									default(25) maximum(1000000)
 //	@Success		200		{object}	aggregate.AccountsRes
 //	@Router			/accounts/aggregated [get]
-func (c *Controller) AggregateAccounts(ctx *gin.Context) {
+func (ctrl *Controller) AggregateAccounts(c *gin.Context) {
 	var req aggregate.AccountsReq
 
-	err := ctx.ShouldBindQuery(&req)
+	err := c.ShouldBindQuery(&req)
 	if err != nil {
-		paramErr(ctx, "account_filter", err)
+		paramErr(c, "account_filter", err)
 		return
 	}
 	if req.Limit > 1000000 {
-		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		paramErr(c, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
-	req.Address, err = unmarshalAddress(ctx.Query("address"))
+	req.Address, err = unmarshalAddress(c.Query("address"))
 	if err != nil {
-		paramErr(ctx, "address", err)
+		paramErr(c, "address", err)
 		return
 	}
 
-	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
+	req.MinterAddress, err = unmarshalAddress(c.Query("minter_address"))
 	if err != nil {
-		paramErr(ctx, "minter_address", err)
+		paramErr(c, "minter_address", err)
 		return
 	}
 
-	ret, err := c.svc.AggregateAccounts(ctx, &req)
+	ret, err := ctrl.svc.AggregateAccounts(c.Request.Context(), &req)
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, ret)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 // AggregateAccountsHistory godoc
@@ -457,28 +457,28 @@ func (c *Controller) AggregateAccounts(ctx *gin.Context) {
 //	@Param   		interval			query	string  	true	"group interval"			Enums(24h, 8h, 4h, 1h, 15m)
 //	@Success		200		{object}	history.AccountsRes
 //	@Router			/accounts/aggregated/history [get]
-func (c *Controller) AggregateAccountsHistory(ctx *gin.Context) {
+func (ctrl *Controller) AggregateAccountsHistory(c *gin.Context) {
 	var req history.AccountsReq
 
-	err := ctx.ShouldBindQuery(&req)
+	err := c.ShouldBindQuery(&req)
 	if err != nil {
-		paramErr(ctx, "account_filter", err)
+		paramErr(c, "account_filter", err)
 		return
 	}
 
-	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
+	req.MinterAddress, err = unmarshalAddress(c.Query("minter_address"))
 	if err != nil {
-		paramErr(ctx, "minter_address", err)
+		paramErr(c, "minter_address", err)
 		return
 	}
 
-	ret, err := c.svc.AggregateAccountsHistory(ctx, &req)
+	ret, err := ctrl.svc.AggregateAccountsHistory(c.Request.Context(), &req)
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, ret)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 // GetTransactions godoc
@@ -499,51 +499,51 @@ func (c *Controller) AggregateAccountsHistory(ctx *gin.Context) {
 //	@Param   		count	     		query   bool 		false	"count total number of rows"	default(false)
 //	@Success		200		{object}	filter.TransactionsRes
 //	@Router			/transactions [get]
-func (c *Controller) GetTransactions(ctx *gin.Context) {
+func (ctrl *Controller) GetTransactions(c *gin.Context) {
 	var req filter.TransactionsReq
 
-	err := ctx.ShouldBindQuery(&req)
+	err := c.ShouldBindQuery(&req)
 	if err != nil {
-		paramErr(ctx, "tx_filter", err)
+		paramErr(c, "tx_filter", err)
 		return
 	}
 	if req.Limit > 10000 {
-		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		paramErr(c, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
-	req.Hash, err = unmarshalBytes(ctx.Query("hash"))
+	req.Hash, err = unmarshalBytes(c.Query("hash"))
 	if err != nil {
-		paramErr(ctx, "hash", err)
+		paramErr(c, "hash", err)
 		return
 	}
-	req.InMsgHash, err = unmarshalBytes(ctx.Query("in_msg_hash"))
+	req.InMsgHash, err = unmarshalBytes(c.Query("in_msg_hash"))
 	if err != nil {
-		paramErr(ctx, "in_msg_hash", err)
+		paramErr(c, "in_msg_hash", err)
 		return
 	}
 
 	req.WithAccountState = true
 	req.WithMessages = true
 
-	req.Addresses, err = getAddresses(ctx, "address")
+	req.Addresses, err = getAddresses(c, "address")
 	if err != nil {
-		paramErr(ctx, "address", err)
+		paramErr(c, "address", err)
 		return
 	}
 
 	req.Order, err = unmarshalSorting(req.Order)
 	if err != nil {
-		paramErr(ctx, "order", err)
+		paramErr(c, "order", err)
 		return
 	}
 
-	ret, err := c.svc.FilterTransactions(ctx, &req)
+	ret, err := ctrl.svc.FilterTransactions(c.Request.Context(), &req)
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, ret)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 // AggregateTransactionsHistory godoc
@@ -561,28 +561,28 @@ func (c *Controller) GetTransactions(ctx *gin.Context) {
 //	@Param   		interval			query	string  	true	"group interval"			Enums(24h, 8h, 4h, 1h, 15m)
 //	@Success		200		{object}	history.TransactionsRes
 //	@Router			/transactions/aggregated/history [get]
-func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
+func (ctrl *Controller) AggregateTransactionsHistory(c *gin.Context) {
 	var req history.TransactionsReq
 
-	err := ctx.ShouldBindQuery(&req)
+	err := c.ShouldBindQuery(&req)
 	if err != nil {
-		paramErr(ctx, "tx_filter", err)
+		paramErr(c, "tx_filter", err)
 		return
 	}
 
-	req.Addresses, err = getAddresses(ctx, "address")
+	req.Addresses, err = getAddresses(c, "address")
 	if err != nil {
-		paramErr(ctx, "address", err)
+		paramErr(c, "address", err)
 		return
 	}
 
-	ret, err := c.svc.AggregateTransactionsHistory(ctx, &req)
+	ret, err := ctrl.svc.AggregateTransactionsHistory(c.Request.Context(), &req)
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, ret)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 // GetMessages godoc
@@ -607,39 +607,39 @@ func (c *Controller) AggregateTransactionsHistory(ctx *gin.Context) {
 //	@Param   		count	     		query   bool 		false	"count total number of rows"				default(false)
 //	@Success		200		{object}	filter.MessagesRes
 //	@Router			/messages [get]
-func (c *Controller) GetMessages(ctx *gin.Context) {
+func (ctrl *Controller) GetMessages(c *gin.Context) {
 	var req filter.MessagesReq
 
-	err := ctx.ShouldBindQuery(&req)
+	err := c.ShouldBindQuery(&req)
 	if err != nil {
-		paramErr(ctx, "msg_filter", err)
+		paramErr(c, "msg_filter", err)
 		return
 	}
 	if req.Limit > 10000 {
-		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		paramErr(c, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
-	req.Hash, err = unmarshalBytes(ctx.Query("hash"))
+	req.Hash, err = unmarshalBytes(c.Query("hash"))
 	if err != nil {
-		paramErr(ctx, "hash", err)
+		paramErr(c, "hash", err)
 		return
 	}
-	req.SrcAddresses, err = getAddresses(ctx, "src_address")
+	req.SrcAddresses, err = getAddresses(c, "src_address")
 	if err != nil {
-		paramErr(ctx, "src_address", err)
+		paramErr(c, "src_address", err)
 		return
 	}
-	req.DstAddresses, err = getAddresses(ctx, "dst_address")
+	req.DstAddresses, err = getAddresses(c, "dst_address")
 	if err != nil {
-		paramErr(ctx, "dst_address", err)
+		paramErr(c, "dst_address", err)
 		return
 	}
 
-	if op := ctx.Query("operation_id"); op != "" {
+	if op := c.Query("operation_id"); op != "" {
 		id, err := unmarshalOperationID(op)
 		if err != nil {
-			paramErr(ctx, "operation_id", err)
+			paramErr(c, "operation_id", err)
 			return
 		}
 		req.OperationID = &id
@@ -647,16 +647,16 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 
 	req.Order, err = unmarshalSorting(req.Order)
 	if err != nil {
-		paramErr(ctx, "order", err)
+		paramErr(c, "order", err)
 		return
 	}
 
-	ret, err := c.svc.FilterMessages(ctx, &req)
+	ret, err := ctrl.svc.FilterMessages(c.Request.Context(), &req)
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
-	ctx.IndentedJSON(http.StatusOK, ret)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 // AggregateMessages godoc
@@ -673,39 +673,39 @@ func (c *Controller) GetMessages(ctx *gin.Context) {
 //	@Param   		limit	     		query   int 		false	"limit"											default(25) maximum(1000000)
 //	@Success		200		{object}	aggregate.MessagesRes
 //	@Router			/messages/aggregated [get]
-func (c *Controller) AggregateMessages(ctx *gin.Context) {
+func (ctrl *Controller) AggregateMessages(c *gin.Context) {
 	var req aggregate.MessagesReq
 
-	err := ctx.ShouldBindQuery(&req)
+	err := c.ShouldBindQuery(&req)
 	if err != nil {
-		paramErr(ctx, "msg_filter", err)
+		paramErr(c, "msg_filter", err)
 		return
 	}
 	if req.Limit > 1000000 {
-		paramErr(ctx, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
+		paramErr(c, "limit", errors.Wrapf(core.ErrInvalidArg, "limit is too big"))
 		return
 	}
 
-	req.Address, err = unmarshalAddress(ctx.Query("address"))
+	req.Address, err = unmarshalAddress(c.Query("address"))
 	if err != nil {
-		paramErr(ctx, "address", err)
+		paramErr(c, "address", err)
 		return
 	}
 
 	switch req.OrderBy {
 	case "amount", "count":
 	default:
-		paramErr(ctx, "order_by", errors.Wrap(core.ErrInvalidArg, "wrong order_by argument"))
+		paramErr(c, "order_by", errors.Wrap(core.ErrInvalidArg, "wrong order_by argument"))
 		return
 	}
 
-	ret, err := c.svc.AggregateMessages(ctx, &req)
+	ret, err := ctrl.svc.AggregateMessages(c.Request.Context(), &req)
 	if err != nil {
-		internalErr(ctx, err)
+		internalErr(c, err)
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, ret)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 // AggregateMessagesHistory godoc
@@ -729,36 +729,36 @@ func (c *Controller) AggregateMessages(ctx *gin.Context) {
 //	@Param   		interval			query	string  	true	"group interval"								Enums(24h, 8h, 4h, 1h, 15m)
 //	@Success		200		{object}	history.MessagesRes
 //	@Router			/messages/aggregated/history [get]
-func (c *Controller) AggregateMessagesHistory(ctx *gin.Context) {
+func (ctrl *Controller) AggregateMessagesHistory(c *gin.Context) {
 	var req history.MessagesReq
 
-	err := ctx.ShouldBindQuery(&req)
+	err := c.ShouldBindQuery(&req)
 	if err != nil {
-		paramErr(ctx, "msg_filter", err)
+		paramErr(c, "msg_filter", err)
 		return
 	}
 
-	req.SrcAddresses, err = getAddresses(ctx, "src_address")
+	req.SrcAddresses, err = getAddresses(c, "src_address")
 	if err != nil {
-		paramErr(ctx, "src_address", err)
+		paramErr(c, "src_address", err)
 		return
 	}
-	req.DstAddresses, err = getAddresses(ctx, "dst_address")
+	req.DstAddresses, err = getAddresses(c, "dst_address")
 	if err != nil {
-		paramErr(ctx, "dst_address", err)
+		paramErr(c, "dst_address", err)
 		return
 	}
-	req.MinterAddress, err = unmarshalAddress(ctx.Query("minter_address"))
+	req.MinterAddress, err = unmarshalAddress(c.Query("minter_address"))
 	if err != nil {
-		paramErr(ctx, "minter_address", err)
-		return
-	}
-
-	ret, err := c.svc.AggregateMessagesHistory(ctx, &req)
-	if err != nil {
-		internalErr(ctx, err)
+		paramErr(c, "minter_address", err)
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, ret)
+	ret, err := ctrl.svc.AggregateMessagesHistory(c.Request.Context(), &req)
+	if err != nil {
+		internalErr(c, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, ret)
 }
