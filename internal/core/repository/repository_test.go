@@ -64,9 +64,6 @@ func dropTables(t testing.TB) {
 	_, err = pg.NewDropTable().Model((*core.Message)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
 
-	_, err = pg.NewDropTable().Model((*core.LatestParsedAccountState)(nil)).IfExists().Exec(ctx)
-	require.Nil(t, err)
-
 	_, err = pg.NewDropTable().Model((*core.LatestAccountState)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
 

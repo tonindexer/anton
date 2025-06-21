@@ -57,10 +57,7 @@ func dropTables(t testing.TB) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	_, err := pg.NewDropTable().Model((*core.LatestParsedAccountState)(nil)).IfExists().Exec(ctx)
-	require.Nil(t, err)
-
-	_, err = pg.NewDropTable().Model((*core.LatestAccountState)(nil)).IfExists().Exec(ctx)
+	_, err := pg.NewDropTable().Model((*core.LatestAccountState)(nil)).IfExists().Exec(ctx)
 	require.Nil(t, err)
 
 	_, err = ck.NewDropTable().Model((*core.AccountStateCode)(nil)).IfExists().Exec(ctx)

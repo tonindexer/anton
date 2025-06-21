@@ -132,14 +132,6 @@ func (a *AccountState) BlockID() BlockID {
 type LatestAccountState struct {
 	bun.BaseModel `bun:"table:latest_account_states" json:"-"`
 
-	Address      addr.Address  `bun:"type:bytea,pk,notnull" json:"address"`
-	LastTxLT     uint64        `bun:"type:bigint,notnull" json:"last_tx_lt"`
-	AccountState *AccountState `bun:"rel:has-one,join:address=address,join:last_tx_lt=last_tx_lt" json:"account"`
-}
-
-type LatestParsedAccountState struct {
-	bun.BaseModel `bun:"table:latest_parsed_account_states" json:"-"`
-
 	Address  addr.Address `bun:"type:bytea,pk,notnull" json:"address"`
 	LastTxLT uint64       `bun:"type:bigint,notnull" json:"last_tx_lt"`
 
