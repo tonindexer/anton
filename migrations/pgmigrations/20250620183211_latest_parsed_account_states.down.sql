@@ -1,5 +1,5 @@
---bun:split
-DROP PROCEDURE batch_update_latest_parsed_account_states;
+-- --bun:split
+-- DROP PROCEDURE batch_update_latest_parsed_account_states;
 
 
 --bun:split

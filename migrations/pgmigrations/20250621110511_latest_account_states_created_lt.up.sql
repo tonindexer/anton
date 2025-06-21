@@ -2,61 +2,61 @@
 ALTER TABLE latest_account_states ADD COLUMN created_lt bigint;
 
 
---bun:split
-CREATE OR REPLACE PROCEDURE batch_fill_account_states_created_lt(
-    batch_size INT DEFAULT 10000,
-    start_from_address BYTEA DEFAULT NULL
-)
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    last_processed_address BYTEA := start_from_address;
-    rows_updated INT;
-    iteration_count INT := 0;
-    max_address BYTEA;
-BEGIN
-    RAISE NOTICE 'Starting batch fill of created_lt with batch size: %', batch_size;
-
-    LOOP
-        -- Directly query account_states for minimum last_tx_lt per address
-        WITH min_tx_lt AS (
-            SELECT address, MIN(last_tx_lt) as min_lt
-            FROM account_states
-            WHERE (last_processed_address IS NULL OR address > last_processed_address)
-            GROUP BY address
-            ORDER BY address
-            LIMIT batch_size
-        ),
-        updated AS (
-            UPDATE latest_account_states las
-            SET created_lt = m.min_lt
-            FROM min_tx_lt m
-            WHERE las.address = m.address
-              AND las.created_lt IS NULL
-            RETURNING las.address
-        )
-        SELECT COUNT(*), MAX(address) INTO rows_updated, max_address FROM updated;
-
-        -- Exit if no rows were updated
-        IF rows_updated = 0 THEN
-            RAISE NOTICE 'No more rows to update: exiting';
-            EXIT;
-        END IF;
-
-        -- Update the last processed address for the next iteration
-        last_processed_address := max_address;
-        iteration_count := iteration_count + 1;
-
-        RAISE NOTICE 'Batch % complete: updated % rows, last address = %',
-                     iteration_count, rows_updated, encode(last_processed_address, 'hex');
-
-        -- Commit after each batch
-        COMMIT;
-    END LOOP;
-
-    RAISE NOTICE 'Batch fill process completed. Total iterations: %', iteration_count;
-END;
-$$;
-
--- Example usage:
--- CALL batch_fill_account_states_created_lt(10000);
+-- --bun:split
+-- CREATE OR REPLACE PROCEDURE batch_fill_account_states_created_lt(
+--     batch_size INT DEFAULT 10000,
+--     start_from_address BYTEA DEFAULT NULL
+-- )
+-- LANGUAGE plpgsql
+-- AS $$
+-- DECLARE
+--     last_processed_address BYTEA := start_from_address;
+--     rows_updated INT;
+--     iteration_count INT := 0;
+--     max_address BYTEA;
+-- BEGIN
+--     RAISE NOTICE 'Starting batch fill of created_lt with batch size: %', batch_size;
+--
+--     LOOP
+--         -- Directly query account_states for minimum last_tx_lt per address
+--         WITH min_tx_lt AS (
+--             SELECT address, MIN(last_tx_lt) as min_lt
+--             FROM account_states
+--             WHERE (last_processed_address IS NULL OR address > last_processed_address)
+--             GROUP BY address
+--             ORDER BY address
+--             LIMIT batch_size
+--         ),
+--         updated AS (
+--             UPDATE latest_account_states las
+--             SET created_lt = m.min_lt
+--             FROM min_tx_lt m
+--             WHERE las.address = m.address
+--               AND las.created_lt IS NULL
+--             RETURNING las.address
+--         )
+--         SELECT COUNT(*), MAX(address) INTO rows_updated, max_address FROM updated;
+--
+--         -- Exit if no rows were updated
+--         IF rows_updated = 0 THEN
+--             RAISE NOTICE 'No more rows to update: exiting';
+--             EXIT;
+--         END IF;
+--
+--         -- Update the last processed address for the next iteration
+--         last_processed_address := max_address;
+--         iteration_count := iteration_count + 1;
+--
+--         RAISE NOTICE 'Batch % complete: updated % rows, last address = %',
+--                      iteration_count, rows_updated, encode(last_processed_address, 'hex');
+--
+--         -- Commit after each batch
+--         COMMIT;
+--     END LOOP;
+--
+--     RAISE NOTICE 'Batch fill process completed. Total iterations: %', iteration_count;
+-- END;
+-- $$;
+--
+-- -- Example usage:
+-- -- CALL batch_fill_account_states_created_lt(10000);
