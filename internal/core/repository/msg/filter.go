@@ -135,13 +135,17 @@ func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.Messag
 	q := r.pg.NewSelect().
 		Model((*core.Message)(nil)).
 		ColumnExpr("count(*) AS count").
-		ColumnExpr("max(created_lt) AS max_lt").
+		ColumnExpr("(select max(created_lt) from messages where created_lt > ?) AS max_lt", startLt). // unfiltered max
 		Where("created_lt > ?", startLt)
 
 	q = r.getFilterMessageQuery(q, &req.MessagesFilter)
 
 	if err := q.Scan(ctx, &result); err != nil {
 		return 0, 0, err
+	}
+
+	if result.MaxLT == 0 {
+		result.MaxLT = startLt // no new rows
 	}
 
 	return result.Count, result.MaxLT, nil
