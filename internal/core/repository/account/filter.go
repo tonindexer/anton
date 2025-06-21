@@ -129,13 +129,13 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 	}
 
 	if len(f.ContractTypes) > 0 {
-		q = q.Where(prefix+"types && ?", pgdialect.Array(f.ContractTypes))
+		q = q.Where(statesTable+"types && ?", pgdialect.Array(f.ContractTypes))
 	}
 	if f.OwnerAddress != nil {
-		q = q.Where(prefix+"owner_address = ?", f.OwnerAddress)
+		q = q.Where(statesTable+"owner_address = ?", f.OwnerAddress)
 	}
 	if f.MinterAddress != nil {
-		q = q.Where(prefix+"minter_address = ?", f.MinterAddress)
+		q = q.Where(statesTable+"minter_address = ?", f.MinterAddress)
 	}
 
 	if f.AfterTxLT != nil {
