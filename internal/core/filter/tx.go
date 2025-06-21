@@ -16,6 +16,8 @@ type TransactionsFilter struct {
 	Workchain *int32 `form:"workchain"`
 
 	BlockID *core.BlockID
+
+	CreatedLT *uint64 `form:"created_lt"`
 }
 
 type TransactionsReq struct {
@@ -27,8 +29,6 @@ type TransactionsReq struct {
 	ExcludeColumn []string // TODO: support relations
 
 	Order string `form:"order"` // ASC, DESC
-
-	CreatedLT *uint64 `form:"created_lt"`
 
 	AfterTxLT *uint64 `form:"after"`
 	Limit     int     `form:"limit"`
