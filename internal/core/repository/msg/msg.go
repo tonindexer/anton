@@ -21,16 +21,16 @@ import (
 var _ repository.Message = (*Repository)(nil)
 
 type Repository struct {
-	ch                  *ch.DB
-	pg                  *bun.DB
-	messagesFilterCache *filter.Cache
+	ch                       *ch.DB
+	pg                       *bun.DB
+	messagesFilterCountCache *filter.Cache
 }
 
 func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
 	return &Repository{
-		ch:                  ck,
-		pg:                  pg,
-		messagesFilterCache: filter.NewCache(7 * 24 * time.Hour),
+		ch:                       ck,
+		pg:                       pg,
+		messagesFilterCountCache: filter.NewCache(7 * 24 * time.Hour),
 	}
 }
 

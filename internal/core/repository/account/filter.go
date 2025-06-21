@@ -171,14 +171,36 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 	return ret, err
 }
 
-func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsReq) (count int, err error) {
-	q := r.ch.NewSelect().Model((*core.AccountState)(nil))
+func (r *Repository) countAccountStatesFullScan(ctx context.Context, f *filter.AccountsReq) (count int, maxLt uint64, err error) {
+	if f.LatestState && (len(f.ContractTypes) > 0 || f.MinterAddress != nil || f.OwnerAddress != nil) {
+		return 0, 0, errors.New("clickhouse latest account states full scan is not supported for these filters")
+	}
+
+	var result struct {
+		Count int
+		MaxLT *uint64 `ch:"max_lt"`
+	}
+
+	var q *ch.SelectQuery
+	if f.LatestState {
+		// For latest account states, we need to count distinct addresses
+		q = r.ch.NewSelect().
+			Model((*core.AccountState)(nil)).
+			ColumnExpr("count(distinct address) AS count").
+			ColumnExpr("(SELECT max(last_tx_lt) FROM account_states) AS max_lt") // unfiltered max
+	} else {
+		// For historical account states, we count all records
+		q = r.ch.NewSelect().
+			Model((*core.AccountState)(nil)).
+			ColumnExpr("count(*) AS count").
+			ColumnExpr("(SELECT max(last_tx_lt) FROM account_states) AS max_lt") // unfiltered max
+	}
 
 	if len(f.Addresses) > 0 {
 		q = q.Where("address in (?)", ch.In(f.Addresses))
 	}
 	if len(f.StateIDs) > 0 {
-		return 0, errors.Wrap(core.ErrNotImplemented, "do not count on filter by account state ids")
+		return 0, 0, errors.Wrap(core.ErrNotImplemented, "do not count on filter by account state ids")
 	}
 
 	if f.Workchain != nil {
@@ -200,27 +222,124 @@ func (r *Repository) countAccountStates(ctx context.Context, f *filter.AccountsR
 	if f.MinterAddress != nil {
 		q = q.Where("minter_address = ?", f.MinterAddress)
 	}
-
 	if f.OwnerAddress != nil {
-		if f.LatestState {
-			q = r.ch.NewSelect().TableExpr("(?) as q", // because owner address can change
-				q.Column("address").
-					ColumnExpr("argMax(owner_address, last_tx_lt) as owner_address").
-					Group("address")).
-				Where("owner_address = ?", f.OwnerAddress)
-		} else {
-			q = q.Where("owner_address = ?", f.OwnerAddress)
+		q = q.Where("owner_address = ?", f.OwnerAddress)
+	}
+
+	if err := q.Scan(ctx, &result); err != nil {
+		return 0, 0, err
+	}
+
+	if result.MaxLT == nil {
+		return 0, 0, core.ErrNotFound
+	}
+
+	return result.Count, *result.MaxLT, nil
+}
+
+func (r *Repository) countAccountStatesPartialScan(ctx context.Context, req *filter.AccountsReq, startLt uint64) (partialCount int, maxLt uint64, err error) {
+	var result struct {
+		Count int
+		MaxLT uint64 `bun:"max_lt"`
+	}
+
+	var q *bun.SelectQuery
+	if req.LatestState {
+		q = r.pg.NewSelect().
+			Model((*core.LatestAccountState)(nil)).
+			ColumnExpr("count(*) AS count").
+			ColumnExpr("(select max(last_tx_lt) from latest_account_states) AS max_lt")
+		if startLt > 0 {
+			q = q.Where("created_lt > ?", startLt)
+		}
+	} else {
+		q = r.pg.NewSelect().
+			Model((*core.AccountState)(nil)).
+			ColumnExpr("count(*) AS count").
+			ColumnExpr("(select max(last_tx_lt) from account_states) AS max_lt").
+			Where("last_tx_lt > ?", startLt)
+	}
+
+	if len(req.Addresses) > 0 {
+		q = q.Where("address in (?)", bun.In(req.Addresses))
+	}
+
+	if !req.LatestState {
+		if req.Workchain != nil {
+			q = q.Where("workchain = ?", *req.Workchain)
+		}
+		if req.Shard != nil {
+			q = q.Where("shard = ?", *req.Shard)
+		}
+		if req.BlockSeqNoLeq != nil {
+			q = q.Where("block_seq_no <= ?", *req.BlockSeqNoLeq)
+		}
+		if req.BlockSeqNoBeq != nil {
+			q = q.Where("block_seq_no >= ?", *req.BlockSeqNoBeq)
 		}
 	}
 
-	if f.LatestState {
-		q = q.ColumnExpr("count(distinct address)")
-	} else {
-		q = q.ColumnExpr("count(*)")
+	if len(req.ContractTypes) > 0 {
+		q = q.Where("types && ?", pgdialect.Array(req.ContractTypes))
+	}
+	if req.OwnerAddress != nil {
+		q = q.Where("owner_address = ?", req.OwnerAddress)
+	}
+	if req.MinterAddress != nil {
+		q = q.Where("minter_address = ?", req.MinterAddress)
 	}
 
-	err = q.Scan(ctx, &count)
-	return count, err
+	if err := q.Scan(ctx, &result); err != nil {
+		return 0, 0, err
+	}
+
+	if result.MaxLT == 0 {
+		result.MaxLT = startLt // no new rows
+	}
+
+	return result.Count, result.MaxLT, nil
+}
+
+func (r *Repository) countAccountStates(ctx context.Context, req *filter.AccountsReq) (int, error) {
+	if req.LatestState && (len(req.ContractTypes) > 0 || req.OwnerAddress != nil || req.MinterAddress != nil) {
+		count, _, err := r.countAccountStatesPartialScan(ctx, req, 0)
+		return count, err
+	}
+
+	// choose the appropriate cache based on whether we're querying latest or historical states
+	cache := r.statesFilterCountCache
+	if req.LatestState {
+		cache = r.latestStatesFilterCountCache
+	}
+
+	// try to get from cache
+	count, maxLT, err := cache.Get(req.AccountsFilter)
+	if errors.Is(err, core.ErrNotFound) {
+		// full scan for initial count
+		count, maxLT, err = r.countAccountStatesFullScan(ctx, req)
+		if err != nil {
+			return 0, err
+		}
+		if errors.Is(err, core.ErrNotFound) {
+			return 0, nil
+		}
+		if err := cache.Set(req.AccountsFilter, count, maxLT); err != nil {
+			return 0, err
+		}
+	} else if err != nil {
+		return 0, err
+	}
+
+	// get partial count since last cached value
+	partialCount, maxLT, err := r.countAccountStatesPartialScan(ctx, req, maxLT)
+	if err != nil {
+		return 0, err
+	}
+	if err := cache.Set(req.AccountsFilter, count+partialCount, maxLT); err != nil {
+		return 0, err
+	}
+
+	return count + partialCount, nil
 }
 
 func (r *Repository) getCodeData(ctx context.Context, rows []*core.AccountState, excludeCode, excludeData bool) error { //nolint:gocognit,gocyclo // TODO: make one function working for both code and data

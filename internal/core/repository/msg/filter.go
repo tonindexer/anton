@@ -152,7 +152,7 @@ func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.Messag
 }
 
 func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int, error) {
-	count, maxLT, err := r.messagesFilterCache.Get(req.MessagesFilter)
+	count, maxLT, err := r.messagesFilterCountCache.Get(req.MessagesFilter)
 	if errors.Is(err, core.ErrNotFound) {
 		count, maxLT, err = r.countMsgFullScan(ctx, req)
 		if err != nil {
@@ -161,7 +161,7 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 		if errors.Is(err, core.ErrNotFound) {
 			return 0, nil
 		}
-		if err := r.messagesFilterCache.Set(req.MessagesFilter, count, maxLT); err != nil {
+		if err := r.messagesFilterCountCache.Set(req.MessagesFilter, count, maxLT); err != nil {
 			return 0, err
 		}
 	}
@@ -173,7 +173,7 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 	if err != nil {
 		return 0, err
 	}
-	if err := r.messagesFilterCache.Set(req.MessagesFilter, count+partialCount, maxLT); err != nil {
+	if err := r.messagesFilterCountCache.Set(req.MessagesFilter, count+partialCount, maxLT); err != nil {
 		return 0, err
 	}
 

@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -18,18 +19,26 @@ import (
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 var _ repository.Account = (*Repository)(nil)
 
 type Repository struct {
-	ch *ch.DB
-	pg *bun.DB
+	ch                           *ch.DB
+	pg                           *bun.DB
+	statesFilterCountCache       *filter.Cache
+	latestStatesFilterCountCache *filter.Cache
 }
 
 func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
-	return &Repository{ch: ck, pg: pg}
+	return &Repository{
+		ch:                           ck,
+		pg:                           pg,
+		statesFilterCountCache:       filter.NewCache(7 * 24 * time.Hour),
+		latestStatesFilterCountCache: filter.NewCache(7 * 24 * time.Hour),
+	}
 }
 
 func createIndexes(ctx context.Context, pgDB *bun.DB) error {
