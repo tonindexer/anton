@@ -34,11 +34,17 @@ ALTER TABLE latest_account_states ADD COLUMN created_lt bigint;
 --             WHERE las.address = m.address
 --               AND las.created_lt IS NULL
 --             RETURNING las.address
+--         ),
+--         last_address AS (
+--             SELECT address FROM updated ORDER BY address DESC LIMIT 1
+--         ),
+--         address_count AS (
+--             SELECT COUNT(*) AS count FROM updated
 --         )
---         SELECT COUNT(*), MAX(address) INTO rows_updated, max_address FROM updated;
+--         SELECT address_count.count, last_address.address INTO rows_updated, max_address FROM address_count, last_address;
 --
 --         -- Exit if no rows were updated
---         IF rows_updated = 0 THEN
+--         IF COALESCE(rows_updated, 0) = 0 THEN
 --             RAISE NOTICE 'No more rows to update: exiting';
 --             EXIT;
 --         END IF;
