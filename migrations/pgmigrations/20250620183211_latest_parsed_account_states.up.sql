@@ -26,7 +26,7 @@ CREATE INDEX latest_account_states_owner_address_idx ON latest_account_states US
 -- LANGUAGE plpgsql
 -- AS $$
 -- DECLARE
--- last_processed_tx_lt BIGINT := start_from_lt;
+--     last_processed_tx_lt BIGINT := start_from_lt;
 --     rows_updated INT;
 --     iteration_count INT := 0;
 --     max_tx_lt BIGINT;
@@ -34,25 +34,34 @@ CREATE INDEX latest_account_states_owner_address_idx ON latest_account_states US
 --     RAISE NOTICE 'Starting batch update process with batch size: %', batch_size;
 --
 --     LOOP
---         -- Update the next batch
---         WITH updated AS (
---             UPDATE latest_account_states las
---             SET
---                 types = s.types,
---                 owner_address = s.owner_address,
---                 minter_address = s.minter_address
+--         -- Update the next batch using a subquery to select the limited rows first
+--         WITH batch_to_update AS (
+--             SELECT s.address, s.last_tx_lt, s.types, s.owner_address, s.minter_address
 --             FROM account_states s
---             WHERE las.address = s.address
---               AND las.last_tx_lt = s.last_tx_lt
---               AND s.last_tx_lt >= last_processed_tx_lt
+--             WHERE s.last_tx_lt >= last_processed_tx_lt
 --               AND (
---                   las.types IS DISTINCT FROM s.types OR
---                   las.owner_address IS DISTINCT FROM s.owner_address OR
---                   las.minter_address IS DISTINCT FROM s.minter_address
+--                   s.types IS NOT NULL OR
+--                   s.owner_address IS NOT NULL OR
+--                   s.minter_address IS NOT NULL
 --               )
 --             ORDER BY s.last_tx_lt
 --             LIMIT batch_size
---             RETURNING s.last_tx_lt
+--         ),
+--         updated AS (
+--             UPDATE latest_account_states las
+--             SET
+--                 types = b.types,
+--                 owner_address = b.owner_address,
+--                 minter_address = b.minter_address
+--             FROM batch_to_update b
+--             WHERE las.address = b.address
+--               AND las.last_tx_lt = b.last_tx_lt
+--               AND (
+--                   las.types IS DISTINCT FROM b.types OR
+--                   las.owner_address IS DISTINCT FROM b.owner_address OR
+--                   las.minter_address IS DISTINCT FROM b.minter_address
+--               )
+--             RETURNING b.last_tx_lt
 --         )
 --         SELECT COUNT(*), MAX(last_tx_lt) INTO rows_updated, max_tx_lt FROM updated;
 --
@@ -78,4 +87,4 @@ CREATE INDEX latest_account_states_owner_address_idx ON latest_account_states US
 -- $$;
 --
 -- -- Example usage:
--- -- CALL batch_update_latest_account_states(10000, 0);
+-- -- CALL batch_update_latest_account_states(100000, 0);
