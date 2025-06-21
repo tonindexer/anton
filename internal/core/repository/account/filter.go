@@ -317,11 +317,11 @@ func (r *Repository) countAccountStates(ctx context.Context, req *filter.Account
 	if errors.Is(err, core.ErrNotFound) {
 		// full scan for initial count
 		count, maxLT, err = r.countAccountStatesFullScan(ctx, req)
-		if err != nil {
-			return 0, err
-		}
 		if errors.Is(err, core.ErrNotFound) {
 			return 0, nil
+		}
+		if err != nil {
+			return 0, err
 		}
 		if err := cache.Set(req.AccountsFilter, count, maxLT); err != nil {
 			return 0, err

@@ -155,11 +155,11 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 	count, maxLT, err := r.messagesFilterCountCache.Get(req.MessagesFilter)
 	if errors.Is(err, core.ErrNotFound) {
 		count, maxLT, err = r.countMsgFullScan(ctx, req)
-		if err != nil {
-			return 0, err
-		}
 		if errors.Is(err, core.ErrNotFound) {
 			return 0, nil
+		}
+		if err != nil {
+			return 0, err
 		}
 		if err := r.messagesFilterCountCache.Set(req.MessagesFilter, count, maxLT); err != nil {
 			return 0, err
