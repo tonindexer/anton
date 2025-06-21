@@ -258,14 +258,17 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 	}
 
 	for a, state := range latestStates {
+		latest := core.LatestAccountState{
+			Address:       a,
+			LastTxLT:      state.LastTxLT,
+			Types:         state.Types,
+			OwnerAddress:  state.OwnerAddress,
+			MinterAddress: state.MinterAddress,
+			CreatedLT:     state.LastTxLT, // it is being written only on insert
+		}
+
 		_, err := tx.NewInsert().
-			Model(&core.LatestAccountState{
-				Address:       a,
-				LastTxLT:      state.LastTxLT,
-				Types:         state.Types,
-				OwnerAddress:  state.OwnerAddress,
-				MinterAddress: state.MinterAddress,
-			}).
+			Model(&latest).
 			On("CONFLICT (address) DO UPDATE").
 			Where("latest_account_state.last_tx_lt < ?", state.LastTxLT).
 			Set("last_tx_lt = EXCLUDED.last_tx_lt").
