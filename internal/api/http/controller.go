@@ -56,7 +56,11 @@ func internalErr(ctx *gin.Context, err error) {
 		return
 	}
 
-	log.Error().Str("path", ctx.FullPath()).Err(err).Msg("internal server error")
+	log.Error().Err(err).
+		Str("path", ctx.FullPath()).
+		Str("url", ctx.Request.URL.String()).
+		Msg("internal server error")
+
 	ctx.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 }
 
