@@ -94,8 +94,56 @@ func (s *Service) makeGetOtherAccountFunc(master *ton.BlockIDExt, lastLT uint64)
 	return getOtherAccountFunc
 }
 
+func (s *Service) getAccountUnlocked(ctx context.Context, master, b *ton.BlockIDExt, a addr.Address) (*core.AccountState, error) {
+	raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
+	if err != nil {
+		return nil, errors.Wrapf(err, "get account")
+	}
+
+	acc := MapAccount(b, raw)
+
+	if raw.Code != nil { //nolint:nestif // getting get-method hashes from the library
+		libs, err := s.getAccountLibraries(ctx, a, raw)
+		if err != nil {
+			return acc, errors.Wrapf(err, "get account libraries")
+		}
+		if libs != nil {
+			acc.Libraries = libs.ToBOC()
+		}
+
+		if raw.Code.GetType() == cell.LibraryCellType {
+			hash, err := getLibraryHash(raw.Code)
+			if err != nil {
+				return acc, errors.Wrap(err, "get library hash")
+			}
+
+			lib := s.libraries.get(hash)
+			if lib != nil && lib.Lib != nil {
+				acc.GetMethodHashes, _ = abi.GetMethodHashes(lib.Lib)
+			}
+		} else {
+			acc.GetMethodHashes, _ = abi.GetMethodHashes(raw.Code)
+		}
+	}
+
+	if acc.Status == core.NonExist {
+		return acc, errors.Wrap(core.ErrNotFound, "account does not exists")
+	}
+
+	// sometimes, to parse the full account data we need to get other contracts states
+	// for example, to get nft item data
+	getOtherAccount := s.makeGetOtherAccountFunc(master, acc.LastTxLT)
+
+	err = s.Parser.ParseAccountData(ctx, acc, getOtherAccount)
+	if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
+		return acc, errors.Wrapf(err, "parse account data (%s)", acc.Address.String())
+	}
+
+	return acc, nil
+}
+
 func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a addr.Address) (*core.AccountState, error) {
-	if core.SkipAddress(a) {
+	if core.SkippedAddresses[a] {
 		return nil, errors.Wrap(core.ErrNotFound, "skip account")
 	}
 
@@ -117,62 +165,9 @@ func (s *Service) getAccount(ctx context.Context, master, b *ton.BlockIDExt, a a
 	lock.Do(func() {
 		defer core.Timer(time.Now(), "getAccount(%d, %d, %d, %s)", b.Workchain, b.Shard, b.SeqNo, a.String())
 
-		var (
-			acc *core.AccountState
-			err error
-		)
-		defer func() { s.accBlockStatesCache.Put(stateID, getAccountRes{acc: acc, err: err}) }()
+		acc, err := s.getAccountUnlocked(ctx, master, b, a)
 
-		raw, err := s.API.GetAccount(ctx, b, a.MustToTonutils())
-		if err != nil {
-			err = errors.Wrapf(err, "get account")
-			return
-		}
-
-		acc = MapAccount(b, raw)
-
-		if raw.Code != nil { //nolint:nestif // getting get-method hashes from the library
-			libs, getErr := s.getAccountLibraries(ctx, a, raw)
-			if getErr != nil {
-				err = errors.Wrapf(getErr, "get account libraries")
-				return
-			}
-			if libs != nil {
-				acc.Libraries = libs.ToBOC()
-			}
-
-			if raw.Code.GetType() == cell.LibraryCellType {
-				hash, getErr := getLibraryHash(raw.Code)
-				if getErr != nil {
-					err = errors.Wrap(getErr, "get library hash")
-					return
-				}
-
-				lib := s.libraries.get(hash)
-				if lib != nil && lib.Lib != nil {
-					acc.GetMethodHashes, _ = abi.GetMethodHashes(lib.Lib)
-				}
-			} else {
-				acc.GetMethodHashes, _ = abi.GetMethodHashes(raw.Code)
-			}
-		}
-
-		if acc.Status == core.NonExist {
-			err = errors.Wrap(core.ErrNotFound, "account does not exists")
-			return
-		}
-
-		// sometimes, to parse the full account data we need to get other contracts states
-		// for example, to get nft item data
-		getOtherAccount := s.makeGetOtherAccountFunc(master, acc.LastTxLT)
-
-		err = s.Parser.ParseAccountData(ctx, acc, getOtherAccount)
-		if err != nil && !errors.Is(err, app.ErrImpossibleParsing) {
-			err = errors.Wrapf(err, "parse account data (%s)", acc.Address.String())
-			return
-		}
-
-		err = nil
+		s.accBlockStatesCache.Put(stateID, getAccountRes{acc: acc, err: err})
 	})
 
 	res, ok = s.accBlockStatesCache.Get(stateID)
