@@ -78,14 +78,13 @@ func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (re
 
 func (r *Repository) countMsgFullScan(ctx context.Context, req *filter.MessagesReq) (count int, maxLt uint64, err error) {
 	var result struct {
-		Count int
-		MaxLT *uint64 `ch:"max_lt"`
+		MaxLT        uint64 `ch:"max_lt_value"`
+		RoundedMaxLT uint64 `ch:"max_lt_rounded"`
+		Count        int
 	}
 
 	q := r.ch.NewSelect().
-		Model((*core.Message)(nil)).
-		ColumnExpr("count(*) AS count").
-		ColumnExpr("(SELECT max(created_lt) FROM messages) AS max_lt") // unfiltered max
+		Model((*core.Message)(nil))
 
 	if len(req.Hash) > 0 {
 		q = q.Where("hash = ?", req.Hash)
@@ -115,40 +114,79 @@ func (r *Repository) countMsgFullScan(ctx context.Context, req *filter.MessagesR
 		q = q.Where("operation_name IN (?)", ch.In(req.OperationNames))
 	}
 
-	if err := q.Scan(ctx, &result); err != nil {
-		return 0, 0, err
-	}
-
-	if result.MaxLT == nil {
-		return 0, 0, core.ErrNotFound
-	}
-
-	return result.Count, *result.MaxLT, nil
-}
-
-func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.MessagesReq, startLt uint64) (partialCount int, maxLt uint64, err error) {
-	var result struct {
-		Count int
-		MaxLT uint64 `ch:"max_lt"`
-	}
-
-	q := r.pg.NewSelect().
-		Model((*core.Message)(nil)).
-		ColumnExpr("count(*) AS count").
-		ColumnExpr("(select max(created_lt) from messages where created_lt > ?) AS max_lt", startLt). // unfiltered max
-		Where("created_lt > ?", startLt)
-
-	q = r.getFilterMessageQuery(q, &req.MessagesFilter)
+	q = r.ch.NewSelect().
+		With(
+			"max_lt",
+			r.ch.NewSelect().
+				Model((*core.Message)(nil)).
+				ColumnExpr("max(created_lt) AS v"),
+		).
+		With(
+			"rounded_count",
+			q. // query with filters
+				Table("max_lt").
+				ColumnExpr("count(*) as v").
+				Where("created_lt <= floor(max_lt.v, -7)"), // we round LT as messages in new blocks can have lower LT
+		).
+		Table("max_lt", "rounded_count").
+		ColumnExpr("max_lt.v AS max_lt_value").
+		ColumnExpr("floor(max_lt.v, -7) as max_lt_rounded").
+		ColumnExpr("rounded_count.v AS count")
 
 	if err := q.Scan(ctx, &result); err != nil {
 		return 0, 0, err
 	}
 
 	if result.MaxLT == 0 {
-		result.MaxLT = startLt // no new rows
+		return 0, 0, core.ErrNotFound
 	}
 
-	return result.Count, result.MaxLT, nil
+	return result.Count, result.RoundedMaxLT, nil
+}
+
+func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.MessagesReq, startLt uint64) (partialCount, roundedCount int, roundedMaxLt uint64, err error) {
+	var result struct {
+		Since        int    `bun:"since_rounded_count"`
+		Until        int    `bun:"until_rounded_count"`
+		RoundedMaxLT uint64 `bun:"rounded_max_lt_value"`
+	}
+
+	q := r.pg.NewSelect().
+		With(
+			"rounded_max_lt",
+			r.pg.NewSelect().
+				Model((*core.Message)(nil)).
+				ColumnExpr("floor(max(created_lt) / 1e7) * 1e7 AS v"), // we round LT as messages in new blocks can have lower LT
+		).
+		With(
+			"until_rounded_count",
+			r.getFilterMessageQuery(
+				r.pg.NewSelect().Model((*core.Message)(nil)),
+				&req.MessagesFilter,
+			).
+				Table("rounded_max_lt").
+				ColumnExpr("count(*) as v").
+				Where("created_lt > ?", startLt).
+				Where("created_lt <= rounded_max_lt.v"),
+		).
+		With("since_rounded_count",
+			r.getFilterMessageQuery(
+				r.pg.NewSelect().Model((*core.Message)(nil)),
+				&req.MessagesFilter,
+			).
+				Table("rounded_max_lt").
+				ColumnExpr("count(*) as v").
+				Where("created_lt >= rounded_max_lt.v")).
+		Table("rounded_max_lt", "until_rounded_count", "since_rounded_count").
+		ColumnExpr("since_rounded_count.v AS since_rounded_count").
+		ColumnExpr("until_rounded_count.v AS until_rounded_count").
+		ColumnExpr("rounded_max_lt.v as rounded_max_lt_value")
+
+	if err := q.Scan(ctx, &result); err != nil {
+		return 0, 0, 0, err
+	}
+
+	return result.Since + result.Until, result.Until, result.RoundedMaxLT, nil
 }
 
 func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int, error) {
@@ -169,11 +207,11 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 		return 0, err
 	}
 
-	partialCount, maxLT, err := r.countMsgPartialScan(ctx, req, maxLT)
+	partialCount, roundedPartialCount, roundedMaxLT, err := r.countMsgPartialScan(ctx, req, maxLT)
 	if err != nil {
 		return 0, err
 	}
-	if err := r.messagesFilterCountCache.Set(req.MessagesFilter, count+partialCount, maxLT); err != nil {
+	if err := r.messagesFilterCountCache.Set(req.MessagesFilter, count+roundedPartialCount, roundedMaxLT); err != nil {
 		return 0, err
 	}
 
