@@ -678,7 +678,7 @@ var Command = &cli.Command{
 					return nil
 				}
 
-				getCodeData := func(ctx context.Context, rows []*core.AccountState) error { //nolint:gocyclo // TODO: make one function working for both code and data
+				getCodeData := func(ctx context.Context, rows []*core.AccountState) error {
 					codeHashesSet, dataHashesSet := map[string]struct{}{}, map[string]struct{}{}
 					for _, row := range rows {
 						if len(row.CodeHash) == 32 {
