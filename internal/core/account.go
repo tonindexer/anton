@@ -145,69 +145,42 @@ type LatestAccountState struct {
 	AccountState *AccountState `bun:"rel:has-one,join:address=address,join:last_tx_lt=last_tx_lt" json:"account"`
 }
 
-func SkipAddress(a addr.Address) bool {
-	switch a.Base64() {
-	case "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c": // burn address
-		return true
-	case "Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU": // system contract
-		return true
-	case "Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF": // elector contract
-		return true
-	case "Ef80UXx731GHxVr0-LYf3DIViMerdo3uJLAG3ykQZFjXz2kW": // log tests contract
-		return true
-	case "Ef9VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVbxn": // config contract
-		return true
-	case "EQAHI1vGuw7d4WG-CtfDrWqEPNtmUuKjKFEFeJmZaqqfWTvW": // BSC Bridge Collector
-		return true
-	case "EQCuzvIOXLjH2tv35gY4tzhIvXCqZWDuK9kUhFGXKLImgxT5": // ETH Bridge Collector
-		return true
-	case "EQA2u5Z5Fn59EUvTI-TIrX8PIGKQzNj3qLixdCPPujfJleXC",
-		"EQA2Pnxp0rMB9L6SU2z1VqfMIFIfutiTjQWFEXnwa_zPh0P3",
-		"EQDhIloDu1FWY9WFAgQDgw0RjuT5bLkf15Rmd5LCG3-0hyoe": // strange heavy testnet address
-		return true
-	case "EQAWBIxrfQDExJSfFmE5UL1r9drse0dQx_eaV8w9S77VK32F": // tongo emulator segmentation fault
-		return true
-	case "EQCnBscEi-KGfqJ5Wk6R83yrqtmUum94SXnSDz3AOQfHGjDw",
-		"EQA9xJgsYbsTjWxEcaxv8DLW3iRJtHzjwFzFAEWVxup0WH0R": // quackquack (?)
-		return true
-	case "EQCqNjAPkigLdS5gxHiHitWuzF3ZN-gX7MlX4Qfy2cGS3FWx": // ton-squid
-		return true
-	case "EQCp6qUScSUYB66ExDIlla8kfnUpP5cLZ_zhy4nlOPC-fqFo": // highload wallet v2 with heavy data
-		return true
-	case "EQC1Bq1GJY9ON_2WpSroVlXpejzfLNA8XoL2MYxtN50ZbJfN": // TryTON
-		return true
-	case "EQCTsnUmD2wvN-SBaa7CMF1sgTfC-YNywqbdPepKw34VBglS": // TryTON NFT collection
-		return true
-	case "EQCatS3EvWAhYaFEmLK_rOWViVgzN9RrHYh_PpNQ01X_WTPh": // TON lama jetton distribution
-		return true
-	case "EQBvc1QLuqTMx0NNTZ4DD__UzfTvkEOJMs67XoZhHVihWtMN": // POO jetton distribution
-		return true
-	case "EQDF6fj6ydJJX_ArwxINjP-0H8zx982W4XgbkKzGvceUWvXl": // ETH Token Bridge Collector
-		return true
-	case "EQC_0ScHnb7bVoyInXLkZ2G4XRHg97S9XrPKCUDaO1ZRyFhZ": // Gemz Checkin
-		return true
-	case "EQD_QUnVTBzwG-8GCkqnQ4xiWxU0oPZn9Pon_rq0MZVdIBuf",
-		"EQB2MfIcTbwtshE8VOv0YA6ZWpb9bbj79D_SUXHZYv04X47c": // Wonton (?)
-		return true
-	case "EQAqk4SStGaodBsjW0zc8H4psrsx258cCdqw4Nm3ScnMYpLf": // some service (?)
-		return true
-	case "EQDlHrYvmV9R91wNbqvpzo-_pXu4Q6vQZo0-t2CplC6Zgh4y": // RBT trader
-		return true
-	case "EQD5iFPj0zk1mA-GatG_3QtBNWVzuRKatszH1MUYAw6aVeK2": // some service claims (?)
-		return true
-	case "EQCfrctTcgYp6cd2iqgAVKiLKauJvBNC4sc84xYBvspyw3q7",
-		"EQAlMRLTYOoG6kM0d3dLHqgK30ol3qIYwMNtEelktzXP_pD5",
-		"EQDa5wUCdTj1tqYV-LyIcefBHd3IGacvzhcBrSjmlKY2xnaK",
-		"EQAU35_2hAbymisgUrhGa4bIJUtEJjVNVS7zBrqfKaENd67N",
-		"EQCxr1o-x7cEFb3vALiYMOW7QPuAoGHMtw1Yab5m6HrnuIuZ",
-		"EQDCR0XQ0qNQJNjITRpo59mFsP0pjx81ImtXx92mJBnIc7m4",
-		"EQAYNJOQTA9FqZF4QGxzcPEvvMWkP76snfI7gATCur_86psC",
-		"EQD-r3joXyZ2kWRxraqze6ypKoVtSx1qlKlJsNEjyLM7ujs7",
-		"EQDTCD85dI5Cu8O1eDecuARaagwaOPMacnXwqn8KB0-1DN8P": // unknown
-		return true
-	default:
-		return false
-	}
+var SkippedAddresses = map[addr.Address]bool{
+	*addr.MustFromBase64("EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"): true, // burn address
+	*addr.MustFromBase64("Ef8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAU"): true, // system contract
+	*addr.MustFromBase64("Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF"): true, // elector contract
+	*addr.MustFromBase64("Ef80UXx731GHxVr0-LYf3DIViMerdo3uJLAG3ykQZFjXz2kW"): true, // log tests contract
+	*addr.MustFromBase64("Ef9VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVbxn"): true, // config contract
+	*addr.MustFromBase64("EQAHI1vGuw7d4WG-CtfDrWqEPNtmUuKjKFEFeJmZaqqfWTvW"): true, // BSC Bridge Collector
+	*addr.MustFromBase64("EQCuzvIOXLjH2tv35gY4tzhIvXCqZWDuK9kUhFGXKLImgxT5"): true, // ETH Bridge Collector
+	*addr.MustFromBase64("EQA2u5Z5Fn59EUvTI-TIrX8PIGKQzNj3qLixdCPPujfJleXC"): true, // strange heavy testnet address
+	*addr.MustFromBase64("EQA2Pnxp0rMB9L6SU2z1VqfMIFIfutiTjQWFEXnwa_zPh0P3"): true, // strange heavy testnet address
+	*addr.MustFromBase64("EQDhIloDu1FWY9WFAgQDgw0RjuT5bLkf15Rmd5LCG3-0hyoe"): true, // strange heavy testnet address
+	*addr.MustFromBase64("EQAWBIxrfQDExJSfFmE5UL1r9drse0dQx_eaV8w9S77VK32F"): true, // tongo emulator segmentation fault
+	*addr.MustFromBase64("EQCnBscEi-KGfqJ5Wk6R83yrqtmUum94SXnSDz3AOQfHGjDw"): true, // quackquack (?)
+	*addr.MustFromBase64("EQA9xJgsYbsTjWxEcaxv8DLW3iRJtHzjwFzFAEWVxup0WH0R"): true, // quackquack (?)
+	*addr.MustFromBase64("EQCqNjAPkigLdS5gxHiHitWuzF3ZN-gX7MlX4Qfy2cGS3FWx"): true, // ton-squid
+	*addr.MustFromBase64("EQCp6qUScSUYB66ExDIlla8kfnUpP5cLZ_zhy4nlOPC-fqFo"): true, // highload wallet v2 with heavy data
+	*addr.MustFromBase64("EQC1Bq1GJY9ON_2WpSroVlXpejzfLNA8XoL2MYxtN50ZbJfN"): true, // TryTON
+	*addr.MustFromBase64("EQCTsnUmD2wvN-SBaa7CMF1sgTfC-YNywqbdPepKw34VBglS"): true, // TryTON NFT collection
+	*addr.MustFromBase64("EQCatS3EvWAhYaFEmLK_rOWViVgzN9RrHYh_PpNQ01X_WTPh"): true, // TON lama jetton distribution
+	*addr.MustFromBase64("EQBvc1QLuqTMx0NNTZ4DD__UzfTvkEOJMs67XoZhHVihWtMN"): true, // POO jetton distribution
+	*addr.MustFromBase64("EQDF6fj6ydJJX_ArwxINjP-0H8zx982W4XgbkKzGvceUWvXl"): true, // ETH Token Bridge Collector
+	*addr.MustFromBase64("EQC_0ScHnb7bVoyInXLkZ2G4XRHg97S9XrPKCUDaO1ZRyFhZ"): true, // Gemz Checkin
+	*addr.MustFromBase64("EQD_QUnVTBzwG-8GCkqnQ4xiWxU0oPZn9Pon_rq0MZVdIBuf"): true, // Wonton (?)
+	*addr.MustFromBase64("EQB2MfIcTbwtshE8VOv0YA6ZWpb9bbj79D_SUXHZYv04X47c"): true, // Wonton (?)
+	*addr.MustFromBase64("EQAqk4SStGaodBsjW0zc8H4psrsx258cCdqw4Nm3ScnMYpLf"): true, // some service (?)
+	*addr.MustFromBase64("EQDlHrYvmV9R91wNbqvpzo-_pXu4Q6vQZo0-t2CplC6Zgh4y"): true, // RBT trader
+	*addr.MustFromBase64("EQD5iFPj0zk1mA-GatG_3QtBNWVzuRKatszH1MUYAw6aVeK2"): true, // some service claims (?)
+	*addr.MustFromBase64("EQCfrctTcgYp6cd2iqgAVKiLKauJvBNC4sc84xYBvspyw3q7"): true,
+	*addr.MustFromBase64("EQAlMRLTYOoG6kM0d3dLHqgK30ol3qIYwMNtEelktzXP_pD5"): true,
+	*addr.MustFromBase64("EQDa5wUCdTj1tqYV-LyIcefBHd3IGacvzhcBrSjmlKY2xnaK"): true,
+	*addr.MustFromBase64("EQAU35_2hAbymisgUrhGa4bIJUtEJjVNVS7zBrqfKaENd67N"): true,
+	*addr.MustFromBase64("EQCxr1o-x7cEFb3vALiYMOW7QPuAoGHMtw1Yab5m6HrnuIuZ"): true,
+	*addr.MustFromBase64("EQDCR0XQ0qNQJNjITRpo59mFsP0pjx81ImtXx92mJBnIc7m4"): true,
+	*addr.MustFromBase64("EQAYNJOQTA9FqZF4QGxzcPEvvMWkP76snfI7gATCur_86psC"): true,
+	*addr.MustFromBase64("EQD-r3joXyZ2kWRxraqze6ypKoVtSx1qlKlJsNEjyLM7ujs7"): true,
+	*addr.MustFromBase64("EQDTCD85dI5Cu8O1eDecuARaagwaOPMacnXwqn8KB0-1DN8P"): true,
 }
 
 type AccountRepository interface {

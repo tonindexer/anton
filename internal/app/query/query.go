@@ -144,7 +144,7 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 		if found[a] {
 			continue
 		}
-		if core.SkipAddress(a) {
+		if core.SkippedAddresses[a] {
 			// fetch heavy skipped account states
 			skipped = append(skipped, a)
 			continue
