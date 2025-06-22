@@ -1,5 +1,9 @@
---bun:split
-ALTER TABLE latest_account_states ADD COLUMN created_lt bigint;
+BEGIN;
+
+    ALTER TABLE latest_account_states
+        ADD COLUMN created_lt bigint;
+
+COMMIT;
 
 
 -- --bun:split

@@ -1,22 +1,15 @@
---bun:split
-ALTER TABLE latest_account_states ADD COLUMN types text[];
+BEGIN;
 
---bun:split
-ALTER TABLE latest_account_states ADD COLUMN owner_address bytea;
+    ALTER TABLE latest_account_states
+        ADD COLUMN types text[],
+        ADD COLUMN owner_address bytea,
+        ADD COLUMN minter_address bytea;
 
---bun:split
-ALTER TABLE latest_account_states ADD COLUMN minter_address bytea;
+    CREATE INDEX latest_account_states_types_idx ON latest_account_states USING gin (types);
+    CREATE INDEX latest_account_states_minter_address_idx ON latest_account_states USING btree (minter_address) WHERE (minter_address IS NOT NULL);
+    CREATE INDEX latest_account_states_owner_address_idx ON latest_account_states USING btree (owner_address) WHERE (owner_address IS NOT NULL);
 
-
---bun:split
-CREATE INDEX latest_account_states_types_idx ON latest_account_states USING gin (types);
-
---bun:split
-CREATE INDEX latest_account_states_minter_address_idx ON latest_account_states USING btree (minter_address) WHERE (minter_address IS NOT NULL);
-
---bun:split
-CREATE INDEX latest_account_states_owner_address_idx ON latest_account_states USING btree (owner_address) WHERE (owner_address IS NOT NULL);
-
+COMMIT;
 
 -- --bun:split
 -- CREATE OR REPLACE PROCEDURE batch_update_latest_parsed_account_states(
