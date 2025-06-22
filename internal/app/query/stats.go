@@ -22,21 +22,18 @@ func (s *Service) updateStatsLoop() {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			if !s.running() {
-				return
-			}
+	for range ticker.C {
+		if !s.running() {
+			return
+		}
 
-			s.mx.RLock()
-			lastUpdate := s.statsUpdateTs
-			lastTry := s.statsFailTs
-			s.mx.RUnlock()
+		s.mx.RLock()
+		lastUpdate := s.statsUpdateTs
+		lastTry := s.statsFailTs
+		s.mx.RUnlock()
 
-			if time.Since(lastUpdate) > statsUpdateDelay && time.Since(lastTry) > statsRetryDelay {
-				s.updateStats()
-			}
+		if time.Since(lastUpdate) > statsUpdateDelay && time.Since(lastTry) > statsRetryDelay {
+			s.updateStats()
 		}
 	}
 }
@@ -58,6 +55,4 @@ func (s *Service) updateStats() {
 
 	s.statsCached = stats
 	s.statsUpdateTs = time.Now()
-
-	return
 }

@@ -27,7 +27,7 @@ import (
 	"github.com/tonindexer/anton/migrations/pgmigrations"
 )
 
-func newMigrators() (pg *migrate.Migrator, ch *chmigrate.Migrator, err error) {
+func newMigrators() (pg *migrate.Migrator, ck *chmigrate.Migrator, err error) {
 	chURL := env.GetString("DB_CH_URL", "")
 	pgURL := env.GetString("DB_PG_URL", "")
 
@@ -678,7 +678,7 @@ var Command = &cli.Command{
 					return nil
 				}
 
-				getCodeData := func(ctx context.Context, rows []*core.AccountState) error { //nolint:gocognit,gocyclo // TODO: make one function working for both code and data
+				getCodeData := func(ctx context.Context, rows []*core.AccountState) error { //nolint:gocyclo // TODO: make one function working for both code and data
 					codeHashesSet, dataHashesSet := map[string]struct{}{}, map[string]struct{}{}
 					for _, row := range rows {
 						if len(row.CodeHash) == 32 {
