@@ -36,8 +36,8 @@ func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
 	return &Repository{
 		ch:                           ck,
 		pg:                           pg,
-		statesFilterCountCache:       filter.NewCache(7 * 24 * time.Hour),
-		latestStatesFilterCountCache: filter.NewCache(7 * 24 * time.Hour),
+		statesFilterCountCache:       filter.NewCache(24 * time.Hour),
+		latestStatesFilterCountCache: filter.NewCache(24 * time.Hour),
 	}
 }
 
