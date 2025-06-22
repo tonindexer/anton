@@ -146,9 +146,9 @@ func (r *Repository) countMsgFullScan(ctx context.Context, req *filter.MessagesR
 
 func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.MessagesReq, startLt uint64) (partialCount, roundedCount int, roundedMaxLt uint64, err error) {
 	var result struct {
-		Since        int    `bun:"since_rounded_count"`
-		Until        int    `bun:"until_rounded_count"`
-		RoundedMaxLT uint64 `bun:"rounded_max_lt_value"`
+		SinceStartCount int    `bun:"since_start_count"`
+		RoundedCount    int    `bun:"until_rounded_count"`
+		RoundedMaxLT    uint64 `bun:"rounded_max_lt_value"`
 	}
 
 	q := r.pg.NewSelect().
@@ -169,16 +169,15 @@ func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.Messag
 				Where("created_lt > ?", startLt).
 				Where("created_lt <= rounded_max_lt.v"),
 		).
-		With("since_rounded_count",
+		With("since_start_count",
 			r.getFilterMessageQuery(
 				r.pg.NewSelect().Model((*core.Message)(nil)),
 				&req.MessagesFilter,
 			).
-				Table("rounded_max_lt").
 				ColumnExpr("count(*) as v").
-				Where("created_lt >= rounded_max_lt.v")).
-		Table("rounded_max_lt", "until_rounded_count", "since_rounded_count").
-		ColumnExpr("since_rounded_count.v AS since_rounded_count").
+				Where("created_lt >= ?", startLt)).
+		Table("rounded_max_lt", "until_rounded_count", "since_start_count").
+		ColumnExpr("since_start_count.v AS since_start_count").
 		ColumnExpr("until_rounded_count.v AS until_rounded_count").
 		ColumnExpr("rounded_max_lt.v as rounded_max_lt_value")
 
@@ -186,7 +185,7 @@ func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.Messag
 		return 0, 0, 0, err
 	}
 
-	return result.Since + result.Until, result.Until, result.RoundedMaxLT, nil
+	return result.SinceStartCount, result.RoundedCount, result.RoundedMaxLT, nil
 }
 
 func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int, error) {
