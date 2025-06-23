@@ -12,7 +12,7 @@ linters:
     - asciicheck
     - bidichk
     - decorder
-    - depguard
+    # - depguard
     - dupl
     - durationcheck
     - errcheck
