@@ -84,7 +84,7 @@ func (s *Service) rescanLoop() {
 	for s.running() {
 		tx, task, err := s.RescanRepo.GetUnfinishedRescanTask(context.Background())
 		if err != nil {
-			if !(errors.Is(err, core.ErrNotFound) && strings.Contains(err.Error(), "no unfinished tasks")) {
+			if !errors.Is(err, core.ErrNotFound) || !strings.Contains(err.Error(), "no unfinished tasks") {
 				log.Error().Err(err).Msg("get rescan task")
 			}
 			time.Sleep(time.Second)
@@ -108,7 +108,7 @@ func (s *Service) rescanLoop() {
 	}
 }
 
-func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) error { //nolint:gocyclo,gocognit // yeah, it's a bit long
+func (s *Service) rescanRunTask(ctx context.Context, task *core.RescanTask) error { //nolint:gocyclo // yeah, it's a bit long
 	var codeHash []byte
 	if task.Contract != nil && task.Contract.Code != nil {
 		codeCell, err := cell.FromBOC(task.Contract.Code)

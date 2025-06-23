@@ -58,10 +58,10 @@ func TestService_BlockTransactions(t *testing.T) {
 
 	ctx := context.Background()
 
-	for seq := 29661500; seq < 29661510; seq++ {
+	for seq := uint32(29661500); seq < 29661510; seq++ {
 		var wg sync.WaitGroup
 
-		master, shards, err := s.UnseenBlocks(ctx, uint32(seq))
+		master, shards, err := s.UnseenBlocks(ctx, seq)
 		if err != nil {
 			t.Fatal(err)
 		}

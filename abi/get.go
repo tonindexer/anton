@@ -116,7 +116,7 @@ func GetMethodHashes(code *cell.Cell) ([]int32, error) {
 		case 0, 1, 2, 3:
 			continue
 		}
-		ret = append(ret, int32(i))
+		ret = append(ret, int32(i)) //nolint:gosec // no integer overflow
 	}
 
 	return ret, nil

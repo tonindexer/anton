@@ -138,7 +138,7 @@ func parseOperationID(body []byte) (opId uint32, comment string, err error) {
 		return 0, "", errors.Wrap(err, "load uint")
 	}
 
-	if opId = uint32(op); opId != 0 {
+	if opId = uint32(op); opId != 0 { //nolint:gosec // no integer overflow
 		return opId, "", nil
 	}
 

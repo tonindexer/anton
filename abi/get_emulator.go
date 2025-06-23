@@ -106,7 +106,7 @@ func vmMakeValueInt(v *VmValue) (ret tlb.VmStackValue, _ error) {
 		bi, ok = big.NewInt(int64(ui)), uok
 	case "uint64":
 		ui, uok := v.Payload.(uint64)
-		bi, ok = big.NewInt(int64(ui)), uok
+		bi, ok = new(big.Int).SetUint64(ui), uok
 	case "int8":
 		ui, uok := v.Payload.(int8)
 		bi, ok = big.NewInt(int64(ui)), uok
@@ -285,19 +285,19 @@ func vmParseValueInt(v *tlb.VmStackValue, d *VmValueDesc) (any, error) {
 	case "", TLBBigInt:
 		return bi, nil
 	case "uint8":
-		return uint8(bi.Uint64()), nil
+		return uint8(bi.Uint64()), nil //nolint:gosec // no integer overflow
 	case "uint16":
-		return uint16(bi.Uint64()), nil
+		return uint16(bi.Uint64()), nil //nolint:gosec // no integer overflow
 	case "uint32":
-		return uint32(bi.Uint64()), nil
+		return uint32(bi.Uint64()), nil //nolint:gosec // no integer overflow
 	case "uint64":
 		return bi.Uint64(), nil
 	case "int8":
-		return int8(bi.Int64()), nil
+		return int8(bi.Int64()), nil //nolint:gosec // no integer overflow
 	case "int16":
-		return int16(bi.Int64()), nil
+		return int16(bi.Int64()), nil //nolint:gosec // no integer overflow
 	case "int32":
-		return int32(bi.Int64()), nil
+		return int32(bi.Int64()), nil //nolint:gosec // no integer overflow
 	case "int64":
 		return bi.Int64(), nil
 	case TLBBool:

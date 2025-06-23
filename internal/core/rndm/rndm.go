@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano()) //nolint:staticcheck // TODO: migrate to a local random generator
 }
 
 func String(n int) string {
@@ -25,7 +25,7 @@ func String(n int) string {
 
 func Bytes(l int) []byte {
 	token := make([]byte, l)
-	rand.Read(token)
+	rand.Read(token) //nolint:staticcheck // no need for crypto/rand.Read here
 	return token
 }
 

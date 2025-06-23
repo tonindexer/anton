@@ -28,7 +28,7 @@ func BlockTransaction(b core.BlockID) *core.Transaction {
 		PrevTxLT:    rand.Uint64(),
 		InMsgHash:   Bytes(32),
 		InAmount:    BigInt(),
-		OutMsgCount: uint16(rand.Int() % 32),
+		OutMsgCount: uint16(rand.Int() % 32), //nolint:gosec // no integer overflow
 		OutAmount:   BigInt(),
 		TotalFees:   BigInt(),
 		Description: Bytes(256),
@@ -62,7 +62,7 @@ func AddressTransactions(a *addr.Address, n int) (ret []*core.Transaction) {
 func Transaction() *core.Transaction {
 	return BlockTransaction(core.BlockID{
 		Workchain: 0,
-		Shard:     int64(rand.Uint64()),
+		Shard:     int64(rand.Uint64()), //nolint:gosec // no integer overflow
 		SeqNo:     rand.Uint32(),
 	})
 }

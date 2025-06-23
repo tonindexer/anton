@@ -467,7 +467,7 @@ func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address
 		if lastInterfaces != nil && reflect.DeepEqual(ret[it].ChangeTypes, *lastInterfaces) {
 			continue
 		}
-		res[uint64(ret[it].ChangeTxLT)] = ret[it].ChangeTypes
+		res[uint64(ret[it].ChangeTxLT)] = ret[it].ChangeTypes //nolint:gosec // no integer overflow
 		lastInterfaces = &ret[it].ChangeTypes
 	}
 
@@ -534,7 +534,7 @@ func (r *Repository) GetAllAccountStates(ctx context.Context, a addr.Address, be
 			continue
 		}
 		lastCodeHash, lastDataHash = ret[it].ChangeCodeHash, ret[it].ChangeDataHash
-		lts = append(lts, uint64(ret[it].ChangeTxLT))
+		lts = append(lts, uint64(ret[it].ChangeTxLT)) //nolint:gosec // no integer overflow
 	}
 
 	if len(lts) > limit {

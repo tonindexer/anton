@@ -31,15 +31,15 @@ func GetRoundingFunction(interval time.Duration) (string, error) {
 
 	sec := int(interval.Seconds())
 
-	min := sec / 60
-	if min < 5 {
+	minutes := sec / 60
+	if minutes < 5 {
 		return "", errors.Wrapf(core.ErrInvalidArg, "unsupported interval %d seconds", sec)
 	}
-	if min < 60 {
-		return fmt.Sprintf(funcFormat, "%s", min, "minute"), nil
+	if minutes < 60 {
+		return fmt.Sprintf(funcFormat, "%s", minutes, "minute"), nil
 	}
 
-	hour := min / 60
+	hour := minutes / 60
 	if hour < 24 {
 		return fmt.Sprintf(funcFormat, "%s", hour, "hour"), nil
 	}

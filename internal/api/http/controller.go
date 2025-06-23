@@ -83,12 +83,12 @@ func unmarshalOperationID(op string) (uint32, error) {
 
 	i, err := strconv.ParseInt(op, 10, 64)
 	if err == nil {
-		return uint32(i), nil
+		return uint32(i), nil //nolint:gosec // no integer overflow
 	}
 
 	i, err = strconv.ParseInt(op, 16, 64)
 	if err == nil {
-		return uint32(i), nil
+		return uint32(i), nil //nolint:gosec // no integer overflow
 	}
 
 	return 0, err

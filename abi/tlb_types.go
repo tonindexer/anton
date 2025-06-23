@@ -50,7 +50,7 @@ func (x *TelemintText) LoadFromCell(loader *cell.Slice) error {
 		return errors.Wrap(err, "load text slice")
 	}
 
-	x.Len = uint8(l)
+	x.Len = uint8(l) //nolint:gosec // no integer overflow
 	x.Text = string(t)
 
 	return nil

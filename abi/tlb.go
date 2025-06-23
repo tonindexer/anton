@@ -143,12 +143,12 @@ func tlbParseSettingsDict(settings []string) (reflect.Type, error) {
 func tlbParseSettings(tag string) (reflect.Type, error) {
 	tag = strings.TrimSpace(tag)
 	if tag == "-" {
-		return nil, nil
+		return nil, nil //nolint:nilnil // do not want to use a sentinel error here
 	}
 
 	settings := strings.Split(tag, " ")
 	if len(settings) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // do not want to use a sentinel error here
 	}
 
 	if strings.HasPrefix(settings[0], "[") && strings.HasSuffix(settings[0], "]") {

@@ -146,16 +146,16 @@ func mapContentDataNFT(ret *core.AccountState, c any) {
 	switch content := c.(type) {
 	case *nft.ContentSemichain: // TODO: remove this (?)
 		ret.ContentURI = content.URI
-		ret.ContentName = content.Name
-		ret.ContentDescription = content.Description
-		ret.ContentImage = content.Image
-		ret.ContentImageData = content.ImageData
+		ret.ContentName = content.GetAttribute("name")
+		ret.ContentDescription = content.GetAttribute("description")
+		ret.ContentImage = content.GetAttribute("image")
+		ret.ContentImageData = content.GetAttributeBinary("image_data")
 
 	case *nft.ContentOnchain:
-		ret.ContentName = content.Name
-		ret.ContentDescription = content.Description
-		ret.ContentImage = content.Image
-		ret.ContentImageData = content.ImageData
+		ret.ContentName = content.GetAttribute("name")
+		ret.ContentDescription = content.GetAttribute("description")
+		ret.ContentImage = content.GetAttribute("image")
+		ret.ContentImageData = content.GetAttributeBinary("image_data")
 
 	case *nft.ContentOffchain:
 		ret.ContentURI = content.URI

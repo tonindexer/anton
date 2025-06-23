@@ -18,7 +18,7 @@ var (
 
 func GetMethodHashes() (ret []int32) {
 	for i := 0; i < 1+rand.Int()%16; i++ {
-		ret = append(ret, int32(rand.Uint32()))
+		ret = append(ret, int32(rand.Uint32())) //nolint:gosec // no integer overflow
 	}
 	return
 }

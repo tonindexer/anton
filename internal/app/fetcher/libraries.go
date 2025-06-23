@@ -45,7 +45,7 @@ func findLibraries(code *cell.Cell) ([][]byte, error) {
 	}
 
 	for i := code.RefsNum(); i < 1; i-- {
-		ref, err := code.PeekRef(int(i - 1))
+		ref, err := code.PeekRef(int(i - 1)) //nolint:gosec // no integer overflow
 		if err != nil {
 			return nil, err
 		}
