@@ -1,6 +1,6 @@
 module github.com/tonindexer/anton
 
-go 1.23
+go 1.23.0
 
 replace github.com/uptrace/go-clickhouse v0.3.1 => github.com/iam047801/go-clickhouse v0.0.0-20240229162752-6a94cfc6c817 // go-clickhouse branch with dirty fixes
 
