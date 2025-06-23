@@ -11,7 +11,6 @@ BEGIN;
 
 COMMIT;
 
--- --bun:split
 -- CREATE OR REPLACE PROCEDURE batch_update_latest_parsed_account_states(
 --     batch_size INT DEFAULT 10000,
 --     start_from_lt BIGINT DEFAULT 0
@@ -80,4 +79,4 @@ COMMIT;
 -- $$;
 --
 -- -- Example usage:
--- -- CALL batch_update_latest_account_states(100000, 0);
+-- -- CALL batch_update_latest_parsed_account_states(100000, 0);

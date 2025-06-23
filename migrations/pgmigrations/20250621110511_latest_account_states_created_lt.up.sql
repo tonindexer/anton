@@ -6,7 +6,6 @@ BEGIN;
 COMMIT;
 
 
--- --bun:split
 -- CREATE OR REPLACE PROCEDURE batch_fill_account_states_created_lt(
 --     batch_size INT DEFAULT 10000,
 --     start_from_address BYTEA DEFAULT NULL
