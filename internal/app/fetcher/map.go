@@ -273,13 +273,13 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 			}
 		}
 	}
-	if raw.Description.Description != nil {
-		c, err := tlb.ToCell(raw.Description.Description)
+	if raw.Description != nil {
+		c, err := tlb.ToCell(raw.Description)
 		if err != nil {
 			return nil, errors.Wrap(err, "tx description to cell")
 		}
 		tx.Description = c.ToBOC()
-		mapTransactionDescription(raw.Description.Description, tx)
+		mapTransactionDescription(raw.Description, tx)
 	}
 
 	return tx, nil
