@@ -19,14 +19,12 @@ COMMIT;
 --     iteration_count INT := 0;
 --     max_address BYTEA;
 -- BEGIN
---     RAISE NOTICE 'Starting batch fill of created_lt with batch size: %', batch_size;
---
 --     LOOP
 --         -- Directly query account_states for minimum last_tx_lt per address
 --         WITH min_tx_lt AS (
 --             SELECT address, MIN(last_tx_lt) as min_lt
 --             FROM account_states
---             WHERE (last_processed_address IS NULL OR address > last_processed_address)
+--             WHERE address > last_processed_address
 --             GROUP BY address
 --             ORDER BY address
 --             LIMIT batch_size
@@ -69,4 +67,5 @@ COMMIT;
 -- $$;
 --
 -- -- Example usage:
--- -- CALL batch_fill_account_states_created_lt(10000);
+-- -- CALL batch_fill_account_states_created_lt(60000, decode('000000000000000000000000000000000000000000000000000000000000000000', 'hex'));
+-- -- CALL batch_fill_account_states_created_lt(60000, decode('0074b000e63938eb4547be7a5c3011ec6c5cb2fc80f55539b8124c5e4e5851818a', 'hex'));
