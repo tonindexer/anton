@@ -263,6 +263,9 @@ func (s *Service) AggregateAccounts(ctx context.Context, req *aggregate.Accounts
 }
 
 func (s *Service) AggregateAccountsHistory(ctx context.Context, req *history.AccountsReq) (*history.AccountsRes, error) {
+	if err := s.validateContractTypes(ctx, req.ContractTypes); err != nil {
+		return nil, err
+	}
 	return s.accountRepo.AggregateAccountsHistory(ctx, req)
 }
 
