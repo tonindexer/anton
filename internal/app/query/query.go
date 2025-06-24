@@ -147,6 +147,7 @@ func (s *Service) validateContractTypes(ctx context.Context, contractTypes []abi
 
 	return nil
 }
+
 func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.AccountsReq, res *filter.AccountsRes) error {
 	if !req.LatestState {
 		return nil // historical states are not available for skipped accounts
@@ -277,9 +278,42 @@ func (s *Service) AggregateTransactionsHistory(ctx context.Context, req *history
 	return s.txRepo.AggregateTransactionsHistory(ctx, req)
 }
 
+func (s *Service) validateOperationNames(ctx context.Context, operationNames []string) error {
+	if len(operationNames) == 0 {
+		return nil
+	}
+
+	operations, err := s.contractRepo.GetOperations(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get operations")
+	}
+
+	operationNamesSet := make(map[string]bool)
+	for _, op := range operations {
+		operationNamesSet[op.OperationName] = true
+	}
+
+	for _, t := range operationNames {
+		if !operationNamesSet[t] {
+			return errors.Wrap(core.ErrInvalidArg, "invalid operation name")
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) FilterMessages(ctx context.Context, req *filter.MessagesReq) (*filter.MessagesRes, error) {
+	if err := s.validateContractTypes(ctx, req.SrcContracts); err != nil {
+		return nil, err
+	}
+	if err := s.validateContractTypes(ctx, req.DstContracts); err != nil {
+		return nil, err
+	}
+	if err := s.validateOperationNames(ctx, req.OperationNames); err != nil {
+		return nil, err
+	}
 	if req.OperationID != nil && len(req.OperationNames) > 0 {
-		return nil, errors.Wrap(core.ErrInvalidArg, "filter is available either on operation name or operation id")
+		return nil, errors.Wrap(core.ErrInvalidArg, "filter is available either by operation name or operation id")
 	}
 	return s.msgRepo.FilterMessages(ctx, req)
 }
@@ -289,5 +323,14 @@ func (s *Service) AggregateMessages(ctx context.Context, req *aggregate.Messages
 }
 
 func (s *Service) AggregateMessagesHistory(ctx context.Context, req *history.MessagesReq) (*history.MessagesRes, error) {
+	if err := s.validateContractTypes(ctx, req.SrcContracts); err != nil {
+		return nil, err
+	}
+	if err := s.validateContractTypes(ctx, req.DstContracts); err != nil {
+		return nil, err
+	}
+	if err := s.validateOperationNames(ctx, req.OperationNames); err != nil {
+		return nil, err
+	}
 	return s.msgRepo.AggregateMessagesHistory(ctx, req)
 }

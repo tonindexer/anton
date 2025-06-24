@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/filter"
@@ -78,7 +79,7 @@ func TestRepository_FilterMessages(t *testing.T) {
 	t.Run("filter by contract", func(t *testing.T) {
 		res, err := repo.FilterMessages(ctx, &filter.MessagesReq{
 			MessagesFilter: filter.MessagesFilter{
-				DstContracts: []string{"special"},
+				DstContracts: []abi.ContractName{"special"},
 			},
 			Count: true,
 		})
