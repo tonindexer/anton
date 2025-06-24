@@ -18,12 +18,14 @@ type Cache struct {
 	msgCountCache    map[string]CacheEntry
 	msgCountCacheMx  sync.Mutex
 	msgCountCacheTTL time.Duration
+	lastCleanup      time.Time
 }
 
 func NewCache(ttl time.Duration) *Cache {
 	return &Cache{
 		msgCountCache:    make(map[string]CacheEntry),
 		msgCountCacheTTL: ttl,
+		lastCleanup:      time.Now(),
 	}
 }
 
@@ -53,6 +55,19 @@ func (c *Cache) Set(filterReq any, count int, maxSeqNo uint64) error {
 	return nil
 }
 
+func (c *Cache) cleanupExpiredEntries() {
+	if time.Since(c.lastCleanup) < time.Minute {
+		return
+	}
+	now := time.Now()
+	for k, entry := range c.msgCountCache {
+		if now.Sub(entry.UpdatedAt) > c.msgCountCacheTTL {
+			delete(c.msgCountCache, k)
+		}
+	}
+	c.lastCleanup = now
+}
+
 func (c *Cache) Get(filterReq any) (count int, maxSeqNo uint64, err error) {
 	k, err := getCacheKey(filterReq)
 	if err != nil {
@@ -62,12 +77,10 @@ func (c *Cache) Get(filterReq any) (count int, maxSeqNo uint64, err error) {
 	c.msgCountCacheMx.Lock()
 	defer c.msgCountCacheMx.Unlock()
 
+	c.cleanupExpiredEntries()
+
 	entry, ok := c.msgCountCache[k]
 	if !ok {
-		return 0, 0, core.ErrNotFound
-	}
-	if time.Since(entry.UpdatedAt) > c.msgCountCacheTTL {
-		delete(c.msgCountCache, k)
 		return 0, 0, core.ErrNotFound
 	}
 
