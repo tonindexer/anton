@@ -1,21 +1,23 @@
-package known_test
+package emulator_test
 
 import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton/nft"
 	"github.com/xssnick/tonutils-go/tvm/cell"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/abi/emulator"
 )
 
-var configCell *cell.Cell
+var configCell *cell.Cell // mainnet blockchain config
 
 func init() {
 	// mainnet blockchain config
@@ -29,84 +31,198 @@ func init() {
 	}
 }
 
-func getOperationDescByName(d *abi.InterfaceDesc, name string) *abi.OperationDesc {
-	for i := range d.InMessages {
-		if d.InMessages[i].Name == name {
-			return &d.InMessages[i]
-		}
-	}
-	for i := range d.OutMessages {
-		if d.OutMessages[i].Name == name {
-			return &d.OutMessages[i]
-		}
-	}
-	return nil
+func TestEmulator_RunGetMethod(t *testing.T) {
+	// query nft collection get_nft_address_by_index
+	collection := address.MustParseAddr("EQBMy6CNgBk8PrT5LNjPELxCX_LXBaVSqtbzRToUHlG3t-fg")
+
+	collectionCode, err := base64.StdEncoding.DecodeString("te6cckECFAEAAh8AART/APSkE/S88sgLAQIBYgIDAgLNBAUCASAODwTn0QY4BIrfAA6GmBgLjYSK3wfSAYAOmP6Z/2omh9IGmf6mpqGEEINJ6cqClAXUcUG6+CgOhBCFRlgFa4QAhkZYKoAueLEn0BCmW1CeWP5Z+A54tkwCB9gHAbKLnjgvlwyJLgAPGBEuABcYES4AHxgRgZgeACQGBwgJAgEgCgsAYDUC0z9TE7vy4ZJTE7oB+gDUMCgQNFnwBo4SAaRDQ8hQBc8WE8s/zMzMye1Ukl8F4gCmNXAD1DCON4BA9JZvpSCOKQakIIEA+r6T8sGP3oEBkyGgUyW78vQC+gDUMCJUSzDwBiO6kwKkAt4Ekmwh4rPmMDJQREMTyFAFzxYTyz/MzMzJ7VQALDI0AfpAMEFEyFAFzxYTyz/MzMzJ7VQAPI4V1NQwEDRBMMhQBc8WE8s/zMzMye1U4F8EhA/y8AIBIAwNAD1FrwBHAh8AV3gBjIywVYzxZQBPoCE8trEszMyXH7AIAC0AcjLP/gozxbJcCDIywET9AD0AMsAyYAAbPkAdMjLAhLKB8v/ydCACASAQEQAlvILfaiaH0gaZ/qamoYLehqGCxABDuLXTHtRND6QNM/1NTUMBAkXwTQ1DHUMNBxyMsHAc8WzMmAIBIBITAC+12v2omh9IGmf6mpqGDYg6GmH6Yf9IBhAALbT0faiaH0gaZ/qamoYCi+CeAI4APgCwGlAMbg==")
+	require.Nil(t, err)
+	collectionData, err := base64.StdEncoding.DecodeString("te6cckECEgEAAmcAA1OAH+KPIWfXRAHhzc8BIGKAZ7CGFDhMB09Wc+npbBemPgcgAAAAAAAAaBABAgMCAAQFART/APSkE/S88sgLBgBLAGQD6IAf4o8hZ9dEAeHNzwEgYoBnsIYUOEwHT1Zz6elsF6Y+BzAARAFodHRwczovL2xvdG9uLmZ1bi9jb2xsZWN0aW9uLmpzb24ALGh0dHBzOi8vbG90b24uZnVuL25mdC8CAWIHCAICzgkKAAmhH5/gBQIBIAsMAgEgEBEC1wyIccAkl8D4NDTAwFxsJJfA+D6QPpAMfoAMXHXIfoAMfoAMPACBLOOFDBsIjRSMscF8uGVAfpA1DAQI/AD4AbTH9M/ghBfzD0UUjC6jocyEDdeMkAT4DA0NDU1ghAvyyaiErrjAl8EhA/y8IA0OABE+kQwcLry4U2AB9lE1xwXy4ZH6QCHwAfpA0gAx+gCCCvrwgBuhIZRTFaCh3iLXCwHDACCSBqGRNuIgwv/y4ZIhjj6CEAUTjZHIUAnPFlALzxZxJEkUVEagcIAQyMsFUAfPFlAF+gIVy2oSyx/LPyJus5RYzxcBkTLiAckB+wAQR5QQKjdb4g8AcnCCEIt3FzUFyMv/UATPFhAkgEBwgBDIywVQB88WUAX6AhXLahLLH8s/Im6zlFjPFwGRMuIByQH7AACCAo41JvABghDVMnbbEDdEAG1xcIAQyMsFUAfPFlAF+gIVy2oSyx/LPyJus5RYzxcBkTLiAckB+wCTMDI04lUC8AMAOztRNDTP/pAINdJwgCafwH6QNQwECQQI+AwcFltbYAAdAPIyz9YzxYBzxbMye1Ugb+s9wA==")
+	require.Nil(t, err)
+
+	collectionCodeCell, err := cell.FromBOCMultiRoot(collectionCode)
+	require.Nil(t, err)
+	collectionDataCell, err := cell.FromBOCMultiRoot(collectionData)
+	require.Nil(t, err)
+
+	eCollection, err := emulator.NewEmulator(collection, collectionCodeCell[0], collectionDataCell[0], configCell)
+	require.Nil(t, err)
+
+	ret, err := eCollection.RunGetMethod(context.Background(), "get_nft_address_by_index",
+		[]abi.VmValue{
+			{
+				VmValueDesc: abi.VmValueDesc{
+					Name:      "index",
+					StackType: "int",
+				},
+				Payload: big.NewInt(100),
+			},
+		},
+		[]abi.VmValueDesc{
+			{
+				Name:      "address",
+				StackType: "slice",
+				Format:    "addr",
+			},
+		},
+	)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(ret))
+	item, ok := ret[0].Payload.(*address.Address)
+	require.True(t, ok)
+	require.Equal(t, "EQAQKmY9GTsEb6lREv-vxjT5sVHJyli40xGEYP3tKZSDuTBj", item.String())
+
+	// query nft item get_nft_data
+	itemCode, err := base64.StdEncoding.DecodeString("te6cckECDQEAAdAAART/APSkE/S88sgLAQIBYgIDAgLOBAUACaEfn+AFAgEgBgcCASALDALXDIhxwCSXwPg0NMDAXGwkl8D4PpA+kAx+gAxcdch+gAx+gAw8AIEs44UMGwiNFIyxwXy4ZUB+kDUMBAj8APgBtMf0z+CEF/MPRRSMLqOhzIQN14yQBPgMDQ0NTWCEC/LJqISuuMCXwSED/LwgCAkAET6RDBwuvLhTYAH2UTXHBfLhkfpAIfAB+kDSADH6AIIK+vCAG6EhlFMVoKHeItcLAcMAIJIGoZE24iDC//LhkiGOPoIQBRONkchQCc8WUAvPFnEkSRRURqBwgBDIywVQB88WUAX6AhXLahLLH8s/Im6zlFjPFwGRMuIByQH7ABBHlBAqN1viCgBycIIQi3cXNQXIy/9QBM8WECSAQHCAEMjLBVAHzxZQBfoCFctqEssfyz8ibrOUWM8XAZEy4gHJAfsAAIICjjUm8AGCENUydtsQN0QAbXFwgBDIywVQB88WUAX6AhXLahLLH8s/Im6zlFjPFwGRMuIByQH7AJMwMjTiVQLwAwA7O1E0NM/+kAg10nCAJp/AfpA1DAQJBAj4DBwWW1tgAB0A8jLP1jPFgHPFszJ7VSC/dQQb")
+	require.Nil(t, err)
+	itemData, err := base64.StdEncoding.DecodeString("te6cckEBAgEAWAABlQAAAAAAAABkgAmZdBGwAyeH1p8lmxniF4hL/lrgtKpVWt5op0KDyjb28AIihaT5me2lhAhFtxowTSuLb3JY8S1sv5rLvgAnLsoWVgEAEDEwMC5qc29u7rJBww==")
+	require.Nil(t, err)
+
+	itemCodeCell, err := cell.FromBOCMultiRoot(itemCode)
+	require.Nil(t, err)
+	itemDataCell, err := cell.FromBOCMultiRoot(itemData)
+	require.Nil(t, err)
+
+	eItem, err := emulator.NewEmulator(item, itemCodeCell[0], itemDataCell[0], configCell)
+	require.Nil(t, err)
+
+	ret, err = eItem.RunGetMethod(context.Background(), "get_nft_data", nil,
+		[]abi.VmValueDesc{
+			{
+				Name:      "init",
+				StackType: "int",
+				Format:    "bool",
+			}, {
+				Name:      "index",
+				StackType: "int",
+			}, {
+				Name:      "collection_address",
+				StackType: "slice",
+				Format:    "addr",
+			}, {
+				Name:      "owner_address",
+				StackType: "slice",
+				Format:    "addr",
+			}, {
+				Name:      "individual_content",
+				StackType: "cell",
+			},
+		},
+	)
+	require.Nil(t, err)
+	require.Equal(t, 5, len(ret))
+	collectionGot, ok := ret[2].Payload.(*address.Address)
+	require.True(t, ok)
+	require.Equal(t, collection.String(), collectionGot.String())
+	indContent, ok := ret[4].Payload.(*cell.Cell)
+	require.True(t, ok)
+	require.NotNil(t, indContent)
+	require.Equal(t, "te6cckEBAQEACgAAEDEwMC5qc29ue9bV9g==", base64.StdEncoding.EncodeToString(indContent.ToBOC()))
+
+	// query nft collection get_nft_content
+	ret, err = eCollection.RunGetMethod(context.Background(), "get_nft_content",
+		[]abi.VmValue{
+			{
+				VmValueDesc: abi.VmValueDesc{
+					Name:      "index",
+					StackType: "int",
+				},
+				Payload: big.NewInt(100),
+			}, {
+				VmValueDesc: abi.VmValueDesc{
+					Name:      "individual_content",
+					StackType: "cell",
+				},
+				Payload: indContent,
+			},
+		},
+		[]abi.VmValueDesc{
+			{
+				Name:      "full_content",
+				StackType: "cell",
+				Format:    "content",
+			},
+		},
+	)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(ret))
+	contentOffChain, ok := ret[0].Payload.(*nft.ContentOffchain)
+	require.True(t, ok)
+	require.Equal(t, "https://loton.fun/nft/100.json", contentOffChain.URI)
 }
 
-func loadOperation(t *testing.T, i *abi.InterfaceDesc, opName, bocB64 string) string {
-	dp := getOperationDescByName(i, opName)
-	require.NotNilf(t, dp, "operation name %s", opName)
+func TestEmulator_RunGetMethod_ReturnsDefinition(t *testing.T) {
+	defJ := []byte(`{
+  "native_asset": [
+    {
+      "name": "native_asset",
+      "tlb_type": "$0000",
+      "format": "tag"
+    }
+  ],
+  "jetton_asset": [
+    {
+      "name": "jetton_asset",
+      "tlb_type": "$0001",
+      "format": "tag"
+    },
+    {
+      "name": "workchain_id",
+      "tlb_type": "## 8",
+      "format": "int8"
+    },
+    {
+      "name": "jetton_address",
+      "tlb_type": "## 256"
+    }
+  ],
+  "asset_union": [
+    {
+      "name": "asset",
+      "tlb_type": ".",
+      "struct_fields": [
+        {
+          "name": "value",
+          "tlb_type": "[native_asset,jetton_asset]"
+        }
+      ]
+    }
+  ]
+}`)
 
-	op, err := dp.New()
+	var def map[abi.TLBType]abi.TLBFieldsDesc
+
+	err := json.Unmarshal(defJ, &def)
 	require.Nil(t, err)
 
-	boc, err := base64.StdEncoding.DecodeString(bocB64)
+	err = abi.RegisterDefinitions(def)
 	require.Nil(t, err)
 
-	c, err := cell.FromBOC(boc)
+	vault := address.MustParseAddr("EQAf4BMoiqPf0U2ADoNiEatTemiw3UXkt5H90aQpeSKC2l7f")
+
+	vaultCode, err := base64.StdEncoding.DecodeString("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")
+	require.Nil(t, err)
+	vaultData, err := base64.StdEncoding.DecodeString("te6cckECBgEAASUAAonAC23M4PIfrYhh8FTrwUryFV/Accw+ZrTHFXhtEHvBQWJ4AWpXt3gjT7xIUxgMmywv35tDAqdyqkXGuq+dbzbZxdUmAAMBAgCHgAvgrJ9r7Ajwe2rgY5w57NFRGpqa2028m2RFaXJBrfsAACIAy1WTa8cB1dJRtnkcRxs3gaw1JkH7hXj0XtkPrf2/JBEBFP8A9KQT9LzyyAsDAgJwBAUA9d4DoOmuQ/SAYEHaidqL2o8cMrcCAUDgsQAhkZYKA54sA/QFANeegZID9gHaz9rL2sji/9ojHHvaiaH0gaYOomWOC+XCBwgeCaY+AwQhNnVH9XQr5egHpn4CYammHgIDqEP2CEOh2j3apiCMIIsEAcpN2oex2oPb4gPl/wAJvyky+DxxHPSj")
 	require.Nil(t, err)
 
-	err = tlb.LoadFromCell(op, c.BeginParse())
+	vaultCodeCell, err := cell.FromBOCMultiRoot(vaultCode)
+	require.Nil(t, err)
+	vaultDataCell, err := cell.FromBOCMultiRoot(vaultData)
 	require.Nil(t, err)
 
-	j, err := json.Marshal(op)
+	eVault, err := emulator.NewEmulator(vault, vaultCodeCell[0], vaultDataCell[0], configCell)
 	require.Nil(t, err)
 
-	return string(j)
-}
-
-func getMethodDescByName(d *abi.InterfaceDesc, name string) *abi.GetMethodDesc {
-	for i := range d.GetMethods {
-		if d.GetMethods[i].Name == name {
-			return &d.GetMethods[i]
-		}
-	}
-	return nil
-}
-
-func getCodeHash(t *testing.T, codeB64 string) []byte {
-	code, err := base64.StdEncoding.DecodeString(codeB64)
+	ret, err := eVault.RunGetMethod(context.Background(), "get_asset", nil, []abi.VmValueDesc{
+		{
+			Name:      "asset",
+			StackType: "slice",
+			Format:    "asset_union",
+		},
+	})
 	require.Nil(t, err)
 
-	codeCell, err := cell.FromBOCMultiRoot(code)
+	j, err := json.Marshal(ret)
 	require.Nil(t, err)
-
-	return codeCell[0].Hash()
-}
-
-func execGetMethod(t *testing.T, i *abi.InterfaceDesc, addr *address.Address, methodName, codeB64, dataB64 string) (ret []any) {
-	dp := getMethodDescByName(i, methodName)
-	require.NotNil(t, dp)
-	require.Equal(t, 0, len(dp.Arguments))
-
-	code, err := base64.StdEncoding.DecodeString(codeB64)
-	require.Nil(t, err)
-	data, err := base64.StdEncoding.DecodeString(dataB64)
-	require.Nil(t, err)
-
-	codeCell, err := cell.FromBOCMultiRoot(code)
-	require.Nil(t, err)
-	dataCell, err := cell.FromBOCMultiRoot(data)
-	require.Nil(t, err)
-
-	e, err := emulator.NewEmulator(addr, codeCell[0], dataCell[0], configCell)
-	require.Nil(t, err)
-
-	stack, err := e.RunGetMethod(context.Background(), methodName, nil, dp.ReturnValues)
-	require.Nil(t, err)
-
-	for it := range stack {
-		ret = append(ret, stack[it].Payload)
-	}
-	return ret
+	require.Equal(t, `[{"name":"asset","stack_type":"slice","format":"asset_union","payload":{"asset":{"value":{"jetton_asset":{},"workchain_id":0,"jetton_address":45985353862647206060987594732861817093328871106941773337270673759241903247880}}}}]`, string(j))
 }

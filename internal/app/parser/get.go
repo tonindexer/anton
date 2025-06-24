@@ -17,6 +17,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/abi/emulator"
 	"github.com/tonindexer/anton/abi/known"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/app"
@@ -66,7 +67,7 @@ func (s *Service) emulateGetMethod(ctx context.Context, d *abi.GetMethodDesc, ac
 		base64.StdEncoding.EncodeToString(acc.Data),
 		base64.StdEncoding.EncodeToString(acc.Libraries)
 
-	e, err := abi.NewEmulatorBase64(acc.Address.MustToTonutils(), codeBase64, dataBase64, s.bcConfigBase64, librariesBase64)
+	e, err := emulator.NewEmulatorBase64(acc.Address.MustToTonutils(), codeBase64, dataBase64, s.bcConfigBase64, librariesBase64)
 	if err != nil {
 		return ret, errors.Wrap(err, "new emulator")
 	}

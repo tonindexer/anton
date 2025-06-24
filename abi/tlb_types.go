@@ -166,12 +166,20 @@ var (
 		"telemintText": reflect.TypeOf((*TelemintText)(nil)),
 		"dedustAsset":  reflect.TypeOf((*DedustAsset)(nil)),
 	}
-
-	registeredDefinitions = map[TLBType]TLBFieldsDesc{}
 )
 
 func init() {
 	for n, t := range typeNameMap {
 		typeNameRMap[t] = n
 	}
+}
+
+func GetGoTypeTLB(t TLBType) (reflect.Type, bool) {
+	ret, ok := typeNameMap[t]
+	return ret, ok
+}
+
+func GetGoTypeNameTLB(t reflect.Type) (TLBType, bool) {
+	ret, ok := typeNameRMap[t]
+	return ret, ok
 }

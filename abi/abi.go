@@ -24,6 +24,8 @@ type InterfaceDesc struct {
 	ContractData TLBFieldsDesc             `json:"contract_data,omitempty"`
 }
 
+var registeredDefinitions = map[TLBType]TLBFieldsDesc{}
+
 func RegisterDefinitions(definitions map[TLBType]TLBFieldsDesc, depth ...int) error {
 	noDef := map[TLBType]TLBFieldsDesc{}
 	for dn, d := range definitions {
@@ -66,4 +68,9 @@ func RegisterDefinitions(definitions map[TLBType]TLBFieldsDesc, depth ...int) er
 	}
 
 	return RegisterDefinitions(noDef, currentDepth+1, maxDepth)
+}
+
+func GetRegisteredDefinition(t TLBType) (TLBFieldsDesc, bool) {
+	desc, ok := registeredDefinitions[t]
+	return desc, ok
 }

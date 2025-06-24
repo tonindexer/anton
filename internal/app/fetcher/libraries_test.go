@@ -9,6 +9,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/abi/emulator"
 	"github.com/tonindexer/anton/addr"
 )
 
@@ -67,7 +68,7 @@ func TestService_getAccountLibraries_emulate(t *testing.T) {
 		base64.StdEncoding.EncodeToString(acc.Data),
 		base64.StdEncoding.EncodeToString(acc.Libraries)
 
-	e, err := abi.NewEmulatorBase64(acc.Address.MustToTonutils(), codeBase64, dataBase64, bcConfigBase64, librariesBase64)
+	e, err := emulator.NewEmulatorBase64(acc.Address.MustToTonutils(), codeBase64, dataBase64, bcConfigBase64, librariesBase64)
 	require.NoError(t, err)
 
 	retValues := []abi.VmValueDesc{

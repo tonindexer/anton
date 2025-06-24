@@ -45,7 +45,7 @@ func tlbMakeDesc(t reflect.Type, skipMagic ...bool) (ret TLBFieldsDesc, err erro
 			continue // skip tlb constructor tag as it has to be inside OperationDesc
 		}
 
-		ft, ok := typeNameRMap[f.Type]
+		ft, ok := GetGoTypeNameTLB(f.Type)
 		switch {
 		case ok:
 			schema.Format = ft
@@ -155,7 +155,7 @@ func tlbParseSettings(tag string) (reflect.Type, error) {
 		for _, dn := range strings.Split(tag[1:len(tag)-1], ",") {
 			// iterate through union definitions
 			// check that all definitions are known
-			_, ok := registeredDefinitions[TLBType(dn)]
+			_, ok := GetRegisteredDefinition(TLBType(dn))
 			if !ok {
 				return nil, fmt.Errorf("cannot find definition for '%s' type inside union", dn)
 			}
@@ -201,7 +201,7 @@ func tlbParseSettings(tag string) (reflect.Type, error) {
 }
 
 func tlbMapFormat(format TLBType, tag string) (reflect.Type, error) {
-	t, ok := typeNameMap[format]
+	t, ok := GetGoTypeTLB(format)
 	if ok {
 		return t, nil
 	}
@@ -216,7 +216,7 @@ func tlbMapFormat(format TLBType, tag string) (reflect.Type, error) {
 		return t, nil
 
 	default:
-		d, ok := registeredDefinitions[format]
+		d, ok := GetRegisteredDefinition(format)
 		if !ok {
 			return nil, fmt.Errorf("cannot find definition for '%s' format", format)
 		}
