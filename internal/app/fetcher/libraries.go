@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
@@ -78,6 +79,11 @@ func (s *Service) getAccountLibraries(ctx context.Context, a addr.Address, raw *
 
 	for i, hash := range hashes {
 		desc := libDescription{Lib: libs[i]}
+
+		if desc.Lib == nil {
+			log.Error().Str("address", a.Base64()).Hex("hash", hash).Msg("got nil library")
+			continue
+		}
 
 		t, err := tlb.ToCell(&desc)
 		if err != nil {
