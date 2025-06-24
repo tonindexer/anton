@@ -124,6 +124,29 @@ func (s *Service) FilterLabels(ctx context.Context, req *filter.LabelsReq) (*fil
 	return s.accountRepo.FilterLabels(ctx, req)
 }
 
+func (s *Service) validateContractTypes(ctx context.Context, contractTypes []abi.ContractName) error {
+	if len(contractTypes) == 0 {
+		return nil
+	}
+
+	interfaces, err := s.contractRepo.GetInterfaces(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get interfaces")
+	}
+
+	contractTypesSet := make(map[abi.ContractName]bool)
+	for _, i := range interfaces {
+		contractTypesSet[i.Name] = true
+	}
+
+	for _, t := range contractTypes {
+		if !contractTypesSet[t] {
+			return errors.Wrap(core.ErrInvalidArg, "invalid contract type")
+		}
+	}
+
+	return nil
+}
 func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.AccountsReq, res *filter.AccountsRes) error {
 	if !req.LatestState {
 		return nil // historical states are not available for skipped accounts
@@ -215,16 +238,23 @@ func (s *Service) addGetMethodDescription(ctx context.Context, rows []*core.Acco
 }
 
 func (s *Service) FilterAccounts(ctx context.Context, req *filter.AccountsReq) (*filter.AccountsRes, error) {
+	if err := s.validateContractTypes(ctx, req.ContractTypes); err != nil {
+		return nil, err
+	}
+
 	res, err := s.accountRepo.FilterAccounts(ctx, req)
 	if err != nil {
 		return nil, err
 	}
+
 	if err := s.fetchSkippedAccounts(ctx, req, res); err != nil {
 		return nil, err
 	}
+
 	if err := s.addGetMethodDescription(ctx, res.Rows); err != nil {
 		return nil, err
 	}
+
 	return res, nil
 }
 
