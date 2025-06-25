@@ -237,31 +237,6 @@ func (r *Repository) countAccountStatesFullScan(ctx context.Context, f *filter.A
 	return result.Count, *result.MaxLT, nil
 }
 
-func (r *Repository) countLatestAccountStatesFullScanFiltered(ctx context.Context, req *filter.AccountsReq) (count int, err error) {
-	q := r.pg.NewSelect().Model((*core.LatestAccountState)(nil)).
-		ColumnExpr("count(*) AS count")
-
-	if len(req.Addresses) > 0 {
-		q = q.Where("address in (?)", bun.In(req.Addresses))
-	}
-
-	if len(req.ContractTypes) > 0 {
-		q = q.Where("types && ?", pgdialect.Array(req.ContractTypes))
-	}
-	if req.OwnerAddress != nil {
-		q = q.Where("owner_address = ?", req.OwnerAddress)
-	}
-	if req.MinterAddress != nil {
-		q = q.Where("minter_address = ?", req.MinterAddress)
-	}
-
-	if err := q.Scan(ctx, &count); err != nil {
-		return 0, err
-	}
-
-	return count, nil
-}
-
 func (r *Repository) countAccountStatesPartialScan(ctx context.Context, req *filter.AccountsReq, startLt uint64) (partialCount, roundedCount int, roundedMaxLt uint64, err error) {
 	var result struct {
 		SinceStartCount int    `bun:"since_start_count"`
@@ -346,11 +321,6 @@ func (r *Repository) countAccountStatesPartialScan(ctx context.Context, req *fil
 }
 
 func (r *Repository) countAccountStates(ctx context.Context, req *filter.AccountsReq) (int, error) {
-	if req.LatestState && (len(req.ContractTypes) > 0 || req.OwnerAddress != nil || req.MinterAddress != nil) {
-		count, err := r.countLatestAccountStatesFullScanFiltered(ctx, req)
-		return count, err
-	}
-
 	// choose the appropriate cache based on whether we're querying latest or historical states
 	cache := r.statesFilterCountCache
 	if req.LatestState {
