@@ -11,6 +11,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/addr"
+	"github.com/tonindexer/anton/internal/app/fetcher/msg_hash"
 	"github.com/tonindexer/anton/internal/core"
 )
 
@@ -156,11 +157,10 @@ func mapMessage(tx *tlb.Transaction, message tlb.Message) (*core.Message, error)
 		err error
 	)
 
-	msgCell, err := tlb.ToCell(message.Msg)
+	msg.Hash, err = msg_hash.GetMessageHash(message.Msg)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot convert message to cell")
+		return nil, err
 	}
-	msg.Hash = msgCell.Hash()
 
 	switch raw := message.Msg.(type) {
 	case *tlb.InternalMessage:
