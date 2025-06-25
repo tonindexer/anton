@@ -172,10 +172,6 @@ func (r *Repository) filterAccountStates(ctx context.Context, f *filter.Accounts
 }
 
 func (r *Repository) countAccountStatesFullScan(ctx context.Context, f *filter.AccountsReq) (count int, maxLt uint64, err error) {
-	if f.LatestState && (len(f.ContractTypes) > 0 || f.MinterAddress != nil || f.OwnerAddress != nil) {
-		return 0, 0, errors.New("clickhouse latest account states full scan is not supported for these filters")
-	}
-
 	var result struct {
 		Count int
 		MaxLT *uint64 `ch:"max_lt"`
