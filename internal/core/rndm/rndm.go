@@ -10,6 +10,8 @@ import (
 	"github.com/tonindexer/anton/addr"
 )
 
+var lastLT uint64 = 58717889000001
+
 func init() {
 	rand.Seed(time.Now().UnixNano()) //nolint:staticcheck // TODO: migrate to a local random generator
 }

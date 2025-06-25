@@ -12,7 +12,6 @@ import (
 
 var (
 	contractNames = []abi.ContractName{known.NFTCollection, known.NFTItem, known.JettonMinter, known.JettonWallet, "wallet_v3r1", "wallet_v4r2"}
-	lastTxLT      uint64
 	timestamp     = time.Now().UTC()
 )
 
@@ -32,7 +31,7 @@ func ContractNames(a *addr.Address) (ret []abi.ContractName) {
 }
 
 func AddressState(a *addr.Address, t []abi.ContractName, minter *addr.Address) *core.AccountState {
-	lastTxLT++
+	lastLT++
 	timestamp = timestamp.Add(time.Minute)
 
 	b := Block(0)
@@ -45,7 +44,7 @@ func AddressState(a *addr.Address, t []abi.ContractName, minter *addr.Address) *
 		IsActive:        true,
 		Status:          core.Active,
 		Balance:         BigInt(),
-		LastTxLT:        lastTxLT,
+		LastTxLT:        lastLT,
 		LastTxHash:      Bytes(32),
 		StateHash:       Bytes(32),
 		Code:            Bytes(32),

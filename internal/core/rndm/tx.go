@@ -9,13 +9,12 @@ import (
 )
 
 var (
-	txTS        = time.Now().UTC()
-	txLT uint64 = 80000
+	txTS = time.Now().UTC()
 )
 
 func BlockTransaction(b core.BlockID) *core.Transaction {
 	txTS = txTS.Add(time.Minute)
-	txLT++
+	lastLT++
 
 	return &core.Transaction{
 		Address:     *Address(),
@@ -35,7 +34,7 @@ func BlockTransaction(b core.BlockID) *core.Transaction {
 		OrigStatus:  core.Active,
 		EndStatus:   core.Active,
 		CreatedAt:   txTS,
-		CreatedLT:   txLT,
+		CreatedLT:   lastLT,
 	}
 }
 
