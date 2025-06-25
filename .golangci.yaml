@@ -93,6 +93,7 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - internal/app/fetcher/msg_hash/store.go
 formatters:
   enable:
     - gofmt

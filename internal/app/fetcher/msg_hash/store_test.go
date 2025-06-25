@@ -3,7 +3,6 @@ package msg_hash
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,8 +18,6 @@ func TestMessageHash(t *testing.T) {
 	msgCell, err := cell.FromBOC(boc)
 	require.NoError(t, err)
 	require.Equal(t, hex.EncodeToString(msgCell.Hash()), "b3cfae95c4b916758edc6c8ca9c8ae837aeb40bd9981b4d9ca094358a36a780e")
-
-	fmt.Println(hex.EncodeToString(msgCell.Hash()))
 
 	msg := new(tlb.InternalMessage)
 	err = tlb.LoadFromCell(msg, msgCell.BeginParse())
