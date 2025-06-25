@@ -186,15 +186,15 @@ func (r *Repository) countAccountStatesFullScan(ctx context.Context, f *filter.A
 		// For latest account states, we need to count distinct addresses
 		q = r.ch.NewSelect().
 			Model((*core.AccountState)(nil)).
-			ColumnExpr("count(distinct address) AS count").
-			ColumnExpr("(SELECT max(last_tx_lt) FROM account_states) AS max_lt") // unfiltered max
+			ColumnExpr("count(distinct address) AS count")
 	} else {
 		// For historical account states, we count all records
 		q = r.ch.NewSelect().
 			Model((*core.AccountState)(nil)).
-			ColumnExpr("count(*) AS count").
-			ColumnExpr("(SELECT max(last_tx_lt) FROM account_states) AS max_lt") // unfiltered max
+			ColumnExpr("count(*) AS count")
 	}
+	q = q.ColumnExpr("floor((SELECT max(last_tx_lt) AS v FROM account_states), -7) - 1e7 as max_lt") // unfiltered max
+	q = q.Where("last_tx_lt <= max_lt")
 
 	if len(f.Addresses) > 0 {
 		q = q.Where("address in (?)", ch.In(f.Addresses))
@@ -237,46 +237,12 @@ func (r *Repository) countAccountStatesFullScan(ctx context.Context, f *filter.A
 	return result.Count, *result.MaxLT, nil
 }
 
-func (r *Repository) countAccountStatesPartialScan(ctx context.Context, req *filter.AccountsReq, startLt uint64) (partialCount int, maxLt uint64, err error) {
-	var result struct {
-		Count int
-		MaxLT uint64 `bun:"max_lt"`
-	}
-
-	var q *bun.SelectQuery
-	if req.LatestState {
-		q = r.pg.NewSelect().
-			Model((*core.LatestAccountState)(nil)).
-			ColumnExpr("count(*) AS count").
-			ColumnExpr("(select max(last_tx_lt) from latest_account_states) AS max_lt")
-		if startLt > 0 {
-			q = q.Where("created_lt > ?", startLt)
-		}
-	} else {
-		q = r.pg.NewSelect().
-			Model((*core.AccountState)(nil)).
-			ColumnExpr("count(*) AS count").
-			ColumnExpr("(select max(last_tx_lt) from account_states) AS max_lt").
-			Where("last_tx_lt > ?", startLt)
-	}
+func (r *Repository) countLatestAccountStatesFullScanFiltered(ctx context.Context, req *filter.AccountsReq) (count int, err error) {
+	q := r.pg.NewSelect().Model((*core.LatestAccountState)(nil)).
+		ColumnExpr("count(*) AS count")
 
 	if len(req.Addresses) > 0 {
 		q = q.Where("address in (?)", bun.In(req.Addresses))
-	}
-
-	if !req.LatestState {
-		if req.Workchain != nil {
-			q = q.Where("workchain = ?", *req.Workchain)
-		}
-		if req.Shard != nil {
-			q = q.Where("shard = ?", *req.Shard)
-		}
-		if req.BlockSeqNoLeq != nil {
-			q = q.Where("block_seq_no <= ?", *req.BlockSeqNoLeq)
-		}
-		if req.BlockSeqNoBeq != nil {
-			q = q.Where("block_seq_no >= ?", *req.BlockSeqNoBeq)
-		}
 	}
 
 	if len(req.ContractTypes) > 0 {
@@ -289,20 +255,99 @@ func (r *Repository) countAccountStatesPartialScan(ctx context.Context, req *fil
 		q = q.Where("minter_address = ?", req.MinterAddress)
 	}
 
+	if err := q.Scan(ctx, &count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (r *Repository) countAccountStatesPartialScan(ctx context.Context, req *filter.AccountsReq, startLt uint64) (partialCount, roundedCount int, roundedMaxLt uint64, err error) {
+	var result struct {
+		SinceStartCount int    `bun:"since_start_count"`
+		RoundedCount    int    `bun:"until_rounded_count"`
+		RoundedMaxLT    uint64 `bun:"rounded_max_lt_value"`
+	}
+
+	selectTable := func() *bun.SelectQuery {
+		if req.LatestState {
+			return r.pg.NewSelect().Model((*core.LatestAccountState)(nil))
+		} else {
+			return r.pg.NewSelect().Model((*core.AccountState)(nil))
+		}
+	}
+	ltColumn := func() string {
+		if req.LatestState {
+			return "created_lt"
+		} else {
+			return "last_tx_lt"
+		}
+	}
+	applyFilters := func(q *bun.SelectQuery) *bun.SelectQuery {
+		if len(req.Addresses) > 0 {
+			q = q.Where("address in (?)", bun.In(req.Addresses))
+		}
+		if !req.LatestState {
+			if req.Workchain != nil {
+				q = q.Where("workchain = ?", *req.Workchain)
+			}
+			if req.Shard != nil {
+				q = q.Where("shard = ?", *req.Shard)
+			}
+			if req.BlockSeqNoLeq != nil {
+				q = q.Where("block_seq_no <= ?", *req.BlockSeqNoLeq)
+			}
+			if req.BlockSeqNoBeq != nil {
+				q = q.Where("block_seq_no >= ?", *req.BlockSeqNoBeq)
+			}
+		}
+		if len(req.ContractTypes) > 0 {
+			q = q.Where("types && ?", pgdialect.Array(req.ContractTypes))
+		}
+		if req.OwnerAddress != nil {
+			q = q.Where("owner_address = ?", req.OwnerAddress)
+		}
+		if req.MinterAddress != nil {
+			q = q.Where("minter_address = ?", req.MinterAddress)
+		}
+		return q
+	}
+
+	q := r.pg.NewSelect().
+		With(
+			"rounded_max_lt",
+			selectTable().
+				ColumnExpr(fmt.Sprintf("floor(max(%s) / 1e7) * 1e7 - 1e7 AS v", ltColumn())),
+		).
+		With(
+			"until_rounded_count",
+			applyFilters(selectTable()).
+				Table("rounded_max_lt").
+				ColumnExpr("count(*) as v").
+				Where(ltColumn()+" > ?", startLt).
+				Where(ltColumn()+" <= rounded_max_lt.v"),
+		).
+		With(
+			"since_start_count",
+			applyFilters(selectTable()).
+				ColumnExpr("count(*) as v").
+				Where(ltColumn()+" > ?", startLt),
+		).
+		Table("rounded_max_lt", "until_rounded_count", "since_start_count").
+		ColumnExpr("since_start_count.v AS since_start_count").
+		ColumnExpr("until_rounded_count.v AS until_rounded_count").
+		ColumnExpr("rounded_max_lt.v as rounded_max_lt_value")
+
 	if err := q.Scan(ctx, &result); err != nil {
-		return 0, 0, err
+		return 0, 0, 0, err
 	}
 
-	if result.MaxLT == 0 {
-		result.MaxLT = startLt // no new rows
-	}
-
-	return result.Count, result.MaxLT, nil
+	return result.SinceStartCount, result.RoundedCount, result.RoundedMaxLT, nil
 }
 
 func (r *Repository) countAccountStates(ctx context.Context, req *filter.AccountsReq) (int, error) {
 	if req.LatestState && (len(req.ContractTypes) > 0 || req.OwnerAddress != nil || req.MinterAddress != nil) {
-		count, _, err := r.countAccountStatesPartialScan(ctx, req, 0)
+		count, err := r.countLatestAccountStatesFullScanFiltered(ctx, req)
 		return count, err
 	}
 
@@ -331,11 +376,11 @@ func (r *Repository) countAccountStates(ctx context.Context, req *filter.Account
 	}
 
 	// get partial count since last cached value
-	partialCount, maxLT, err := r.countAccountStatesPartialScan(ctx, req, maxLT)
+	partialCount, roundedPartialCount, roundedMaxLT, err := r.countAccountStatesPartialScan(ctx, req, maxLT)
 	if err != nil {
 		return 0, err
 	}
-	if err := cache.Set(req.AccountsFilter, count+partialCount, maxLT); err != nil {
+	if err := cache.Set(req.AccountsFilter, count+roundedPartialCount, roundedMaxLT); err != nil {
 		return 0, err
 	}
 

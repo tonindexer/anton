@@ -250,6 +250,19 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		require.Equal(t, []*core.AccountState{specialState}, results.Rows)
 	})
 
+	t.Run("filter states by non-existing contract types", func(t *testing.T) {
+		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithCodeData: true,
+			AccountsFilter: filter.AccountsFilter{
+				ContractTypes: []abi.ContractName{"some_nonsense"},
+			},
+			Order: "DESC", Limit: 1, Count: true,
+		})
+		require.Nil(t, err)
+		require.Equal(t, 0, results.Total)
+		require.Equal(t, []*core.AccountState(nil), results.Rows)
+	})
+
 	t.Run("filter states by minter", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			WithCodeData: true,
