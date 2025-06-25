@@ -288,7 +288,7 @@ func (r *Repository) countAccountStatesPartialScan(ctx context.Context, req *fil
 		With(
 			"rounded_max_lt",
 			selectTable().
-				ColumnExpr(fmt.Sprintf("floor(max(%s) / 1e7) * 1e7 - 1e7 AS v", ltColumn())),
+				ColumnExpr(fmt.Sprintf("greatest(floor(max(%s) / 1e7) * 1e7 - 1e7, 0) AS v", ltColumn())),
 		).
 		With(
 			"until_rounded_count",
@@ -313,6 +313,10 @@ func (r *Repository) countAccountStatesPartialScan(ctx context.Context, req *fil
 		return 0, 0, 0, err
 	}
 
+	if result.RoundedMaxLT == 0 {
+		return 0, 0, 0, core.ErrNotFound
+	}
+
 	return result.SinceStartCount, result.RoundedCount, result.RoundedMaxLT, nil
 }
 
@@ -327,7 +331,11 @@ func (r *Repository) countAccountStates(ctx context.Context, req *filter.Account
 	count, maxLT, err := cache.Get(req.AccountsFilter)
 	if errors.Is(err, core.ErrNotFound) {
 		// full scan for initial count
-		count, maxLT, err = r.countAccountStatesFullScan(ctx, req)
+		if req.LatestState && (len(req.Addresses) > 0 || len(req.ContractTypes) > 0 || req.OwnerAddress != nil || req.MinterAddress != nil) {
+			_, count, maxLT, err = r.countAccountStatesPartialScan(ctx, req, 0) // full scan PostgreSQL table instead of Clickhouse
+		} else {
+			count, maxLT, err = r.countAccountStatesFullScan(ctx, req)
+		}
 		if errors.Is(err, core.ErrNotFound) {
 			return 0, nil
 		}
