@@ -130,7 +130,7 @@ func (r *Repository) countMsgFullScan(ctx context.Context, req *filter.MessagesR
 		).
 		Table("max_lt", "rounded_count").
 		ColumnExpr("max_lt.v AS max_lt_value").
-		ColumnExpr("floor(max_lt.v, -7) - 1e7 as max_lt_rounded").
+		ColumnExpr("max2(floor(max_lt.v, -7) - 1e7, 0) as max_lt_rounded").
 		ColumnExpr("rounded_count.v AS count")
 
 	if err := q.Scan(ctx, &result); err != nil {
@@ -156,7 +156,7 @@ func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.Messag
 			"rounded_max_lt",
 			r.pg.NewSelect().
 				Model((*core.Message)(nil)).
-				ColumnExpr("floor(max(created_lt) / 1e7) * 1e7 - 1e7 AS v"), // we round LT as messages in new blocks can have lower LT
+				ColumnExpr("greatest(floor(max(created_lt) / 1e7) * 1e7 - 1e7, 0) AS v"), // we round LT as messages in new blocks can have lower LT
 		).
 		With(
 			"until_rounded_count",
@@ -175,7 +175,7 @@ func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.Messag
 				&req.MessagesFilter,
 			).
 				ColumnExpr("count(*) as v").
-				Where("created_lt >= ?", startLt)).
+				Where("created_lt > ?", startLt)).
 		Table("rounded_max_lt", "until_rounded_count", "since_start_count").
 		ColumnExpr("since_start_count.v AS since_start_count").
 		ColumnExpr("until_rounded_count.v AS until_rounded_count").
