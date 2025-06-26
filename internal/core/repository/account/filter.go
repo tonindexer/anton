@@ -329,7 +329,7 @@ func (r *Repository) countAccountStates(ctx context.Context, req *filter.Account
 
 	// try to get from cache
 	count, maxLT, err := cache.Get(req.AccountsFilter)
-	if errors.Is(err, core.ErrNotFound) {
+	if errors.Is(err, core.ErrNotFound) { //nolint:nestif // cache entry is not found, we do full scan first
 		// full scan for initial count
 		if req.LatestState && (len(req.Addresses) > 0 || len(req.ContractTypes) > 0 || req.OwnerAddress != nil || req.MinterAddress != nil) {
 			_, count, maxLT, err = r.countAccountStatesPartialScan(ctx, req, 0) // full scan PostgreSQL table instead of Clickhouse
