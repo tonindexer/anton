@@ -85,7 +85,7 @@ func ParseOperationDesc(t abi.ContractName, d *abi.OperationDesc) (*core.Contrac
 		if !ok {
 			return nil, fmt.Errorf("wrong hex %s operation id format: %s", d.Name, d.Code)
 		}
-		opId = uint32(n.Uint64())
+		opId = uint32(n.Uint64()) //nolint:gosec // no integer overflow
 	} else {
 		n, err := strconv.ParseUint(c, 10, 32)
 		if err != nil {

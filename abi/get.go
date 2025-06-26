@@ -8,6 +8,8 @@ import (
 	"github.com/sigurn/crc16"
 
 	"github.com/xssnick/tonutils-go/tvm/cell"
+
+	"github.com/tonindexer/anton/addr"
 )
 
 const getMethodsDictKeySz = 19
@@ -27,10 +29,31 @@ type VmValueDesc struct {
 	Fields    TLBFieldsDesc `json:"struct_fields,omitempty"` // Format = "struct"
 }
 
+type VmValue struct {
+	VmValueDesc
+	Payload any `json:"payload"`
+}
+
+type VmStack []VmValue
+
 type GetMethodDesc struct {
 	Name         string        `json:"name"`
 	Arguments    []VmValueDesc `json:"arguments,omitempty"`
 	ReturnValues []VmValueDesc `json:"return_values"`
+}
+
+type GetMethodExecution struct {
+	Name string `json:"name,omitempty"`
+
+	Address *addr.Address `json:"address,omitempty"`
+
+	Arguments []VmValueDesc `json:"arguments,omitempty"`
+	Receives  []any         `json:"receives,omitempty"`
+
+	ReturnValues []VmValueDesc `json:"return_values,omitempty"`
+	Returns      []any         `json:"returns,omitempty"`
+
+	Error string `json:"error,omitempty"`
 }
 
 func MethodNameHash(name string) int32 {
@@ -116,7 +139,7 @@ func GetMethodHashes(code *cell.Cell) ([]int32, error) {
 		case 0, 1, 2, 3:
 			continue
 		}
-		ret = append(ret, int32(i))
+		ret = append(ret, int32(i)) //nolint:gosec // no integer overflow
 	}
 
 	return ret, nil

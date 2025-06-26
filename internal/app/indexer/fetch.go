@@ -16,7 +16,7 @@ import (
 func (s *Service) getUnseenBlocks(ctx context.Context, seq uint32) (master *ton.BlockIDExt, shards []*ton.BlockIDExt, err error) {
 	master, shards, err = s.Fetcher.UnseenBlocks(ctx, seq)
 	if err != nil {
-		if !errors.Is(err, ton.ErrBlockNotFound) && !(err != nil && strings.Contains(err.Error(), "block is not applied")) {
+		if !errors.Is(err, ton.ErrBlockNotFound) && !strings.Contains(err.Error(), "block is not applied") {
 			return nil, nil, errors.Wrap(err, "cannot fetch unseen blocks")
 		}
 
@@ -125,7 +125,7 @@ func (s *Service) fetchMaster(seq uint32) *core.Block {
 			log.Error().
 				Err(errBlock.err).
 				Int32("workchain", errBlock.block.Workchain).
-				Uint64("shard", uint64(errBlock.block.Shard)).
+				Int64("shard", errBlock.block.Shard).
 				Uint32("seq", errBlock.block.SeqNo).
 				Msg("cannot process block")
 			time.Sleep(time.Second)
@@ -189,7 +189,7 @@ func (s *Service) fetchMastersConcurrent(fromBlock uint32, results chan<- *core.
 	for i := 0; i < workers; i++ {
 		go func(seq uint32) {
 			ch <- s.fetchMaster(seq)
-		}(fromBlock + uint32(i))
+		}(fromBlock + uint32(i)) //nolint:gosec // no integer overflow
 	}
 
 	for i := 0; i < workers; i++ {

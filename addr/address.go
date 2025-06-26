@@ -173,7 +173,7 @@ func (x *Address) UnmarshalText(data []byte) error {
 
 func (x *Address) Value() (driver.Value, error) {
 	if x == nil {
-		return nil, nil
+		return nil, nil //nolint:nilnil // do not want to use a sentinel error here
 	}
 	none := true
 	for _, i := range x {
@@ -183,7 +183,7 @@ func (x *Address) Value() (driver.Value, error) {
 		}
 	}
 	if none {
-		return nil, nil
+		return nil, nil //nolint:nilnil // do not want to use a sentinel error here
 	}
 	return x[:], nil
 }

@@ -1,46 +1,36 @@
+version: "2"
 run:
-  go: '1.19'
   concurrency: 4
-  timeout: 5m
+  go: "1.23"
+  modules-download-mode: readonly
   issues-exit-code: 2
   tests: true
-  modules-download-mode: readonly
   allow-parallel-runners: false
-  skip-files:
-    - main.go
 linters:
-  disable-all: true
+  default: none
   enable:
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-    - asciicheck
     - asciicheck
     - bidichk
     - decorder
-    - depguard
+    # - depguard
     - dupl
     - durationcheck
+    - errcheck
     - errchkjson
     - errname
     - errorlint
-    - execinquery
-    - exportloopref
     - forbidigo
     - forcetypeassert
-    - goimports
     - gocognit
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
     - goheader
     - gosec
+    - govet
     - grouper
     - importas
+    - ineffassign
     - ireturn
     - maintidx
     - makezero
@@ -51,42 +41,66 @@ linters:
     - nolintlint
     - predeclared
     - promlinter
+    - staticcheck
     - unconvert
+    - unused
     - whitespace
-linters-settings:
-  gocyclo:
-    min-complexity: 18
-  gosec:
-    excludes:
-      - G404
-  gocritic:
-    disabled-checks:
-      - regexpMust
-      - commentedOutCode
-      - docStub
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-      - experimental
-      - opinionated
-    settings:
-      captLocal:
-        paramsOnly: false
-      elseif:
-        skipBalanced: false
-      nestingReduce:
-        bodyWidth: 4
-      rangeValCopy:
-        sizeThreshold: 64
-        skipTestFuncs: false
-      tooManyResultsChecker:
-        maxResults: 100
-      truncateCmp:
-        skipArchDependent: false
-      underef:
-        skipRecvDeref: false
-      unnamedResult:
-        checkExported: true
-      hugeParam:
-        sizeThreshold: 64
+  settings:
+    gocritic:
+      disabled-checks:
+        - regexpMust
+        - commentedOutCode
+        - docStub
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+        - experimental
+        - opinionated
+      settings:
+        captLocal:
+          paramsOnly: false
+        elseif:
+          skipBalanced: false
+        hugeParam:
+          sizeThreshold: 64
+        nestingReduce:
+          bodyWidth: 4
+        rangeValCopy:
+          sizeThreshold: 64
+          skipTestFuncs: false
+        tooManyResultsChecker:
+          maxResults: 100
+        truncateCmp:
+          skipArchDependent: false
+        underef:
+          skipRecvDeref: false
+        unnamedResult:
+          checkExported: true
+    gocyclo:
+      min-complexity: 18
+    gosec:
+      excludes:
+        - G404
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - internal/app/fetcher/msg_hash/store.go
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

@@ -192,8 +192,10 @@ func TestRepository_FilterAccounts(t *testing.T) {
 	t.Run("filter states by address", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			WithCodeData: true,
-			Addresses:    []*addr.Address{address},
-			Order:        "ASC", Limit: len(addressStates), Count: true,
+			AccountsFilter: filter.AccountsFilter{
+				Addresses: []*addr.Address{address},
+			},
+			Order: "ASC", Limit: len(addressStates), Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 15, results.Total)
@@ -205,9 +207,11 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		latest.Code = nil
 
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			WithCodeData:  true,
-			Addresses:     []*addr.Address{&latest.Address},
-			LatestState:   true,
+			WithCodeData: true,
+			AccountsFilter: filter.AccountsFilter{
+				Addresses:   []*addr.Address{&latest.Address},
+				LatestState: true,
+			},
 			ExcludeColumn: []string{"code"}, Count: true,
 		})
 		require.Nil(t, err)
@@ -220,9 +224,11 @@ func TestRepository_FilterAccounts(t *testing.T) {
 		latest.Code = nil
 
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			WithCodeData:  true,
-			Addresses:     []*addr.Address{&latest.Address},
-			LatestState:   true,
+			WithCodeData: true,
+			AccountsFilter: filter.AccountsFilter{
+				Addresses:   []*addr.Address{&latest.Address},
+				LatestState: true,
+			},
 			ExcludeColumn: []string{"code"}, Count: true,
 		})
 		require.Nil(t, err)
@@ -232,21 +238,38 @@ func TestRepository_FilterAccounts(t *testing.T) {
 
 	t.Run("filter latest state with data by contract types", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			WithCodeData:  true,
-			ContractTypes: []abi.ContractName{"special", "some_nonsense"},
-			LatestState:   true,
-			Order:         "DESC", Limit: 1, Count: true,
+			WithCodeData: true,
+			AccountsFilter: filter.AccountsFilter{
+				ContractTypes: []abi.ContractName{"special", "some_nonsense"},
+				LatestState:   true,
+			},
+			Order: "DESC", Limit: 1, Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 15, results.Total)
 		require.Equal(t, []*core.AccountState{specialState}, results.Rows)
 	})
 
+	t.Run("filter states by non-existing contract types", func(t *testing.T) {
+		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
+			WithCodeData: true,
+			AccountsFilter: filter.AccountsFilter{
+				ContractTypes: []abi.ContractName{"some_nonsense"},
+			},
+			Order: "DESC", Limit: 1, Count: true,
+		})
+		require.Nil(t, err)
+		require.Equal(t, 0, results.Total)
+		require.Equal(t, []*core.AccountState(nil), results.Rows)
+	})
+
 	t.Run("filter states by minter", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			WithCodeData:  true,
-			MinterAddress: latestState.MinterAddress,
-			Order:         "DESC", Limit: 1, Count: true,
+			WithCodeData: true,
+			AccountsFilter: filter.AccountsFilter{
+				MinterAddress: latestState.MinterAddress,
+			},
+			Order: "DESC", Limit: 1, Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 5, results.Total)
@@ -256,8 +279,10 @@ func TestRepository_FilterAccounts(t *testing.T) {
 	t.Run("filter states by owner", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			WithCodeData: true,
-			OwnerAddress: latestState.OwnerAddress,
-			Order:        "DESC", Limit: 1, Count: true,
+			AccountsFilter: filter.AccountsFilter{
+				OwnerAddress: latestState.OwnerAddress,
+			},
+			Order: "DESC", Limit: 1, Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 1, results.Total)
@@ -267,9 +292,11 @@ func TestRepository_FilterAccounts(t *testing.T) {
 	t.Run("filter latest states by owner", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			WithCodeData: true,
-			LatestState:  true,
-			OwnerAddress: latestState.OwnerAddress,
-			Order:        "DESC", Limit: 1, Count: true,
+			AccountsFilter: filter.AccountsFilter{
+				LatestState:  true,
+				OwnerAddress: latestState.OwnerAddress,
+			},
+			Order: "DESC", Limit: 1, Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 1, results.Total)
@@ -279,8 +306,10 @@ func TestRepository_FilterAccounts(t *testing.T) {
 	t.Run("filter by account state ids", func(t *testing.T) {
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
 			WithCodeData: true,
-			StateIDs:     []*core.AccountStateID{{Address: latestState.Address, LastTxLT: latestState.LastTxLT}},
-			Order:        "DESC", Limit: 1, Count: true,
+			AccountsFilter: filter.AccountsFilter{
+				StateIDs: []*core.AccountStateID{{Address: latestState.Address, LastTxLT: latestState.LastTxLT}},
+			},
+			Order: "DESC", Limit: 1, Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 0, results.Total)
@@ -363,10 +392,12 @@ func TestRepository_FilterAccounts_Heavy(t *testing.T) {
 		start := time.Now()
 
 		results, err := repo.FilterAccounts(ctx, &filter.AccountsReq{
-			WithCodeData:  true,
-			ContractTypes: []abi.ContractName{"special"},
-			LatestState:   true,
-			Order:         "DESC", Limit: 1, Count: true,
+			WithCodeData: true,
+			AccountsFilter: filter.AccountsFilter{
+				ContractTypes: []abi.ContractName{"special"},
+				LatestState:   true,
+			},
+			Order: "DESC", Limit: 1, Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 1, results.Total)

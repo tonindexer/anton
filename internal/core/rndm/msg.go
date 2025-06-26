@@ -11,8 +11,7 @@ import (
 
 var (
 	// operationNames        = []string{"nft_item_transfer", "nft_collection_item_mint"}
-	msgLT uint64 = 1000
-	msgTS        = time.Now().UTC()
+	msgTS = time.Now().UTC()
 )
 
 // func OperationName() string {
@@ -20,7 +19,7 @@ var (
 // }
 
 func MessageFromTo(from, to *addr.Address) *core.Message {
-	msgLT++
+	lastLT++
 	msgTS = msgTS.Add(time.Minute)
 
 	src, dst := Block(0), Block(0)
@@ -32,12 +31,12 @@ func MessageFromTo(from, to *addr.Address) *core.Message {
 		SrcWorkchain:    src.Workchain,
 		SrcShard:        src.Shard,
 		SrcBlockSeqNo:   src.SeqNo,
-		SrcTxLT:         msgLT,
+		SrcTxLT:         lastLT,
 		DstAddress:      *to,
 		DstWorkchain:    dst.Workchain,
 		DstShard:        dst.Shard,
 		DstBlockSeqNo:   dst.SeqNo,
-		DstTxLT:         msgLT,
+		DstTxLT:         lastLT,
 		Amount:          BigInt(),
 		IHRFee:          BigInt(),
 		FwdFee:          BigInt(),
@@ -49,7 +48,7 @@ func MessageFromTo(from, to *addr.Address) *core.Message {
 		StateInitCode:   Bytes(64),
 		StateInitData:   Bytes(64),
 		CreatedAt:       msgTS,
-		CreatedLT:       msgLT,
+		CreatedLT:       lastLT,
 	}
 }
 

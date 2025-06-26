@@ -171,7 +171,7 @@ func (s *Service) getMessagesSource(ctx context.Context, messages []*core.Messag
 				panic(errors.Wrap(err, "count masterchain blocks"))
 			}
 		}
-		if totalBlocks < 1000 {
+		if totalBlocks < 16 {
 			log.Debug().
 				Hex("dst_tx_hash", msg.DstTxHash).
 				Int32("dst_workchain", msg.DstWorkchain).Int64("dst_shard", msg.DstShard).Uint32("dst_block_seq_no", msg.DstBlockSeqNo).
@@ -180,8 +180,8 @@ func (s *Service) getMessagesSource(ctx context.Context, messages []*core.Messag
 			continue
 		}
 
-		panic(fmt.Errorf("unknown source of message with dst tx hash %x on block (%d, %d, %d) from %s to %s",
-			msg.DstTxHash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
+		panic(fmt.Errorf("unknown source of message with hash %x and dst tx hash %x on block (%d, %d, %d) from %s to %s",
+			msg.Hash, msg.DstTxHash, msg.DstWorkchain, msg.DstShard, msg.DstBlockSeqNo, msg.SrcAddress.String(), msg.DstAddress.String()))
 	}
 
 	return valid

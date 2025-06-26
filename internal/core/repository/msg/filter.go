@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
@@ -11,14 +12,7 @@ import (
 	"github.com/tonindexer/anton/internal/core/filter"
 )
 
-func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (ret []*core.Message, err error) {
-	q := r.pg.NewSelect()
-	if req.DBTx != nil {
-		q = req.DBTx.NewSelect()
-	}
-
-	q = q.Model(&ret)
-
+func (r *Repository) getFilterMessageQuery(q *bun.SelectQuery, req *filter.MessagesFilter) *bun.SelectQuery {
 	if len(req.Hash) > 0 {
 		q = q.Where("hash = ?", req.Hash)
 	}
@@ -47,6 +41,20 @@ func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (re
 	if len(req.OperationNames) > 0 {
 		q = q.Where("operation_name IN (?)", bun.In(req.OperationNames))
 	}
+
+	return q
+}
+
+func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (ret []*core.Message, err error) {
+	q := r.pg.NewSelect()
+	if req.DBTx != nil {
+		q = req.DBTx.NewSelect()
+	}
+
+	q = q.Model(&ret)
+
+	q = r.getFilterMessageQuery(q, &req.MessagesFilter)
+
 	if req.AfterTxLT != nil {
 		if req.Order == "ASC" {
 			q = q.Where("created_lt > ?", req.AfterTxLT)
@@ -68,7 +76,13 @@ func (r *Repository) filterMsg(ctx context.Context, req *filter.MessagesReq) (re
 	return ret, err
 }
 
-func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int, error) {
+func (r *Repository) countMsgFullScan(ctx context.Context, req *filter.MessagesReq) (count int, maxLt uint64, err error) {
+	var result struct {
+		MaxLT        uint64 `ch:"max_lt_value"`
+		RoundedMaxLT uint64 `ch:"max_lt_rounded"`
+		Count        int
+	}
+
 	q := r.ch.NewSelect().
 		Model((*core.Message)(nil))
 
@@ -100,7 +114,107 @@ func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int
 		q = q.Where("operation_name IN (?)", ch.In(req.OperationNames))
 	}
 
-	return q.Count(ctx)
+	q = r.ch.NewSelect().
+		With(
+			"max_lt",
+			r.ch.NewSelect().
+				Model((*core.Message)(nil)).
+				ColumnExpr("max(created_lt) AS v"),
+		).
+		With(
+			"rounded_count",
+			q. // query with filters
+				Table("max_lt").
+				ColumnExpr("count(*) as v").
+				Where("created_lt <= floor(max_lt.v, -7) - 1e7"), // we round LT as messages in new blocks can have lower LT
+		).
+		Table("max_lt", "rounded_count").
+		ColumnExpr("max_lt.v AS max_lt_value").
+		ColumnExpr("max2(floor(max_lt.v, -7) - 1e7, 0) as max_lt_rounded").
+		ColumnExpr("rounded_count.v AS count")
+
+	if err := q.Scan(ctx, &result); err != nil {
+		return 0, 0, err
+	}
+
+	if result.MaxLT == 0 {
+		return 0, 0, core.ErrNotFound
+	}
+
+	return result.Count, result.RoundedMaxLT, nil
+}
+
+func (r *Repository) countMsgPartialScan(ctx context.Context, req *filter.MessagesReq, startLt uint64) (partialCount, roundedCount int, roundedMaxLt uint64, err error) {
+	var result struct {
+		SinceStartCount int    `bun:"since_start_count"`
+		RoundedCount    int    `bun:"until_rounded_count"`
+		RoundedMaxLT    uint64 `bun:"rounded_max_lt_value"`
+	}
+
+	q := r.pg.NewSelect().
+		With(
+			"rounded_max_lt",
+			r.pg.NewSelect().
+				Model((*core.Message)(nil)).
+				ColumnExpr("greatest(floor(max(created_lt) / 1e7) * 1e7 - 1e7, 0) AS v"), // we round LT as messages in new blocks can have lower LT
+		).
+		With(
+			"until_rounded_count",
+			r.getFilterMessageQuery(
+				r.pg.NewSelect().Model((*core.Message)(nil)),
+				&req.MessagesFilter,
+			).
+				Table("rounded_max_lt").
+				ColumnExpr("count(*) as v").
+				Where("created_lt > ?", startLt).
+				Where("created_lt <= rounded_max_lt.v"),
+		).
+		With("since_start_count",
+			r.getFilterMessageQuery(
+				r.pg.NewSelect().Model((*core.Message)(nil)),
+				&req.MessagesFilter,
+			).
+				ColumnExpr("count(*) as v").
+				Where("created_lt > ?", startLt)).
+		Table("rounded_max_lt", "until_rounded_count", "since_start_count").
+		ColumnExpr("since_start_count.v AS since_start_count").
+		ColumnExpr("until_rounded_count.v AS until_rounded_count").
+		ColumnExpr("rounded_max_lt.v as rounded_max_lt_value")
+
+	if err := q.Scan(ctx, &result); err != nil {
+		return 0, 0, 0, err
+	}
+
+	return result.SinceStartCount, result.RoundedCount, result.RoundedMaxLT, nil
+}
+
+func (r *Repository) countMsg(ctx context.Context, req *filter.MessagesReq) (int, error) {
+	count, maxLT, err := r.messagesFilterCountCache.Get(req.MessagesFilter)
+	if errors.Is(err, core.ErrNotFound) {
+		count, maxLT, err = r.countMsgFullScan(ctx, req)
+		if errors.Is(err, core.ErrNotFound) {
+			return 0, nil
+		}
+		if err != nil {
+			return 0, err
+		}
+		if err := r.messagesFilterCountCache.Set(req.MessagesFilter, count, maxLT); err != nil {
+			return 0, err
+		}
+	}
+	if err != nil && !errors.Is(err, core.ErrNotFound) {
+		return 0, err
+	}
+
+	partialCount, roundedPartialCount, roundedMaxLT, err := r.countMsgPartialScan(ctx, req, maxLT)
+	if err != nil {
+		return 0, err
+	}
+	if err := r.messagesFilterCountCache.Set(req.MessagesFilter, count+roundedPartialCount, roundedMaxLT); err != nil {
+		return 0, err
+	}
+
+	return count + partialCount, nil
 }
 
 func (r *Repository) FilterMessages(ctx context.Context, req *filter.MessagesReq) (*filter.MessagesRes, error) {

@@ -205,9 +205,11 @@ func TestRelations(t *testing.T) {
 
 	t.Run("get account states with data", func(t *testing.T) {
 		res, err := accountRepo.FilterAccounts(ctx, &filter.AccountsReq{
-			Addresses:   addresses,
-			LatestState: true,
-			Count:       true,
+			AccountsFilter: filter.AccountsFilter{
+				Addresses:   addresses,
+				LatestState: true,
+			},
+			Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 1, res.Total)
@@ -216,8 +218,10 @@ func TestRelations(t *testing.T) {
 
 	t.Run("get messages with payloads", func(t *testing.T) {
 		res, err := msgRepo.FilterMessages(ctx, &filter.MessagesReq{
-			DstAddresses: addresses,
-			Count:        true,
+			MessagesFilter: filter.MessagesFilter{
+				DstAddresses: addresses,
+			},
+			Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 1, res.Total)
@@ -231,7 +235,9 @@ func TestRelations(t *testing.T) {
 
 	t.Run("get transactions with states and messages", func(t *testing.T) {
 		res, err := txRepo.FilterTransactions(ctx, &filter.TransactionsReq{
-			Addresses:        addresses,
+			TransactionsFilter: filter.TransactionsFilter{
+				Addresses: addresses,
+			},
 			WithAccountState: true,
 			WithMessages:     true,
 			Count:            true,
@@ -248,7 +254,9 @@ func TestRelations(t *testing.T) {
 	t.Run("get master block with shards and transactions", func(t *testing.T) {
 		var workchain int32 = -1
 		res, err := blockRepo.FilterBlocks(ctx, &filter.BlocksReq{
-			Workchain:                   &workchain,
+			BlocksFilter: filter.BlocksFilter{
+				Workchain: &workchain,
+			},
 			WithShards:                  true,
 			WithTransactions:            true,
 			WithTransactionAccountState: true,

@@ -22,7 +22,7 @@ RUN mkdir /output && cp build/emulator/libemulator.so /output
 
 
 # build
-FROM golang:1.21.4-bookworm AS builder
+FROM golang:1.23-bookworm AS builder
 
 RUN apt-get update && \
     apt-get install -y libsecp256k1-1 libsodium23

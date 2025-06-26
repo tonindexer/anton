@@ -21,7 +21,7 @@ func TestAddress_TypeKind(t *testing.T) {
 	require.Equal(t, reflect.Uint8, vt.Elem().Elem().Kind())
 	require.True(t, vt.Implements(reflect.TypeOf((*driver.Valuer)(nil)).Elem()))
 
-	r, err := v.Interface().(driver.Valuer).Value()
+	r, err := v.Interface().(driver.Valuer).Value() //nolint:forcetypeassert // no need
 	require.Nil(t, err)
 
 	rb, ok := r.([]byte)

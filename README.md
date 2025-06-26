@@ -80,6 +80,12 @@ Run tests on abi package:
 go test -p 1 $(go list ./... | grep /abi) -covermode=count
 ```
 
+To run the tests you might need to provide a path to the emulator library. For example:
+
+```shell
+CGO_LDFLAGS="-L /Users/user/go/src/github.com/tonkeeper/tongo/lib/darwin/ -Wl,-rpath,/Users/user/go/src/github.com/tonkeeper/tongo/lib/darwin/ -l emulator" go test -p 1 $(go list ./... | grep /abi) -covermode=count
+```
+
 Run repositories tests:
 
 ```shell

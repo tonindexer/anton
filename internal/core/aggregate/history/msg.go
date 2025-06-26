@@ -3,6 +3,7 @@ package history
 import (
 	"context"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 )
 
@@ -22,8 +23,8 @@ type MessagesReq struct {
 	SrcWorkchain *int32 `form:"src_workchain"`
 	DstWorkchain *int32 `form:"dst_workchain"`
 
-	SrcContracts []string `form:"src_contract"`
-	DstContracts []string `form:"dst_contract"`
+	SrcContracts []abi.ContractName `form:"src_contract"`
+	DstContracts []abi.ContractName `form:"dst_contract"`
 
 	OperationNames []string `form:"operation_name"`
 

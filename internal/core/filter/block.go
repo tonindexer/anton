@@ -6,11 +6,15 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-type BlocksReq struct {
+type BlocksFilter struct {
 	Workchain *int32  `form:"workchain"`
 	Shard     *int64  `form:"shard"`
 	SeqNo     *uint32 `form:"seq_no"`
 	FileHash  []byte  `form:"file_hash"`
+}
+
+type BlocksReq struct {
+	BlocksFilter
 
 	WithShards                  bool // TODO: array of relations as strings
 	WithAccountStates           bool
