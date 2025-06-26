@@ -3,7 +3,8 @@ BEGIN;
     ALTER TABLE latest_account_states
         ADD COLUMN types text[],
         ADD COLUMN owner_address bytea,
-        ADD COLUMN minter_address bytea;
+        ADD COLUMN minter_address bytea,
+        ADD COLUMN fake boolean not null default false;
 
     CREATE INDEX latest_account_states_types_idx ON latest_account_states USING gin (types);
     CREATE INDEX latest_account_states_minter_address_idx ON latest_account_states USING btree (minter_address) WHERE (minter_address IS NOT NULL);
@@ -28,13 +29,14 @@ COMMIT;
 --     LOOP
 --         -- Update the next batch using a subquery to select the limited rows first
 --         WITH batch_to_update AS (
---             SELECT s.address, s.last_tx_lt, s.types, s.owner_address, s.minter_address
+--             SELECT s.address, s.last_tx_lt, s.types, s.owner_address, s.minter_address, s.fake
 --             FROM account_states s
 --             WHERE s.last_tx_lt >= last_processed_tx_lt
 --               AND (
 --                   s.types IS NOT NULL OR
 --                   s.owner_address IS NOT NULL OR
---                   s.minter_address IS NOT NULL
+--                   s.minter_address IS NOT NULL OR
+--                   s.fake IS NOT NULL
 --               )
 --             ORDER BY s.last_tx_lt
 --             LIMIT batch_size
@@ -44,14 +46,16 @@ COMMIT;
 --             SET
 --                 types = b.types,
 --                 owner_address = b.owner_address,
---                 minter_address = b.minter_address
+--                 minter_address = b.minter_address,
+--                 fake = b.fake
 --             FROM batch_to_update b
 --             WHERE las.address = b.address
 --               AND las.last_tx_lt = b.last_tx_lt
 --               AND (
 --                   las.types IS DISTINCT FROM b.types OR
 --                   las.owner_address IS DISTINCT FROM b.owner_address OR
---                   las.minter_address IS DISTINCT FROM b.minter_address
+--                   las.minter_address IS DISTINCT FROM b.minter_address OR
+--                   las.fake IS DISTINCT FROM b.fake
 --               )
 --             RETURNING b.last_tx_lt
 --         )

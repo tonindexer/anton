@@ -284,6 +284,7 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 			Set("types = EXCLUDED.types").
 			Set("owner_address = EXCLUDED.owner_address").
 			Set("minter_address = EXCLUDED.minter_address").
+			Set("fake = EXCLUDED.fake").
 			Exec(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "cannot set latest state for %s", &a)
@@ -357,6 +358,7 @@ func (r *Repository) UpdateAccountStates(ctx context.Context, accounts []*core.A
 			Set("types = ?types").
 			Set("owner_address = ?owner_address").
 			Set("minter_address = ?minter_address").
+			Set("fake = ?fake").
 			Where("address = ?address").
 			Where("last_tx_lt = ?last_tx_lt").
 			Exec(ctx)

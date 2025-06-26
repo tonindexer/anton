@@ -140,6 +140,8 @@ type LatestAccountState struct {
 	OwnerAddress  *addr.Address `bun:"type:bytea" json:"owner_address,omitempty"` // universal column for many contracts
 	MinterAddress *addr.Address `bun:"type:bytea" json:"minter_address,omitempty"`
 
+	Fake bool `bun:"type:boolean" json:"fake"`
+
 	CreatedLT uint64 `bun:"type:bigint,notnull" json:"created_lt"`
 
 	AccountState *AccountState `bun:"rel:has-one,join:address=address,join:last_tx_lt=last_tx_lt" json:"account"`
