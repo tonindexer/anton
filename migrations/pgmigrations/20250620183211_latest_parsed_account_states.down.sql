@@ -5,6 +5,7 @@ BEGIN;
     ALTER TABLE latest_account_states
         DROP COLUMN types,
         DROP COLUMN owner_address,
-        DROP COLUMN minter_address;
+        DROP COLUMN minter_address,
+        DROP COLUMN fake;
 
 COMMIT;
