@@ -5,11 +5,9 @@ import (
 	"database/sql"
 
 	"github.com/pkg/errors"
-	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/abi/known"
-	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
 	"github.com/tonindexer/anton/internal/core/aggregate"
 )
@@ -17,7 +15,7 @@ import (
 func (r *Repository) aggregateAddressStatistics(ctx context.Context, req *aggregate.AccountsReq, res *aggregate.AccountsRes) error {
 	var err error
 
-	res.TransactionsCount, err = r.ch.NewSelect().
+	res.TransactionsCount, err = r.pg.NewSelect().
 		Model((*core.Transaction)(nil)).
 		Where("address = ?", req.Address).
 		Count(ctx)
@@ -29,10 +27,10 @@ func (r *Repository) aggregateAddressStatistics(ctx context.Context, req *aggreg
 		Types []abi.ContractName
 		Count int
 	}
-	err = r.ch.NewSelect().
-		Model((*core.AccountState)(nil)).
+	err = r.pg.NewSelect().
+		Model((*core.LatestAccountState)(nil)).
 		Column("types").
-		ColumnExpr("uniqExact(address) as count").
+		ColumnExpr("count(*) as count").
 		Where("owner_address = ?", req.Address).
 		Group("types").
 		Scan(ctx, &countByInterfaces)
@@ -56,33 +54,25 @@ func (r *Repository) aggregateAddressStatistics(ctx context.Context, req *aggreg
 	return nil
 }
 
-func (r *Repository) makeLastItemStateQuery(minter *addr.Address) *ch.SelectQuery {
-	return r.ch.NewSelect().
-		Model((*core.AccountState)(nil)).
-		ColumnExpr("argMax(address, last_tx_lt) as item_address").
-		Where("minter_address = ?", minter).
-		Where("fake = false").
-		Group("address")
-}
-
-func (r *Repository) makeLastItemOwnerQuery(minter *addr.Address) *ch.SelectQuery {
-	return r.makeLastItemStateQuery(minter).
-		ColumnExpr("argMax(owner_address, last_tx_lt) AS owner_address")
-}
-
 func (r *Repository) aggregateNFTMinter(ctx context.Context, req *aggregate.AccountsReq, res *aggregate.AccountsRes) error {
 	var err error
 
-	res.Items, err = r.makeLastItemStateQuery(req.MinterAddress).Count(ctx)
+	res.Items, err = r.pg.NewSelect().
+		Model((*core.LatestAccountState)(nil)).
+		Where("minter_address = ?", req.MinterAddress).
+		Where("fake = false").
+		Count(ctx)
 	if err != nil {
 		return errors.Wrap(err, "count nft items")
 	}
 
 	// TODO: owners include sale contracts
 
-	err = r.ch.NewSelect().
-		ColumnExpr("uniqExact(owner_address)").
-		TableExpr("(?) as q", r.makeLastItemOwnerQuery(req.MinterAddress)).
+	err = r.pg.NewSelect().
+		Model((*core.LatestAccountState)(nil)).
+		ColumnExpr("count(owner_address)").
+		Where("minter_address = ?", req.MinterAddress).
+		Where("fake = false").
 		Scan(ctx, &res.OwnersCount)
 	if err != nil {
 		return errors.Wrap(err, "count owners of nft minter")
@@ -93,6 +83,7 @@ func (r *Repository) aggregateNFTMinter(ctx context.Context, req *aggregate.Acco
 		ColumnExpr("address AS item_address").
 		ColumnExpr("uniqExact(owner_address) AS owners_count").
 		Where("minter_address = ?", req.MinterAddress).
+		Where("fake = false").
 		Group("item_address").
 		Order("owners_count DESC").
 		Limit(req.Limit).
@@ -101,10 +92,12 @@ func (r *Repository) aggregateNFTMinter(ctx context.Context, req *aggregate.Acco
 		return errors.Wrap(err, "count unique owners of nft items")
 	}
 
-	err = r.ch.NewSelect().
+	err = r.pg.NewSelect().
+		Model((*core.LatestAccountState)(nil)).
 		ColumnExpr("owner_address").
-		ColumnExpr("count(item_address) AS items_count").
-		TableExpr("(?) as q", r.makeLastItemOwnerQuery(req.MinterAddress)).
+		ColumnExpr("count(address) as items_count").
+		Where("minter_address = ?", req.MinterAddress).
+		Where("fake = false").
 		Group("owner_address").
 		Order("items_count DESC").
 		Limit(req.Limit).
@@ -119,25 +112,46 @@ func (r *Repository) aggregateNFTMinter(ctx context.Context, req *aggregate.Acco
 func (r *Repository) aggregateFTMinter(ctx context.Context, req *aggregate.AccountsReq, res *aggregate.AccountsRes) error {
 	var err error
 
-	res.Wallets, err = r.makeLastItemStateQuery(req.MinterAddress).Count(ctx)
+	res.Wallets, err = r.pg.NewSelect().
+		Model((*core.LatestAccountState)(nil)).
+		Where("latest_account_state.minter_address = ?", req.MinterAddress).
+		Where("latest_account_state.fake = false").
+		Count(ctx)
 	if err != nil {
 		return errors.Wrap(err, "count jetton wallets")
 	}
 
-	err = r.ch.NewSelect().
-		ColumnExpr("sum(balance) as total_supply").
+	err = r.pg.NewSelect().
+		ColumnExpr("sum(jetton_balance)").
 		TableExpr("(?) as q",
-			r.makeLastItemOwnerQuery(req.MinterAddress).
-				ColumnExpr("argMax(jetton_balance, last_tx_lt) AS balance")).
+			r.pg.NewSelect().
+				Model((*core.LatestAccountState)(nil)).
+				Relation("AccountState").
+				ColumnExpr("account_state.jetton_balance").
+				Where("latest_account_state.minter_address = ?", req.MinterAddress).
+				Where("latest_account_state.fake = false"),
+		).
 		Scan(ctx, &res.TotalSupply)
 	if err != nil {
 		return errors.Wrap(err, "count jetton total supply")
 	}
 
-	err = r.makeLastItemOwnerQuery(req.MinterAddress).
-		ColumnExpr("argMax(jetton_balance, last_tx_lt) AS balance").
-		Order("balance DESC").
-		Limit(req.Limit).
+	err = r.pg.NewSelect().
+		ColumnExpr("wallet_address").
+		ColumnExpr("owner_address").
+		ColumnExpr("balance").
+		TableExpr("(?) as q",
+			r.pg.NewSelect().
+				Model((*core.LatestAccountState)(nil)).
+				Relation("AccountState").
+				ColumnExpr("latest_account_state.address as wallet_address").
+				ColumnExpr("latest_account_state.owner_address as owner_address").
+				ColumnExpr("account_state.jetton_balance as balance").
+				Where("latest_account_state.minter_address = ?", req.MinterAddress).
+				Where("latest_account_state.fake = false").
+				Order("balance DESC").
+				Limit(req.Limit),
+		).
 		Scan(ctx, &res.OwnedBalance)
 	if err != nil {
 		return errors.Wrap(err, "count jetton holders")
@@ -147,14 +161,16 @@ func (r *Repository) aggregateFTMinter(ctx context.Context, req *aggregate.Accou
 }
 
 func (r *Repository) aggregateMinterStatistics(ctx context.Context, req *aggregate.AccountsReq, res *aggregate.AccountsRes) error {
-	var interfaces []abi.ContractName
+	var interfacesRes struct {
+		Interfaces []abi.ContractName `bun:"type:text[],array"`
+	}
 
-	err := r.ch.NewSelect().
-		Model((*core.AccountState)(nil)).
-		ColumnExpr("argMax(types, last_tx_lt) as interfaces").
+	err := r.pg.NewSelect().
+		Model((*core.LatestAccountState)(nil)).
+		ColumnExpr("types as interfaces").
 		Where("address = ?", req.MinterAddress).
 		Group("address").
-		Scan(ctx, &interfaces)
+		Scan(ctx, &interfacesRes)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil
 	}
@@ -162,7 +178,7 @@ func (r *Repository) aggregateMinterStatistics(ctx context.Context, req *aggrega
 		return err
 	}
 
-	for _, t := range interfaces {
+	for _, t := range interfacesRes.Interfaces {
 		switch t {
 		case known.NFTCollection:
 			if err := r.aggregateNFTMinter(ctx, req, res); err != nil {

@@ -76,8 +76,9 @@ var Command = &cli.Command{
 		}
 
 		p := parser.NewService(&app.ParserConfig{
-			BlockchainConfig: bcConfig,
-			ContractRepo:     contractRepo,
+			BlockchainConfig:         bcConfig,
+			ContractRepo:             contractRepo,
+			MaxAccountParsingWorkers: env.GetInt("MAX_ACCOUNT_PARSING_WORKERS", 96),
 		})
 		i := rescan.NewService(&app.RescanConfig{
 			ContractRepo: contractRepo,

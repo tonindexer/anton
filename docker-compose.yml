@@ -2,6 +2,7 @@ version: "3.5"
 
 x-anton-service: &anton-service
   image: "${IMAGE_NAME:-tonindexer/anton}:${IMAGE_TAG:-latest}"
+  restart: on-failure
   networks:
     - indexer_network
   depends_on: &anton-deps
@@ -28,6 +29,7 @@ services:
       <<: *anton-env
       FROM_BLOCK: ${FROM_BLOCK}
       WORKERS: ${WORKERS}
+      MAX_ACCOUNT_PARSING_WORKERS: ${MAX_ACCOUNT_PARSING_WORKERS}
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
   rescan:
@@ -41,6 +43,7 @@ services:
       <<: *anton-env
       RESCAN_WORKERS: ${RESCAN_WORKERS}
       RESCAN_SELECT_LIMIT: ${RESCAN_SELECT_LIMIT}
+      MAX_ACCOUNT_PARSING_WORKERS: ${MAX_ACCOUNT_PARSING_WORKERS}
       LITESERVERS: ${LITESERVERS}
       DEBUG_LOGS: ${DEBUG_LOGS}
   web:
@@ -63,6 +66,7 @@ services:
     command: ["migrate", "up", "--init"]
   clickhouse:
     image: "clickhouse/clickhouse-server:22"
+    restart: on-failure
     healthcheck:
       test: wget --spider --no-verbose --tries=1 localhost:8123/ping || exit 1
       interval: 5s
@@ -87,6 +91,7 @@ services:
       CLICKHOUSE_PASSWORD: "${DB_PASSWORD}"
   postgres:
     image: "postgres:15"
+    restart: on-failure
     healthcheck:
       test: pg_isready -U "${DB_USERNAME}" -d "${DB_NAME}" || exit 1
       interval: 5s
@@ -107,6 +112,8 @@ services:
 
 networks:
   indexer_network:
+    driver_opts:
+      com.docker.network.bridge.name: br_indexer
 
 volumes:
   idx_ch_data:

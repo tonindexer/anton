@@ -14,7 +14,7 @@ func (s *Service) LookupMaster(ctx context.Context, api ton.APIClientWrapped, se
 		return master, nil
 	}
 
-	master, err := api.LookupBlock(ctx, s.masterWorkchain, int64(s.masterShard), seqNo)
+	master, err := api.LookupBlock(ctx, s.masterWorkchain, int64(s.masterShard), seqNo) //nolint:gosec // no integer overflow
 	if err != nil {
 		return nil, errors.Wrap(err, "lookup masterchain block")
 	}
@@ -56,7 +56,7 @@ func (s *Service) getNotSeenShards(ctx context.Context, shard *ton.BlockIDExt, s
 
 	parents, err := b.BlockInfo.GetParentBlocks()
 	if err != nil {
-		return nil, fmt.Errorf("get parent blocks (%d:%x:%d): %w", shard.Workchain, uint64(shard.Shard), shard.Shard, err)
+		return nil, fmt.Errorf("get parent blocks (%d:%x:%d): %w", shard.Workchain, uint64(shard.Shard), shard.Shard, err) //nolint:gosec // no integer overflow
 	}
 
 	for _, parent := range parents {

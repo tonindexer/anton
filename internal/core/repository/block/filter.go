@@ -186,9 +186,11 @@ func (r *Repository) FilterBlocks(ctx context.Context, f *filter.BlocksReq) (*fi
 		return res, nil
 	}
 
-	res.Total, err = r.countBlocks(ctx, f)
-	if err != nil {
-		return res, err
+	if f.Count {
+		res.Total, err = r.countBlocks(ctx, f)
+		if err != nil {
+			return res, err
+		}
 	}
 
 	return res, nil

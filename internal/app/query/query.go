@@ -2,6 +2,8 @@ package query
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/xssnick/tonutils-go/ton"
@@ -32,6 +34,14 @@ type Service struct {
 	txRepo       repository.Transaction
 	msgRepo      repository.Message
 	accountRepo  repository.Account
+
+	statsCached   *aggregate.Statistics
+	statsUpdateTs time.Time
+	statsFailTs   time.Time
+
+	run bool
+	mx  sync.RWMutex
+	wg  sync.WaitGroup
 }
 
 func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
@@ -48,12 +58,50 @@ func NewService(_ context.Context, cfg *app.QueryConfig) (*Service, error) {
 	return s, nil
 }
 
+func (s *Service) running() bool {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+
+	return s.run
+}
+
+func (s *Service) Start() error {
+	s.mx.Lock()
+	defer s.mx.Unlock()
+
+	if s.run {
+		return core.ErrAlreadyExists
+	}
+
+	s.run = true
+
+	s.wg.Add(1)
+	go s.updateStatsLoop()
+
+	return nil
+}
+
+func (s *Service) Stop() {
+	s.mx.Lock()
+	s.run = false
+	s.mx.Unlock()
+
+	s.wg.Wait()
+}
+
 func (s *Service) GetDefinitions(ctx context.Context) (map[abi.TLBType]abi.TLBFieldsDesc, error) {
 	return s.contractRepo.GetDefinitions(ctx)
 }
 
-func (s *Service) GetStatistics(ctx context.Context) (*aggregate.Statistics, error) {
-	return aggregate.GetStatistics(ctx, s.DB.CH, s.DB.PG)
+func (s *Service) GetStatistics(_ context.Context) (*aggregate.Statistics, error) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+
+	if s.statsCached == nil || time.Since(s.statsUpdateTs) > statsLifespan {
+		return nil, core.ErrNotAvailable
+	}
+
+	return s.statsCached, nil
 }
 
 func (s *Service) GetInterfaces(ctx context.Context) ([]*core.ContractInterface, error) {
@@ -76,6 +124,30 @@ func (s *Service) FilterLabels(ctx context.Context, req *filter.LabelsReq) (*fil
 	return s.accountRepo.FilterLabels(ctx, req)
 }
 
+func (s *Service) validateContractTypes(ctx context.Context, contractTypes []abi.ContractName) error {
+	if len(contractTypes) == 0 {
+		return nil
+	}
+
+	interfaces, err := s.contractRepo.GetInterfaces(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get interfaces")
+	}
+
+	contractTypesSet := make(map[abi.ContractName]bool)
+	for _, i := range interfaces {
+		contractTypesSet[i.Name] = true
+	}
+
+	for _, t := range contractTypes {
+		if !contractTypesSet[t] {
+			return errors.Wrap(core.ErrInvalidArg, "invalid contract type")
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.AccountsReq, res *filter.AccountsRes) error {
 	if !req.LatestState {
 		return nil // historical states are not available for skipped accounts
@@ -96,7 +168,7 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 		if found[a] {
 			continue
 		}
-		if core.SkipAddress(a) {
+		if core.SkippedAddresses[a] {
 			// fetch heavy skipped account states
 			skipped = append(skipped, a)
 			continue
@@ -136,7 +208,9 @@ func (s *Service) fetchSkippedAccounts(ctx context.Context, req *filter.Accounts
 			return errors.Wrap(err, "get address label")
 		}
 
-		res.Total += 1
+		if req.Count {
+			res.Total += 1
+		}
 		res.Rows = append(res.Rows, parsed)
 	}
 
@@ -165,16 +239,23 @@ func (s *Service) addGetMethodDescription(ctx context.Context, rows []*core.Acco
 }
 
 func (s *Service) FilterAccounts(ctx context.Context, req *filter.AccountsReq) (*filter.AccountsRes, error) {
+	if err := s.validateContractTypes(ctx, req.ContractTypes); err != nil {
+		return nil, err
+	}
+
 	res, err := s.accountRepo.FilterAccounts(ctx, req)
 	if err != nil {
 		return nil, err
 	}
+
 	if err := s.fetchSkippedAccounts(ctx, req, res); err != nil {
 		return nil, err
 	}
+
 	if err := s.addGetMethodDescription(ctx, res.Rows); err != nil {
 		return nil, err
 	}
+
 	return res, nil
 }
 
@@ -183,6 +264,9 @@ func (s *Service) AggregateAccounts(ctx context.Context, req *aggregate.Accounts
 }
 
 func (s *Service) AggregateAccountsHistory(ctx context.Context, req *history.AccountsReq) (*history.AccountsRes, error) {
+	if err := s.validateContractTypes(ctx, req.ContractTypes); err != nil {
+		return nil, err
+	}
 	return s.accountRepo.AggregateAccountsHistory(ctx, req)
 }
 
@@ -194,9 +278,42 @@ func (s *Service) AggregateTransactionsHistory(ctx context.Context, req *history
 	return s.txRepo.AggregateTransactionsHistory(ctx, req)
 }
 
+func (s *Service) validateOperationNames(ctx context.Context, operationNames []string) error {
+	if len(operationNames) == 0 {
+		return nil
+	}
+
+	operations, err := s.contractRepo.GetOperations(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get operations")
+	}
+
+	operationNamesSet := make(map[string]bool)
+	for _, op := range operations {
+		operationNamesSet[op.OperationName] = true
+	}
+
+	for _, t := range operationNames {
+		if !operationNamesSet[t] {
+			return errors.Wrap(core.ErrInvalidArg, "invalid operation name")
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) FilterMessages(ctx context.Context, req *filter.MessagesReq) (*filter.MessagesRes, error) {
+	if err := s.validateContractTypes(ctx, req.SrcContracts); err != nil {
+		return nil, err
+	}
+	if err := s.validateContractTypes(ctx, req.DstContracts); err != nil {
+		return nil, err
+	}
+	if err := s.validateOperationNames(ctx, req.OperationNames); err != nil {
+		return nil, err
+	}
 	if req.OperationID != nil && len(req.OperationNames) > 0 {
-		return nil, errors.Wrap(core.ErrInvalidArg, "filter is available either on operation name or operation id")
+		return nil, errors.Wrap(core.ErrInvalidArg, "filter is available either by operation name or operation id")
 	}
 	return s.msgRepo.FilterMessages(ctx, req)
 }
@@ -206,5 +323,14 @@ func (s *Service) AggregateMessages(ctx context.Context, req *aggregate.Messages
 }
 
 func (s *Service) AggregateMessagesHistory(ctx context.Context, req *history.MessagesReq) (*history.MessagesRes, error) {
+	if err := s.validateContractTypes(ctx, req.SrcContracts); err != nil {
+		return nil, err
+	}
+	if err := s.validateContractTypes(ctx, req.DstContracts); err != nil {
+		return nil, err
+	}
+	if err := s.validateOperationNames(ctx, req.OperationNames); err != nil {
+		return nil, err
+	}
 	return s.msgRepo.AggregateMessagesHistory(ctx, req)
 }

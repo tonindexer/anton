@@ -3,10 +3,9 @@ package parser
 import (
 	"bytes"
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
@@ -21,27 +20,6 @@ func matchByAddress(acc *core.AccountState, addresses []*addr.Address) bool {
 		}
 	}
 	return false
-}
-
-func matchByCode(acc *core.AccountState, code []byte) bool {
-	if len(acc.Code) == 0 || len(code) == 0 {
-		return false
-	}
-
-	codeCell, err := cell.FromBOC(code)
-	if err != nil {
-		log.Error().Err(err).Msg("parse contract interface code")
-		return false
-	}
-	codeHash := codeCell.Hash()
-
-	accCodeCell, err := cell.FromBOC(acc.Code)
-	if err != nil {
-		log.Error().Err(err).Str("addr", acc.Address.Base64()).Msg("parse account code cell")
-		return false
-	}
-
-	return bytes.Equal(accCodeCell.Hash(), codeHash)
 }
 
 func matchByGetMethods(acc *core.AccountState, getMethodHashes []int32) bool {
@@ -64,11 +42,13 @@ func matchByGetMethods(acc *core.AccountState, getMethodHashes []int32) bool {
 }
 
 func interfaceMatched(acc *core.AccountState, i *core.ContractInterface) bool {
+	defer core.Timer(time.Now(), "interfaceMatched(%s, %s)", acc.Address.Base64(), i.Name)
+
 	if matchByAddress(acc, i.Addresses) {
 		return true
 	}
 
-	if matchByCode(acc, i.Code) {
+	if len(acc.Code) != 0 && len(i.Code) != 0 && bytes.Equal(acc.CodeHash, i.CodeHash) {
 		return true
 	}
 
@@ -82,6 +62,8 @@ func interfaceMatched(acc *core.AccountState, i *core.ContractInterface) bool {
 
 func (s *Service) determineInterfaces(ctx context.Context, acc *core.AccountState) ([]*core.ContractInterface, error) {
 	var ret []*core.ContractInterface
+
+	defer core.Timer(time.Now(), "determineInterfaces(%s)", acc.Address.Base64())
 
 	interfaces, err := s.ContractRepo.GetInterfaces(ctx)
 	if err != nil {
@@ -105,6 +87,11 @@ func (s *Service) ParseAccountData(
 	if s.ContractRepo == nil {
 		return errors.Wrap(app.ErrImpossibleParsing, "no contract repository")
 	}
+
+	defer core.Timer(time.Now(), "ParseAccountData(%s)", acc.Address.Base64())
+
+	s.accountParseSemaphore <- struct{}{}
+	defer func() { <-s.accountParseSemaphore }()
 
 	interfaces, err := s.determineInterfaces(ctx, acc)
 	if err != nil {
@@ -134,6 +121,9 @@ func (s *Service) ParseAccountContractData(
 	if !interfaceMatched(acc, contractDesc) {
 		return app.ErrUnmatchedContractInterface
 	}
+
+	s.accountParseSemaphore <- struct{}{}
+	defer func() { <-s.accountParseSemaphore }()
 
 	var contractTypeSet bool
 	for _, t := range acc.Types {
@@ -166,6 +156,9 @@ func (s *Service) ExecuteAccountGetMethod(
 	if s.ContractRepo == nil {
 		return errors.Wrap(app.ErrImpossibleParsing, "no contract repository")
 	}
+
+	s.accountParseSemaphore <- struct{}{}
+	defer func() { <-s.accountParseSemaphore }()
 
 	interfaces, err := s.determineInterfaces(ctx, acc)
 	if err != nil {

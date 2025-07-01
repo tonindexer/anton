@@ -2,24 +2,31 @@ package tx
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/go-clickhouse/ch"
 
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 var _ repository.Transaction = (*Repository)(nil)
 
 type Repository struct {
-	ch *ch.DB
-	pg *bun.DB
+	ch                           *ch.DB
+	pg                           *bun.DB
+	transactionsFilterCountCache *filter.Cache
 }
 
 func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
-	return &Repository{ch: ck, pg: pg}
+	return &Repository{
+		ch:                           ck,
+		pg:                           pg,
+		transactionsFilterCountCache: filter.NewCache(24 * time.Hour),
+	}
 }
 
 func createIndexes(ctx context.Context, pgDB *bun.DB) error {

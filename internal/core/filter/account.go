@@ -20,11 +20,10 @@ type LabelsRes struct {
 	Rows  []*core.AddressLabel `json:"results"`
 }
 
-type AccountsReq struct {
-	WithCodeData bool
+type AccountsFilter struct {
+	LatestState bool `form:"latest"`
 
-	Addresses   []*addr.Address // `form:"addresses"`
-	LatestState bool            `form:"latest"`
+	Addresses []*addr.Address // `form:"addresses"`
 
 	StateIDs []*core.AccountStateID
 
@@ -38,6 +37,12 @@ type AccountsReq struct {
 	ContractTypes []abi.ContractName `form:"interface"`
 	OwnerAddress  *addr.Address      // `form:"owner_address"`
 	MinterAddress *addr.Address      // `form:"minter_address"`
+}
+
+type AccountsReq struct {
+	AccountsFilter
+
+	WithCodeData bool
 
 	ExcludeColumn []string // TODO: support relations
 
@@ -45,10 +50,11 @@ type AccountsReq struct {
 
 	AfterTxLT *uint64 `form:"after"`
 	Limit     int     `form:"limit"`
+	Count     bool    `form:"count"`
 }
 
 type AccountsRes struct {
-	Total int                  `json:"total"`
+	Total int                  `json:"total,omitempty"`
 	Rows  []*core.AccountState `json:"results"`
 }
 

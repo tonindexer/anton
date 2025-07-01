@@ -23,6 +23,8 @@ var (
 type ParserConfig struct {
 	BlockchainConfig *cell.Cell
 	ContractRepo     core.ContractRepository
+
+	MaxAccountParsingWorkers int
 }
 
 func GetBlockchainConfig(ctx context.Context, api ton.APIClientWrapped) (*cell.Cell, error) {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/uptrace/bun/extra/bunbig"
 
+	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/internal/core/aggregate/history"
 	"github.com/tonindexer/anton/internal/core/rndm"
 )
@@ -54,7 +55,7 @@ func TestRepository_AggregateMessagesHistory(t *testing.T) {
 	t.Run("count messages to special contract", func(t *testing.T) {
 		res, err := repo.AggregateMessagesHistory(ctx, &history.MessagesReq{
 			Metric:       history.MessageCount,
-			DstContracts: []string{"special"},
+			DstContracts: []abi.ContractName{"special"},
 			ReqParams: history.ReqParams{
 				From:     time.Now().Add(-time.Minute),
 				Interval: 24 * time.Hour,
@@ -68,7 +69,7 @@ func TestRepository_AggregateMessagesHistory(t *testing.T) {
 	t.Run("sum messages amount to special contract", func(t *testing.T) {
 		res, err := repo.AggregateMessagesHistory(ctx, &history.MessagesReq{
 			Metric:       history.MessageAmountSum,
-			DstContracts: []string{"special"},
+			DstContracts: []abi.ContractName{"special"},
 			ReqParams: history.ReqParams{
 				From:     time.Now().Add(-time.Minute),
 				Interval: 24 * time.Hour,

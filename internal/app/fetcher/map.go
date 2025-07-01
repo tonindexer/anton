@@ -11,15 +11,18 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/addr"
+	"github.com/tonindexer/anton/internal/app/fetcher/msg_hash"
 	"github.com/tonindexer/anton/internal/core"
 )
 
 func MapAccount(b *ton.BlockIDExt, acc *tlb.Account) *core.AccountState {
 	ret := new(core.AccountState)
 
-	ret.Workchain = b.Workchain
-	ret.Shard = b.Shard
-	ret.BlockSeqNo = b.SeqNo
+	if b != nil {
+		ret.Workchain = b.Workchain
+		ret.Shard = b.Shard
+		ret.BlockSeqNo = b.SeqNo
+	}
 
 	ret.IsActive = acc.IsActive
 	ret.Status = core.NonExist
@@ -136,7 +139,7 @@ func parseOperationID(body []byte) (opId uint32, comment string, err error) {
 		return 0, "", errors.Wrap(err, "load uint")
 	}
 
-	if opId = uint32(op); opId != 0 {
+	if opId = uint32(op); opId != 0 { //nolint:gosec // no integer overflow
 		return opId, "", nil
 	}
 
@@ -154,11 +157,10 @@ func mapMessage(tx *tlb.Transaction, message tlb.Message) (*core.Message, error)
 		err error
 	)
 
-	msgCell, err := tlb.ToCell(message.Msg)
+	msg.Hash, err = msg_hash.GetMessageHash(message.Msg)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot convert message to cell")
+		return nil, err
 	}
-	msg.Hash = msgCell.Hash()
 
 	switch raw := message.Msg.(type) {
 	case *tlb.InternalMessage:
@@ -271,13 +273,13 @@ func mapTransaction(b *ton.BlockIDExt, raw *tlb.Transaction) (*core.Transaction,
 			}
 		}
 	}
-	if raw.Description.Description != nil {
-		c, err := tlb.ToCell(raw.Description.Description)
+	if raw.Description != nil {
+		c, err := tlb.ToCell(raw.Description)
 		if err != nil {
 			return nil, errors.Wrap(err, "tx description to cell")
 		}
 		tx.Description = c.ToBOC()
-		mapTransactionDescription(raw.Description.Description, tx)
+		mapTransactionDescription(raw.Description, tx)
 	}
 
 	return tx, nil

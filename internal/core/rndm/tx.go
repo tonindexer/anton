@@ -9,13 +9,12 @@ import (
 )
 
 var (
-	txTS        = time.Now().UTC()
-	txLT uint64 = 80000
+	txTS = time.Now().UTC()
 )
 
 func BlockTransaction(b core.BlockID) *core.Transaction {
 	txTS = txTS.Add(time.Minute)
-	txLT++
+	lastLT++
 
 	return &core.Transaction{
 		Address:     *Address(),
@@ -28,14 +27,14 @@ func BlockTransaction(b core.BlockID) *core.Transaction {
 		PrevTxLT:    rand.Uint64(),
 		InMsgHash:   Bytes(32),
 		InAmount:    BigInt(),
-		OutMsgCount: uint16(rand.Int() % 32),
+		OutMsgCount: uint16(rand.Int() % 32), //nolint:gosec // no integer overflow
 		OutAmount:   BigInt(),
 		TotalFees:   BigInt(),
 		Description: Bytes(256),
 		OrigStatus:  core.Active,
 		EndStatus:   core.Active,
 		CreatedAt:   txTS,
-		CreatedLT:   txLT,
+		CreatedLT:   lastLT,
 	}
 }
 
@@ -62,7 +61,7 @@ func AddressTransactions(a *addr.Address, n int) (ret []*core.Transaction) {
 func Transaction() *core.Transaction {
 	return BlockTransaction(core.BlockID{
 		Workchain: 0,
-		Shard:     int64(rand.Uint64()),
+		Shard:     int64(rand.Uint64()), //nolint:gosec // no integer overflow
 		SeqNo:     rand.Uint32(),
 	})
 }

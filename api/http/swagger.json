@@ -93,6 +93,13 @@
                         "description": "limit",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "count total number of rows",
+                        "name": "count",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -289,6 +296,13 @@
                         "default": 3,
                         "description": "limit",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "count total number of rows",
+                        "name": "count",
                         "in": "query"
                     }
                 ],
@@ -554,6 +568,13 @@
                         "default": 3,
                         "description": "limit",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "count total number of rows",
+                        "name": "count",
                         "in": "query"
                     }
                 ],
@@ -849,6 +870,13 @@
                         "default": 3,
                         "description": "limit",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "count total number of rows",
+                        "name": "count",
                         "in": "query"
                     }
                 ],
@@ -1590,6 +1618,12 @@
                     }
                 },
                 "code": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "code_hash": {
                     "type": "array",
                     "items": {
                         "type": "integer"

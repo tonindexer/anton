@@ -2,7 +2,6 @@ package indexer
 
 import (
 	"context"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -11,14 +10,13 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/xssnick/tonutils-go/ton"
 
-	"github.com/tonindexer/anton/internal/app"
 	"github.com/tonindexer/anton/internal/core"
 )
 
 func (s *Service) getUnseenBlocks(ctx context.Context, seq uint32) (master *ton.BlockIDExt, shards []*ton.BlockIDExt, err error) {
 	master, shards, err = s.Fetcher.UnseenBlocks(ctx, seq)
 	if err != nil {
-		if !errors.Is(err, ton.ErrBlockNotFound) && !(err != nil && strings.Contains(err.Error(), "block is not applied")) {
+		if !errors.Is(err, ton.ErrBlockNotFound) && !strings.Contains(err.Error(), "block is not applied") {
 			return nil, nil, errors.Wrap(err, "cannot fetch unseen blocks")
 		}
 
@@ -43,7 +41,7 @@ func (s *Service) fetchMaster(seq uint32) *core.Block {
 		err   error
 	}
 
-	defer app.TimeTrack(time.Now(), "fetchMaster(%d)", seq)
+	defer core.Timer(time.Now(), "fetchMaster(%d)", seq)
 
 	for {
 		ctx := context.Background()
@@ -127,7 +125,7 @@ func (s *Service) fetchMaster(seq uint32) *core.Block {
 			log.Error().
 				Err(errBlock.err).
 				Int32("workchain", errBlock.block.Workchain).
-				Uint64("shard", uint64(errBlock.block.Shard)).
+				Int64("shard", errBlock.block.Shard).
 				Uint32("seq", errBlock.block.SeqNo).
 				Msg("cannot process block")
 			time.Sleep(time.Second)
@@ -138,49 +136,75 @@ func (s *Service) fetchMaster(seq uint32) *core.Block {
 	}
 }
 
-func (s *Service) fetchMastersConcurrent(fromBlock uint32) []*core.Block {
-	var blocks []*core.Block
-	var wg sync.WaitGroup
+func publishProcessedBlocks(fromBlock uint32, processed []*core.Block, results chan<- *core.Block) (uint32, []*core.Block) {
+	for {
+		var found bool
 
-	wg.Add(s.Workers)
+		for it, b := range processed {
+			if b.SeqNo != fromBlock {
+				continue
+			}
 
-	ch := make(chan *core.Block, s.Workers)
+			results <- b
 
-	for i := 0; i < s.Workers; i++ {
-		go func(seq uint32) {
-			defer wg.Done()
-			ch <- s.fetchMaster(seq)
-		}(fromBlock + uint32(i))
-	}
+			fromBlock++
 
-	wg.Wait()
-	close(ch)
+			copy(processed[it:], processed[it+1:])
+			processed = processed[:len(processed)-1]
 
-	for b := range ch {
-		if b == nil {
-			continue
+			found = true
+
+			break
 		}
-		blocks = append(blocks, b)
+
+		if !found {
+			break
+		}
 	}
 
-	sort.Slice(blocks, func(i, j int) bool {
-		return blocks[i].SeqNo < blocks[j].SeqNo
-	})
+	return fromBlock, processed
+}
 
-	return blocks
+func (s *Service) fetchMastersConcurrent(fromBlock uint32, results chan<- *core.Block) (nextBlock uint32) {
+	var blocks []*core.Block
+
+	m, err := s.API.GetMasterchainInfo(context.Background())
+	if err != nil {
+		log.Error().Err(err).Msg("get masterchain info")
+		time.Sleep(100 * time.Millisecond)
+		return fromBlock
+	}
+
+	workers := s.Workers
+	if diff := int(m.SeqNo) - int(fromBlock) + 1; diff < workers {
+		workers = diff
+	}
+	if workers <= 0 { // should never be triggered
+		workers = 1
+	}
+
+	ch := make(chan *core.Block, workers)
+	defer close(ch)
+
+	for i := 0; i < workers; i++ {
+		go func(seq uint32) {
+			ch <- s.fetchMaster(seq)
+		}(fromBlock + uint32(i)) //nolint:gosec // no integer overflow
+	}
+
+	for i := 0; i < workers; i++ {
+		b := <-ch
+		blocks = append(blocks, b)
+		fromBlock, blocks = publishProcessedBlocks(fromBlock, blocks, results)
+	}
+
+	return fromBlock
 }
 
 func (s *Service) fetchMasterLoop(fromBlock uint32, results chan<- *core.Block) {
 	defer s.wg.Done()
 
 	for s.running() {
-		blocks := s.fetchMastersConcurrent(fromBlock)
-		for i := range blocks {
-			if fromBlock != blocks[i].SeqNo {
-				break
-			}
-			results <- blocks[i]
-			fromBlock++
-		}
+		fromBlock = s.fetchMastersConcurrent(fromBlock, results)
 	}
 }

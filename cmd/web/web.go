@@ -64,6 +64,9 @@ var Command = &cli.Command{
 		if err != nil {
 			return err
 		}
+		if err := qs.Start(); err != nil {
+			return err
+		}
 
 		srv := http.NewServer(
 			env.GetString("LISTEN", "0.0.0.0:80"),
@@ -74,6 +77,7 @@ var Command = &cli.Command{
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
 			<-c
+			qs.Stop()
 			conn.Close()
 			os.Exit(0)
 		}()

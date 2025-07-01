@@ -52,7 +52,9 @@ type Transaction struct {
 }
 
 func (tx *Transaction) LoadDescription() error { // TODO: optionally load description in API
-	var d tlb.TransactionDescription
+	var d struct {
+		Description any `tlb:"[TransactionDescriptionOrdinary,TransactionDescriptionStorage,TransactionDescriptionTickTock,TransactionDescriptionSplitPrepare,TransactionDescriptionSplitInstall,TransactionDescriptionMergePrepare,TransactionDescriptionMergeInstall]"`
+	}
 
 	c, err := cell.FromBOC(tx.Description)
 	if err != nil {

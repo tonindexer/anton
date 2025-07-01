@@ -111,3 +111,39 @@ func (r *Repository) CountMasterBlocks(ctx context.Context) (int, error) {
 	}
 	return ret, nil
 }
+
+func (r *Repository) GetMissedMasterBlocks(ctx context.Context) (res []uint32, err error) {
+	var ret []struct {
+		SeqNo     uint32
+		NextSeqNo uint32
+	}
+
+	err = r.ch.NewSelect().
+		TableExpr("(?) as sq",
+			r.ch.NewSelect().Model((*core.Block)(nil)).
+				ColumnExpr("seq_no").
+				ColumnExpr("any(seq_no) over (order by seq_no asc rows between 1 following and 1 following) as next_seq_no").
+				Where("workchain = -1").
+				Order("seq_no asc"),
+		).
+		Where("seq_no != next_seq_no - 1").
+		Where("next_seq_no != 0").
+		Order("seq_no asc").
+		Scan(ctx, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	var lastMissedBlock uint32
+	for _, r := range ret {
+		for i := r.SeqNo - 10; i < r.NextSeqNo+10; i++ {
+			if i <= lastMissedBlock {
+				continue
+			}
+			lastMissedBlock = i
+			res = append(res, i)
+		}
+	}
+
+	return res, nil
+}

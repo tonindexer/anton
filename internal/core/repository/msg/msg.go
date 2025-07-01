@@ -2,9 +2,9 @@ package msg
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -14,18 +14,24 @@ import (
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 var _ repository.Message = (*Repository)(nil)
 
 type Repository struct {
-	ch *ch.DB
-	pg *bun.DB
+	ch                       *ch.DB
+	pg                       *bun.DB
+	messagesFilterCountCache *filter.Cache
 }
 
 func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
-	return &Repository{ch: ck, pg: pg}
+	return &Repository{
+		ch:                       ck,
+		pg:                       pg,
+		messagesFilterCountCache: filter.NewCache(time.Hour),
+	}
 }
 
 func createIndexes(ctx context.Context, pgDB *bun.DB) error {
@@ -174,32 +180,33 @@ func (r *Repository) AddMessages(ctx context.Context, tx bun.Tx, messages []*cor
 	if len(messages) == 0 {
 		return nil
 	}
-	for _, msg := range messages { // TODO: on conflict does not work with array (bun bug)
-		// some external messages can be repeated with the same hash
 
-		// if some message has been already inserted,
-		// we update destination transaction and parsed data
+	// some external messages can be repeated with the same hash
 
-		_, err := tx.NewInsert().Model(msg).
-			On("CONFLICT (hash) DO UPDATE").
-			Set("dst_tx_lt = ?dst_tx_lt").
-			Set("dst_workchain = ?dst_workchain").
-			Set("dst_shard = ?dst_shard").
-			Set("dst_block_seq_no = ?dst_block_seq_no").
-			Set("src_contract = ?src_contract").
-			Set("dst_contract = ?dst_contract").
-			Set("operation_name = ?operation_name").
-			Set("data_json = ?data_json").
-			Set("error = ?error").
-			Exec(ctx)
-		if err != nil {
-			return err
-		}
-	}
-	_, err := r.ch.NewInsert().Model(&messages).Exec(ctx)
+	// if some message has been already inserted,
+	// we update destination transaction and parsed data
+
+	_, err := tx.NewInsert().Model(&messages).
+		On("CONFLICT (hash) DO UPDATE").
+		Set("dst_tx_lt = EXCLUDED.dst_tx_lt").
+		Set("dst_workchain = EXCLUDED.dst_workchain").
+		Set("dst_shard = EXCLUDED.dst_shard").
+		Set("dst_block_seq_no = EXCLUDED.dst_block_seq_no").
+		Set("src_contract = EXCLUDED.src_contract").
+		Set("dst_contract = EXCLUDED.dst_contract").
+		Set("operation_name = EXCLUDED.operation_name").
+		Set("data_json = EXCLUDED.data_json").
+		Set("error = EXCLUDED.error").
+		Exec(ctx)
 	if err != nil {
 		return err
 	}
+
+	_, err = r.ch.NewInsert().Model(&messages).Exec(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -242,33 +249,14 @@ func (r *Repository) UpdateMessages(ctx context.Context, messages []*core.Messag
 	return nil
 }
 
-func (r *Repository) GetMessage(ctx context.Context, hash []byte) (*core.Message, error) {
-	var ret core.Message
-
-	err := r.pg.NewSelect().Model(&ret).
-		Relation("SrcState").
-		Relation("DstState").
-		Where("hash = ?", hash).
-		Scan(ctx)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, core.ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return &ret, nil
-}
-
 func (r *Repository) GetMessages(ctx context.Context, hashes [][]byte) ([]*core.Message, error) {
 	var ret []*core.Message
 
 	err := r.pg.NewSelect().Model(&ret).
+		Relation("SrcState").
+		Relation("DstState").
 		Where("hash IN (?)", bun.In(hashes)).
 		Scan(ctx)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, core.ErrNotFound
-	}
 	if err != nil {
 		return nil, err
 	}

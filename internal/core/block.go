@@ -58,4 +58,5 @@ type BlockRepository interface {
 	AddBlocks(ctx context.Context, tx bun.Tx, info []*Block) error
 	GetLastMasterBlock(ctx context.Context) (*Block, error)
 	CountMasterBlocks(ctx context.Context) (int, error)
+	GetMissedMasterBlocks(ctx context.Context) ([]uint32, error)
 }

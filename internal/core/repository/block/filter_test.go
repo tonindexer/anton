@@ -78,11 +78,13 @@ func TestRepository_FilterBlocks(t *testing.T) {
 
 	t.Run("filter by workchain", func(t *testing.T) {
 		res, err := repo.FilterBlocks(ctx, &filter.BlocksReq{
-			Workchain: &shard.Workchain,
+			BlocksFilter: filter.BlocksFilter{
+				Workchain: &shard.Workchain,
+			},
 			// Shard:     &shard.Shard,
 			// SeqNo:     &shard.SeqNo,
 
-			AfterSeqNo: &nextSeqNo, Order: "DESC", Limit: 1,
+			AfterSeqNo: &nextSeqNo, Order: "DESC", Limit: 1, Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 100, res.Total)
@@ -91,10 +93,12 @@ func TestRepository_FilterBlocks(t *testing.T) {
 
 	t.Run("filter by seq no", func(t *testing.T) {
 		res, err := repo.FilterBlocks(ctx, &filter.BlocksReq{
-			Workchain: &shard.Workchain,
-			SeqNo:     &shard.SeqNo,
+			BlocksFilter: filter.BlocksFilter{
+				Workchain: &shard.Workchain,
+				SeqNo:     &shard.SeqNo,
+			},
 
-			AfterSeqNo: &nextSeqNo, Order: "DESC", Limit: 1,
+			AfterSeqNo: &nextSeqNo, Order: "DESC", Limit: 1, Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 1, res.Total)
@@ -103,11 +107,13 @@ func TestRepository_FilterBlocks(t *testing.T) {
 
 	t.Run("filter by file hash", func(t *testing.T) {
 		res, err := repo.FilterBlocks(ctx, &filter.BlocksReq{
-			FileHash: master.FileHash,
+			BlocksFilter: filter.BlocksFilter{
+				FileHash: master.FileHash,
+			},
 
 			WithShards: true,
 
-			AfterSeqNo: &nextSeqNo, Order: "DESC", Limit: 1,
+			AfterSeqNo: &nextSeqNo, Order: "DESC", Limit: 1, Count: true,
 		})
 		require.Nil(t, err)
 		require.Equal(t, 1, res.Total)

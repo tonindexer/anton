@@ -27,7 +27,7 @@ type AccountsRes struct {
 	Items       int `json:"items,omitempty"`
 	OwnersCount int `json:"owners_count,omitempty"`
 	OwnedItems  []*struct {
-		OwnerAddress *addr.Address `ch:"type:String" json:"owner_address"`
+		OwnerAddress *addr.Address `json:"owner_address"`
 		ItemsCount   int           `json:"items_count"`
 	} `json:"owned_items,omitempty"`
 	UniqueOwners []*struct {

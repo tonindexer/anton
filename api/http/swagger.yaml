@@ -439,6 +439,10 @@ definitions:
         items:
           type: integer
         type: array
+      code_hash:
+        items:
+          type: integer
+        type: array
       get_method_hashes:
         items:
           type: integer
@@ -813,6 +817,11 @@ paths:
         maximum: 10000
         name: limit
         type: integer
+      - default: false
+        description: count total number of rows
+        in: query
+        name: count
+        type: boolean
       produces:
       - application/json
       responses:
@@ -947,6 +956,11 @@ paths:
         maximum: 100
         name: limit
         type: integer
+      - default: false
+        description: count total number of rows
+        in: query
+        name: count
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1123,6 +1137,11 @@ paths:
         maximum: 10000
         name: limit
         type: integer
+      - default: false
+        description: count total number of rows
+        in: query
+        name: count
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1323,6 +1342,11 @@ paths:
         maximum: 10000
         name: limit
         type: integer
+      - default: false
+        description: count total number of rows
+        in: query
+        name: count
+        type: boolean
       produces:
       - application/json
       responses:

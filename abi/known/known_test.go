@@ -12,6 +12,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/tonindexer/anton/abi"
+	"github.com/tonindexer/anton/abi/emulator"
 )
 
 var configCell *cell.Cell
@@ -98,7 +99,7 @@ func execGetMethod(t *testing.T, i *abi.InterfaceDesc, addr *address.Address, me
 	dataCell, err := cell.FromBOCMultiRoot(data)
 	require.Nil(t, err)
 
-	e, err := abi.NewEmulator(addr, codeCell[0], dataCell[0], configCell)
+	e, err := emulator.NewEmulator(addr, codeCell[0], dataCell[0], configCell)
 	require.Nil(t, err)
 
 	stack, err := e.RunGetMethod(context.Background(), methodName, nil, dp.ReturnValues)

@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -18,18 +19,26 @@ import (
 	"github.com/tonindexer/anton/abi"
 	"github.com/tonindexer/anton/addr"
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 	"github.com/tonindexer/anton/internal/core/repository"
 )
 
 var _ repository.Account = (*Repository)(nil)
 
 type Repository struct {
-	ch *ch.DB
-	pg *bun.DB
+	ch                           *ch.DB
+	pg                           *bun.DB
+	statesFilterCountCache       *filter.Cache
+	latestStatesFilterCountCache *filter.Cache
 }
 
 func NewRepository(ck *ch.DB, pg *bun.DB) *Repository {
-	return &Repository{ch: ck, pg: pg}
+	return &Repository{
+		ch:                           ck,
+		pg:                           pg,
+		statesFilterCountCache:       filter.NewCache(24 * time.Hour),
+		latestStatesFilterCountCache: filter.NewCache(24 * time.Hour),
+	}
 }
 
 func createIndexes(ctx context.Context, pgDB *bun.DB) error {
@@ -247,22 +256,35 @@ func (r *Repository) AddAccountStates(ctx context.Context, tx bun.Tx, accounts [
 		return errors.Wrapf(err, "cannot insert new account states")
 	}
 
-	addrTxLT := make(map[addr.Address]uint64)
-	for _, a := range accounts {
-		if addrTxLT[a.Address] < a.LastTxLT {
-			addrTxLT[a.Address] = a.LastTxLT
+	latestStates := make(map[addr.Address]*core.AccountState)
+	for _, state := range accounts {
+		if latestStates[state.Address] == nil {
+			latestStates[state.Address] = state
+		}
+		if latestStates[state.Address].LastTxLT < state.LastTxLT {
+			latestStates[state.Address] = state
 		}
 	}
 
-	for a, lt := range addrTxLT {
+	for a, state := range latestStates {
+		latest := core.LatestAccountState{
+			Address:       a,
+			LastTxLT:      state.LastTxLT,
+			Types:         state.Types,
+			OwnerAddress:  state.OwnerAddress,
+			MinterAddress: state.MinterAddress,
+			CreatedLT:     state.LastTxLT, // it is being written only on insert
+		}
+
 		_, err := tx.NewInsert().
-			Model(&core.LatestAccountState{
-				Address:  a,
-				LastTxLT: lt,
-			}).
+			Model(&latest).
 			On("CONFLICT (address) DO UPDATE").
-			Where("latest_account_state.last_tx_lt < ?", lt).
+			Where("latest_account_state.last_tx_lt < ?", state.LastTxLT).
 			Set("last_tx_lt = EXCLUDED.last_tx_lt").
+			Set("types = EXCLUDED.types").
+			Set("owner_address = EXCLUDED.owner_address").
+			Set("minter_address = EXCLUDED.minter_address").
+			Set("fake = EXCLUDED.fake").
 			Exec(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "cannot set latest state for %s", &a)
@@ -294,6 +316,12 @@ func (r *Repository) UpdateAccountStates(ctx context.Context, accounts []*core.A
 		return nil
 	}
 
+	tx, err := r.pg.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	for _, a := range accounts {
 		for _, executions := range a.ExecutedGetMethods {
 			sort.Slice(executions, func(i, j int) bool { return executions[i].Name < executions[j].Name })
@@ -301,7 +329,7 @@ func (r *Repository) UpdateAccountStates(ctx context.Context, accounts []*core.A
 
 		logAccountStateDataUpdate(a)
 
-		_, err := r.pg.NewUpdate().Model(a).
+		_, err := tx.NewUpdate().Model(a).
 			Set("types = ?types").
 			Set("owner_address = ?owner_address").
 			Set("minter_address = ?minter_address").
@@ -318,9 +346,32 @@ func (r *Repository) UpdateAccountStates(ctx context.Context, accounts []*core.A
 		if err != nil {
 			return errors.Wrapf(err, "cannot update %s acc state data", a.Address.String())
 		}
+
+		_, err = tx.NewUpdate().
+			Model(&core.LatestAccountState{
+				Address:       a.Address,
+				LastTxLT:      a.LastTxLT,
+				Types:         a.Types,
+				OwnerAddress:  a.OwnerAddress,
+				MinterAddress: a.MinterAddress,
+			}).
+			Set("types = ?types").
+			Set("owner_address = ?owner_address").
+			Set("minter_address = ?minter_address").
+			Set("fake = ?fake").
+			Where("address = ?address").
+			Where("last_tx_lt = ?last_tx_lt").
+			Exec(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "cannot set latest state for %s", a.Address)
+		}
 	}
 
-	_, err := r.ch.NewInsert().Model(&accounts).Exec(ctx)
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	_, err = r.ch.NewInsert().Model(&accounts).Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -418,7 +469,7 @@ func (r *Repository) GetAllAccountInterfaces(ctx context.Context, a addr.Address
 		if lastInterfaces != nil && reflect.DeepEqual(ret[it].ChangeTypes, *lastInterfaces) {
 			continue
 		}
-		res[uint64(ret[it].ChangeTxLT)] = ret[it].ChangeTypes
+		res[uint64(ret[it].ChangeTxLT)] = ret[it].ChangeTypes //nolint:gosec // no integer overflow
 		lastInterfaces = &ret[it].ChangeTypes
 	}
 
@@ -485,7 +536,7 @@ func (r *Repository) GetAllAccountStates(ctx context.Context, a addr.Address, be
 			continue
 		}
 		lastCodeHash, lastDataHash = ret[it].ChangeCodeHash, ret[it].ChangeDataHash
-		lts = append(lts, uint64(ret[it].ChangeTxLT))
+		lts = append(lts, uint64(ret[it].ChangeTxLT)) //nolint:gosec // no integer overflow
 	}
 
 	if len(lts) > limit {

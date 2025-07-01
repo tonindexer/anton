@@ -6,12 +6,9 @@ import (
 	"time"
 
 	"github.com/xssnick/tonutils-go/ton"
-
-	"github.com/tonindexer/anton/addr"
-	"github.com/tonindexer/anton/internal/core"
 )
 
-var cacheInvalidation = time.Minute
+var cacheInvalidation = 10 * time.Minute
 
 type blocksCache struct {
 	masterBlocks map[uint32]*ton.BlockIDExt
@@ -66,60 +63,6 @@ func (c *blocksCache) setShards(master *ton.BlockIDExt, shards []*ton.BlockIDExt
 	defer c.Unlock()
 
 	c.shardsInfo[master.SeqNo] = shards
-	c.clearCaches()
-}
-
-type accountCache struct {
-	m           map[core.BlockID]map[addr.Address]*core.AccountState
-	lastCleared time.Time
-	sync.Mutex
-}
-
-func newAccountCache() *accountCache {
-	return &accountCache{
-		m:           map[core.BlockID]map[addr.Address]*core.AccountState{},
-		lastCleared: time.Time{},
-	}
-}
-
-func (c *accountCache) clearCaches() {
-	if time.Since(c.lastCleared) < cacheInvalidation {
-		return
-	}
-	c.m = map[core.BlockID]map[addr.Address]*core.AccountState{}
-	c.lastCleared = time.Now()
-}
-
-func (c *accountCache) get(bExt *ton.BlockIDExt, a addr.Address) (*core.AccountState, bool) {
-	c.Lock()
-	defer c.Unlock()
-
-	b := core.GetBlockID(bExt)
-
-	m, ok := c.m[b]
-	if !ok {
-		return nil, false
-	}
-
-	acc, ok := m[a]
-	if !ok {
-		return nil, false
-	}
-
-	return acc, true
-}
-
-func (c *accountCache) set(bExt *ton.BlockIDExt, acc *core.AccountState) {
-	c.Lock()
-	defer c.Unlock()
-
-	b := core.GetBlockID(bExt)
-
-	if _, ok := c.m[b]; !ok {
-		c.m[b] = map[addr.Address]*core.AccountState{}
-	}
-
-	c.m[b][acc.Address] = acc
 	c.clearCaches()
 }
 

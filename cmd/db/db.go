@@ -10,19 +10,24 @@ import (
 	"github.com/allisson/go-env"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	"github.com/uptrace/go-clickhouse/ch"
 	"github.com/urfave/cli/v2"
+	"github.com/xssnick/tonutils-go/liteclient"
+	"github.com/xssnick/tonutils-go/ton"
 
 	"github.com/uptrace/bun/migrate"
 	"github.com/uptrace/go-clickhouse/chmigrate"
 
 	"github.com/tonindexer/anton/internal/core"
+	"github.com/tonindexer/anton/internal/core/filter"
 	"github.com/tonindexer/anton/internal/core/repository"
+	"github.com/tonindexer/anton/internal/core/repository/block"
 
 	"github.com/tonindexer/anton/migrations/chmigrations"
 	"github.com/tonindexer/anton/migrations/pgmigrations"
 )
 
-func newMigrators() (pg *migrate.Migrator, ch *chmigrate.Migrator, err error) {
+func newMigrators() (pg *migrate.Migrator, ck *chmigrate.Migrator, err error) {
 	chURL := env.GetString("DB_CH_URL", "")
 	pgURL := env.GetString("DB_PG_URL", "")
 
@@ -464,6 +469,333 @@ var Command = &cli.Command{
 						return nil
 					}
 					lastTxLT = nextTxLT
+				}
+			},
+		},
+		{
+			Name:  "fillMissedClickHouseData",
+			Usage: "Transfers missed blocks from PostgreSQL to ClickHouse",
+			Action: func(c *cli.Context) error {
+				chURL := env.GetString("DB_CH_URL", "")
+				pgURL := env.GetString("DB_PG_URL", "")
+
+				conn, err := repository.ConnectDB(c.Context, chURL, pgURL)
+				if err != nil {
+					return errors.Wrap(err, "cannot connect to the databases")
+				}
+				defer conn.Close()
+
+				blockRepo := block.NewRepository(conn.CH, conn.PG)
+
+				blockIds, err := blockRepo.GetMissedMasterBlocks(c.Context)
+				if err != nil {
+					return errors.Wrap(err, "get missed masterchain blocks")
+				}
+				if len(blockIds) == 0 {
+					return errors.Wrap(core.ErrNotFound, "could not find any missed blocks")
+				}
+
+				m, err := blockRepo.GetLastMasterBlock(c.Context)
+				if err != nil {
+					return errors.Wrap(err, "get last master block")
+				}
+
+				for i := range blockIds {
+					res, err := blockRepo.FilterBlocks(c.Context, &filter.BlocksReq{
+						BlocksFilter: filter.BlocksFilter{
+							Workchain: &m.Workchain,
+							Shard:     &m.Shard,
+							SeqNo:     &blockIds[i],
+						},
+						WithShards:              true,
+						WithAccountStates:       true,
+						WithTransactions:        true,
+						WithTransactionMessages: true,
+					})
+					if err != nil {
+						return errors.Wrapf(err, "filter blocks on (%d, %x, %d)", m.Workchain, m.Shard, m.SeqNo)
+					}
+
+					var (
+						masterBlocks []*core.Block
+						shardBlocks  []*core.Block
+						transactions []*core.Transaction
+						messages     []*core.Message
+						accounts     []*core.AccountState
+					)
+
+					for _, row := range res.Rows {
+						masterBlocks = append(masterBlocks, row)
+
+						shardBlocks = append(shardBlocks, row.Shards...)
+
+						accounts = append(accounts, row.Accounts...)
+						transactions = append(transactions, row.Transactions...)
+						for _, tx := range row.Transactions {
+							if tx.InMsg != nil {
+								messages = append(messages, tx.InMsg)
+							}
+							messages = append(messages, tx.OutMsg...)
+						}
+
+						for _, shard := range row.Shards {
+							accounts = append(accounts, shard.Accounts...)
+							transactions = append(transactions, shard.Transactions...)
+							for _, tx := range shard.Transactions {
+								transactions = append(transactions, tx)
+								if tx.InMsg != nil {
+									messages = append(messages, tx.InMsg)
+								}
+								messages = append(messages, tx.OutMsg...)
+							}
+						}
+					}
+
+					log.Info().
+						Int32("workchain", m.Workchain).
+						Int64("shard", m.Shard).
+						Uint32("seq_no", blockIds[i]).
+						Int("master_blocks_len", len(masterBlocks)).
+						Int("shard_blocks_len", len(shardBlocks)).
+						Int("transactions_len", len(transactions)).
+						Int("messages_len", len(messages)).
+						Int("account_states_len", len(accounts)).
+						Msg("insert new missed block")
+
+					if len(accounts) > 0 {
+						if _, err := conn.CH.NewInsert().Model(&accounts).Exec(c.Context); err != nil {
+							return err
+						}
+					}
+					if len(messages) > 0 {
+						if _, err := conn.CH.NewInsert().Model(&messages).Exec(c.Context); err != nil {
+							return err
+						}
+					}
+					if len(transactions) > 0 {
+						if _, err := conn.CH.NewInsert().Model(&transactions).Exec(c.Context); err != nil {
+							return err
+						}
+					}
+					if len(shardBlocks) > 0 {
+						if _, err := conn.CH.NewInsert().Model(&shardBlocks).Exec(c.Context); err != nil {
+							return err
+						}
+					}
+					if len(masterBlocks) > 0 {
+						if _, err := conn.CH.NewInsert().Model(&masterBlocks).Exec(c.Context); err != nil {
+							return err
+						}
+					}
+				}
+
+				return nil
+			},
+		},
+		{
+			Name:  "fillMissedRawAccountStates",
+			Usage: "Fetches missed raw account states code and data",
+			Flags: []cli.Flag{
+				&cli.IntFlag{
+					Name:  "limit",
+					Value: 10000,
+					Usage: "batch size for update",
+				},
+				&cli.Uint64Flag{
+					Name:  "start-from",
+					Value: 0,
+					Usage: "last tx lt to start from",
+				},
+			},
+			Action: func(ctx *cli.Context) error {
+				chURL := env.GetString("DB_CH_URL", "")
+				pgURL := env.GetString("DB_PG_URL", "")
+
+				conn, err := repository.ConnectDB(ctx.Context, chURL, pgURL)
+				if err != nil {
+					return errors.Wrap(err, "cannot connect to the databases")
+				}
+				defer conn.Close()
+
+				client := liteclient.NewConnectionPool()
+				api := ton.NewAPIClient(client, ton.ProofCheckPolicyUnsafe).WithRetry()
+				for _, addr := range strings.Split(env.GetString("LITESERVERS", ""), ",") {
+					split := strings.Split(addr, "|")
+					if len(split) != 2 {
+						return fmt.Errorf("wrong server address format '%s'", addr)
+					}
+					host, key := split[0], split[1]
+					if err := client.AddConnection(ctx.Context, host, key); err != nil {
+						return errors.Wrapf(err, "cannot add connection with %s host and %s key", host, key)
+					}
+				}
+
+				fetchAccountCodeData := func(s *core.AccountState) error {
+					block := core.Block{Workchain: s.Workchain, Shard: s.Shard, SeqNo: s.BlockSeqNo}
+
+					err := conn.PG.NewSelect().Model(&block).
+						Where("workchain = ?workchain").
+						Where("shard = ?shard").
+						Where("seq_no = ?seq_no").
+						Scan(ctx.Context)
+					if err != nil {
+						return errors.Wrap(err, "select block")
+					}
+
+					rawBlock := ton.BlockIDExt{
+						Workchain: block.Workchain, Shard: block.Shard, SeqNo: block.SeqNo,
+						RootHash: block.RootHash, FileHash: block.FileHash,
+					}
+
+					acc, err := api.GetAccount(ctx.Context, &rawBlock, s.Address.MustToTonutils())
+					if err != nil {
+						return errors.Wrap(err, "get raw account")
+					}
+
+					if acc.Code == nil {
+						return fmt.Errorf("account state has no code")
+					}
+					if acc.Data == nil {
+						return fmt.Errorf("account state has no data")
+					}
+
+					code := core.AccountStateCode{
+						CodeHash: acc.Code.Hash(),
+						Code:     acc.Code.ToBOC(),
+					}
+					if _, err := conn.CH.NewInsert().Model(&code).Exec(ctx.Context); err != nil {
+						return errors.Wrapf(err, "write code to key-value store")
+					}
+
+					data := core.AccountStateData{
+						DataHash: acc.Data.Hash(),
+						Data:     acc.Data.ToBOC(),
+					}
+					if _, err := conn.CH.NewInsert().Model(&data).Exec(ctx.Context); err != nil {
+						return errors.Wrapf(err, "write data to key-value store")
+					}
+
+					return nil
+				}
+
+				getCodeData := func(ctx context.Context, rows []*core.AccountState) error {
+					codeHashesSet, dataHashesSet := map[string]struct{}{}, map[string]struct{}{}
+					for _, row := range rows {
+						if len(row.CodeHash) == 32 {
+							codeHashesSet[string(row.CodeHash)] = struct{}{}
+						}
+						if len(row.DataHash) == 32 {
+							dataHashesSet[string(row.DataHash)] = struct{}{}
+						}
+					}
+
+					batchLen := 1000
+					codeHashBatches, dataHashBatches := make([][][]byte, 1), make([][][]byte, 1)
+					appendHash := func(hash []byte, batches [][][]byte) [][][]byte {
+						b := batches[len(batches)-1]
+						if len(b) >= batchLen {
+							b = [][]byte{}
+							batches = append(batches, b)
+						}
+						batches[len(batches)-1] = append(b, hash)
+						return batches
+					}
+					for h := range codeHashesSet {
+						codeHashBatches = appendHash([]byte(h), codeHashBatches)
+					}
+					for h := range dataHashesSet {
+						dataHashBatches = appendHash([]byte(h), dataHashBatches)
+					}
+
+					codeRes, dataRes := map[string][]byte{}, map[string][]byte{}
+					for _, b := range codeHashBatches {
+						var codeArr []*core.AccountStateCode
+						err := conn.CH.NewSelect().Model(&codeArr).Where("code_hash IN ?", ch.In(b)).Scan(ctx)
+						if err != nil {
+							return errors.Wrapf(err, "get code")
+						}
+						for _, x := range codeArr {
+							codeRes[string(x.CodeHash)] = x.Code
+						}
+					}
+					for _, b := range dataHashBatches {
+						var dataArr []*core.AccountStateData
+						err := conn.CH.NewSelect().Model(&dataArr).Where("data_hash IN ?", ch.In(b)).Scan(ctx)
+						if err != nil {
+							return errors.Wrapf(err, "get data")
+						}
+						for _, x := range dataArr {
+							dataRes[string(x.DataHash)] = x.Data
+						}
+					}
+
+					for _, row := range rows {
+						var ok bool
+						if len(row.CodeHash) == 32 {
+							if row.Code, ok = codeRes[string(row.CodeHash)]; !ok {
+								log.Warn().
+									Str("address", row.Address.String()).
+									Uint64("last_tx_lt", row.LastTxLT).
+									Msg("missed account code")
+								if err := fetchAccountCodeData(row); err != nil {
+									return errors.Wrapf(err, "(%s, %d)", row.Address.String(), row.LastTxLT)
+								}
+								continue
+							}
+						}
+						if len(row.DataHash) == 32 {
+							if row.Data, ok = dataRes[string(row.DataHash)]; !ok {
+								log.Warn().
+									Str("address", row.Address.String()).
+									Uint64("last_tx_lt", row.LastTxLT).
+									Msg("missed account data")
+								if err := fetchAccountCodeData(row); err != nil {
+									return errors.Wrapf(err, "(%s, %d)", row.Address.String(), row.LastTxLT)
+								}
+								continue
+							}
+						}
+					}
+
+					return nil
+				}
+
+				latestLT := ctx.Uint64("start-from")
+				batch := ctx.Int("limit")
+				totalChecked := 0
+				for {
+					var states []*core.AccountState
+
+					err := conn.PG.NewSelect().Model(&states).
+						Where("last_tx_lt > ?", latestLT).
+						Order("last_tx_lt ASC").
+						Limit(batch).
+						Scan(ctx.Context)
+					if err != nil {
+						return errors.Wrapf(err, "scan account states from %d", latestLT)
+					}
+
+					if err := getCodeData(ctx.Context, states); err != nil {
+						log.Error().Err(err).Msg("fill code data")
+						continue
+					}
+
+					if len(states) < batch {
+						log.Info().Msg("no states left")
+						return nil
+					}
+
+					for _, s := range states {
+						if s.LastTxLT > latestLT {
+							latestLT = s.LastTxLT
+						}
+					}
+					latestLT--
+
+					totalChecked += len(states)
+					if totalChecked%500000 == 0 {
+						log.Info().Int("total_checked", totalChecked).Uint64("last_tx_lt", latestLT).Msg("checkpoint")
+					}
 				}
 			},
 		},

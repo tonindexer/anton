@@ -81,7 +81,6 @@ type MessageRepository interface {
 	AddMessages(ctx context.Context, tx bun.Tx, messages []*Message) error
 	UpdateMessages(ctx context.Context, messages []*Message) error
 
-	GetMessage(ctx context.Context, hash []byte) (*Message, error)
 	GetMessages(ctx context.Context, hash [][]byte) ([]*Message, error)
 
 	// MatchMessagesByOperationDesc returns hashes of suitable messages for the given contract operation.

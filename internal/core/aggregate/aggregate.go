@@ -177,19 +177,21 @@ func getTransactionStatistics(ctx context.Context, ck *ch.DB, ret *Statistics) e
 		return errors.Wrap(err, "message types count")
 	}
 
-	unknownOp := -1
-	for it, row := range ret.MessageTypesCount {
-		ret.MessageCount += row.Count
-		if row.Operation != "" {
-			ret.ParsedMessageCount += row.Count
-		} else {
-			unknownOp = it
+	if len(ret.MessageTypesCount) > 0 {
+		unknownOp := -1
+		for it, row := range ret.MessageTypesCount {
+			ret.MessageCount += row.Count
+			if row.Operation != "" {
+				ret.ParsedMessageCount += row.Count
+			} else {
+				unknownOp = it
+			}
 		}
-	}
-	if unknownOp == len(ret.MessageTypesCount)-1 {
-		ret.MessageTypesCount = ret.MessageTypesCount[:unknownOp]
-	} else if unknownOp != -1 {
-		ret.MessageTypesCount = append(ret.MessageTypesCount[:unknownOp], ret.MessageTypesCount[unknownOp+1:]...)
+		if unknownOp == len(ret.MessageTypesCount)-1 {
+			ret.MessageTypesCount = ret.MessageTypesCount[:unknownOp]
+		} else if unknownOp != -1 {
+			ret.MessageTypesCount = append(ret.MessageTypesCount[:unknownOp], ret.MessageTypesCount[unknownOp+1:]...)
+		}
 	}
 
 	ret.TransactionCount, err = ck.NewSelect().Model((*core.Transaction)(nil)).Count(ctx)

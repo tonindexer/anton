@@ -7,7 +7,7 @@ import (
 	"github.com/tonindexer/anton/internal/core"
 )
 
-type TransactionsReq struct {
+type TransactionsFilter struct {
 	Hash      []byte // `form:"hash"`
 	InMsgHash []byte // `form:"in_msg_hash"`
 
@@ -17,6 +17,12 @@ type TransactionsReq struct {
 
 	BlockID *core.BlockID
 
+	CreatedLT *uint64 `form:"created_lt"`
+}
+
+type TransactionsReq struct {
+	TransactionsFilter
+
 	WithAccountState bool
 	WithMessages     bool
 
@@ -24,14 +30,13 @@ type TransactionsReq struct {
 
 	Order string `form:"order"` // ASC, DESC
 
-	CreatedLT *uint64 `form:"created_lt"`
-
 	AfterTxLT *uint64 `form:"after"`
 	Limit     int     `form:"limit"`
+	Count     bool    `form:"count"`
 }
 
 type TransactionsRes struct {
-	Total int                 `json:"total"`
+	Total int                 `json:"total,omitempty"`
 	Rows  []*core.Transaction `json:"results"`
 }
 

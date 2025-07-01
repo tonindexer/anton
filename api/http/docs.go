@@ -96,6 +96,13 @@ const docTemplate = `{
                         "description": "limit",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "count total number of rows",
+                        "name": "count",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -292,6 +299,13 @@ const docTemplate = `{
                         "default": 3,
                         "description": "limit",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "count total number of rows",
+                        "name": "count",
                         "in": "query"
                     }
                 ],
@@ -557,6 +571,13 @@ const docTemplate = `{
                         "default": 3,
                         "description": "limit",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "count total number of rows",
+                        "name": "count",
                         "in": "query"
                     }
                 ],
@@ -852,6 +873,13 @@ const docTemplate = `{
                         "default": 3,
                         "description": "limit",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "count total number of rows",
+                        "name": "count",
                         "in": "query"
                     }
                 ],
@@ -1593,6 +1621,12 @@ const docTemplate = `{
                     }
                 },
                 "code": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "code_hash": {
                     "type": "array",
                     "items": {
                         "type": "integer"

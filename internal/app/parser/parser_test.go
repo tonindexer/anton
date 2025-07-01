@@ -229,7 +229,8 @@ func newService(t *testing.T) *Service {
 	}
 
 	return NewService(&app.ParserConfig{
-		BlockchainConfig: bcConfig,
-		ContractRepo:     contractRepo,
+		BlockchainConfig:         bcConfig,
+		ContractRepo:             contractRepo,
+		MaxAccountParsingWorkers: 96,
 	})
 }
